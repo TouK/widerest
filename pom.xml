@@ -354,6 +354,12 @@
                 <type>jar</type>
                 <scope>provided</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.14.6</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>

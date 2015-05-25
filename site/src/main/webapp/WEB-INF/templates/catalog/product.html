@@ -49,7 +49,7 @@
                             <div class="in_cart" th:classappend="${!inCart}? ' hidden'">
                                 <a class="modalcart big-button gray-button" th:href="@{/cart}">In Cart!</a>
                             </div>
-                            <div class="add_to_cart" th:classappend="${inCart or !availableInventory}? ' hidden'">
+                            <div class="add_to_cart" th:classappend="${inCart or !availableInventory or !(#object.defaultSku.forSale)}? ' hidden'">
                                 <input type="hidden" name="productId" th:value="*{id}" />
                                 <input type="hidden" name="quantity" value="1" />
                                 <input type="submit" class="addToCart big red" th:value="#{product.buyNow}"/>
@@ -61,15 +61,21 @@
     
                 <div th:if="${customer.loggedIn}" th:remove="tag">
 
-                    <blc:form method="POST" th:action="@{/account/wishlist/add}">
-                        <div class="product-option-nonjs" th:each="productOption : *{productOptions}" th:object="${productOption}">
-                            <div class="form50">
-                                <label th:text="*{label}"></label>
-                                <select th:name="${'itemAttributes[' + productOption.attributeName + ']'}">
-                                    <option th:each="optionValue : *{allowedValues}" th:object="${optionValue}" th:text="*{attributeValue}"></option>
-                                </select>
+                    <blc:form method="POST" th:action="@{/auction/bid}">
+                        <div th:class="${'productActions' + product.id}">
+
+                            <blc:named_order orderVar="wishlist" orderName="wishlist" />
+
+                            <div class="add_to_cart" th:classappend="${wishlist.containsSku(product.defaultSku)}? ' hidden'">
+                                <input type="number" name="bidPrice" th:value="200" step="100" min="100"/>
+                                <input type="hidden" name="productId" th:value="*{id}" />
+                                <input type="hidden" name="quantity" value="1" />
+                                <input type="submit" class="bidAtAuction big red" value="Bid" />
                             </div>
                         </div>
+                    </blc:form>
+
+                    <blc:form method="POST" th:action="@{/account/wishlist/add}">
                         <div th:class="${'productActions' + product.id}">
 
                             <blc:named_order orderVar="wishlist" orderName="wishlist" />

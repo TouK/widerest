@@ -59,7 +59,7 @@ $(function(){
     
     // Intercept add to cart operations and perform them via AJAX instead
     // This will trigger on any input with class "addToCart" or "addToWishlist"
-    $('body').on('click', 'input.addToCart,input.addToWishlist', function() {
+    $('body').on('click', 'input.addToCart,input.addToWishlist,input.bidAtAuction', function() {
         var $button = $(this),
             $container = $button.closest('.product_container'),
             $form = $button.closest('form'),
@@ -77,7 +77,8 @@ $(function(){
         
         var itemRequest = BLC.serializeObject($form),
             modalClick = $button.parents('.simplemodal-wrap').length > 0,
-            wishlistAdd = $button.hasClass('addToWishlist');
+            wishlistAdd = $button.hasClass('addToWishlist'),
+            bidAtAuction = $button.hasClass('bidAtAuction');
             
         if (itemRequest.hasProductOptions == "true" && !modalClick) {
             $.modal($('#productOptions' + itemRequest.productId), modalProductOptionsOptions);
@@ -142,6 +143,8 @@ $(function(){
                         
                         if (wishlistAdd) {
                             HC.showNotification(data.productName + "  has been added to your wishlist!");
+                        } else if (bidAtAuction) {
+                            HC.showNotification("Your bid of " + data.productName + " has been registered!", 2000);
                         } else {
                             HC.showNotification(data.productName + "  has been added to the cart!", 2000);
                         }

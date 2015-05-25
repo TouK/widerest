@@ -6,6 +6,7 @@
        xmlns:aop="http://www.springframework.org/schema/aop"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mo="http://schema.broadleafcommerce.org/mo"
        xsi:schemaLocation="
         http://www.springframework.org/schema/jee
         http://www.springframework.org/schema/jee/spring-jee-4.1.xsd
@@ -146,5 +147,16 @@
     <bean id="blResourceBundlingService" class="org.broadleafcommerce.common.resource.service.ResourceBundlingServiceImpl">
         <property name="additionalBundleFiles" ref="blJsFileMap"/>
     </bean>
-    
+
+    <mo:override id="blMetadataOverrides">
+        <!-- Add required validation to some default Sku fields. These should not occur on the additionalSkus list, which
+            is why these are marked required in this fashion rather than in @AdminPresentation annotations on SkuImpl -->
+        <mo:overrideItem ceilingEntity="org.broadleafcommerce.core.catalog.domain.Product">
+            <mo:field name="defaultSku.retailPrice">
+                <mo:property name="requiredOverride" value="false" />
+            </mo:field>
+        </mo:overrideItem>
+    </mo:override>
+
+
 </beans>

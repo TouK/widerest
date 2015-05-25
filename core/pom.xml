@@ -31,7 +31,40 @@
                     <rootPath>${basedir}</rootPath>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.googlecode.velocity-maven-plugin</groupId>
+                <artifactId>velocity-maven-plugin</artifactId>
+                <version>1.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-sqls</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>velocity</goal>
+                        </goals>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                            <removeExtension>.vm</removeExtension>
+                            <outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
+                            <templateFiles>
+                                <directory>src/main/resources</directory>
+                                <includes>
+                                    <include>sql/*.vm</include>
+                                </includes>
+                            </templateFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>${project.build.directory}/generated-resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
     </build>
     <dependencies>
         <dependency>
@@ -49,6 +82,10 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
         </dependency>
     </dependencies>
 </project>
