@@ -98,6 +98,18 @@
         overflowToDisk="true"
         timeToLiveSeconds="3"/>
 
+    <cache name="cmsPageCache"
+           maxElementsInMemory="1000"
+           eternal="false"
+           overflowToDisk="true"
+           timeToLiveSeconds="3"/>
+
+    <cache name="cmsStructuredContentCache"
+           maxElementsInMemory="5000"
+           eternal="false"
+           overflowToDisk="true"
+           timeToLiveSeconds="3"/>
+
     <cache
         name="blTranslationElements"
         maxElementsInMemory="10000"

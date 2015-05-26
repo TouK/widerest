@@ -3,14 +3,20 @@
 <div class="image">
     <a th:href="@{*{url}}">
     <img th:if="*{media['primary']}" blc:src="@{*{media['primary'].url} + '?browse'}" th:alt="*{name}" />
-    <div class="price" th:if="${#object instanceof T(org.broadleafcommerce.core.catalog.domain.ProductBundle)}">
+    <div class="price" th:if="${#object instanceof T(org.broadleafcommerce.core.catalog.domain.ProductBundle) and #object.defaultSku.forSale}">
+        Price:
         <div blc:price="*{salePrice}" th:if="*{onSale}" th:classappend="*{defaultSku.onSale}? 'sale'"></div>
         <div blc:price="*{retailPrice}" th:classappend="*{onSale}? 'has-sale'"></div>
     </div>
-    <div class="price" th:unless="${#object instanceof T(org.broadleafcommerce.core.catalog.domain.ProductBundle)}">
+    <div class="price" th:unless="${#object instanceof T(org.broadleafcommerce.core.catalog.domain.ProductBundle) or !#object.defaultSku.forSale}">
+        Price:
         <div blc:price="*{defaultSku.salePrice}" th:if="*{defaultSku.onSale}" th:classappend="*{defaultSku.onSale}? 'sale'"></div>
         <div blc:price="*{defaultSku.retailPrice}" th:classappend="*{defaultSku.onSale}? 'has-sale'"></div>
     </div>
+        <div class="bid" th:if="${#object.defaultSku.forAuction}">
+            Current Bid:
+            <div blc:price="*{defaultSku.bidPrice}"></div>
+        </div>
     </a>
 </div>
 
@@ -22,16 +28,18 @@
 <div th:class="*{'productActions productActions' + id}"
      th:with="checkInventory=*{defaultSku.inventoryType?.type == 'CHECK_QUANTITY'},
               availableInventory=${checkInventory ? #object.defaultSku.quantityAvailable != null and #object.defaultSku.quantityAvailable != 0 : true},
-              inCart=${cart.containsSku(#object.defaultSku)} and *{#lists.isEmpty(productOptions)}">
+              inCart=${cart.containsSku(#object.defaultSku)} and *{#lists.isEmpty(productOptions)},
+              forSale=${#object.defaultSku.forSale},
+              forAuction=${#object.defaultSku.forAuction}">
 
-    <div th:if="${checkInventory and !availableInventory}" class="out_of_stock">
+    <div th:if="${forSale and checkInventory and !availableInventory}" class="out_of_stock">
         <a disabled="disabled" class="inCart">Out of Stock</a>
     </div>
+
     <div class="in_cart" th:classappend="${!inCart}? ' hidden'" th:if="*{#lists.isEmpty(productOptions)}">
         <a class="modalcart inCart" th:href="@{/cart}"><span th:text="#{product.inCart}">In Cart!</span></a>
     </div>
-
-    <div class="add_to_cart" th:classappend="${inCart or !availableInventory}? ' hidden'">
+    <div class="add_to_cart" th:classappend="${inCart or !availableInventory or !forSale}? ' hidden'">
         <blc:form method="POST" th:action="@{/cart/add}">
             <input type="hidden" name="productId" th:value="*{id}" />
             <input type="hidden" name="quantity" value="1" />
@@ -40,10 +48,22 @@
         </blc:form>
     </div>
 
+    <div class="log_in_to_bid" th:classappend="${customer.loggedIn or !forAuction}? ' hidden'">
+        <a class="inCart account" th:href="@{/login}"><span th:text="#{product.loginToBid}">Login to bid.</span></a>
+    </div>
+    <div class="bid_at_auction" th:classappend="${inCart or !availableInventory or !forAuction or !customer.loggedIn}? ' hidden'">
+        <blc:form method="POST" th:action="@{/auction/bid}" th:if="${customer.loggedIn}">
+            <input type="hidden" name="productId" th:value="*{id}" />
+            <input type="hidden" name="quantity" value="1" />
+            <input type="hidden" name="hasProductOptions" th:value="*{!#lists.isEmpty(productOptions)}" />
+            <input type="submit" class="bidAtAuction" th:value="#{product.bidNow} + *{defaultSku.bidPrice}"/>
+        </blc:form>
+    </div>
+
 </div>
 
-<div style="display: none;" th:id="*{'productOptions' + id}" class="product-options modal">
+<div style="display: none;" th:id="*{'productOptions' + id}" class="product-options modal"  th:if="*{defaultSku.forSale}" >
     <h3 th:text="*{name}"></h3>
     <div class="product-options" th:substituteby="catalog/partials/productOptions"/>
-    <input type="button" class="addToCart" th:value="#{product.buyNow}" />
+    <input type="button" class="addToCart" th:value="#{product.buyNow}"/>
 </div>

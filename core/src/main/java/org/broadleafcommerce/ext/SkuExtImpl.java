@@ -8,10 +8,13 @@ import org.broadleafcommerce.common.presentation.AdminPresentation;
 import org.broadleafcommerce.common.presentation.client.SupportedFieldType;
 import org.broadleafcommerce.core.catalog.domain.ProductImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuImpl;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
 
+import javax.annotation.Resource;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.math.BigDecimal;
 
 @Data
@@ -35,6 +38,9 @@ public class SkuExtImpl extends SkuImpl {
         this.minimalPrice = Money.toAmount(minimalPrice);
     }
 
+    public Money getBidPrice() {
+        return new Money(BigDecimal.valueOf(10), getCurrency());
+    }
 
     public boolean isForAuction() {
         Money minimalPrice = getMinimalPrice();
