@@ -36,12 +36,13 @@ $(function(){
         $('.productActions' + productId).children('.in_'+orderType).removeClass('hidden');
         $('.productActions' + productId).children('.add_to_'+orderType).addClass('hidden');
     }
-    
+
     // Hides the in cart/in wishlist button and shows the add to cart/add to wishlist button
     // orderType can either be 'cart' or 'wishlist'
     function showAddToCartButton(productId, orderType) {
         $('.productActions' + productId).children('.add_to_'+orderType).removeClass('hidden');
         $('.productActions' + productId).children('.in_'+orderType).addClass('hidden');
+        $('.productActions' + productId).children('.bid_at__'+orderType).addClass('hidden');
     }
 
     // Show the cart in a modal when any link with the class "modalcart" is clicked
@@ -133,6 +134,9 @@ $(function(){
                             $.modal.close();
                         } else if (wishlistAdd) {
                             showInCartButton(data.productId, 'wishlist');
+                        } else if (bidAtAuction) {
+                            $('.bidPrice' + data.productId).text(data.bidPrice);
+                            showInCartButton(data.productId, 'biddings');
                         } else {
                         	if(data.skuId != null) {
                         		showInCartButton(data.skuId, 'cart');
@@ -144,7 +148,7 @@ $(function(){
                         if (wishlistAdd) {
                             HC.showNotification(data.productName + "  has been added to your wishlist!");
                         } else if (bidAtAuction) {
-                            HC.showNotification("Your bid of " + data.productName + " has been registered!", 2000);
+                            HC.showNotification("Your bid for " + data.productName + " has been registered!", 2000);
                         } else {
                             HC.showNotification(data.productName + "  has been added to the cart!", 2000);
                         }

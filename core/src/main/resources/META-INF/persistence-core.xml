@@ -7,6 +7,8 @@
     <persistence-unit name="blPU" transaction-type="RESOURCE_LOCAL">
         <non-jta-data-source>jdbc/web</non-jta-data-source>
         <class>org.broadleafcommerce.ext.SkuExtImpl</class>
+        <class>org.broadleafcommerce.ext.DiscreteOrderItemExtImpl</class>
+        <class>org.broadleafcommerce.ext.OrderExtImpl</class>
         <exclude-unlisted-classes/>
     </persistence-unit>
     

@@ -16,8 +16,10 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 
-@Data
 @Entity
 @Table(name = "BLC_EXT_SKU")
 public class SkuExtImpl extends SkuImpl {
@@ -27,11 +29,17 @@ public class SkuExtImpl extends SkuImpl {
             group = ProductImpl.Presentation.Group.Name.Price, groupOrder = ProductImpl.Presentation.Group.Order.Price,
             prominent = true, gridOrder = 7,
             fieldType = SupportedFieldType.MONEY)
-    @Getter(AccessLevel.NONE)
     protected BigDecimal minimalPrice;
 
+    @Column(name = "BID_PRICE", precision = 19, scale = 5)
+    @AdminPresentation(friendlyName = "SkuImpl_Sku_Bid_Price", order = 2000,
+            group = ProductImpl.Presentation.Group.Name.Price, groupOrder = ProductImpl.Presentation.Group.Order.Price,
+            prominent = true, gridOrder = 8,
+            fieldType = SupportedFieldType.MONEY)
+    protected BigDecimal bidPrice;
+
     public Money getMinimalPrice() {
-        return minimalPrice == null ? null : new Money(minimalPrice, getCurrency());
+        return new Money(minimalPrice == null ? BigDecimal.ZERO : minimalPrice, getCurrency());
     }
 
     public void setMinimalPrice(Money minimalPrice) {
@@ -39,18 +47,20 @@ public class SkuExtImpl extends SkuImpl {
     }
 
     public Money getBidPrice() {
-        return new Money(BigDecimal.valueOf(10), getCurrency());
+        return new Money(bidPrice == null ? BigDecimal.ZERO : bidPrice, getCurrency());
     }
 
-    public boolean isForAuction() {
-        Money minimalPrice = getMinimalPrice();
-        return (minimalPrice != null);
+    public void setBidPrice(Money bidPrice) {
+        this.bidPrice = Money.toAmount(bidPrice);
     }
 
-    public boolean isForSale() {
-        Money retailPrice = getRetailPrice();
-        Money salePrice = getSalePrice();
-        return (retailPrice != null && !retailPrice.isZero()) || (salePrice != null && !salePrice.isZero());
+    public Money getNextBidPrice() {
+        BigDecimal amount = bidPrice == null ? BigDecimal.ZERO : bidPrice;
+        amount = amount.round(new MathContext(2, RoundingMode.HALF_EVEN));
+        if (amount.scale() > 0)
+            amount = amount.setScale(0, RoundingMode.HALF_EVEN);
+        amount = BigDecimal.valueOf(amount.unscaledValue().add(BigInteger.ONE).longValue(), amount.scale());
+        return new Money(amount, getCurrency());
     }
 
     @Override
@@ -62,5 +72,17 @@ public class SkuExtImpl extends SkuImpl {
         return tmpRetailPrice;
     }
 
+    public boolean isForAuction() {
+        return (this.minimalPrice != null);
+    }
+
+    public boolean isForSale() {
+        Money retailPrice = getRetailPrice();
+        Money salePrice = getSalePrice();
+        Money bidPrice = getBidPrice();
+        Money minimalPrice = getMinimalPrice();
+        return ((retailPrice != null && !retailPrice.isZero()) || (salePrice != null && !salePrice.isZero()))
+                && (!isForAuction() || bidPrice.lessThan(minimalPrice));
+    }
 
 }

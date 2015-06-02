@@ -15,7 +15,7 @@
     </div>
         <div class="bid" th:if="${#object.defaultSku.forAuction}">
             Current Bid:
-            <div blc:price="*{defaultSku.bidPrice}"></div>
+            <div th:class="*{'bidPrice' + id}" blc:price="*{defaultSku.bidPrice}"></div>
         </div>
     </a>
 </div>
@@ -30,7 +30,8 @@
               availableInventory=${checkInventory ? #object.defaultSku.quantityAvailable != null and #object.defaultSku.quantityAvailable != 0 : true},
               inCart=${cart.containsSku(#object.defaultSku)} and *{#lists.isEmpty(productOptions)},
               forSale=${#object.defaultSku.forSale},
-              forAuction=${#object.defaultSku.forAuction}">
+              forAuction=${#object.defaultSku.forAuction},
+              winningBid=${biddings.itemCount > 0 and biddings.isWinningForSku(#object.defaultSku)}">
 
     <div th:if="${forSale and checkInventory and !availableInventory}" class="out_of_stock">
         <a disabled="disabled" class="inCart">Out of Stock</a>
@@ -48,15 +49,19 @@
         </blc:form>
     </div>
 
-    <div class="log_in_to_bid" th:classappend="${customer.loggedIn or !forAuction}? ' hidden'">
-        <a class="inCart account" th:href="@{/login}"><span th:text="#{product.loginToBid}">Login to bid.</span></a>
+
+    <div class="log_in_to_bid" th:unless="${customer.loggedIn or !forAuction or winningBid}">
+        <a class="inCart" th:href="@{/login}"><span th:text="#{product.loginToBid}">Login to bid.</span></a>
     </div>
-    <div class="bid_at_auction" th:classappend="${inCart or !availableInventory or !forAuction or !customer.loggedIn}? ' hidden'">
+
+    <div class="in_biddings" th:classappend="${!winningBid}? ' hidden'" >
+        <a disabled="disabled" class="inCart"><span th:text="#{product.winningBid}">Winning bid</span></a>
+    </div>
+    <div class="add_to_biddings" th:classappend="${inCart or !availableInventory or !forAuction or !customer.loggedIn or winningBid}? ' hidden'">
         <blc:form method="POST" th:action="@{/auction/bid}" th:if="${customer.loggedIn}">
             <input type="hidden" name="productId" th:value="*{id}" />
-            <input type="hidden" name="quantity" value="1" />
-            <input type="hidden" name="hasProductOptions" th:value="*{!#lists.isEmpty(productOptions)}" />
-            <input type="submit" class="bidAtAuction" th:value="#{product.bidNow} + *{defaultSku.bidPrice}"/>
+            <input type="hidden" name="bidPrice" th:value="*{defaultSku.nextBidPrice}" />
+            <input type="submit" class="bidAtAuction" th:value="#{product.bidNow} + *{defaultSku.nextBidPrice}"/>
         </blc:form>
     </div>
 
