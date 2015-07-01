@@ -71,8 +71,8 @@
     </bean>
     <!-- /End DemoSite NullPaymentGateway Config -->
 
-    <bean name="blInventoryService" class="org.broadleafcommerce.ext.InventoryServiceImpl"/>
-    <bean p:order="2000" id="blCheckAddAvailabilityActivity" class="org.broadleafcommerce.ext.CheckAvailabilityActivity"/>
-    <bean p:order="2000" id="blCheckUpdateAvailabilityActivity" class="org.broadleafcommerce.ext.CheckAvailabilityActivity"/>
+    <bean name="blInventoryService" class="pl.touk.widerest.ext.InventoryServiceImpl"/>
+    <bean p:order="2000" id="blCheckAddAvailabilityActivity" class="pl.touk.widerest.ext.CheckAvailabilityActivity"/>
+    <bean p:order="2000" id="blCheckUpdateAvailabilityActivity" class="pl.touk.widerest.ext.CheckAvailabilityActivity"/>
 
 </beans>

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Context sessionCookieName="JSESSIONIDADMIN">
-
-    <!-- disable session persistence -->
-    <Manager pathname="" />
-
-</Context>

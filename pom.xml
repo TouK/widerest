@@ -3,20 +3,20 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.mycompany</groupId>
-    <artifactId>ecommerce-website</artifactId>
+    <groupId>pl.touk.widerest</groupId>
+    <artifactId>widerest</artifactId>
     <version>1.0</version>
     <packaging>pom</packaging>
-    <name>ecommerce</name>
-    <url>http://www.blc-archetype.com</url>
+    <name>widerest</name>
+
     <properties>
         <blc.version>4.0.0-RC1</blc.version>
         <blc.menu.version>1.0.0-RC4</blc.menu.version>
         <tomcat.conf.dir.name>tomcat-server-conf</tomcat.conf.dir.name>
-        
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <description>My Company's eCommerce Website</description>
+
+    <description>RESTful API for Broadleaf Commerce</description>
     <repositories>
         <repository>
             <id>public snapshots</id>
@@ -117,8 +117,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.1</version>
                     <configuration>
-                        <source>1.6</source>
-                        <target>1.6</target>
+                        <source>1.8</source>
+                        <target>1.8</target>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -267,8 +267,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.mycompany</groupId>
-                <artifactId>core</artifactId>
+                <groupId>pl.touk.widerest</groupId>
+                <artifactId>widerest-core</artifactId>
                 <version>1.0</version>
                 <type>jar</type>
                 <scope>compile</scope>
@@ -360,11 +360,62 @@
                 <artifactId>lombok</artifactId>
                 <version>1.14.6</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security.oauth</groupId>
+                <artifactId>spring-security-oauth2</artifactId>
+                <!-- https://github.com/spring-projects/spring-security-oauth/issues/422 -->
+                <version>2.0.8.BUILD-SNAPSHOT</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework.security</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-jwt</artifactId>
+                <version>1.0.2.RELEASE</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.hateoas</groupId>
+                <artifactId>spring-hateoas</artifactId>
+                <version>0.17.0.RELEASE</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger2</artifactId>
+                <version>2.0.0</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     <modules>
-        <module>admin</module>
         <module>core</module>
-        <module>site</module>
+        <module>api</module>
     </modules>
 </project>
