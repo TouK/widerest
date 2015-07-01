@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -19,6 +20,12 @@
         <httpsPort>8443</httpsPort> 
         <httpPort>8080</httpPort>
     </properties>
+    <repositories>
+        <repository>
+            <id>maven2</id>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
     <build>
         <outputDirectory>${webappDirectory}/WEB-INF/classes</outputDirectory>
         <plugins>
@@ -94,14 +101,12 @@
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger2</artifactId>
+            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security.oauth</groupId>
             <artifactId>spring-security-oauth2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security.oauth</groupId>
-            <artifactId>spring-security-oauth2</artifactId>
+            <version>2.0.7.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
