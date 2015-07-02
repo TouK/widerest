@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.experimental.Builder;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.springframework.hateoas.ResourceSupport;
 
 import java.util.Date;
 import java.util.List;

@@ -46,7 +46,6 @@ public class CategoryController {
 
     @RequestMapping(method = RequestMethod.POST)
     public void saveOneCategory(Category dto) {
-
     }
 
     public static Function<org.broadleafcommerce.core.catalog.domain.Category, Category> categoryEntityToDto
