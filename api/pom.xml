@@ -1,7 +1,7 @@
 
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>pl.touk.widerest</groupId>
@@ -17,7 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- httpsPort and httpPort are used by embeded jetty server.-->
         <!-- Make sure the following httpsPort matches what's in the runtime-properties file,  -->
-        <httpsPort>8443</httpsPort> 
+        <httpsPort>8443</httpsPort>
         <httpPort>8080</httpPort>
     </properties>
     <repositories>
@@ -33,7 +33,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>keytool-maven-plugin</artifactId>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.zeroturnaround</groupId>
                 <artifactId>jrebel-maven-plugin</artifactId>
@@ -51,9 +51,9 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <!-- Used by embedded Tomcat to move context.xml for JNDI resources -->
-            <!-- Configuration inherited from parent -->            
+            <!-- Configuration inherited from parent -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
@@ -112,6 +112,23 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-jwt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>4.1.7.RELEASE</version>
+        </dependency>
 
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+            <version>1.2.4.RELEASE</version>
+        </dependency>
     </dependencies>
 </project>
+
