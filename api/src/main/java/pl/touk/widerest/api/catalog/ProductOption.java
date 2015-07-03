@@ -19,17 +19,4 @@ public class ProductOption {
 
     private List<String> allowedValues;
 
-    // Potrzebne dla sciagniecia ProductOption w /catalog/product/{id}
-    public ProductOption(org.broadleafcommerce.core.catalog.domain.ProductOption productOption) {
-        this.name = productOption.getAttributeName();
-        /*this.allowedValues = Lists.transform(productOption.getAllowedValues(), new Function<ProductOptionValue, String>() {
-            @Nullable
-            @Override
-            public String apply(ProductOptionValue productOptionValue) {
-                return productOptionValue.getAttributeValue();
-            }
-        });
-        */
-    }
-
 }
