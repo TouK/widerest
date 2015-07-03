@@ -1,11 +1,9 @@
 package pl.touk.widerest.api.catalog;
 
 
-import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
-import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -31,9 +29,16 @@ public class DtoConverters {
         return new ProductOption(productOption.getAttributeName(), collectAllowedValues);
     };
 
-    /*public static Function<Sku, SkuDto> skuToDto = input -> {
-
-    };*/
+    public static Function<Sku, SkuDto> skuToDto = input -> {
+        SkuDto dto = SkuDto.builder()
+                .id(input.getId())
+                .description(input.getDescription())
+                .price(input.getPrice().getAmount())
+                .quantityAvailable(input.getQuantityAvailable())
+                .code(input.getTaxCode()).build();
+        //TODO: selection
+        return dto;
+    };
 
     public static Function<org.broadleafcommerce.core.catalog.domain.Product, Product> productEntityToDto
             = entity -> {
@@ -50,11 +55,10 @@ public class DtoConverters {
 
         dto.setValidFrom(entity.getActiveStartDate());
         dto.setValidTo(entity.getActiveEndDate());
-        // TODO: Mozliwe ze offer message nie istnieje?
+        // TODO: Mozliwe ze offer message nie istnieje? Czy trzeba wyrzucic wyjatek?
         dto.setOfferMessage(entity.getPromoMessage());
 
-        // Ta metoda jest deprecated
-        //dto.setAttributes(entity.getProductAttributes());
+        
         Map<String, String> productAttributesCollect = entity.getProductAttributes().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
         dto.setAttributes(productAttributesCollect);
@@ -65,30 +69,11 @@ public class DtoConverters {
 
         // TODO: czy potrzeba cos inaczej ustawic, jako ze jest defaultCategory? - TAK?, na poczatek listy domyslny
         List<SkuDto> skuDtosCollect = entity.getAllSkus().stream()
-                .map(new Function<Sku, SkuDto>() {
-                         public SkuDto apply(Sku e) {
-                             return new SkuDto(e);
-                         }
-                     }
-                ).collect(toList());
+                .map(skuToDto).collect(toList());
         dto.setSkus(skuDtosCollect);
 
-        /*
-        dto.setSkus(new ArrayList<SkuDto>());
-        SkuDto defaultSku = (SkuDto) entity.getDefaultSku();
-        if (entity.getCanSellWithoutOptions() || entity.getAdditionalSkus().isEmpty()) {
-            dto.getSkus().add(new SkuDto(defaultSku, inventoryService));
-        }
-        List<Sku> sortedSkus = Ordering.from(new SkuByIdComparator()).sortedCopy(product.getSkus());
-        dto.getSkus().addAll(Lists.transform(sortedSkus, new Function<Sku, SkuDto>() {
-            @Nullable
-            @Override
-            public SkuDto apply(@Nullable Sku input) {
-                return new SkuDto(input, inventoryService);
-            }
-        }));
-
-        Collection<ProductBundle> possibleBundles = Lists.transform(
+        //SkuDto defaultSku = skuToDto.apply(entity.getDefaultSku());
+        /*Collection<ProductBundle> possibleBundles = Lists.transform(
                 ((VirginSkuImpl) defaultSku).getSkuBundleItems(),
                 new Function<SkuBundleItem, ProductBundle>() {
                     @Nullable
@@ -117,27 +102,6 @@ public class DtoConverters {
                     }
                 }
         )));
-
-
-        if (dto instanceof Bundle) {
-            ProductBundle bundle = (ProductBundle) entity;
-            ((Bundle) dto).setBundleItems(Lists.transform(bundle.getSkuBundleItems(), new Function<SkuBundleItem, BundleItem>() {
-                @Nullable
-                @Override
-                public BundleItem apply(@Nullable final SkuBundleItem input) {
-                    BundleItem itemDto = new BundleItem();
-                    itemDto.setQuantity(input.getQuantity());
-                    itemDto.setProductId(input.getSku().getProduct().getId());
-                    return itemDto;
-                }
-            }));
-            ((Bundle) dto).setBundlePrice(bundle.getSalePrice().getAmount());
-            ((Bundle) dto).setPotentialSavings(bundle.getPotentialSavings());
-        }
-
-        dto.setPayableWithBalance(((SkuDto) defaultSku).isPayableWithBalance());
-        dto.setPayableWithPayU(((SkuDto) defaultSku).isPayableWithPayU());
-        dto.setDisplayOrder(defaultSku.getDisplayOrder());
 */
 
         return dto;

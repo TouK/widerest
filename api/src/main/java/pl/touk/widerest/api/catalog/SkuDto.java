@@ -16,8 +16,6 @@ import java.util.List;
 @ApiModel
 @Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class SkuDto {
 
     @ApiModelProperty
@@ -40,15 +38,5 @@ public class SkuDto {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
     private String code;
-
-    public SkuDto(org.broadleafcommerce.core.catalog.domain.Sku sku) {
-        this.id = sku.getId();
-        this.description = sku.getDescription();
-        this.price = sku.getPrice().getAmount();
-        this.quantityAvailable = sku.getQuantityAvailable();
-        this.code = sku.getTaxCode();
-        //TODO: ustawic this.selection
-        this.selection = Collections.emptyList();
-    }
 
 }
