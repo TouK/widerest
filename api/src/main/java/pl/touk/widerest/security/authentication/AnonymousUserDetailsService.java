@@ -1,4 +1,4 @@
-package pl.touk.widerest.security;
+package pl.touk.widerest.security.authentication;
 
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerRole;

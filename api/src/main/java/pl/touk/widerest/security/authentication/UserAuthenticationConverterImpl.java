@@ -1,4 +1,4 @@
-package pl.touk.widerest.security;
+package pl.touk.widerest.security.authentication;
 
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;

@@ -13,14 +13,14 @@
             Czy zezwalasz <span th:text="${authorizationRequest.clientId}"/> pod adresem <span th:text="${authorizationRequest.redirectUri}"/>
             na dostęp do Twoich chronionych zasobów?
         </p>
-        <form class="form-inline" id="confirmationForm" name="confirmationForm" th:action="@{/admin/oauth/authorize}" method="post">
+        <form class="form-inline" id="confirmationForm" name="confirmationForm" th:action="@{/oauth/authorize}" method="post">
             <div class="form-group">
                 <input name="user_oauth_approval" value="true" type="hidden" />
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                 <button class="btn btn-primary" type="submit">Pozwól</button>
             </div>
         </form>
-        <form class="form-inline" id="denyForm" name="confirmationForm" th:action="@{/admin/oauth/authorize}" method="post">
+        <form class="form-inline" id="denyForm" name="confirmationForm" th:action="@{/oauth/authorize}" method="post">
             <div class="form-group">
                 <input name="user_oauth_approval" value="false" type="hidden" />
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>

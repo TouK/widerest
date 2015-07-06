@@ -1,7 +1,6 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>pl.touk.widerest</groupId>
@@ -17,15 +16,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- httpsPort and httpPort are used by embeded jetty server.-->
         <!-- Make sure the following httpsPort matches what's in the runtime-properties file,  -->
-        <httpsPort>8443</httpsPort>
+        <httpsPort>8443</httpsPort> 
         <httpPort>8080</httpPort>
     </properties>
-    <repositories>
-        <repository>
-            <id>maven2</id>
-            <url>http://repo1.maven.org/maven2</url>
-        </repository>
-    </repositories>
     <build>
         <outputDirectory>${webappDirectory}/WEB-INF/classes</outputDirectory>
         <plugins>
@@ -33,7 +26,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>keytool-maven-plugin</artifactId>
             </plugin>
-
+            
             <plugin>
                 <groupId>org.zeroturnaround</groupId>
                 <artifactId>jrebel-maven-plugin</artifactId>
@@ -51,9 +44,9 @@
                     </execution>
                 </executions>
             </plugin>
-
+            
             <!-- Used by embedded Tomcat to move context.xml for JNDI resources -->
-            <!-- Configuration inherited from parent -->
+            <!-- Configuration inherited from parent -->            
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
@@ -107,6 +100,10 @@
             <artifactId>spring-security-oauth2</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security.oauth</groupId>
+            <artifactId>spring-security-oauth2</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-jwt</artifactId>
         </dependency>
@@ -114,6 +111,19 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>html5shiv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>respond</artifactId>
+        </dependency>
+
 
         <dependency>
             <groupId>junit</groupId>
@@ -122,4 +132,3 @@
 
     </dependencies>
 </project>
-

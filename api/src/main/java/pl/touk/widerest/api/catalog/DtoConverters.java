@@ -58,7 +58,7 @@ public class DtoConverters {
         // TODO: Mozliwe ze offer message nie istnieje? Czy trzeba wyrzucic wyjatek?
         dto.setOfferMessage(entity.getPromoMessage());
 
-        
+
         Map<String, String> productAttributesCollect = entity.getProductAttributes().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
         dto.setAttributes(productAttributesCollect);
@@ -73,36 +73,7 @@ public class DtoConverters {
         dto.setSkus(skuDtosCollect);
 
         //SkuDto defaultSku = skuToDto.apply(entity.getDefaultSku());
-        /*Collection<ProductBundle> possibleBundles = Lists.transform(
-                ((VirginSkuImpl) defaultSku).getSkuBundleItems(),
-                new Function<SkuBundleItem, ProductBundle>() {
-                    @Nullable
-                    @Override
-                    public ProductBundle apply(@Nullable SkuBundleItem input) {
-                        return input.getBundle();
-                    }
-                }
-        );
-        possibleBundles = Collections2.filter(
-                possibleBundles,
-                new Predicate<ProductBundle>() {
-                    @Override
-                    public boolean apply(@Nullable ProductBundle input) {
-                        return ((SkuDto) input.getDefaultSku()).getDefaultProductBundle() == null;
-                    }
-                }
-        );
-        dto.setPossibleBundles(Lists.newArrayList(Iterables.transform(
-                possibleBundles,
-                new Function<ProductBundle, Long>() {
-                    @Nullable
-                    @Override
-                    public Long apply(@Nullable ProductBundle input) {
-                        return input.getId();
-                    }
-                }
-        )));
-*/
+        // TODO: znalezc w jakich bundlach jest product
 
         return dto;
     };
