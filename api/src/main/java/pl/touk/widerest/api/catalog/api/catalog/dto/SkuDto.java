@@ -1,16 +1,13 @@
-package pl.touk.widerest.api.catalog;
+package pl.touk.widerest.api.catalog.api.catalog.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.core.catalog.domain.Sku;
+
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 
 @ApiModel
@@ -23,7 +20,7 @@ public class SkuDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
-    private List<ProductOptionSelection> selection;
+    private List<ProductOptionSelectionDto> selection;
 
     @ApiModelProperty
     private String description;
