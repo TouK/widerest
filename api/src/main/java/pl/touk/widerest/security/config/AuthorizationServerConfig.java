@@ -11,31 +11,29 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.A
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
-import org.springframework.security.oauth2.provider.CompositeTokenGranter;
-import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
-import pl.touk.widerest.security.AnonymousTokenGranter;
-import pl.touk.widerest.security.AnonymousUserDetailsService;
-import pl.touk.widerest.security.UserAuthenticationConverterImpl;
+import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
+import pl.touk.widerest.security.authentication.AnonymousUserInterceptor;
+import pl.touk.widerest.security.authentication.UserAuthenticationConverterImpl;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableAuthorizationServer
 @EnableGlobalAuthentication
-public class BackofficeAuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
+public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Resource
     AnonymousUserDetailsService anonymousUserDetailsService;
 
-    @Resource(name = "backofficeAuthenticationManager")
+    @Resource
     AuthenticationManager authenticationManager;
+
+    @Resource
+    private AnonymousUserInterceptor anonymousUserInterceptor;
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) {
@@ -45,16 +43,10 @@ public class BackofficeAuthorizationServerConfig extends AuthorizationServerConf
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints
-                .pathMapping("/oauth/token", "/admin/oauth/token")
-                .pathMapping("/oauth/authorize", "/admin/oauth/authorize")
-                .pathMapping("/oauth/confirm_access", "/admin/oauth/confirm_access")
+                .addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore())
                 .tokenEnhancer(jwtTokenEnhancer())
                 .authenticationManager(authenticationManager);
-
-        List<TokenGranter> granters = new ArrayList<TokenGranter>(Arrays.asList(endpoints.getTokenGranter()));
-        granters.add(new AnonymousTokenGranter(anonymousUserDetailsService, endpoints.getTokenServices(), endpoints.getClientDetailsService(), endpoints.getOAuth2RequestFactory()));
-        endpoints.tokenGranter(new CompositeTokenGranter(granters));
     }
 
     @Override

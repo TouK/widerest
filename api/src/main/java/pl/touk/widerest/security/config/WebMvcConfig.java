@@ -44,13 +44,12 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
     }
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addViewController("/admin/login").setViewName("admin/login");
-        registry.addViewController("/admin/oauth/confirm_access").setViewName("admin/authorize");
-        registry.addViewController("/site/login").setViewName("site/login");
+        registry.addViewController("/login").setViewName("login");
+        registry.addViewController("/oauth/confirm_access").setViewName("authorize");
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**").addResourceLocations("classpath:/css/");
-    }
+        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");    }
 }
