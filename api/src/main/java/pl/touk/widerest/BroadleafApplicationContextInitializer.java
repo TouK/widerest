@@ -1,6 +1,7 @@
 package pl.touk.widerest;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.broadleafcommerce.common.extensibility.context.MergeApplicationContextXmlConfigResource;
@@ -14,29 +15,31 @@ import org.springframework.beans.FatalBeanException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.support.ServletContextResource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbeddedWebApplicationContext {
+public class BroadleafApplicationContextInitializer implements ApplicationContextInitializer<GenericApplicationContext> {
 
-    private static final Log LOG = LogFactory.getLog(BroadleafEmbeddedApplicationContext.class);
+    private static final Log LOG = LogFactory.getLog(BroadleafApplicationContextInitializer.class);
 
     private String patchLocation;
-    private String shutdownBean;
-    private String shutdownMethod;
     private int standardLocationTypes = StandardConfigLocations.SERVICECONTEXTTYPE;
 
-    private final XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(this);
-
-    public BroadleafEmbeddedApplicationContext() {
+    public BroadleafApplicationContextInitializer() {
         setPatchLocation(
                         "classpath:/bl-open-admin-contentClient-applicationContext.xml\n" +
                         "classpath:/bl-open-admin-contentCreator-applicationContext.xml\n" +
@@ -49,20 +52,7 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
 
     }
 
-    /**
-     * Load the bean definitions with the given XmlBeanDefinitionReader.
-     * <p>The lifecycle of the bean factory is handled by the refreshBeanFactory method;
-     * therefore this method is just supposed to load and/or register bean definitions.
-     * <p>Delegates to a ResourcePatternResolver for resolving location patterns
-     * into Resource instances.
-     * @throws org.springframework.beans.BeansException in case of bean registration errors
-     * @throws java.io.IOException if the required XML document isn't found
-     * @see #refreshBeanFactory
-     * @see #getConfigLocations
-     * @see #getResources
-     * @see #getResourcePatternResolver
-     */
-    protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
+    protected void loadBeanDefinitions(XmlBeanDefinitionReader reader, ImportProcessor importProcessor) throws BeansException, IOException {
         String[] broadleafConfigLocations = StandardConfigLocations.retrieveAll(standardLocationTypes);
 
         ArrayList<ResourceInputStream> sources = new ArrayList<ResourceInputStream>(20);
@@ -83,8 +73,7 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
                 InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(patchLocations[i].substring("classpath*:".length(), patchLocations[i].length()));
                 patch = new ResourceInputStream(is, patchLocations[i]);
             } else {
-                Resource resource = getResourceByPath(patchLocations[i]);
-                patch = new ResourceInputStream(resource.getInputStream(), patchLocations[i]);
+                throw new NotImplementedException("Only classpath resources merge implemented");
             }
             if (patch == null || patch.available() <= 0) {
                 patchList.addAll(getResourcesFromPatternResolver(patchLocations[i]));
@@ -93,7 +82,6 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
             }
         }
 
-        ImportProcessor importProcessor = new ImportProcessor(this);
         ResourceInputStream[] patchArray;
         try {
             filteredSources = importProcessor.extract(filteredSources);
@@ -106,7 +94,7 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
         reader.loadBeanDefinitions(resources);
     }
 
-    private List<ResourceInputStream> getResourcesFromPatternResolver(String patchLocation) throws IOException {
+    protected List<ResourceInputStream> getResourcesFromPatternResolver(String patchLocation) throws IOException {
         ResourceInputStream resolverPatch;
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources(patchLocation);
@@ -128,23 +116,6 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
         return resolverList;
     }
 
-    /* (non-Javadoc)
-     * @see org.springframework.context.support.AbstractApplicationContext#doClose()
-     */
-    @Override
-    protected void doClose() {
-        if (getShutdownBean() != null && getShutdownMethod() != null) {
-            try {
-                Object shutdownBean = getBean(getShutdownBean());
-                Method shutdownMethod = shutdownBean.getClass().getMethod(getShutdownMethod(), new Class[]{});
-                shutdownMethod.invoke(shutdownBean, new Object[]{});
-            } catch (Throwable e) {
-                LOG.error("Unable to execute custom shutdown call", e);
-            }
-        }
-        super.doClose();
-    }
-
     /**
      * @return the patchLocation
      */
@@ -159,51 +130,14 @@ public class BroadleafEmbeddedApplicationContext extends AnnotationConfigEmbedde
         this.patchLocation = patchLocation;
     }
 
-    /**
-     * Sets the type of standard Broadleaf context locations that should be merged. For possible values see
-     * {@link StandardConfigLocations#APPCONTEXTTYPE}
-     */
-    public void setStandardLocationTypes(int standardLocationTypes) {
-        this.standardLocationTypes = standardLocationTypes;
-    }
-
-    /**
-     * @return the shutdownBean
-     */
-    public String getShutdownBean() {
-        return shutdownBean;
-    }
-
-    /**
-     * @param shutdownBean the shutdownBean to set
-     */
-    public void setShutdownBean(String shutdownBean) {
-        this.shutdownBean = shutdownBean;
-    }
-
-    /**
-     * @return the shutdownMethod
-     */
-    public String getShutdownMethod() {
-        return shutdownMethod;
-    }
-
-    /**
-     * @param shutdownMethod the shutdownMethod to set
-     */
-    public void setShutdownMethod(String shutdownMethod) {
-        this.shutdownMethod = shutdownMethod;
-    }
-
     @Override
-    protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+    public void initialize(GenericApplicationContext applicationContext) {
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(applicationContext);
+        ImportProcessor importProcessor = new ImportProcessor(applicationContext);
         try {
-            loadBeanDefinitions(reader);
+            loadBeanDefinitions(reader, importProcessor);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        super.postProcessBeanFactory(beanFactory);
     }
-
-
 }
