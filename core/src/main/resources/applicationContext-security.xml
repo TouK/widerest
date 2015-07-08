@@ -24,10 +24,6 @@
 
     <alias name="blTransactionManager" alias="transactionManager"/>
 
-    <mvc:annotation-driven />
-
     <bean id="backofficeUserDetailsService" class="org.broadleafcommerce.openadmin.server.security.service.AdminUserDetailsServiceImpl"/>
-
-    <context:component-scan base-package="pl.touk.widerest" scoped-proxy="targetClass"/>
 
 </beans>
