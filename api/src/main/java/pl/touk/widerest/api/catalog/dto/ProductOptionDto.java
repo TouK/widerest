@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.api.catalog.dto;
+package pl.touk.widerest.api.catalog.dto;
 
 import com.wordnik.swagger.annotations.ApiModel;
 import lombok.Data;

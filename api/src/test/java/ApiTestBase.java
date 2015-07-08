@@ -1,5 +1,4 @@
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;

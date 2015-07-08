@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.api.catalog.controllers;
+package pl.touk.widerest.api.catalog.controllers;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 import pl.touk.widerest.api.catalog.DtoConverters;
-import pl.touk.widerest.api.catalog.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -52,7 +52,7 @@ public class CategoryController {
 
         if(categoryDto != null) {
 
-            catalogService.saveCategory(DtoConverters.dtoToCategoryEntity.apply(categoryDto));
+            catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
         }
     }
 
@@ -69,8 +69,7 @@ public class CategoryController {
     /* DELETE /categories/id */
     /* TODO! */
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    @ApiOperation(value = "Delete an existing category", response = Void.class)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE) @ApiOperation(value = "Delete an existing category", response = Void.class)
     public void removeOneCategoryById(@PathVariable(value = "id") Long id) {
 
         Category categoryToDelete = catalogService.findCategoryById(id);
@@ -90,7 +89,7 @@ public class CategoryController {
         Category categoryToChange = catalogService.findCategoryById(id);
 
         if(categoryToChange != null) {
-            catalogService.saveCategory(DtoConverters.dtoToCategoryEntity.apply(categoryDto));
+            catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
         } else {
             throw new ResourceNotFoundException("Cannot change category with id " + id + ". Not Found");
         }
@@ -140,13 +139,8 @@ public class CategoryController {
     @RequestMapping(value = "/{id}/products/{productId}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single product details from a category", response = ProductDto.class)
     public ProductDto readOneProductFromCategory(@PathVariable(value="id") Long categoryId, @PathVariable(value = "productId") Long productId) {
-        Category category = catalogService.findCategoryById(categoryId);
 
-        if (category == null) {
-            throw new ResourceNotFoundException("Cannot find category with id: " + categoryId);
-        }
-
-        Product product = category.getAllProducts().stream()
+        Product product = this.getProductsFromCategoryId(categoryId).stream()
                 .filter(x -> x.getId() == productId)
                 .limit(2)
                 .collect(Collectors.toList()).get(0);
@@ -173,10 +167,10 @@ public class CategoryController {
 
         if(product == null) {
             throw new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId);
+        } else {
+            /* TODO:  Check if products category and categoryId match */
+            catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
         }
-
-        /* TODO:  Check if products category and categoryId match */
-        catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
     }
 
     /* DELETE /categories/{id}/products/{productId} */

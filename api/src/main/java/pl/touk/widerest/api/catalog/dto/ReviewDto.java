@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.api.catalog.dto;
+package pl.touk.widerest.api.catalog.dto;
 
 /**
  * Created by mst on 06.07.15.

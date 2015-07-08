@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.api.catalog.dto;
+package pl.touk.widerest.api.catalog.dto;
 
 import com.wordnik.swagger.annotations.ApiModel;
 import lombok.Data;
@@ -10,9 +10,9 @@ import lombok.experimental.Builder;
 @ApiModel
 @Data
 @Builder
-public class ProductOptionSelectionDto {
+public class BundleItemDto {
 
-    private String optionName;
+    private long quantity;
 
-    private String value;
+    private long productId;
 }

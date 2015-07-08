@@ -1,11 +1,13 @@
-package pl.touk.widerest.api.catalog.api.catalog.dto;
+package pl.touk.widerest.api.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.springframework.hateoas.ResourceSupport;
 
 import java.util.Date;
 import java.util.List;
@@ -24,9 +26,9 @@ import java.util.Map;
         @JsonSubTypes.Type(value = ProductDto.class, name = "product"),
         @JsonSubTypes.Type(value = BundleDto.class, name = "bundle")})
 @Data
-public class ProductDto {
-    @ApiModelProperty(required = true)
-    private Long id;
+public class ProductDto extends ResourceSupport {
+    @JsonIgnore
+    private Long productId;
 
     @ApiModelProperty(required = true)
     private String category;

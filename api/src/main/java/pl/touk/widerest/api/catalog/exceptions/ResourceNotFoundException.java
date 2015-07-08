@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.api.catalog.exceptions;
+package pl.touk.widerest.api.catalog.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

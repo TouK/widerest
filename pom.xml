@@ -365,7 +365,7 @@
                 <groupId>org.springframework.security.oauth</groupId>
                 <artifactId>spring-security-oauth2</artifactId>
                 <!-- https://github.com/spring-projects/spring-security-oauth/issues/422 -->
-                <version>2.0.8.BUILD-SNAPSHOT</version>
+                <version>2.0.7.RELEASE</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.springframework</groupId>
