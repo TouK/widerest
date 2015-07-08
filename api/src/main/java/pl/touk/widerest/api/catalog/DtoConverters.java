@@ -3,10 +3,12 @@ package pl.touk.widerest.api.catalog;
 
 import com.sun.jndi.cosnaming.IiopUrl;
 import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
+import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.controllers.SkuController;
@@ -200,5 +202,14 @@ public class DtoConverters {
                 .build();
 
         return addressDto;
+    };
+
+    public static Function<Order, OrderDto> orderEntityToDto = entity -> {
+        OrderDto orderDto = OrderDto.builder()
+                .orderId(entity.getId())
+                .orderNumber(entity.getOrderNumber())
+                .build();
+
+        return orderDto;
     };
 }

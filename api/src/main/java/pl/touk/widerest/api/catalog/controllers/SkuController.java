@@ -29,7 +29,7 @@ public class SkuController {
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
-    @ApiOperation(value = "Get a flat list of SKUs", response = List.class)
+    @ApiOperation(value = "Get a flat list of all SKUs", response = List.class)
     public ResponseEntity<List<SkuDto>> getAllSkus() {
         return new ResponseEntity<> (
                 catalogService.findAllSkus().stream().map(DtoConverters.skuEntityToDto).collect(Collectors.toList()),

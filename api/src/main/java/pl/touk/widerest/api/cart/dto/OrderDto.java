@@ -9,6 +9,8 @@ import org.broadleafcommerce.profile.core.domain.Address;
 /**
  * Created by mst on 07.07.15.
  */
+
+//TODO: polaczyc z CartDto itp
 @Data
 @Builder
 @ApiModel
@@ -22,7 +24,9 @@ public class OrderDto {
 
     private String status;
 
-
+    @ApiModelProperty(required = true)
     private AddressDto shippingAddress;
+    @ApiModelProperty(required = true)
+    private CustomerDto customer;
 
 }
