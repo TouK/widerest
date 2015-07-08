@@ -1,8 +1,12 @@
-package pl.touk.widerest.security.config;
+package pl.touk.widerest.swagger;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -20,7 +24,13 @@ import static springfox.documentation.builders.PathSelectors.regex;
 
 @Configuration
 @EnableSwagger2
-public class SwaggerConfig {
+@EnableWebMvc
+public class SwaggerConfig  extends WebMvcConfigurerAdapter {
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("redirect:/webjars/swagger-ui/2.1.8-M1/index.html?url=/v2/api-docs");
+    }
 
     @Bean
     public Docket swaggerSpringMvcPlugin() {
