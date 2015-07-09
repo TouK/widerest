@@ -1,8 +1,7 @@
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.BroadleafApplicationContextInitializer;
@@ -10,8 +9,7 @@ import pl.touk.widerest.BroadleafApplicationContextInitializer;
 import javax.annotation.Resource;
 
 @SpringApplicationConfiguration(classes = Application.class, initializers = BroadleafApplicationContextInitializer.class)
-@WebAppConfiguration
-@IntegrationTest({
+@WebIntegrationTest({
         "server.port:0"
 })
 public abstract class ApiTestBase {

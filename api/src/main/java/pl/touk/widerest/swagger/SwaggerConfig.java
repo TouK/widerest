@@ -77,13 +77,13 @@ public class SwaggerConfig {
 
     private ApiInfo apiInfo() {
         ApiInfo apiInfo = new ApiInfo(
-                "Demo API",
-                "API for Demo",
-                "version",
-                "Demo API terms of service",
-                "demo@gmail.com",
-                "Demo API Licence Type",
-                "Demo API License URL"
+                "Widerest",
+                "RESTful API for Broadleaf Commerce - an open source eCommerce platform based on the Spring Framework",
+                "0.0.1",
+                "Widerest terms of service",
+                "info@touk.pl",
+                "Widerest Licence",
+                "license.html"
         );
         return apiInfo;
     }
