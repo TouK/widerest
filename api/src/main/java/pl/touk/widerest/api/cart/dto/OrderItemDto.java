@@ -15,7 +15,7 @@ import java.util.Map;
 @Data
 @Builder
 @ApiModel
-public class CartItemDto {
+public class OrderItemDto {
     @ApiModelProperty(required = true)
     private long itemId;
     @ApiModelProperty(required = true)
@@ -38,5 +38,12 @@ public class CartItemDto {
     private String description;
 
 
+
+
+    protected BigDecimal salePrice;
+
+    protected BigDecimal retailPrice;
+
+    // TODO: Bundles and all that other bs
 
 }

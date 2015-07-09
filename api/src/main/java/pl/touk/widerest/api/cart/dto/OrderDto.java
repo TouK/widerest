@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.experimental.Builder;
 import org.broadleafcommerce.profile.core.domain.Address;
 
+import java.util.List;
+
 /**
  * Created by mst on 07.07.15.
  */
@@ -28,5 +30,8 @@ public class OrderDto {
     private AddressDto shippingAddress;
     @ApiModelProperty(required = true)
     private CustomerDto customer;
+
+
+    private List<OrderItemDto> orderItems;
 
 }

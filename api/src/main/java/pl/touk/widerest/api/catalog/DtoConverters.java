@@ -4,11 +4,15 @@ package pl.touk.widerest.api.catalog;
 import com.sun.jndi.cosnaming.IiopUrl;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderImpl;
+import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.domain.OrderItemImpl;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.controllers.SkuController;
@@ -190,6 +194,7 @@ public class DtoConverters {
         return customerDto;
     };
 
+
     public static Function<Address, AddressDto> addressEntityToDto = entity -> {
         AddressDto addressDto = AddressDto.builder()
                 .addressLine1(entity.getAddressLine1())
@@ -211,5 +216,13 @@ public class DtoConverters {
                 .build();
 
         return orderDto;
+    };
+
+    public static Function<OrderItemDto, OrderItem> orderDtoToEntity = dto -> {
+        OrderItem orderItemEntity = new OrderItemImpl();
+        orderItemEntity.setName(dto.getProductName());
+        //TODO: everything ;
+        return orderItemEntity;
+
     };
 }

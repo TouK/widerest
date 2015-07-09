@@ -15,7 +15,7 @@ import java.util.List;
 @ApiModel("cart")
 public class CartDto {
 
-    private final List<CartItemDto> items;
+    private final List<OrderItemDto> items;
     private BigDecimal totalPrice;
 
     private List<CartAttributeDto> cartAttributeDtos;
