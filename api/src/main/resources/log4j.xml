@@ -10,10 +10,11 @@
 
     <logger name="org.broadleafcommerce"> <level value="warn" /> </logger>
     <logger name="org.hibernate"> <level value="warn" /> </logger>
-    <logger name="org.springframework"> <level value="warn" /> </logger>
+    <logger name="org.springframework"> <level value="info" /> </logger>
+    <logger name="pl.touk"> <level value="debug" /> </logger>
 
     <root>
-        <priority value="info" />
+        <priority value="warn" />
         <appender-ref ref="console" />
     </root>
 
