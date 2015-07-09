@@ -4,11 +4,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import springfox.documentation.builders.LoginEndpointBuilder;
-import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.AuthorizationScope;
@@ -66,9 +61,9 @@ public class SwaggerConfig {
     }
 
     private Predicate<String> paths() {
-        return or(
-                regex("/catalog/.*")
-        );
+        //return or(regex("/catalog/.*"));
+
+        return or (regex("/orders/.*"));
     }
 
     @Bean

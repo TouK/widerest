@@ -1,7 +1,7 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/catalog/categories")
-@Api(value = "/catalog/categories", description = "Category and product catalog browsing")
+@Api(value = "/catalog/categories", description = "Category catalog")
 public class CategoryController {
 
     @Resource(name="blCatalogService")
@@ -37,7 +37,7 @@ public class CategoryController {
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
-    @ApiOperation(value = "Get a flat list of all categories", response = List.class)
+    @ApiOperation(value = "Get a list of all categories", response = List.class)
     public ResponseEntity<List<CategoryDto>> readAllCategories() {
         return new ResponseEntity<>(
                 catalogService.findAllCategories().stream().map(DtoConverters.categoryEntityToDto).collect(Collectors.toList()),
@@ -45,7 +45,7 @@ public class CategoryController {
     }
 
     /* POST /categories */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(value = "Add a new category", response = Void.class)
     public void saveOneCategory(@RequestBody CategoryDto categoryDto) {

@@ -1,7 +1,7 @@
 package pl.touk.widerest.api.cart.controllers;
 
-import com.wordnik.swagger.annotations.ApiOperation;
-import org.broadleafcommerce.profile.core.domain.CustomerAddress;
+
+import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

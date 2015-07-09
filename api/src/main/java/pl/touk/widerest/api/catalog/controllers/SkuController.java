@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import com.wordnik.swagger.annotations.ApiOperation;
+
+import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.http.HttpStatus;

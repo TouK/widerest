@@ -1,5 +1,6 @@
 package pl.touk.widerest.api.catalog.dto;
 
+
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
 import lombok.experimental.Builder;

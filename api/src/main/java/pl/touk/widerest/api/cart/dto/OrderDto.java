@@ -1,10 +1,11 @@
 package pl.touk.widerest.api.cart.dto;
 
-import com.wordnik.swagger.annotations.ApiModel;
-import com.wordnik.swagger.annotations.ApiModelProperty;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.profile.core.domain.Address;
+
 
 import java.util.List;
 

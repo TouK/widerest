@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.dto;
 
-import com.wordnik.swagger.annotations.ApiModel;
+
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 /**

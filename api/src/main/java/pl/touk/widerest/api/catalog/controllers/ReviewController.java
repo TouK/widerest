@@ -1,6 +1,6 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import com.wordnik.swagger.annotations.Api;
+import io.swagger.annotations.Api;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
