@@ -5,7 +5,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.OrderService;
-import org.broadleafcommerce.core.order.service.OrderServiceImpl;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Customer;
@@ -37,8 +36,8 @@ import java.util.stream.Collectors;
 
 //TODO: Aquire and release locks?!
 @RestController
-@RequestMapping("/orders")
-@Api(value = "/orders", description = "Order management")
+@RequestMapping("/catalog/orders")
+@Api(value = "/catalog/orders", description = "Order management")
 public class OrderController /*extends AbstractCartController */{
 
     @Resource(name = "blOrderService")
@@ -54,6 +53,8 @@ public class OrderController /*extends AbstractCartController */{
     @ApiOperation(value = "Get a list of customers' orders", response = List.class)
     public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
+        System.out.println("Authorization, name: " + customerUserDetails.getUsername() + " id: " + customerUserDetails.getId());
+
         /* If the current user has admin rights, list all the orders */
         if(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN"))) {
 
@@ -61,7 +62,7 @@ public class OrderController /*extends AbstractCartController */{
             Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
             if (currentCustomer == null) {
-                throw new CustomerNotFoundException();
+                throw new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId());
             }
 
             return new ResponseEntity<>(

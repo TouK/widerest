@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
 
 import java.util.Date;
@@ -18,6 +21,7 @@ import java.util.Map;
  * Created by mst on 06.07.15.
  */
 @ApiModel
+/*
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
@@ -26,7 +30,11 @@ import java.util.Map;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ProductDto.class, name = "product"),
         @JsonSubTypes.Type(value = BundleDto.class, name = "bundle")})
+        */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductDto extends ResourceSupport {
     @JsonIgnore
     private Long productId;

@@ -75,6 +75,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .apply(new CustomFormLoginConfigurer<HttpSecurity>()).loginPage("/login").permitAll().and()
                 .logout().permitAll().and()
                 .anonymous()
+                .and().csrf().disable();
         ;
     }
 

@@ -7,13 +7,13 @@ import lombok.Data;
 import lombok.experimental.Builder;
 
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * Created by mst on 07.07.15.
  */
 
-//TODO: polaczyc z CartDto itp
 @Data
 @Builder
 @ApiModel
@@ -24,7 +24,8 @@ public class OrderDto {
     private String orderNumber;
     @ApiModelProperty(required = true)
     private String paymentUrl;
-
+    /* ???? */
+    @ApiModelProperty(required = true)
     private String status;
 
     @ApiModelProperty(required = true)
@@ -32,7 +33,12 @@ public class OrderDto {
     @ApiModelProperty(required = true)
     private CustomerDto customer;
 
-
+    @ApiModelProperty
     private List<OrderItemDto> orderItems;
-
+    @ApiModelProperty
+    private BigDecimal totalPrice;
+    @ApiModelProperty
+    private List<CartAttributeDto> cartAttributeDtos;
+    @ApiModelProperty
+    private List<PaymentInfoDto> paymentInfoDto;
 }

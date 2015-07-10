@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -25,7 +26,6 @@ public class SkuController {
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
-
 
     @Transactional
     @PreAuthorize("permitAll")
@@ -43,20 +43,50 @@ public class SkuController {
     @ApiOperation(value = "Add a new SKU", response = Void.class)
     public void saveOneSku(@RequestBody SkuDto skuDto) {
         if(skuDto != null) {
-            Sku newSkuEntity = catalogService.createSku();
-            
-
+            catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
         }
     }
 
 
-
-
     @Transactional
+    @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public ResponseEntity<SkuDto> getSkusById(@PathVariable (value = "id") Long skuId) {
-        return new ResponseEntity<> (DtoConverters.skuEntityToDto.apply(catalogService.findSkuById(skuId)), HttpStatus.OK);
+    public SkuDto getSkusById(@PathVariable (value = "id") Long skuId) {
+        return DtoConverters.skuEntityToDto.apply(catalogService.findSkuById(skuId));
     }
 
 
+    @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    @ApiOperation(value = "Delete a single SKU", response = Void.class)
+    public void deleteOneSkuById(@PathVariable (value = "id") Long skuId) {
+
+        Sku skuToDelete = catalogService.findSkuById(skuId);
+
+        if(skuToDelete == null) {
+            throw new ResourceNotFoundException("Sku of ID: " + skuId + ". Not found");
+        }
+
+        catalogService.removeSku(skuToDelete);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    @ApiOperation(value = "Update a single SkU", response = Void.class)
+    public void updateOneSkuById(
+            @PathVariable (value = "id") Long skuId,
+            @RequestBody SkuDto skuDto) {
+
+        Sku sku = catalogService.findSkuById(skuId);
+
+        if(sku == null) {
+            throw new ResourceNotFoundException("Cannot find SKU of ID: " + skuId);
+        }
+
+        skuDto.setId(skuId);
+
+        catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
+    }
 }

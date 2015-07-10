@@ -7,8 +7,14 @@ import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.domain.OrderItemImpl;
+import org.broadleafcommerce.core.rating.domain.RatingDetail;
+import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
+import org.broadleafcommerce.core.rating.domain.ReviewDetail;
+import org.broadleafcommerce.core.rating.domain.ReviewDetailImpl;
 import org.broadleafcommerce.profile.core.domain.Address;
+import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
+import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
@@ -16,9 +22,7 @@ import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.controllers.SkuController;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.*;
 
 
 import java.util.List;
@@ -31,13 +35,6 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 public class DtoConverters {
-    public static Function<ProductAttribute, String> getProductAttributeName = input -> {
-        return input.getValue();
-    };
-
-    public static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
-        return input.getAttributeValue();
-    };
 
     /********************************  CATEGORY   ********************************/
 
@@ -60,6 +57,8 @@ public class DtoConverters {
 
         Category categoryEntity = new CategoryImpl();
 
+        categoryEntity.setId(dto.getCategoryId())
+        ;
         categoryEntity.setName(dto.getName());
 
         if(dto.getDescription() != null) {
@@ -74,24 +73,6 @@ public class DtoConverters {
         return categoryEntity;
     };
     /********************************  CATEGORY   ********************************/
-
-
-    public static Function<ProductOptionXref, ProductOption> productOptionXrefToDto = input -> {
-        org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
-        //dto.setName(productOption.getAttributeName());
-        List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
-        List<String> collectAllowedValues = productOptionValues.stream().map(getProductOptionValueName).collect(toList());
-        //dto.setAllowedValues(collectAllowedValues);
-
-        return null;
-
-        //return new ProductOptionImpl(productOption.getAttributeName(), collectAllowedValues);
-    };
-
-    public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
-        /* TMP! */
-        return new ProductImpl();
-    };
 
     /********************************  SKU   ********************************/
 
@@ -118,6 +99,33 @@ public class DtoConverters {
     };
 
     /********************************  SKU   ********************************/
+
+    /********************************  PRODUCT   ********************************/
+
+    public static Function<ProductAttribute, String> getProductAttributeName = input -> {
+        return input.getValue();
+    };
+
+    public static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
+        return input.getAttributeValue();
+    };
+
+    public static Function<ProductOptionXref, ProductOption> productOptionXrefToDto = input -> {
+        org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
+        //dto.setName(productOption.getAttributeName());
+        List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
+        List<String> collectAllowedValues = productOptionValues.stream().map(getProductOptionValueName).collect(toList());
+        //dto.setAllowedValues(collectAllowedValues);
+
+        return null;
+
+        //return new ProductOptionImpl(productOption.getAttributeName(), collectAllowedValues);
+    };
+
+    public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
+        /* TMP! */
+        return new ProductImpl();
+    };
 
     public static Function<Product, ProductDto> productEntityToDto
             = entity -> {
@@ -178,7 +186,9 @@ public class DtoConverters {
 
         return dto;
     };
+    /********************************  PRODUCT   ********************************/
 
+    /********************************  CUSTOMER   ********************************/
     public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
 
         CustomerDto customerDto = CustomerDto.builder()
@@ -186,7 +196,6 @@ public class DtoConverters {
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
                 .challengeAnswer(entity.getChallengeAnswer())
-                .password(entity.getPassword())
                 .registered(entity.isRegistered())
                 .receiveEmail(entity.isReceiveEmail())
                 .build();
@@ -194,6 +203,23 @@ public class DtoConverters {
         return customerDto;
     };
 
+    public static Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
+
+        Customer customerEntity = new CustomerImpl();
+
+        customerEntity.setId(dto.getId());
+        customerEntity.setFirstName(dto.getFirstName());
+        customerEntity.setLastName(dto.getLastName());
+        customerEntity.setChallengeAnswer(dto.getChallengeAnswer());
+        customerEntity.setRegistered(dto.getRegistered());
+        customerEntity.setReceiveEmail(dto.getReceiveEmail());
+
+        return customerEntity;
+    };
+
+    /********************************  CUSTOMER   ********************************/
+
+    /********************************  ADDRESS   ********************************/
 
     public static Function<Address, AddressDto> addressEntityToDto = entity -> {
         AddressDto addressDto = AddressDto.builder()
@@ -209,6 +235,23 @@ public class DtoConverters {
         return addressDto;
     };
 
+    public static Function<AddressDto, Address> addressDtoToEntity = dto -> {
+        Address addressEntity = new AddressImpl();
+
+        addressEntity.setAddressLine1(dto.getAddressLine1());
+        addressEntity.setAddressLine2(dto.getAddressLine2());
+        addressEntity.setAddressLine3(dto.getAddressLine3());
+        addressEntity.setCity(dto.getCity());
+        addressEntity.setPostalCode(dto.getPostalCode());
+        addressEntity.setCompanyName(dto.getCompanyName());
+        addressEntity.setCounty(dto.getCounty());
+
+        return addressEntity;
+    };
+
+    /********************************  ADDRESS   ********************************/
+
+    /********************************  ORDER   ********************************/
     public static Function<Order, OrderDto> orderEntityToDto = entity -> {
         OrderDto orderDto = OrderDto.builder()
                 .orderId(entity.getId())
@@ -225,4 +268,43 @@ public class DtoConverters {
         return orderItemEntity;
 
     };
+    /********************************  ORDER   ********************************/
+
+    /********************************  REVIEW   ********************************/
+    public static Function<ReviewDetail, ReviewDto> reviewEntityToDto = entity -> {
+        ReviewDto reviewDto = ReviewDto.builder().reviewText(entity.getReviewText()).build();
+
+        return reviewDto;
+    };
+
+    public static Function<ReviewDto, ReviewDetail> reviewDtoToEntity = dto -> {
+        ReviewDetail reviewDetailEntity = new ReviewDetailImpl();
+
+        reviewDetailEntity.setReviewText(dto.getReviewText());
+
+        return reviewDetailEntity;
+    };
+    /********************************  REVIEW   ********************************/
+
+    /********************************  RATING   ********************************/
+    public static Function<RatingDetail, RatingDto> ratingEntityToDto = entity -> {
+        RatingDto ratingDto = RatingDto.builder()
+                .rating(entity.getRating())
+                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+                .build();
+
+        return ratingDto;
+    };
+
+    public static Function<RatingDto, RatingDetail> ratingDtoToEntity = dto -> {
+        RatingDetail ratingDetailEntity = new RatingDetailImpl();
+
+        ratingDetailEntity.setRating(dto.getRating());
+        ratingDetailEntity.setCustomer(DtoConverters.customerDtoToEntity.apply(dto.getCustomer()));
+
+        return ratingDetailEntity;
+    };
+    /********************************  RATING   ********************************/
+
+
 }

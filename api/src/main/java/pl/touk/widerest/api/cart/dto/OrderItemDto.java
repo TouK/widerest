@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
+import org.broadleafcommerce.common.money.Money;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 
 import java.math.BigDecimal;
@@ -38,12 +39,10 @@ public class OrderItemDto {
     @ApiModelProperty
     private String description;
 
-
-
-
-    protected BigDecimal salePrice;
-
-    protected BigDecimal retailPrice;
+    @ApiModelProperty(required = true)
+    protected Money salePrice;
+    @ApiModelProperty
+    protected Money retailPrice;
 
     // TODO: Bundles and all that other bs
 

@@ -1,10 +1,12 @@
 package pl.touk.widerest.api.catalog.controllers;
 
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,12 +16,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
+import javax.xml.ws.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,19 +49,26 @@ public class CategoryController {
     }
 
     /* POST /categories */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.POST)
-    @ApiOperation(value = "Add a new category", response = Void.class)
-    public void saveOneCategory(@RequestBody CategoryDto categoryDto) {
+    @ApiOperation(value = "Add a new category", response = ResponseEntity.class)
+    public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
 
-        if(categoryDto != null) {
+        Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
 
-            catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
-        }
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+              .path("/{id}")
+              .buildAndExpand(createdCategoryEntity.getId())
+              .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /categories/{id} */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single category details", response = CategoryDto.class)
     public CategoryDto readOneCategoryById(@PathVariable(value="id") Long id) {
@@ -69,20 +80,27 @@ public class CategoryController {
     /* DELETE /categories/id */
     /* TODO! */
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE) @ApiOperation(value = "Delete an existing category", response = Void.class)
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    @ApiOperation(value = "Delete an existing category", response = Void.class)
     public void removeOneCategoryById(@PathVariable(value = "id") Long id) {
 
         Category categoryToDelete = catalogService.findCategoryById(id);
 
-
-        if(categoryToDelete != null) {
-            catalogService.removeCategory(categoryToDelete);
+        if(categoryToDelete == null) {
+            throw new ResourceNotFoundException("Cannot delete category with ID: " + id + ". Category does not exist");
         }
+
+        System.out.println("Trying to delete: " + categoryToDelete.getName() + " desc: " + categoryToDelete.getDescription());
+
+        catalogService.removeCategory(categoryToDelete);
+
     }
 
     /* PUT /categories/{id} */
     /* TODO! */
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     @ApiOperation(value = "Update an existing category details", response = Void.class)
     public void changeOneCategory(@PathVariable(value = "id") Long id, @RequestBody CategoryDto categoryDto) {
@@ -115,11 +133,12 @@ public class CategoryController {
     }
 
     /* POST /categories/{id}/products */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{id}/products", method = RequestMethod.POST)
     @ApiOperation(value = "Add a new product in a category", response = Void.class)
     public void saveOneProductInCategory(@PathVariable(value="id") Long categoryId, @RequestBody ProductDto productDto) {
         Category category = catalogService.findCategoryById(categoryId);
+
 
         if (category == null) {
             throw new ResourceNotFoundException("Cannot find category with id: " + categoryId);

@@ -2,9 +2,11 @@ package pl.touk.widerest.api.cart.dto;
 
 
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -14,11 +16,19 @@ import java.util.Map;
 @Builder
 @ApiModel
 public class PaymentInfoDto {
-    private String paymentUrl;
-
-    private Map<String, String> parameters;
 
     private Long orderId;
+    @ApiModelProperty
+    protected AddressDto billingAddress;
+
+    /* TODO: Currency - Money */
+    @ApiModelProperty
+    protected BigDecimal amount;
+
+    @ApiModelProperty
+    protected String referenceNumber;
+    @ApiModelProperty
+    protected String type;
 
 
 }
