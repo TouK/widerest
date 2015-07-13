@@ -18,6 +18,7 @@ import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.controllers.SkuController;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 
@@ -76,16 +77,17 @@ public class DtoConverters {
     /********************************  CATEGORY   ********************************/
 
 
-    public static Function<ProductOptionXref, ProductOption> productOptionXrefToDto = input -> {
+    public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
         org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
+
         //dto.setName(productOption.getAttributeName());
         List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
         List<String> collectAllowedValues = productOptionValues.stream().map(getProductOptionValueName).collect(toList());
         //dto.setAllowedValues(collectAllowedValues);
+        ProductOptionDto dto = new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
+        return dto;
+        //return null;
 
-        return null;
-
-        //return new ProductOptionImpl(productOption.getAttributeName(), collectAllowedValues);
     };
 
     public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
@@ -149,16 +151,15 @@ public class DtoConverters {
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
         dto.setAttributes(productAttributesCollect);
 
-        //List<ProductOptionDto> productOptionsCollect = entity.getProductOptionXrefs().stream().map(productOptionXrefToDto)
-        //        .collect(toList());
-        //dto.setOptions(productOptionsCollect);
+        List<ProductOptionDto> productOptionsCollect = entity.getProductOptionXrefs().stream().map(productOptionXrefToDto)
+                .collect(toList());
+        dto.setOptions(productOptionsCollect);
 
-        // TODO: czy potrzeba cos inaczej ustawic, jako ze jest defaultCategory? - TAK?, na poczatek listy domyslny
+        dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
         List<SkuDto> skuDtosCollect = entity.getAllSkus().stream()
                 .map(skuEntityToDto).collect(toList());
         dto.setSkus(skuDtosCollect);
 
-        //SkuDto defaultSku = skuToDto.apply(entity.getDefaultSku());
         // TODO: znalezc w jakich bundlach jest product
 
 

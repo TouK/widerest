@@ -1,6 +1,8 @@
 package pl.touk.widerest.api.catalog.dto;
 
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Builder;
 
@@ -12,8 +14,12 @@ import java.util.List;
 @ApiModel
 @Data
 @Builder
+@AllArgsConstructor
 public class ProductOptionDto {
 
+    @ApiModelProperty
     private String name;
+
+    @ApiModelProperty
     private List<String> allowedValues;
 }
