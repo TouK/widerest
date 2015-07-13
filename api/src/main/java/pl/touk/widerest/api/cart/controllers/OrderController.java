@@ -25,6 +25,7 @@ import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
@@ -57,7 +58,7 @@ public class OrderController {
 
     /* GET /orders */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(value = "Get a list of customers' orders", response = List.class)
     public ResponseEntity<List<OrderDto>> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
@@ -66,7 +67,20 @@ public class OrderController {
         /* If the current user has admin rights, list all the orders */
         if(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN"))) {
 
+        } else if(customerUserDetails.getUsername().equals("anonymous")) {
+            /* Anonymous user! Anonymous users are non-persistent */
+            Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+
+
+            if (currentCustomer == null) {
+                throw new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId());
+            }
+
+            return new ResponseEntity<>(
+                    orderService.findOrdersForCustomer(currentCustomer).stream().map(DtoConverters.orderEntityToDto).collect(Collectors.toList()),
+                    HttpStatus.OK);
         } else {
+            /* A regular, already registered customer */
             Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
             if (currentCustomer == null) {
@@ -342,10 +356,12 @@ public class OrderController {
 
     }
 
+
+    /* GET /orders/{id}/payments */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/payments", method = RequestMethod.GET)
-    @ApiOperation(value = "Update an item in a cart", response = List.class)
-    public List<OrderPayment> getPaymentsByOrderId(
+    @ApiOperation(value = "Get a list of available payments for an order", response = List.class)
+    public List<OrderPaymentDto> getPaymentsByOrderId(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
 
@@ -361,9 +377,6 @@ public class OrderController {
             throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
         }
 
-        return cart.getPayments();
+        return cart.getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList());
     }
-
-
-
 }

@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.catalog;
 
 
+import org.broadleafcommerce.common.locale.domain.Locale;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -76,19 +77,23 @@ public class DtoConverters {
 
     public static Function<Sku, SkuDto> skuEntityToDto = entity -> {
         SkuDto dto = SkuDto.builder()
-                .id(entity.getId())
+                .skuId(entity.getId())
                 .description(entity.getDescription())
                 //.price(entity.getPrice().getAmount())
                 .quantityAvailable(entity.getQuantityAvailable())
-                .code(entity.getTaxCode()).build();
+                .code(entity.getTaxCode())
+                .build();
+
         //TODO: selection + HATEOAS links
+
+
         return dto;
     };
 
     public static Function<SkuDto, Sku> skuDtoToEntity = dto -> {
         Sku skuEntity = new SkuImpl();
 
-        skuEntity.setId(dto.getId());
+        skuEntity.setId(dto.getSkuId());
         skuEntity.setDescription(dto.getDescription());
         skuEntity.setTaxCode(dto.getCode());
         skuEntity.setQuantityAvailable(dto.getQuantityAvailable());
@@ -119,6 +124,10 @@ public class DtoConverters {
 
         //return new ProductOptionImpl(productOption.getAttributeName(), collectAllowedValues);
     };
+
+
+
+
 
     public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
         /* TMP! */
@@ -199,9 +208,7 @@ public class DtoConverters {
                 .challengeQuestion(entity.getChallengeQuestion().getQuestion())
                 .deactivaed(entity.isDeactivated())
                 .passwordChangeRequired(entity.isPasswordChangeRequired())
-                //.addresses(entity.getCustomerAddresses().stream().map(DtoConverters.addressEntityToDto).collect(Collectors.toList()))
-
-
+                .addresses(entity.getCustomerAddresses().stream().map(DtoConverters.customerAddressEntityToDto).collect(Collectors.toList()))
                 .username(entity.getUsername())
                 .build();
 
@@ -218,6 +225,8 @@ public class DtoConverters {
         customerEntity.setChallengeAnswer(dto.getChallengeAnswer());
         customerEntity.setRegistered(dto.getRegistered());
         customerEntity.setReceiveEmail(dto.getReceiveEmail());
+        customerEntity.setUsername(dto.getUsername());
+        customerEntity.setCustomerAddresses(dto.getAddresses().stream().map(DtoConverters.customerAddressDtoToEntity).collect(Collectors.toList()));
 
         return customerEntity;
     };
@@ -276,6 +285,7 @@ public class DtoConverters {
         customerAddress.setId(dto.getId());
         customerAddress.setAddress(DtoConverters.addressDtoToEntity.apply(dto.getAddressDto()));
         customerAddress.setAddressName(dto.getAddressName());
+
         return customerAddress;
     };
 

@@ -9,6 +9,7 @@ import lombok.experimental.Builder;
 import org.broadleafcommerce.profile.core.domain.Address;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by mst on 07.07.15.
@@ -34,7 +35,10 @@ public class CustomerDto {
 
     private Boolean passwordChangeRequired = false;
 
-    // Locale ?
+    @ApiModelProperty
+    private Locale locale;
+
+
     @ApiModelProperty
     private Boolean registered = false;
     @ApiModelProperty
@@ -49,6 +53,7 @@ public class CustomerDto {
     @ApiModelProperty
     private AddressDto residenceAddress;
 
-    private List<AddressDto> addresses;
+    private List<CustomerAddressDto> addresses;
+
 
 }

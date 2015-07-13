@@ -85,7 +85,7 @@ public class SkuController {
             throw new ResourceNotFoundException("Cannot find SKU of ID: " + skuId);
         }
 
-        skuDto.setId(skuId);
+        skuDto.setSkuId(skuId);
 
         catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
     }
