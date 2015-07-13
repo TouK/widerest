@@ -3,6 +3,7 @@ package pl.touk.widerest.api.catalog;
 
 import com.sun.jndi.cosnaming.IiopUrl;
 import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
@@ -22,6 +23,7 @@ import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,6 +34,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 public class DtoConverters {
+
+    @Resource(name = "blCatalogService")
+    private CatalogService catalogService;
+
     public static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
     };
@@ -80,19 +86,23 @@ public class DtoConverters {
     public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
         org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
 
-        //dto.setName(productOption.getAttributeName());
         List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
         List<String> collectAllowedValues = productOptionValues.stream().map(getProductOptionValueName).collect(toList());
-        //dto.setAllowedValues(collectAllowedValues);
         ProductOptionDto dto = new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
         return dto;
-        //return null;
-
     };
 
     public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
         /* TMP! */
-        return new ProductImpl();
+        Product product = new ProductImpl();
+        product.setId(productDto.getProductId());
+        product.setName(productDto.getName());
+        product.setCategory(categoryDtoToEntity.apply(productDto.getCategory()));
+        product.setDescription(productDto.getDescription());
+        product.setLongDescription(productDto.getLongDescription());
+        product.setPromoMessage(productDto.getOfferMessage());
+
+        return product;
     };
 
     /********************************  SKU   ********************************/
@@ -134,7 +144,7 @@ public class DtoConverters {
 
 
         if(entity.getDefaultCategory() != null) {
-            dto.setCategory(entity.getDefaultCategory().getName());
+            dto.setCategory(categoryEntityToDto.apply(entity.getDefaultCategory()));
         }
 
         if(entity.getLongDescription() != null && !entity.getLongDescription().isEmpty()) {
@@ -161,8 +171,6 @@ public class DtoConverters {
         dto.setSkus(skuDtosCollect);
 
         // TODO: znalezc w jakich bundlach jest product
-
-
 
 
         dto.add(linkTo(methodOn(ProductController.class).readOneProduct(entity.getId())).withSelfRel());

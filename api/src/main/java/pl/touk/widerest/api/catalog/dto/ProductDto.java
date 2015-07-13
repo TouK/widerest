@@ -32,7 +32,7 @@ public class ProductDto extends ResourceSupport {
     private Long productId;
 
     @ApiModelProperty(required = true)
-    private String category;
+    private CategoryDto category;
 
     @ApiModelProperty(required = true)
     private String name;
