@@ -2,6 +2,7 @@ package pl.touk.widerest.api.catalog;
 
 
 import com.sun.jndi.cosnaming.IiopUrl;
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -24,8 +25,10 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -45,6 +48,37 @@ public class DtoConverters {
     public static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
         return input.getAttributeValue();
     };
+
+    /********************************  SKU   ********************************/
+
+    public static Function<Sku, SkuDto> skuEntityToDto = entity -> {
+        // Na przyszlosc: jesli dostanie sie wartosc z errCoda to znaczy
+        // ze dana wartosc nie ustawiona => admin widzi objekt, klient nie
+        Money errCode = new Money(BigDecimal.valueOf(-1337));
+
+        SkuDto dto = SkuDto.builder()
+                .skuId(entity.getId())
+                .description(entity.getDescription())
+                .price(Optional.ofNullable(entity.getPrice()).orElse(errCode).getAmount())
+                .quantityAvailable(entity.getQuantityAvailable())
+                .code(entity.getTaxCode()).build();
+        // selection wysylany jest tylko od klienta
+        dto.add(linkTo(methodOn(SkuController.class).getSkusById(entity.getId())).withSelfRel());
+        return dto;
+    };
+
+    public static Function<SkuDto, Sku> skuDtoToEntity = dto -> {
+        Sku skuEntity = new SkuImpl();
+
+        skuEntity.setId(dto.getSkuId());
+        skuEntity.setDescription(dto.getDescription());
+        skuEntity.setTaxCode(dto.getCode());
+        skuEntity.setQuantityAvailable(dto.getQuantityAvailable());
+        //TODO: co z selection?
+
+        return skuEntity;
+    };
+
 
     /********************************  CATEGORY   ********************************/
 
@@ -80,7 +114,7 @@ public class DtoConverters {
 
         return categoryEntity;
     };
-    /********************************  CATEGORY   ********************************/
+    /********************************  PRODUCT  ********************************/
 
 
     public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
@@ -93,7 +127,6 @@ public class DtoConverters {
     };
 
     public static Function<ProductDto, Product> productDtoToEntity = productDto -> {
-        /* TMP! */
         Product product = new ProductImpl();
         product.setId(productDto.getProductId());
         product.setName(productDto.getName());
@@ -101,35 +134,14 @@ public class DtoConverters {
         product.setDescription(productDto.getDescription());
         product.setLongDescription(productDto.getLongDescription());
         product.setPromoMessage(productDto.getOfferMessage());
+        product.setActiveStartDate(productDto.getValidFrom());
+        product.setActiveEndDate(productDto.getValidTo());
+        product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
+        product.setAdditionalSkus(productDto.getSkus().stream().map(skuDtoToEntity).collect(toList()));
+        //TODO: atrybuty. options
 
         return product;
     };
-
-    /********************************  SKU   ********************************/
-
-    public static Function<Sku, SkuDto> skuEntityToDto = entity -> {
-        SkuDto dto = SkuDto.builder()
-                .id(entity.getId())
-                .description(entity.getDescription())
-                //.price(entity.getPrice().getAmount())
-                .quantityAvailable(entity.getQuantityAvailable())
-                .code(entity.getTaxCode()).build();
-        //TODO: selection + HATEOAS links
-        return dto;
-    };
-
-    public static Function<SkuDto, Sku> skuDtoToEntity = dto -> {
-        Sku skuEntity = new SkuImpl();
-
-        skuEntity.setId(dto.getId());
-        skuEntity.setDescription(dto.getDescription());
-        skuEntity.setTaxCode(dto.getCode());
-        skuEntity.setQuantityAvailable(dto.getQuantityAvailable());
-
-        return skuEntity;
-    };
-
-    /********************************  SKU   ********************************/
 
     public static Function<Product, ProductDto> productEntityToDto
             = entity -> {
