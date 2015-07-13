@@ -6,6 +6,9 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
+import org.broadleafcommerce.profile.core.domain.Address;
+
+import java.util.List;
 
 /**
  * Created by mst on 07.07.15.
@@ -45,5 +48,7 @@ public class CustomerDto {
     private AddressDto correspondenceAddress;
     @ApiModelProperty
     private AddressDto residenceAddress;
+
+    private List<AddressDto> addresses;
 
 }

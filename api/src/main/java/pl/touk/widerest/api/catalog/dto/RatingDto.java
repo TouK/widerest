@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.experimental.Builder;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 
+import java.util.Date;
+
 /**
  * Created by mst on 10.07.15.
  */
@@ -14,5 +16,6 @@ public class RatingDto {
 
     private Double rating;
 
+    private Date submissionDate;
 
 }

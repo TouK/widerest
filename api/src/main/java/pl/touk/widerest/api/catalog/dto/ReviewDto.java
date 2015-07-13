@@ -12,4 +12,10 @@ import lombok.experimental.Builder;
 @ApiModel
 public class ReviewDto {
     private String reviewText;
+
+    private int helpfulCount;
+
+    private int notHelpfulCount;
+
+    private String statusType;
 }

@@ -21,13 +21,13 @@ public class OrderItemDto {
     @ApiModelProperty(required = true)
     private long itemId;
     @ApiModelProperty(required = true)
-    private long quantity;
+    private Integer quantity;
     @ApiModelProperty(required = true)
     private String productName;
     @ApiModelProperty(required = true)
     private ProductOptionDto options;
-    @ApiModelProperty(required = false)
-    private String msisdn;
+    //@ApiModelProperty(required = false)
+    //private String msisdn;
     @ApiModelProperty(required = true)
     private BigDecimal price;
 

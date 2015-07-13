@@ -1,13 +1,13 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
+import org.broadleafcommerce.common.money.Money;
 
-import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * Created by mst on 07.07.15.
@@ -15,15 +15,19 @@ import java.util.Map;
 @Data
 @Builder
 @ApiModel
-public class PaymentInfoDto {
+public class OrderPaymentDto {
 
+    @JsonIgnore
     private Long orderId;
+
+    private Long paymentId;
+
     @ApiModelProperty
     protected AddressDto billingAddress;
 
     /* TODO: Currency - Money */
     @ApiModelProperty
-    protected BigDecimal amount;
+    protected Money amount;
 
     @ApiModelProperty
     protected String referenceNumber;

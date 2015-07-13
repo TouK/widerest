@@ -23,7 +23,6 @@ import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
-import javax.xml.ws.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,8 +48,8 @@ public class CategoryController {
     }
 
     /* POST /categories */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    //@PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(value = "Add a new category", response = ResponseEntity.class)
     public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
@@ -94,7 +93,6 @@ public class CategoryController {
         System.out.println("Trying to delete: " + categoryToDelete.getName() + " desc: " + categoryToDelete.getDescription());
 
         catalogService.removeCategory(categoryToDelete);
-
     }
 
     /* PUT /categories/{id} */
@@ -136,7 +134,7 @@ public class CategoryController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{id}/products", method = RequestMethod.POST)
     @ApiOperation(value = "Add a new product in a category", response = Void.class)
-    public void saveOneProductInCategory(@PathVariable(value="id") Long categoryId, @RequestBody ProductDto productDto) {
+    public ResponseEntity<?> saveOneProductInCategory(@PathVariable(value="id") Long categoryId, @RequestBody ProductDto productDto) {
         Category category = catalogService.findCategoryById(categoryId);
 
 
@@ -148,7 +146,17 @@ public class CategoryController {
         category.getAllProducts().add(DtoConverters.productDtoToEntity.apply(productDto));
 
         /* Updates??!!!! */
-        catalogService.saveCategory(category);
+        Category updatedCategory = catalogService.saveCategory(category);
+
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        httpHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{catId}/products/{id}")
+                .buildAndExpand(categoryId, updatedCategory.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, httpHeaders, HttpStatus.CREATED);
     }
 
 

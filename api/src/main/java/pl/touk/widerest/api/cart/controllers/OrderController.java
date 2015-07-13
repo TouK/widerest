@@ -4,9 +4,13 @@ package pl.touk.widerest.api.cart.controllers;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
+import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
+import org.broadleafcommerce.core.web.service.UpdateCartService;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
@@ -28,6 +32,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -38,14 +43,17 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/catalog/orders")
 @Api(value = "/catalog/orders", description = "Order management")
-public class OrderController /*extends AbstractCartController */{
+public class OrderController {
 
     @Resource(name = "blOrderService")
     protected OrderService orderService;
 
     @Resource(name="blCustomerService")
     private CustomerService customerService;
-
+/*
+    @Resource(name = "blUpdateCartService")
+    private UpdateCartService updateCartService;
+*/
 
     /* GET /orders */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
@@ -113,6 +121,7 @@ public class OrderController /*extends AbstractCartController */{
         }
 
         // delete cart as well?
+        orderService.cancelOrder(order);
         orderService.deleteOrder(order);
     }
 
@@ -124,8 +133,6 @@ public class OrderController /*extends AbstractCartController */{
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestBody OrderDto orderDto) {
 
-
-        //System.out.println("Post!");
         if(customerUserDetails == null) {
             throw new CustomerNotFoundException();
         }
@@ -142,6 +149,10 @@ public class OrderController /*extends AbstractCartController */{
         if(cart == null) {
             cart = orderService.createNewCartForCustomer(currentCustomer);
         }
+        // ?
+       // updateCartService.validateCart(cart);
+
+        //TODO: return
 
         return new ResponseEntity<>(DtoConverters.orderEntityToDto.apply(cart), HttpStatus.OK);
 
@@ -154,7 +165,7 @@ public class OrderController /*extends AbstractCartController */{
     public void addProductToOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestBody OrderItemDto orderItemDto,
-            @PathVariable(value = "id") Long orderId) {
+            @PathVariable(value = "id") Long orderId) throws PricingException {
 
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
@@ -170,18 +181,67 @@ public class OrderController /*extends AbstractCartController */{
             throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
         }
 
-        cart.addOrderItem(DtoConverters.orderDtoToEntity.apply(orderItemDto));
+        //updateCartService.updateAndValidateCart(cart);
+
+        /* cart = orderService.addItem(orderId, , false); */
+        cart.addOrderItem(DtoConverters.orderItemDtoToEntity.apply(orderItemDto));
+        orderService.save(cart, true);
     }
 
     /* GET /orders/{orderId}/items/{itemId} */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/items", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a list of items in an order", response = OrderItemDto.class)
-    public ResponseEntity<List<OrderItemDto>> getAllItemsInOrder (
+    @ApiOperation(value = "Get a list of items in an order", response = List.class)
+    public List<OrderItemDto> getAllItemsInOrder (
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
 
-        return new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK);
+        Order order = orderService.findOrderById(orderId);
+
+        if(customerUserDetails.getId() != order.getCustomer().getId() &&
+                !(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN")))) {
+            throw new AccessDeniedException("");
+        }
+
+
+        return Optional.ofNullable(order.getOrderItems().stream().map(DtoConverters.orderItemEntityToDto).collect(Collectors.toList()))
+                .orElseThrow(ResourceNotFoundException::new);
+    }
+
+    /* GET /orders/{orderId}/items/count */
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
+    @ApiOperation(value = "Get a number of items in the order", response = Integer.class)
+    public Integer getItemsCountByOrderId (
+            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @PathVariable(value = "id") Long orderId) {
+
+        Order order = orderService.findOrderById(orderId);
+
+        if(customerUserDetails.getId() != order.getCustomer().getId() &&
+                !(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN")))) {
+            throw new AccessDeniedException("");
+        }
+
+        return order.getItemCount();
+    }
+
+    /* GET /orders/{orderId}/items/status */
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @RequestMapping(value = "/{id}/items/status", method = RequestMethod.GET)
+    @ApiOperation(value = "Get a status of an order", response = OrderStatus.class)
+    public OrderStatus getOrderStatusById (
+            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @PathVariable(value = "id") Long orderId) {
+
+        Order order = orderService.findOrderById(orderId);
+
+        if(customerUserDetails.getId() != order.getCustomer().getId() &&
+                !(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN")))) {
+            throw new AccessDeniedException("");
+        }
+
+        return order.getStatus();
     }
 
     /* DELETE /orders/{orderId}/items/{itemId} */
@@ -222,13 +282,29 @@ public class OrderController /*extends AbstractCartController */{
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/items/{pId}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a description of an item in an Order", response = OrderItemDto.class)
-    public ResponseEntity<OrderItemDto> getOneItemFromOrder(
+    public OrderItemDto getOneItemFromOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId,
             @PathVariable(value = "pId") Long productId) {
 
-        OrderItemDto orderItemDto = OrderItemDto.builder().build();
-        return new ResponseEntity<>(orderItemDto, HttpStatus.OK);
+        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+
+        if(currentCustomer == null) {
+            throw new CustomerNotFoundException();
+        }
+
+        Order cart = orderService.findCartForCustomer(currentCustomer);
+
+        if(cart == null || cart.getId() != orderId) {
+            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
+        }
+
+
+        OrderItemDto orderItemDto = cart.getOrderItems().stream().
+                filter(x -> x.getId() == productId).limit(2).map(DtoConverters.orderItemEntityToDto)
+                .collect(Collectors.toList()).get(0);
+
+        return orderItemDto;
     }
 
     /* PUT /orders/{orderId}/items/{itemId} */
@@ -241,6 +317,53 @@ public class OrderController /*extends AbstractCartController */{
             @PathVariable(value = "pId") Long productId,
             @RequestBody OrderItemDto orderItemDto) {
 
+        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+
+        if(currentCustomer == null) {
+            throw new CustomerNotFoundException();
+        }
+
+
+        Order cart = orderService.findCartForCustomer(currentCustomer);
+
+        if(cart == null || cart.getId() != orderId) {
+            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
+        }
+
+        OrderItem orderItemEntityToUpdate = cart.getOrderItems().stream().
+                filter(x -> x.getId() == productId).limit(2).collect(Collectors.toList()).get(0);
+
+        if(orderItemEntityToUpdate == null) {
+            throw new ResourceNotFoundException("Cannot find an item with ID: " + productId + " in order ID: " + orderId);
+        }
+
+
+        // TODO!
 
     }
+
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @RequestMapping(value = "/{id}/payments", method = RequestMethod.GET)
+    @ApiOperation(value = "Update an item in a cart", response = List.class)
+    public List<OrderPayment> getPaymentsByOrderId(
+            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @PathVariable(value = "id") Long orderId) {
+
+        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+
+        if(currentCustomer == null) {
+            throw new CustomerNotFoundException();
+        }
+
+        Order cart = orderService.findCartForCustomer(currentCustomer);
+
+        if(cart == null || cart.getId() != orderId) {
+            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
+        }
+
+        return cart.getPayments();
+    }
+
+
+
 }

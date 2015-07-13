@@ -1,24 +1,21 @@
 package pl.touk.widerest.api.catalog;
 
 
-import com.sun.jndi.cosnaming.IiopUrl;
+import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.domain.OrderItemImpl;
+import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.broadleafcommerce.core.payment.domain.OrderPayment;
+import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.rating.domain.RatingDetail;
 import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
 import org.broadleafcommerce.core.rating.domain.ReviewDetail;
 import org.broadleafcommerce.core.rating.domain.ReviewDetailImpl;
-import org.broadleafcommerce.profile.core.domain.Address;
-import org.broadleafcommerce.profile.core.domain.AddressImpl;
-import org.broadleafcommerce.profile.core.domain.Customer;
-import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import pl.touk.widerest.api.cart.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.CustomerDto;
-import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.dto.OrderItemDto;
+import org.broadleafcommerce.profile.core.domain.*;
+import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.controllers.SkuController;
@@ -28,6 +25,7 @@ import pl.touk.widerest.api.catalog.dto.*;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -198,6 +196,13 @@ public class DtoConverters {
                 .challengeAnswer(entity.getChallengeAnswer())
                 .registered(entity.isRegistered())
                 .receiveEmail(entity.isReceiveEmail())
+                .challengeQuestion(entity.getChallengeQuestion().getQuestion())
+                .deactivaed(entity.isDeactivated())
+                .passwordChangeRequired(entity.isPasswordChangeRequired())
+                //.addresses(entity.getCustomerAddresses().stream().map(DtoConverters.addressEntityToDto).collect(Collectors.toList()))
+
+
+                .username(entity.getUsername())
                 .build();
 
         return customerDto;
@@ -218,6 +223,7 @@ public class DtoConverters {
     };
 
     /********************************  CUSTOMER   ********************************/
+
 
     /********************************  ADDRESS   ********************************/
 
@@ -251,28 +257,123 @@ public class DtoConverters {
 
     /********************************  ADDRESS   ********************************/
 
+    /******************************** CUSTOMERADDRESS ********************************/
+
+    public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
+        CustomerAddressDto customerAddressDto = CustomerAddressDto.builder()
+                .id(entity.getId())
+                .addressName(entity.getAddressName())
+                .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress()))
+                .build();
+
+        return customerAddressDto;
+    };
+
+
+    public static Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
+        CustomerAddress customerAddress = new CustomerAddressImpl();
+
+        customerAddress.setId(dto.getId());
+        customerAddress.setAddress(DtoConverters.addressDtoToEntity.apply(dto.getAddressDto()));
+        customerAddress.setAddressName(dto.getAddressName());
+        return customerAddress;
+    };
+
+    /******************************** CUSTOMERADDRESS ********************************/
+
     /********************************  ORDER   ********************************/
     public static Function<Order, OrderDto> orderEntityToDto = entity -> {
         OrderDto orderDto = OrderDto.builder()
                 .orderId(entity.getId())
                 .orderNumber(entity.getOrderNumber())
+                .status(entity.getStatus().getType())
+                .orderPaymentDto(entity.getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList()))
                 .build();
 
         return orderDto;
     };
 
-    public static Function<OrderItemDto, OrderItem> orderDtoToEntity = dto -> {
-        OrderItem orderItemEntity = new OrderItemImpl();
-        orderItemEntity.setName(dto.getProductName());
-        //TODO: everything ;
-        return orderItemEntity;
+    public static Function<OrderDto, Order> orderDtoToEntity = dto -> {
+        Order orderEntity = new OrderImpl();
 
+        orderEntity.setId(dto.getOrderId());
+        orderEntity.setOrderNumber(dto.getOrderNumber());
+        orderEntity.setStatus(OrderStatus.getInstance(dto.getStatus()));
+        orderEntity.setPayments(dto.getOrderPaymentDto().stream().map(DtoConverters.orderPaymentDtoToEntity).collect(Collectors.toList()));
+
+
+        return orderEntity;
     };
     /********************************  ORDER   ********************************/
 
+    /********************************  PAYMENTINFO   ********************************/
+
+    public static Function<OrderPayment, OrderPaymentDto> orderPaymentEntityToDto = entity -> {
+        OrderPaymentDto orderPaymentDto = OrderPaymentDto.builder()
+                .amount(entity.getAmount())
+                .billingAddress(DtoConverters.addressEntityToDto.apply(entity.getBillingAddress()))
+                .orderId(entity.getOrder().getId())
+                .paymentId(entity.getId())
+                .referenceNumber(entity.getReferenceNumber())
+                .type(entity.getType().getType())
+                .build();
+
+        return orderPaymentDto;
+
+    };
+
+
+    public static Function<OrderPaymentDto, OrderPayment> orderPaymentDtoToEntity = dto -> {
+        OrderPayment orderPayment = new OrderPaymentImpl();
+
+        orderPayment.setId(dto.getOrderId());
+        orderPayment.setAmount(dto.getAmount());
+        orderPayment.setBillingAddress(DtoConverters.addressDtoToEntity.apply(dto.getBillingAddress()));
+        orderPayment.setReferenceNumber(dto.getReferenceNumber());
+        orderPayment.setType(PaymentType.getInstance(dto.getType()));
+
+
+        return orderPayment;
+
+    };
+
+    /********************************  PAYMENTINFO   ********************************/
+
+    /******************************** ORDERITEM   ********************************/
+
+    public static Function<OrderItemDto, OrderItem> orderItemDtoToEntity = dto -> {
+        OrderItem orderItemEntity = new OrderItemImpl();
+        orderItemEntity.setName(dto.getProductName());
+        orderItemEntity.setRetailPrice(dto.getRetailPrice());
+        orderItemEntity.setSalePrice(dto.getSalePrice());
+        orderItemEntity.setQuantity(dto.getQuantity());
+        orderItemEntity.setName(dto.getProductName());
+
+        return orderItemEntity;
+
+    };
+
+    public static Function<OrderItem, OrderItemDto> orderItemEntityToDto = entity -> {
+        OrderItemDto orderItemDto = OrderItemDto.builder()
+                .itemId(entity.getId())
+                .salePrice(entity.getSalePrice())
+                .retailPrice(entity.getRetailPrice())
+                .quantity(entity.getQuantity())
+                .productName(entity.getName())
+                .build();
+
+        return orderItemDto;
+    };
+    /******************************** ORDERITEM   ********************************/
+
     /********************************  REVIEW   ********************************/
     public static Function<ReviewDetail, ReviewDto> reviewEntityToDto = entity -> {
-        ReviewDto reviewDto = ReviewDto.builder().reviewText(entity.getReviewText()).build();
+        ReviewDto reviewDto = ReviewDto.builder()
+                .reviewText(entity.getReviewText())
+                .helpfulCount(entity.helpfulCount())
+                .notHelpfulCount(entity.notHelpfulCount())
+                .statusType(entity.getStatus().getType())
+                .build();
 
         return reviewDto;
     };
@@ -280,6 +381,7 @@ public class DtoConverters {
     public static Function<ReviewDto, ReviewDetail> reviewDtoToEntity = dto -> {
         ReviewDetail reviewDetailEntity = new ReviewDetailImpl();
 
+        /* We cannot set number of counts and status from here, so just update the rewiev text */
         reviewDetailEntity.setReviewText(dto.getReviewText());
 
         return reviewDetailEntity;
@@ -291,6 +393,7 @@ public class DtoConverters {
         RatingDto ratingDto = RatingDto.builder()
                 .rating(entity.getRating())
                 .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+                .submissionDate(entity.getRatingSubmittedDate())
                 .build();
 
         return ratingDto;
@@ -300,7 +403,9 @@ public class DtoConverters {
         RatingDetail ratingDetailEntity = new RatingDetailImpl();
 
         ratingDetailEntity.setRating(dto.getRating());
-        ratingDetailEntity.setCustomer(DtoConverters.customerDtoToEntity.apply(dto.getCustomer()));
+        ratingDetailEntity.setCustomer(DtoConverters.customerDtoToEntity.
+                apply(dto.getCustomer()));
+        ratingDetailEntity.setRatingSubmittedDate(dto.getSubmissionDate());
 
         return ratingDetailEntity;
     };

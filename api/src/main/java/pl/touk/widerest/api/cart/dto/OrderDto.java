@@ -40,5 +40,5 @@ public class OrderDto {
     @ApiModelProperty
     private List<CartAttributeDto> cartAttributeDtos;
     @ApiModelProperty
-    private List<PaymentInfoDto> paymentInfoDto;
+    private List<OrderPaymentDto> orderPaymentDto;
 }
