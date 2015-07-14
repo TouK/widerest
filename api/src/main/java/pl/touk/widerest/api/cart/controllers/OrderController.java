@@ -1,40 +1,44 @@
 package pl.touk.widerest.api.cart.controllers;
 
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
-import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
-import org.broadleafcommerce.core.web.service.UpdateCartService;
 import org.broadleafcommerce.profile.core.domain.Customer;
+import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
+import pl.touk.widerest.api.cart.exceptions.OrderAlreadyInUseException;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-
-import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Created by mst on 07.07.15.
@@ -51,10 +55,12 @@ public class OrderController {
 
     @Resource(name="blCustomerService")
     private CustomerService customerService;
-/*
-    @Resource(name = "blUpdateCartService")
-    private UpdateCartService updateCartService;
-*/
+
+    //  @Resource(name = "blUpdateCartService")
+    //  private UpdateCartService updateCartService;
+
+
+    private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
     /* GET /orders */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
@@ -67,20 +73,8 @@ public class OrderController {
         /* If the current user has admin rights, list all the orders */
         if(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN"))) {
 
-        } else if(customerUserDetails.getUsername().equals("anonymous")) {
-            /* Anonymous user! Anonymous users are non-persistent */
-            Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
-
-
-            if (currentCustomer == null) {
-                throw new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId());
-            }
-
-            return new ResponseEntity<>(
-                    orderService.findOrdersForCustomer(currentCustomer).stream().map(DtoConverters.orderEntityToDto).collect(Collectors.toList()),
-                    HttpStatus.OK);
         } else {
-            /* A regular, already registered customer */
+
             Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
             if (currentCustomer == null) {
@@ -90,6 +84,7 @@ public class OrderController {
             return new ResponseEntity<>(
                     orderService.findOrdersForCustomer(currentCustomer).stream().map(DtoConverters.orderEntityToDto).collect(Collectors.toList()),
                     HttpStatus.OK);
+
         }
 
 
@@ -142,34 +137,47 @@ public class OrderController {
     /* POST /orders */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "", method = RequestMethod.POST)
-    @ApiOperation(value = "Create a new order", response = OrderDto.class)
-    public ResponseEntity<OrderDto> createNewOrder(
+    @ApiOperation(value = "Create a new order", response = ResponseEntity.class)
+    public ResponseEntity<?> createNewOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestBody OrderDto orderDto) {
 
-        if(customerUserDetails == null) {
-            throw new CustomerNotFoundException();
-        }
-
-        // Administrator ???
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
-        if(currentCustomer == null) {
-            throw new CustomerNotFoundException();
+        /*
+		 * We have a new Anonymous customer, he got his Token and Customer
+		 * ID but he is not in the database yet
+		 */
+        if (currentCustomer == null && customerUserDetails.getUsername().equals(ANONYMOUS_CUSTOMER)) {
+            Customer newAnonymousCustomer = new CustomerImpl();
+            newAnonymousCustomer.setId(customerUserDetails.getId());
+            newAnonymousCustomer.setAnonymous(true);
+            newAnonymousCustomer.setRegistered(false);
+            newAnonymousCustomer.setUsername(customerUserDetails.getUsername());
+            newAnonymousCustomer.setPassword(customerUserDetails.getPassword());
+            currentCustomer = customerService.saveCustomer(newAnonymousCustomer);
+        } else {
+			/* shouldnt it be a fatal exception ??? */
+            throw new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId());
         }
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
 
-        if(cart == null) {
-            cart = orderService.createNewCartForCustomer(currentCustomer);
+        /* The cart should be null provided that the current customer hasnt created an order yet! */
+        if(cart != null) {
+            throw new OrderAlreadyInUseException("Cannot create a new order for customer with ID: " + customerUserDetails.getId() + ". Order has already been created (ID: " + cart.getId() + ")");
         }
-        // ?
-       // updateCartService.validateCart(cart);
 
-        //TODO: return
+        cart = orderService.createNewCartForCustomer(currentCustomer);
 
-        return new ResponseEntity<>(DtoConverters.orderEntityToDto.apply(cart), HttpStatus.OK);
+        try {
+            orderService.save(cart, false);
+        } catch (PricingException e) {
+			/* Order is empty - there should not be any PricingException situations */
+            e.printStackTrace();
+        }
 
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     /* POST /orders/{orderId}/items */
