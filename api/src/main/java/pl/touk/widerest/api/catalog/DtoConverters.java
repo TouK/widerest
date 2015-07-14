@@ -7,10 +7,7 @@ import org.broadleafcommerce.common.locale.domain.Locale;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
-import org.broadleafcommerce.core.order.domain.OrderItem;
-import org.broadleafcommerce.core.order.domain.OrderItemImpl;
+import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
@@ -43,7 +40,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class DtoConverters {
 
     @Resource(name = "blCatalogService")
-    private CatalogService catalogService;
+    private static CatalogService catalogService;
 
     public static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
@@ -387,6 +384,36 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** ORDERITEM   ********************************/
+
+    /******************************** DISCRETEORDERITEM   ********************************/
+
+    public static Function<DiscreteOrderItemDto, DiscreteOrderItem> discreteIrderItemDtoToEntity = dto -> {
+        DiscreteOrderItem orderItemEntity = new DiscreteOrderItemImpl();
+        orderItemEntity.setName(dto.getProductName());
+        orderItemEntity.setRetailPrice(dto.getRetailPrice());
+        orderItemEntity.setSalePrice(dto.getSalePrice());
+        orderItemEntity.setQuantity(dto.getQuantity());
+        orderItemEntity.setName(dto.getProductName());
+        // TODO: czy nulla wywali?
+        orderItemEntity.setSku(catalogService.findSkuById(dto.getSkuId()));
+
+        return orderItemEntity;
+
+    };
+
+    public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
+        DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
+                .itemId(entity.getId())
+                .salePrice(entity.getSalePrice())
+                .retailPrice(entity.getRetailPrice())
+                .quantity(entity.getQuantity())
+                .productName(entity.getName())
+                .skuId(entity.getSku().getId())
+                .build();
+
+        return orderItemDto;
+    };
+    /******************************** DISCRETEORDERITEM   ********************************/
 
     /********************************  REVIEW   ********************************/
     public static Function<ReviewDetail, ReviewDto> reviewEntityToDto = entity -> {

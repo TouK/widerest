@@ -21,6 +21,8 @@ import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
+import org.broadleafcommerce.core.order.service.exception.AddToCartException;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
@@ -43,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
@@ -223,7 +226,7 @@ public class OrderController {
     @Transactional
     public void addProductToOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @RequestBody OrderItemDto orderItemDto) throws PricingException {
+            @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
@@ -231,11 +234,6 @@ public class OrderController {
         if(currentCustomer == null) {
             throw new CustomerNotFoundException();
         }
-
-        List<Order> lista = orderService.findOrdersForCustomer(currentCustomer);
-        //UNSAFE_PERFORM_IO!
-        System.out.println("Liczba koszykow: " + lista.size());
-
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
 
@@ -246,7 +244,14 @@ public class OrderController {
         //updateCartService.updateAndValidateCart(cart);
 
         /* cart = orderService.addItem(orderId, , false); */
-        cart.addOrderItem(DtoConverters.orderItemDtoToEntity.apply(orderItemDto));
+        OrderItemRequestDTO req = new OrderItemRequestDTO();
+        req.setQuantity(orderItemDto.getQuantity());
+        req.setSkuId(orderItemDto.getSkuId());
+        //req.setProductId(orderItemDto.getProductId());
+        //req.setItemAttributes(orderItemDto.getAttributes());
+        
+        //cart.addOrderItem(DtoConverters.orderItemDtoToEntity.apply(orderItemDto));
+        orderService.addItem(cart.getId(), req, false);
         orderService.save(cart, false);
     }
 
@@ -255,7 +260,7 @@ public class OrderController {
     @RequestMapping(value = "/items", method = RequestMethod.GET)
     @ApiOperation(value = "Get a list of items in an order", response = List.class)
     @Transactional
-    public List<OrderItemDto> getAllItemsInOrder (
+    public List<DiscreteOrderItemDto> getAllItemsInOrder (
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
@@ -266,11 +271,12 @@ public class OrderController {
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
 
+
         if(cart == null) {
             throw new ResourceNotFoundException("Cannot find an order for a customer ID: " + customerUserDetails.getId());
         }
 
-        return Optional.ofNullable(cart.getOrderItems().stream().map(DtoConverters.orderItemEntityToDto).collect(Collectors.toList()))
+        return Optional.ofNullable(cart.getDiscreteOrderItems().stream().map(DtoConverters.discreteOrderItemEntityToDto).collect(Collectors.toList()))
                 .orElseThrow(ResourceNotFoundException::new);
     }
 

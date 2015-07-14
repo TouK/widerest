@@ -13,15 +13,13 @@ import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import java.math.BigDecimal;
 import java.util.Map;
 
-/**
- * Created by mst on 07.07.15.
- */
+
 @Data
 @Builder
 @ApiModel
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemDto {
+public class DiscreteOrderItemDto {
     @ApiModelProperty
     private long itemId;
 
@@ -54,6 +52,6 @@ public class OrderItemDto {
     @ApiModelProperty
     protected Money retailPrice;
 
-    // TODO: Bundles and all that other bs
+
 
 }
