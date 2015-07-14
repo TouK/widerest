@@ -2,7 +2,9 @@ package pl.touk.widerest.api.cart.controllers;
 
 
 import io.swagger.annotations.ApiOperation;
+import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
+import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,22 +16,22 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.catalog.DtoConverters;
-import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Created by mst on 07.07.15.
  */
 @RestController
-@RequestMapping(value = "/customers")
+@RequestMapping(value = "/catalog/customers")
 public class CustomerController {
 
     @Resource(name="blCustomerService")
     private CustomerService customerService;
+
+    @Resource(name="blOrderService")
+    private OrderService orderService;
 
 
     @Transactional
@@ -42,7 +44,7 @@ public class CustomerController {
                            .map(DtoConverters.customerEntityToDto)
                             .orElseThrow(CustomerNotFoundException::new);
         return new ResponseEntity<>(customer, HttpStatus.OK);
-
-
     }
+
+
 }

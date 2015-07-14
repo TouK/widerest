@@ -8,9 +8,9 @@ import lombok.experimental.Builder;
 /**
  * Created by mst on 08.07.15.
  */
-@ApiModel("Address")
 @Data
 @Builder
+@ApiModel("Address")
 public class AddressDto {
 
     @ApiModelProperty

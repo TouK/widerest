@@ -2,6 +2,7 @@ package pl.touk.widerest.api.cart.dto;
 
 
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
@@ -10,7 +11,8 @@ import lombok.Data;
 @Data
 @ApiModel("cartAttributes")
 public class CartAttributeDto {
+    @ApiModelProperty
     private String name;
-
+    @ApiModelProperty
     private String value;
 }

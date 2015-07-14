@@ -75,7 +75,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .apply(new CustomFormLoginConfigurer<HttpSecurity>()).loginPage("/login").permitAll().and()
                 .logout().permitAll().and()
                 .anonymous()
+<<<<<<< HEAD
                 .and().csrf().disable()
+=======
+                .and().csrf().disable();
+>>>>>>> Mst_Branch
         ;
     }
 
