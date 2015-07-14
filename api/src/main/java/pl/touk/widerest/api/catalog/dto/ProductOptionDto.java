@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
 @ApiModel
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class ProductOptionDto {
 
