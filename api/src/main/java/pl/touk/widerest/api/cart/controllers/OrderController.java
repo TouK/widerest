@@ -168,7 +168,7 @@ public class OrderController {
         cart = orderService.createNewCartForCustomer(currentCustomer);
 
         try {
-            orderService.save(cart, false);
+            orderService.save(cart, true);
         } catch (PricingException e) {
 			/* Order is empty - there should not be any PricingException situations */
             e.printStackTrace();

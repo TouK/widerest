@@ -402,13 +402,18 @@ public class DtoConverters {
     };
 
     public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
+        Money errCode = new Money(BigDecimal.valueOf(-1337));
+        Sku sku = entity.getSku();
         DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
                 .itemId(entity.getId())
                 .salePrice(entity.getSalePrice())
                 .retailPrice(entity.getRetailPrice())
                 .quantity(entity.getQuantity())
                 .productName(entity.getName())
-                .skuId(entity.getSku().getId())
+                .skuId(sku.getId())
+                .description(sku.getDescription())
+                .price(Optional.ofNullable(entity.getTotalPrice()).orElse(errCode).getAmount())
+                //.price(Optional.ofNullable(sku.getPrice()).orElse(errCode).getAmount())
                 .build();
 
         return orderItemDto;
