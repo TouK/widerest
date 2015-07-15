@@ -22,7 +22,7 @@ import java.util.Map;
  * Created by mst on 06.07.15.
  */
 @ApiModel
-/*
+
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
@@ -31,7 +31,7 @@ import java.util.Map;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ProductDto.class, name = "product"),
         @JsonSubTypes.Type(value = BundleDto.class, name = "bundle")})
-        */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,6 +41,7 @@ public class ProductDto extends ResourceSupport {
     private Long productId;
 
     @ApiModelProperty(required = true)
+    @JsonIgnore
     private CategoryDto category;
 
     @ApiModelProperty(required = true)

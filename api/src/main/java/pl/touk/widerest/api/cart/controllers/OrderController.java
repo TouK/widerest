@@ -1,19 +1,28 @@
 package pl.touk.widerest.api.cart.controllers;
 
-
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+<<<<<<< Updated upstream
+=======
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+>>>>>>> Stashed changes
 
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
+import org.broadleafcommerce.core.web.service.UpdateCartService;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -56,8 +65,15 @@ public class OrderController {
     @Resource(name="blCustomerService")
     private CustomerService customerService;
 
-    //  @Resource(name = "blUpdateCartService")
-    //  private UpdateCartService updateCartService;
+    @Resource(name = "blOrderItemService")
+    protected OrderItemService orderItemService;
+
+    @PersistenceContext(unitName = "blPU")
+    protected EntityManager em;
+
+
+   // @Resource(name = "blUpdateCartService")
+    //private UpdateCartService updateCartService;
 
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
@@ -206,8 +222,24 @@ public class OrderController {
         //updateCartService.updateAndValidateCart(cart);
 
         /* cart = orderService.addItem(orderId, , false); */
+        List<OrderItem> l = cart.getOrderItems();
+        if(l == null) {
+            System.out.println("Empty item list?");
+        } else {
+            System.out.println("[ADD]: item count: " + l.size());
+        }
+
         cart.addOrderItem(DtoConverters.orderItemDtoToEntity.apply(orderItemDto));
-        orderService.save(cart, true);
+
+        l = cart.getOrderItems();
+        if(l == null) {
+            System.out.println("Empty item list?");
+        } else {
+            System.out.println("[ADD]: item count: " + l.size());
+        }
+
+        orderService.save(cart, false);
+
     }
 
     /* GET /orders/{orderId}/items/{itemId} */
@@ -225,8 +257,26 @@ public class OrderController {
             throw new AccessDeniedException("");
         }
 
+        System.out.println("Got customer: " + currentCustomer.getId() + "U: " + currentCustomer.getUsername());
 
-        return Optional.ofNullable(order.getOrderItems().stream().map(DtoConverters.orderItemEntityToDto).collect(Collectors.toList()))
+        //Order cart = orderService.findCartForCustomer(currentCustomer);
+
+        //Order cart = orderService.findOrdersForCustomer(currentCustomer, true).get(0);
+
+
+        Order cart = orderService.findOrderById((long)1, true);
+        if(cart == null) {
+            throw new ResourceNotFoundException("Cannot find an order for a customer ID: " + customerUserDetails.getId());
+        }
+
+        System.out.println("Got an order: " + cart.getId());
+        List<OrderItem> l = cart.getOrderItems();
+        if(l == null) {
+            System.out.println("Empty item list?");
+        } else {
+            System.out.println("item count: " + l.size());
+        }
+        return Optional.ofNullable(cart.getOrderItems().stream().map(DtoConverters.orderItemEntityToDto).collect(Collectors.toList()))
                 .orElseThrow(ResourceNotFoundException::new);
     }
 

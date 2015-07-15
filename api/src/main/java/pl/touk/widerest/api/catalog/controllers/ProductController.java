@@ -12,12 +12,14 @@ import org.broadleafcommerce.core.rating.domain.ReviewDetail;
 import org.broadleafcommerce.core.rating.service.RatingService;
 import org.broadleafcommerce.core.rating.service.type.RatingType;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.catalog.*;
 import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/catalog/products")
-@Api
+@Api(value = "/catalog/products", description = "Product catalog endpoint")
 public class ProductController {
 
     @Resource(name = "blCatalogService")
@@ -45,27 +47,31 @@ public class ProductController {
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
-    @ApiOperation(value = "Get a flat list of products", response = List.class)
-    public ResponseEntity<List<ProductDto>> getProducts() {
-        return new ResponseEntity<>(
-                catalogService.findAllProducts().stream().map(DtoConverters.productEntityToDto).collect(Collectors.toList()),
-                HttpStatus.OK);
+    @ApiOperation(
+            value = "Get all products",
+            notes = "",
+            response = ProductDto.class,
+            responseContainer = "List")
+    public List<ProductDto> getProducts() {
+        return catalogService.findAllProducts().stream().map(DtoConverters.productEntityToDto).collect(Collectors.toList());
     }
 
     /* POST /prodcuts */
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/", method = RequestMethod.POST)
     @ApiOperation(value = "Add a new product", response = Void.class)
-    public void saveOneProduct(@RequestBody ProductDto productDto) {
+    public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        /*TODO: check if the product exists */
+        Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
 
-        if(productDto != null) {
-            catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-        } else {
-            //throw ???
-        }
+        HttpHeaders responseHeader = new HttpHeaders();
 
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdProductEntity.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /prodcuts/{id} */
