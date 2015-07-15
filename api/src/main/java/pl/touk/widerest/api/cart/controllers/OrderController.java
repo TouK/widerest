@@ -244,14 +244,9 @@ public class OrderController {
         //updateCartService.updateAndValidateCart(cart);
 
         /* cart = orderService.addItem(orderId, , false); */
-        OrderItemRequestDTO req = new OrderItemRequestDTO();
-        req.setQuantity(orderItemDto.getQuantity());
-        req.setSkuId(orderItemDto.getSkuId());
-        //req.setProductId(orderItemDto.getProductId());
-        //req.setItemAttributes(orderItemDto.getAttributes());
         
         //cart.addOrderItem(DtoConverters.orderItemDtoToEntity.apply(orderItemDto));
-        orderService.addItem(cart.getId(), req, false);
+        orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), false);
         orderService.save(cart, false);
     }
 

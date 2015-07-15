@@ -6,6 +6,7 @@ import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.*;
+import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
@@ -380,6 +381,16 @@ public class DtoConverters {
                 .build();
 
         return orderItemDto;
+    };
+
+    public static Function<OrderItemDto, OrderItemRequestDTO> orderItemDtoToRequest = orderItemDto -> {
+        OrderItemRequestDTO req = new OrderItemRequestDTO();
+        req.setQuantity(orderItemDto.getQuantity());
+        req.setSkuId(orderItemDto.getSkuId());
+        //req.setProductId(orderItemDto.getProductId());
+        //req.setItemAttributes(orderItemDto.getAttributes());
+
+        return req;
     };
     /******************************** ORDERITEM   ********************************/
 
