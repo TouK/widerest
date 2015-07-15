@@ -1,9 +1,7 @@
 package pl.touk.widerest.api.catalog;
 
 
-import com.sun.jndi.cosnaming.IiopUrl;
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.common.locale.domain.Locale;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;

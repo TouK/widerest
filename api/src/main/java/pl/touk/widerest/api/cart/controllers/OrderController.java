@@ -1,13 +1,12 @@
 package pl.touk.widerest.api.cart.controllers;
 
-
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
@@ -15,17 +14,17 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
-import lombok.extern.log4j.Log4j;
-import org.broadleafcommerce.core.order.dao.OrderDao;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
+import org.broadleafcommerce.core.web.service.UpdateCartService;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -70,13 +69,14 @@ public class OrderController {
     @Resource(name="blCustomerService")
     private CustomerService customerService;
 
+    @Resource(name = "blOrderItemService")
+    protected OrderItemService orderItemService;
+
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
-    final static Logger logger = Logger.getLogger("OrderController");
-
-    //  @Resource(name = "blUpdateCartService")
-    //  private UpdateCartService updateCartService;
+   // @Resource(name = "blUpdateCartService")
+    //private UpdateCartService updateCartService;
 
     private List<Order> getOrders() {
         CriteriaBuilder builder = this.em.getCriteriaBuilder();
@@ -270,8 +270,7 @@ public class OrderController {
         }
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
-
-
+        
         if(cart == null) {
             throw new ResourceNotFoundException("Cannot find an order for a customer ID: " + customerUserDetails.getId());
         }

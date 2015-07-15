@@ -69,13 +69,13 @@ public class CategoryControllerTest extends ApiTestBase {
 
         CategoryDto categoryDto = CategoryDto.builder().name("testcategory").description("testcategory").build();
 
-        ResponseEntity<CategoryDto> createdCategoryRespose = restTemplate.postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
+        ResponseEntity<CategoryDto> createdCategoryResponse = restTemplate.postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
 
-        /* System.out.println("Location: " + createdCategoryDto.getHeaders().getLocation()); */
+        System.out.println("Location: " + createdCategoryResponse.getHeaders().getLocation());
 
-        assertTrue(createdCategoryRespose.getStatusCode() == HttpStatus.CREATED);
+        assertTrue(createdCategoryResponse.getStatusCode() == HttpStatus.CREATED);
 
-        String createdCategoryLocationUri = createdCategoryRespose.getHeaders().getLocation().toString();
+        String createdCategoryLocationUri = createdCategoryResponse.getHeaders().getLocation().toString();
 
         assertNotNull(createdCategoryLocationUri);
         assertTrue(!createdCategoryLocationUri.isEmpty());
