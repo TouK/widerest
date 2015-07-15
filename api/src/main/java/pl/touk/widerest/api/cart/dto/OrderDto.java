@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
+import org.springframework.hateoas.ResourceSupport;
 
 
 import java.math.BigDecimal;
@@ -16,8 +17,8 @@ import java.util.List;
 
 @Data
 @Builder
-@ApiModel
-public class OrderDto {
+@ApiModel(value = "Order", description = "Order resource representation")
+public class OrderDto extends ResourceSupport {
     @ApiModelProperty(required = true)
     private Long orderId;
     @ApiModelProperty(required = true)

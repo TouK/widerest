@@ -15,6 +15,7 @@ import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
 import org.broadleafcommerce.core.rating.domain.ReviewDetail;
 import org.broadleafcommerce.core.rating.domain.ReviewDetailImpl;
 import org.broadleafcommerce.profile.core.domain.*;
+import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
@@ -307,7 +308,10 @@ public class DtoConverters {
                 .status(entity.getStatus().getType())
                 .orderPaymentDto(entity.getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList()))
                 .build();
-
+/*
+        orderDto.add(linkTo(methodOn(OrderController.class).(entity.getId())).withRel());
+        orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(entity.getId())).withRel("items"));
+  */
         return orderDto;
     };
 
