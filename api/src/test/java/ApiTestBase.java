@@ -15,6 +15,8 @@ import javax.annotation.Resource;
 public abstract class ApiTestBase {
 
     public static final String CATEGORIES_URL = "http://localhost:{port}/catalog/categories";
+    public static final String SKUS_URL = "http://localhost:{port}/catalog/skus";
+    public static final String PRODUCTS_URL = "http://localhost:{port}/catalog/products";
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;

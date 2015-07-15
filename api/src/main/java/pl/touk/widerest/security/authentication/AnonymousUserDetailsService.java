@@ -26,9 +26,12 @@ public class AnonymousUserDetailsService  {
 
     public UserDetails createAnonymousUser() throws DataAccessException {
         Customer customer = customerService.createNewCustomer();
+        //customer.setUsername("anonymous");
+        customer.setUsername(String.valueOf(customer.getId()));
         List<GrantedAuthority> grantedAuthorities = createGrantedAuthorities(roleService.findCustomerRolesByCustomerId(customer.getId()));
-        CustomerUserDetails anonymous = new CustomerUserDetails(customer.getId(), "anonymous", "", !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
+        CustomerUserDetails anonymous = new CustomerUserDetails(customer.getId(), customer.getUsername(), "", !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
         anonymous.eraseCredentials();
+        customerService.saveCustomer(customer);
         return anonymous;
     }
 

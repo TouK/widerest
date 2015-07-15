@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.controllers;
 
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -25,6 +26,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping(value = "/catalog/customers")
+@Api(value = "customers", description = "Customer management endpoint")
 public class CustomerController {
 
     @Resource(name="blCustomerService")

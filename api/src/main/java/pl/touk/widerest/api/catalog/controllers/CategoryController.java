@@ -33,7 +33,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 @RestController
 @RequestMapping("/catalog/categories")
-@Api(value = "/catalog/categories", description = "Category catalog endpoint")
+@Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 
     @Resource(name="blCatalogService")

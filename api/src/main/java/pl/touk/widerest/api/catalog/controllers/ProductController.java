@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/catalog/products")
-@Api(value = "/catalog/products", description = "Product catalog endpoint")
+@Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
 
     @Resource(name = "blCatalogService")
@@ -57,7 +57,7 @@ public class ProductController {
     }
 
     /* POST /prodcuts */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/", method = RequestMethod.POST)
     @ApiOperation(value = "Add a new product", response = Void.class)
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {

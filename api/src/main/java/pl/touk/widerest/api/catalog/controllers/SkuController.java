@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/catalog/skus")
-@Api(value = "/catalog/skus", description = "Sku catalog endpoint")
+@Api(value = "skus", description = "Sku catalog endpoint")
 public class SkuController {
 
     @Resource(name="blCatalogService")
