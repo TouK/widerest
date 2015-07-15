@@ -38,11 +38,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -86,11 +82,13 @@ public class OrderController {
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(value = "Get a list of customers' orders", response = List.class)
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public List<OrderDto> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
+    public List<OrderDto> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+        @RequestParam(value="status", required=false) String status) {
 
 
         return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
                 .map(DtoConverters.orderEntityToDto)
+                .filter(x -> status == null || x.getStatus().equals(status) )
                 .collect(Collectors.toList());
 }
 
