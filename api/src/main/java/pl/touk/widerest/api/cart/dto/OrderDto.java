@@ -34,7 +34,7 @@ public class OrderDto {
     private CustomerDto customer;
 
     @ApiModelProperty
-    private List<OrderItemDto> orderItems;
+    private List<DiscreteOrderItemDto> orderItems;
     @ApiModelProperty
     private BigDecimal totalPrice;
     @ApiModelProperty

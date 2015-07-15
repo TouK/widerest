@@ -28,30 +28,23 @@ public class OrderItemDto {
     @ApiModelProperty(required = true)
     private Integer quantity;
 
-    @ApiModelProperty
     private String productName;
 
-    @ApiModelProperty
     private ProductOptionDto options;
 
-    @ApiModelProperty
     private BigDecimal price;
 
-    @ApiModelProperty
     private Map attributes;
 
-    @ApiModelProperty
     private long productId;
 
     @ApiModelProperty(required = true)
     private long skuId;
 
-    @ApiModelProperty
     private String description;
 
-    @ApiModelProperty
     protected Money salePrice;
-    @ApiModelProperty
+
     protected Money retailPrice;
 
     // TODO: Bundles and all that other bs

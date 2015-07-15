@@ -310,14 +310,14 @@ public class OrderController {
         return order.getStatus();
     }
 
-    /* DELETE /orders/{orderId}/items/{itemId} */
+    /* DELETE /orders/items/{itemId} */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}/items/{pId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/items/{itemId}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Remove an item from an order", response = Void.class)
+    @Transactional
     public void removeItemFromOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "id") Long orderId,
-            @PathVariable(value = "pId") Long productId) {
+            @PathVariable(value = "itemId") Long itemId) {
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
@@ -328,30 +328,32 @@ public class OrderController {
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
 
-        if(cart == null || cart.getId() != orderId) {
-            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
+        if(cart == null) {
+            throw new ResourceNotFoundException("Cannot find an order with given ID");
+        }
+
+        if(cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+            throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
         try {
             /* price order?! */
-            Order updatedOrder = orderService.removeItem(cart.getId(), productId, true);
+            Order updatedOrder = orderService.removeItem(cart.getId(), itemId, true);
             orderService.save(updatedOrder, true);
-        } catch (RemoveFromCartException e) {
-            // TODO:
-        } catch (PricingException e) {
-            // TODO:
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Error while removing item with ID: " + itemId);
         }
 
     }
 
-    /* GET /orders/{orderId}/items/{itemId} */
+    /* GET /orders/items/{itemId} */
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}/items/{pId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/items/{itemId}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a description of an item in an Order", response = OrderItemDto.class)
-    public OrderItemDto getOneItemFromOrder(
+    @Transactional
+    public DiscreteOrderItemDto getOneItemFromOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "id") Long orderId,
-            @PathVariable(value = "pId") Long productId) {
+            @PathVariable(value = "itemId") Long itemId) {
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
 
@@ -361,52 +363,21 @@ public class OrderController {
 
         Order cart = orderService.findCartForCustomer(currentCustomer);
 
-        if(cart == null || cart.getId() != orderId) {
-            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
+        if(cart == null) {
+            throw new ResourceNotFoundException("Cannot find an order given ID");
         }
 
+        List<DiscreteOrderItemDto> list =  cart.getDiscreteOrderItems().stream().
+               filter(x -> x.getId() == itemId).limit(2).map(DtoConverters.discreteOrderItemEntityToDto)
+               .collect(Collectors.toList());
 
-        OrderItemDto orderItemDto = cart.getOrderItems().stream().
-                filter(x -> x.getId() == productId).limit(2).map(DtoConverters.orderItemEntityToDto)
-                .collect(Collectors.toList()).get(0);
+        if(list.isEmpty()) {
+            throw new ResourceNotFoundException("Cannot find the item in card with ID: " + itemId);
+        }
 
-        return orderItemDto;
+        return list.get(0);
     }
 
-    /* PUT /orders/items/{itemId} */
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "/items/{pId}", method = RequestMethod.PUT)
-    @ApiOperation(value = "Update an item in a cart", response = Void.class)
-    public void updateItemInOrder(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "id") Long orderId,
-            @PathVariable(value = "pId") Long productId,
-            @RequestBody OrderItemDto orderItemDto) {
-
-        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
-
-        if(currentCustomer == null) {
-            throw new CustomerNotFoundException();
-        }
-
-
-        Order cart = orderService.findCartForCustomer(currentCustomer);
-
-        if(cart == null || cart.getId() != orderId) {
-            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
-        }
-
-        OrderItem orderItemEntityToUpdate = cart.getOrderItems().stream().
-                filter(x -> x.getId() == productId).limit(2).collect(Collectors.toList()).get(0);
-
-        if(orderItemEntityToUpdate == null) {
-            throw new ResourceNotFoundException("Cannot find an item with ID: " + productId + " in order ID: " + orderId);
-        }
-
-
-        // TODO!
-
-    }
 
 
     /* GET /orders/{id}/payments */
