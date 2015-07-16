@@ -15,6 +15,8 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
@@ -57,7 +59,10 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
  * Created by mst on 07.07.15.
  */
 
-//TODO: Aquire and release locks?!
+/* TODO:
+ * 1. Synchronization stuff
+ *
+ */
 @RestController
 @RequestMapping("/catalog/orders")
 @Api(value = "orders", description = "Order management endpoint")
@@ -79,12 +84,18 @@ public class OrderController {
 
     /* GET /orders */
     @Transactional
-    @RequestMapping(method = RequestMethod.GET)
-    @ApiOperation(value = "Get a list of customers' orders", response = List.class)
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @RequestMapping(method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all orders",
+            notes = "Gets a list of all orders belonging to a currently authorized customer",
+            response = OrderDto.class,
+            responseContainer = "List")
+    @ApiResponses(value =
+            @ApiResponse(code = 200, message = "Successful retrieval of orders list")
+    )
     public List<OrderDto> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-        @RequestParam(value="status", required=false) String status) {
-
+                                    @RequestParam(value="status", required=false) String status) {
 
         return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
                 .map(DtoConverters.orderEntityToDto)
@@ -93,10 +104,17 @@ public class OrderController {
 }
 
     /* GET /orders/{orderId} */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a specific order by its ID", response = OrderDto.class)
-    @Transactional
+    @ApiOperation(
+            value = "Get an order by ID",
+            notes = "Gets details of a single order, specified by its ID",
+            response = OrderDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of order details", response = OrderDto.class),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public OrderDto getOrderById(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
@@ -108,8 +126,15 @@ public class OrderController {
     /* POST /orders */
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "", method = RequestMethod.POST)
-    @ApiOperation(value = "Create a new order", response = ResponseEntity.class)
+    @RequestMapping(method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a new order",
+            notes = "Adds a new order. A single, authorized customer can have multiple orders. " +
+                    "Returns an URL to the newly created order in the Location field of the HTTP response header",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new order entry successfully created")
+    })
     public ResponseEntity<?> createNewOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
@@ -143,7 +168,14 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}", method = RequestMethod.DELETE)
-    @ApiOperation(value = "Delete the own order", response = Void.class)
+    @ApiOperation(
+            value = "Delete an order",
+            notes = "Removes a specific order from customer's orders list",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful removal of the specified order"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public void deleteOrderForCustomer(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "orderId") Long orderId) {
@@ -154,27 +186,52 @@ public class OrderController {
 
 
     /* POST /orders/items */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.POST)
-    @ApiOperation(value = "Add a new item to the cart", response = Void.class)
-    @Transactional
-    public void addProductToOrder(
+    @ApiOperation(
+            value = "Add a new item",
+            notes = "Adds a new item to the specified order",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Specified product successfully added"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
+    public ResponseEntity<?> addProductToOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestBody OrderItemDto orderItemDto,
             @PathVariable(value = "orderId") Long orderId) throws PricingException, AddToCartException {
 
 
-       Order cart = getOrderForCustomerById(customerUserDetails, orderId);
+        Order cart = getOrderForCustomerById(customerUserDetails, orderId);
 
         orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), false);
-        orderService.save(cart, false);
+        cart = orderService.save(cart, false);
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{orderId}/items/{id}")
+                        .buildAndExpand(orderId, (cart.getDiscreteOrderItems()
+                                .stream().filter(x -> x.getSku().getId() == orderItemDto.getSkuId())
+                                .collect(Collectors.toList())).get(0).getId()).toUri());
+
+        return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
+
     }
 
     /* GET /orders/items/ */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a list of items in an order", response = List.class)
-    @Transactional
+    @ApiOperation(
+            value = "List all items in an order",
+            notes = "Gets a list of all items belonging to a specified order ",
+            response = DiscreteOrderItemDto.class,
+            responseContainer = "List")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful retrieval of all items in a given category"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public List<DiscreteOrderItemDto> getAllItemsInOrder (
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "orderId") Long orderId) {
@@ -186,23 +243,46 @@ public class OrderController {
     }
 
     /* GET /orders/{orderId}/items/count */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a number of items in the order", response = Integer.class)
-    @Transactional
+    @ApiOperation(
+            value = "Count all items in the order",
+            notes = "Gets a number of all items placed already in the specified order",
+            response = Integer.class)
     public Integer getItemsCountByOrderId (
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
 
         Order order = getOrderForCustomerById(customerUserDetails, orderId);
-
         return order.getItemCount();
     }
 
-    /* GET /orders/{orderId}/status */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}/items/status", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a status of an order", response = OrderStatus.class)
+    @RequestMapping(value = "/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all orders",
+            notes = "Get a number of all active orders",
+            response = Integer.class)
+    public Integer getOrdersCount(
+            @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
+
+        return orderServiceProxy.getOrdersByCustomer(customerUserDetails).size();
+    }
+
+    /* GET /orders/{orderId}/status */
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @RequestMapping(value = "/{id}/status", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a status of an order",
+            notes = "Gets a current status of a specified order",
+            response = OrderStatus.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful retrieval of order status"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public OrderStatus getOrderStatusById (
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
@@ -212,10 +292,17 @@ public class OrderController {
     }
 
     /* DELETE /orders/{orderId}/items/{itemId} */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.DELETE)
-    @ApiOperation(value = "Remove an item from an order", response = Void.class)
-    @Transactional
+    @ApiOperation(
+            value = "Delete an item",
+            notes = "Removes an item from a specified order",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful removal of the specified item"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public void removeItemFromOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "itemId") Long itemId,
@@ -238,10 +325,17 @@ public class OrderController {
     }
 
     /* GET /orders/items/{itemId} */
+    @Transactional
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a description of an item in an Order", response = OrderItemDto.class)
-    @Transactional
+    @ApiOperation(
+            value = "Get details of an item",
+            notes = "Gets a description of a specified item in a given order",
+            response = DiscreteOrderItemDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful retrieval of item details", response = DiscreteOrderItemDto.class),
+            @ApiResponse(code = 404, message = "The specified order or item does not exist")
+    })
     public DiscreteOrderItemDto getOneItemFromOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "itemId") Long itemId,
