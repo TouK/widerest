@@ -17,6 +17,7 @@ import javax.persistence.criteria.Root;
 
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
@@ -73,6 +74,9 @@ public class OrderController {
 
     @Resource(name="blCustomerService")
     private CustomerService customerService;
+
+    @Resource(name="blCatalogService")
+    protected CatalogService catalogService;
 
     @Resource(name = "blOrderItemService")
     protected OrderItemService orderItemService;
@@ -201,9 +205,11 @@ public class OrderController {
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestBody OrderItemDto orderItemDto,
             @PathVariable(value = "orderId") Long orderId) throws PricingException, AddToCartException {
-
-
+        
         Order cart = getOrderForCustomerById(customerUserDetails, orderId);
+        if(catalogService.findSkuById(orderItemDto.getSkuId()) == null) {
+            throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
+        }
 
         orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), false);
         cart = orderService.save(cart, false);
