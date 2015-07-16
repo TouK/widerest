@@ -105,7 +105,7 @@ public class CategoryController {
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single category details",
-            notes = "Gets details of a single non-archived category, specified by its ID",
+            notes = "Gets details of a single non-archived category specified by its ID",
             response = CategoryDto.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of category details", response = CategoryDto.class),
