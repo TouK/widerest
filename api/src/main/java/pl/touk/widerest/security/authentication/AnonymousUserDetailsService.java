@@ -1,5 +1,6 @@
 package pl.touk.widerest.security.authentication;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerRole;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -26,10 +27,10 @@ public class AnonymousUserDetailsService  {
 
     public UserDetails createAnonymousUser() throws DataAccessException {
         Customer customer = customerService.createNewCustomer();
-        //customer.setUsername("anonymous");
         customer.setUsername(String.valueOf(customer.getId()));
+        customer.setPassword(RandomStringUtils.randomAscii(8));
         List<GrantedAuthority> grantedAuthorities = createGrantedAuthorities(roleService.findCustomerRolesByCustomerId(customer.getId()));
-        CustomerUserDetails anonymous = new CustomerUserDetails(customer.getId(), customer.getUsername(), "", !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
+        CustomerUserDetails anonymous = new CustomerUserDetails(customer.getId(), customer.getUsername(), customer.getPassword(), !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
         anonymous.eraseCredentials();
         customerService.saveCustomer(customer);
         return anonymous;

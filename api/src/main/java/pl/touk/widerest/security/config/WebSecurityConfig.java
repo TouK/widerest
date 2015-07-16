@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.CustomAuthenticationProvider;
@@ -67,6 +66,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .requestMatchers()
+                    .antMatchers("/oauth/authorize", "/login", "/logout", "/webjars/**", "/css/**")
+                    .and()
                 .authorizeRequests()
                     .antMatchers("/webjars/**", "/css/**").permitAll()
                     .anyRequest().permitAll()

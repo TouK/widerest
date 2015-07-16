@@ -65,10 +65,13 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
         return new JwtTokenStore(jwtTokenEnhancer());
     }
 
+    @Autowired
+    private UserAuthenticationConverterImpl userAuthenticationConverter;
+
     @Bean
     public JwtAccessTokenConverter jwtTokenEnhancer() {
         JwtAccessTokenConverter jwtAccessTokenConverter = new JwtAccessTokenConverter();
-        ((DefaultAccessTokenConverter)jwtAccessTokenConverter.getAccessTokenConverter()).setUserTokenConverter(new UserAuthenticationConverterImpl());
+        ((DefaultAccessTokenConverter)jwtAccessTokenConverter.getAccessTokenConverter()).setUserTokenConverter(userAuthenticationConverter);
         return jwtAccessTokenConverter;
     }
 
