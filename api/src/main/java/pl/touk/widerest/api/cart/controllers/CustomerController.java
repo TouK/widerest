@@ -3,7 +3,11 @@ package pl.touk.widerest.api.cart.controllers;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.profile.core.domain.Customer;
+import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.http.HttpStatus;
@@ -19,7 +23,16 @@ import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.catalog.DtoConverters;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Created by mst on 07.07.15.
@@ -35,6 +48,9 @@ public class CustomerController {
     @Resource(name="blOrderService")
     private OrderService orderService;
 
+    @PersistenceContext(unitName = "blPU")
+    protected EntityManager em;
+
 
     @Transactional
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -48,5 +64,29 @@ public class CustomerController {
         return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 
+    @Transactional
+    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all customers",
+            notes = "Gets a list of all currently active customers",
+            response = CustomerDto.class,
+            responseContainer = "List"
+    )
+    public List<CustomerDto> readAllCustomers() {
+        return getAllCustomers().stream().map(DtoConverters.customerEntityToDto).collect(Collectors.toList());
+    }
+
+
+    private List<Customer> getAllCustomers() {
+        CriteriaBuilder builder = this.em.getCriteriaBuilder();
+        CriteriaQuery criteria = builder.createQuery(Customer.class);
+        Root customer = criteria.from(CustomerImpl.class);
+        criteria = criteria.select(customer);
+        TypedQuery query = this.em.createQuery(criteria);
+        query.setHint("org.hibernate.cacheable", Boolean.valueOf(true));
+        query.setHint("org.hibernate.cacheRegion", "query.Order");
+        return query.getResultList();
+    }
 
 }
