@@ -12,6 +12,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Collection;
@@ -47,6 +48,7 @@ public class UserAuthenticationConverterImpl implements UserAuthenticationConver
         return response;
     }
 
+    @Transactional
     public Authentication extractAuthentication(Map<String, ?> map) {
         if (map.containsKey(SUB)) {
 
