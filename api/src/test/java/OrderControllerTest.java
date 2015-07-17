@@ -6,10 +6,12 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.Application;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by mst on 09.07.15.
@@ -52,17 +55,25 @@ public class OrderControllerTest extends ApiTestBase {
 
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.add("Authorization", "Bearer " + access_token);
+        HttpEntity<String> requestHeadersEntity = new HttpEntity<>(requestHeaders);
 
         //System.out.println("Token length: " + access_token.length());
         //System.out.println(access_token);
 
         ResponseEntity<OrderDto> responseOrderEntity = restTemplate.postForEntity(
                 ORDERS_URL,
-                new HttpEntity<>(requestHeaders),
+                requestHeadersEntity,
                 OrderDto.class);
 
-        System.out.println(responseOrderEntity.getStatusCode());
-        System.out.println(responseOrderEntity.getHeaders().getLocation().toString());
+        assertTrue(responseOrderEntity.getStatusCode() == HttpStatus.CREATED);
+
+        DiscreteOrderItemDto newItem = DiscreteOrderItemDto.builder().skuId(1).quantity(4).build();
+
+        ResponseEntity<DiscreteOrderItemDto> addNewItemResponseEntity = restTemplate.postForEntity(
+                ORDERS_URL + "/items",
+                requestHeadersEntity,
+                newItem, DiscreteOrderItemDto.class);
+
 
     }
 

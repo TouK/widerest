@@ -98,7 +98,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public ProductDto readOneProduct(@PathVariable(value="id") Long productId) {
+    public ProductDto readOneProduct(@PathVariable(value = "id") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .map(DtoConverters.productEntityToDto)
@@ -118,11 +118,11 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful update of the specified product"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public void changeOneProduct(@PathVariable(value="id") Long id, @RequestBody ProductDto productDto) {
+    public void changeOneProduct(@PathVariable(value = "id") Long id, @RequestBody ProductDto productDto) {
 
         Product productToChange = catalogService.findProductById(id);
 
-        if(productToChange!= null) {
+        if (productToChange != null) {
             catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
         } else {
             throw new ResourceNotFoundException("Cannot change product with id " + id + ". Not Found");
@@ -141,11 +141,11 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product details"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public void removeOneProduct(@PathVariable(value="id") Long id) {
+    public void removeOneProduct(@PathVariable(value = "id") Long id) {
 
         Product productToDelete = catalogService.findProductById(id);
 
-        if(productToDelete == null) {
+        if (productToDelete == null) {
             throw new ResourceNotFoundException("Cannot delete product with ID: " + id + ". Product does not exist");
         }
 
@@ -165,7 +165,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public List<CategoryDto> readCategoriesByProduct(@PathVariable (value = "id") Long productId) {
+    public List<CategoryDto> readCategoriesByProduct(@PathVariable(value = "id") Long productId) {
 
         Product product = catalogService.findProductById(productId);
 
@@ -207,7 +207,7 @@ public class ProductController {
     }
 
     //TODO: what about adding SKU by ID?
-    /* POST /prodcuts/{id}/skus */
+    /* POST /products/{id}/skus */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{id}/skus", method = RequestMethod.POST)
     @ApiOperation(
@@ -219,19 +219,151 @@ public class ProductController {
             @ApiResponse(code = 201, message = "Specified SKU successfully added"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public ResponseEntity<?> saveOneSkuByProduct(@PathVariable (value = "id") Long productId, @RequestBody SkuDto skusDto) {
+    public ResponseEntity<?> saveOneSkuByProduct(@PathVariable(value = "id") Long productId, @RequestBody SkuDto skusDto) {
 
         Product product = catalogService.findProductById(productId);
 
-        if(product == null) {
+        if (product == null) {
             throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
         }
 
-        catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skusDto));
+        Sku createdSkuEntity = catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skusDto));
         product.getAllSkus().add(DtoConverters.skuDtoToEntity.apply(skusDto));
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(null, HttpStatus.CREATED);
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/products/{productId}/skus/{skuId}")
+                .buildAndExpand(productId, createdSkuEntity.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+    }
+
+    /* GET /products/{productId{/skus/{skuId} */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a single SKU details",
+            notes = "Gets details of a single SKU, specified by its ID",
+            response = SkuDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public SkuDto getSkuById(
+            @PathVariable(value = "productId") Long productId,
+            @PathVariable(value = "skuId") Long skuId) {
+
+        Product product = catalogService.findProductById(productId);
+
+        if (product == null) {
+            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
+        }
+
+        List<Sku> skus = product.getAllSkus();
+
+        if (skus == null || skus.isEmpty()) {
+            throw new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId);
+        }
+
+        return skus.stream().filter(x -> x.getId() == skuId).limit(2).map(DtoConverters.skuEntityToDto).collect(Collectors.toList()).get(0);
+    }
+
+    /* GET /products/{productId{/skus/{skuId} */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get default SKU details",
+            notes = "Gets details of a default SKU belonging to a specified product",
+            response = SkuDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public SkuDto getDefaultSkuByProductId(
+            @PathVariable(value = "productId") Long productId) {
+
+        Product product = catalogService.findProductById(productId);
+
+        if (product == null) {
+            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
+        }
+
+        Sku defaultSku = product.getDefaultSku();
+
+        if (defaultSku == null) {
+            throw new ResourceNotFoundException("Product with ID: " + productId + " does not have a default SKU set");
+        }
+
+        return DtoConverters.skuEntityToDto.apply(defaultSku);
+    }
+
+
+    /* GET /skus/count */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all SKUs",
+            notes = "Gets a number of all SKUs related to the specific product",
+            response = Long.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU count"),
+            @ApiResponse(code = 404, message = "The specified product does not exist")
+    })
+    public Long getAllSkusCount(@PathVariable(value = "productId") Long productId) {
+
+
+        Product product = catalogService.findProductById(productId);
+
+        if (product == null) {
+            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
+        }
+
+        return product.getAllSkus().stream().count();
+    }
+
+    /* DELETE /products/{productId}/skus/{id} */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete an existing SKU",
+            notes = "Removes an existing SKU from catalog",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful removal of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public void deleteOneSkuById(
+            @PathVariable(value = "productId") Long productId,
+            @PathVariable(value = "skuId") Long skuId) {
+
+        Product product = catalogService.findProductById(productId);
+
+        if (product == null) {
+            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
+        }
+
+        Sku skuToDelete = catalogService.findSkuById(skuId);
+
+        if (skuToDelete == null) {
+            throw new ResourceNotFoundException("Sku with ID: " + skuId + ". Not found");
+        }
+
+        /* check if the SKU is actually related to this product */
+        if (product.getAllSkus() == null || !product.getAllSkus().contains(skuToDelete)) {
+            throw new ResourceNotFoundException("Sku with ID: " + skuId + " found but it is not related to the product with ID: " + productId);
+        }
+
+        /* TODO: do we need to remove it also from product's getAllSkus() list? I dont think so... */
+        catalogService.removeSku(skuToDelete);
     }
 
 
@@ -252,7 +384,7 @@ public class ProductController {
 
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary != null) {
+        if (ratingSummary != null) {
             List<ReviewDetail> reviewDetail = ratingSummary.getReviews();
 
             return reviewDetail.stream().map(DtoConverters.reviewEntityToDto).collect(Collectors.toList());
@@ -279,13 +411,13 @@ public class ProductController {
 
         Product product = catalogService.findProductById(productId);
 
-        if(product == null) {
+        if (product == null) {
             throw new ResourceNotFoundException("Cannot find product with ID: " + productId);
         }
 
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary == null) {
+        if (ratingSummary == null) {
             /* TODO: Do we create a new one ?! */
         }
 
@@ -311,7 +443,7 @@ public class ProductController {
         Integer reviewCount = 0;
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary != null) {
+        if (ratingSummary != null) {
             reviewCount = ratingSummary.getNumberOfReviews();
         }
 
@@ -330,7 +462,7 @@ public class ProductController {
         Integer ratingsCount = 0;
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary != null) {
+        if (ratingSummary != null) {
             ratingsCount = ratingSummary.getNumberOfRatings();
         }
 
@@ -349,7 +481,7 @@ public class ProductController {
         Double avgRating = 0.0;
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary != null) {
+        if (ratingSummary != null) {
             avgRating = ratingSummary.getAverageRating();
         }
 
@@ -368,10 +500,177 @@ public class ProductController {
     public List<RatingDto> getRatingsForProduct(@PathVariable(value = "id") Long productId) {
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
-        if(ratingSummary != null) {
+        if (ratingSummary != null) {
             return ratingSummary.getRatings().stream().map(DtoConverters.ratingEntityToDto).collect(Collectors.toList());
         }
 
         return Collections.emptyList();
     }
 }
+
+
+    /* PUT /skus/{id} */
+    /*
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update an existing SKU",
+            notes = "Updates an exising SKU with new details",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public void updateOneSkuById(
+            @PathVariable (value = "id") Long skuId,
+            @RequestBody SkuDto skuDto) {
+
+        Sku sku = catalogService.findSkuById(skuId);
+
+        if(sku == null) {
+            throw new ResourceNotFoundException("Cannot find SKU with ID: " + skuId);
+        }
+
+        skuDto.setSkuId(skuId);
+
+        catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
+    }
+    */
+
+
+
+/* This is a copy of an old SKU controller, just in case I missed something while copying/rewriting it to ProductController */
+/*
+public class SkuController {
+
+    @Resource(name="blCatalogService")
+    protected CatalogService catalogService;
+
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all SKUs",
+            notes = "Gets a list of all available SKUs in the catalog",
+            response = SkuDto.class,
+            responseContainer = "List"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKUs list", response = SkuDto.class)
+    })
+    public List<SkuDto> getAllSkus() {
+        return catalogService.findAllSkus().stream().map(DtoConverters.skuEntityToDto).collect(Collectors.toList());
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a new SKU",
+            notes = "Adds a new SKU to the catalog. Returns an URL to the newly added SKU in the Location field" +
+                    "of the HTTP response header",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new SKU entry successfully created")
+    })
+    public ResponseEntity<?> saveOneSku(@RequestBody SkuDto skuDto) {
+
+        Sku createdSkuEntity = catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
+
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdSkuEntity.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+    }
+
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a single SKU details",
+            notes = "Gets details of a single SKU, specified by its ID",
+            response = SkuDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 404, message = "The specified SKU does not exist")
+    })
+    public SkuDto getSkusById(@PathVariable (value = "id") Long skuId) {
+
+        Sku sku = catalogService.findSkuById(skuId);
+
+        if(sku == null) {
+            throw new ResourceNotFoundException("Cannot find SKU with ID: " + skuId);
+        }
+
+        return DtoConverters.skuEntityToDto.apply(sku);
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete an existing SKU",
+            notes = "Removes an existing SKU from catalog",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful removal of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified SKU does not exist")
+    })
+    public void deleteOneSkuById(@PathVariable (value = "id") Long skuId) {
+
+        Sku skuToDelete = catalogService.findSkuById(skuId);
+
+        if(skuToDelete == null) {
+            throw new ResourceNotFoundException("Sku of ID: " + skuId + ". Not found");
+        }
+
+        catalogService.removeSku(skuToDelete);
+    }
+
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update an existing SKU",
+            notes = "Updates an exising SKU with new details",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public void updateOneSkuById(
+            @PathVariable (value = "id") Long skuId,
+            @RequestBody SkuDto skuDto) {
+
+        Sku sku = catalogService.findSkuById(skuId);
+
+        if(sku == null) {
+            throw new ResourceNotFoundException("Cannot find SKU with ID: " + skuId);
+        }
+
+        skuDto.setSkuId(skuId);
+
+        catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
+    }
+
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all SKUs",
+            notes = "Gets a number of all SKUs available in the catalog",
+            response = Long.class
+    )
+    public Long getAllSkusCount() {
+        return catalogService.findAllSkus().stream().count();
+    }
+}
+*/
