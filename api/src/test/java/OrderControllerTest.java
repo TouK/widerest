@@ -69,10 +69,10 @@ public class OrderControllerTest extends ApiTestBase {
 
         DiscreteOrderItemDto newItem = DiscreteOrderItemDto.builder().skuId(1).quantity(4).build();
 
-        ResponseEntity<DiscreteOrderItemDto> addNewItemResponseEntity = restTemplate.postForEntity(
-                ORDERS_URL + "/items",
-                requestHeadersEntity,
-                newItem, DiscreteOrderItemDto.class);
+        //ResponseEntity<DiscreteOrderItemDto> addNewItemResponseEntity = restTemplate.postForEntity(
+        //        ORDERS_URL + "/items",
+        //        requestHeadersEntity,
+        //        newItem, DiscreteOrderItemDto.class);
 
 
     }

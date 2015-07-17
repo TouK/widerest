@@ -19,7 +19,6 @@ import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
-import pl.touk.widerest.api.catalog.controllers.SkuController;
 
 import pl.touk.widerest.api.catalog.dto.*;
 
@@ -64,7 +63,7 @@ public class DtoConverters {
                 .quantityAvailable(entity.getQuantityAvailable())
                 .code(entity.getTaxCode()).build();
         // selection wysylany jest tylko od klienta
-        dto.add(linkTo(methodOn(SkuController.class).getSkusById(entity.getId())).withSelfRel());
+        dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId())).withSelfRel());
         return dto;
     };
 
@@ -192,7 +191,7 @@ public class DtoConverters {
 
         /* Link to a default SKU if it exists. I mean...it should exist, right?  */
         if(entity.getDefaultSku() != null) {
-            dto.add(linkTo(methodOn(SkuController.class).getSkusById(entity.getDefaultSku().getId())).withRel("default-sku"));
+            dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getId(), entity.getDefaultSku().getId())).withRel("default-sku"));
         }
 
         /* Link to a product's category */
