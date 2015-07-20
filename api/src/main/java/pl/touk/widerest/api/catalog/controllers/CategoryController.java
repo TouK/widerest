@@ -60,17 +60,29 @@ public class CategoryController {
     }
 
     /* POST /categories */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    /* TMP */
+    @PreAuthorize("permitAll")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",
-            notes = "Adds a new category to the catalog. It does not take duplicates into  account. " +
+            notes = "Adds a new category to the catalog. It does take duplicates (same name and description ) into account. " +
                     "Returns an URL to the newly added category in the Location field of the HTTP response header",
             response = ResponseEntity.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new category entry successfully created")
+            @ApiResponse(code = 201, message = "A new category entry successfully created"),
+            @ApiResponse(code = 409, message = "Category already exists")
     })
     public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
+
+        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+                .filter(x -> x.getDescription().equals(categoryDto.getDescription()))
+                .count();
+
+        if(duplicatesCount > 0) {
+            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+        }
 
         Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
 
@@ -248,16 +260,12 @@ public class CategoryController {
     public ProductDto readOneProductFromCategory(@PathVariable(value="id") Long categoryId,
                                                  @PathVariable(value = "productId") Long productId) {
 
-        Product product = this.getProductsFromCategoryId(categoryId).stream()
+        return this.getProductsFromCategoryId(categoryId).stream()
                 .filter(x -> x.getId() == productId)
-                .limit(2)
-                .collect(Collectors.toList()).get(0);
+                .findAny()
+                .map(DtoConverters.productEntityToDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + productId + " in category: " + categoryId));
 
-        if(product == null) {
-            throw new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId);
-        } else {
-            return DtoConverters.productEntityToDto.apply(product);
-        }
     }
 
     // TODO: test if it actually works

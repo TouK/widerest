@@ -39,6 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -88,7 +89,7 @@ public class OrderController {
 
     /* GET /orders */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all orders",
@@ -98,13 +99,17 @@ public class OrderController {
     @ApiResponses(value =
             @ApiResponse(code = 200, message = "Successful retrieval of orders list")
     )
-    public List<OrderDto> getOrders(@AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+    public List<OrderDto> getOrders(@AuthenticationPrincipal UserDetails customerUserDetails,
                                     @RequestParam(value="status", required=false) String status) {
 
-        return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
+
+        System.out.println("Current User: " + customerUserDetails.getUsername());
+
+        /*return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
                 .map(DtoConverters.orderEntityToDto)
                 .filter(x -> status == null || x.getStatus().equals(status) )
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
+        return Collections.emptyList();
 }
 
     /* GET /orders/{orderId} */

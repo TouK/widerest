@@ -106,7 +106,7 @@ public class DtoConverters {
         categoryEntity.setName(dto.getName());
 
         if(dto.getDescription() != null) {
-            categoryEntity.setDescription(dto.getName());
+            categoryEntity.setDescription(dto.getDescription());
         }
 
         if(dto.getLongDescription() != null) {

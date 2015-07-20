@@ -9,10 +9,15 @@ import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
+import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
+import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +34,7 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -87,6 +93,19 @@ public class CustomerController {
         query.setHint("org.hibernate.cacheable", Boolean.valueOf(true));
         query.setHint("org.hibernate.cacheRegion", "query.Order");
         return query.getResultList();
+    }
+
+
+    private void mergeUsers(
+            @AuthenticationPrincipal CustomerUserDetails anonymousUser,
+            @AuthenticationPrincipal CustomerUserDetails loggedInUser) {
+
+        TokenStore tokenStore = null;
+
+        UserAuthenticationConverter userAuthenticationConverter;
+
+        Collection<OAuth2AccessToken> anonToken = tokenStore.findTokensByClientId(anonymousUser.getId().toString());
+        ;
     }
 
 }

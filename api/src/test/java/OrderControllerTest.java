@@ -18,7 +18,9 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -34,7 +36,8 @@ public class OrderControllerTest extends ApiTestBase {
 
 
     @Test
-    public void Test1() throws URISyntaxException {;
+    public void Test1() throws URISyntaxException {
+        ;
 
         URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
 
@@ -77,4 +80,50 @@ public class OrderControllerTest extends ApiTestBase {
 
     }
 
+    @Test
+    public void Test2() throws URISyntaxException {
+
+        // Get anonymous token
+        URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+
+        assertNotNull(orderDtoResponseUri);
+
+        String authorizationAnonymousUrl = orderDtoResponseUri.toString().replaceFirst("#", "?");
+        List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(authorizationAnonymousUrl), "UTF-8");
+
+        String accessAnonymousToken = authorizationParams.stream()
+                .filter(x -> x.getName().equals("access_token")).collect(Collectors.toList()).get(0).getValue();
+
+        System.out.println("Token length: " + accessAnonymousToken.length());
+        System.out.println(accessAnonymousToken);
+
+        // Get logged token
+
+        Map<String, String> loginDetails = new HashMap<>();
+        loginDetails.put("username", "admin");
+        loginDetails.put("password", "admin");
+
+        URI adminUri = restTemplate.postForLocation(LOGIN_URL, loginDetails);
+
+
+        assertNotNull(adminUri);
+
+        String authorizationLoggedUrl = adminUri.toString().replaceFirst("#", "?");
+        List<NameValuePair> authorizationLoggedParams = URLEncodedUtils.parse(new URI(authorizationLoggedUrl), "UTF-8");
+
+        System.out.println(authorizationLoggedParams.size());
+
+        String accessLoggedToken = authorizationLoggedParams.stream()
+                //.filter(x -> x.getName().equals("access_token"))
+                .collect(Collectors.toList()).get(0).getValue();
+
+        System.out.println(adminUri);
+
+
+        //System.out.println("Token length: " + accessLoggedToken.length());
+        //System.out.println(accessLoggedToken);
+
+        //System.out.println("Are tokens the same?: " + accessAnonymousToken.equals(accessLoggedToken));
+
+    }
 }

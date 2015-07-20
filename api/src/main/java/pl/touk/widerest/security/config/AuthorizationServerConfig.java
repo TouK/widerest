@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
@@ -66,7 +67,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     }
 
     @Autowired
-    private UserAuthenticationConverterImpl userAuthenticationConverter;
+    private UserAuthenticationConverter userAuthenticationConverter;
 
     @Bean
     public JwtAccessTokenConverter jwtTokenEnhancer() {

@@ -28,13 +28,13 @@ public class CategoryDto extends ResourceSupport {
     @JsonIgnore
     private Long categoryId;
 
-    @ApiModelProperty(position = 1, value = "Category name", required = true)
+    @ApiModelProperty(position = 0, value = "Category name", required = true)
     private String name;
 
-    @ApiModelProperty(position = 2, value = "Short description of the category", required = true)
+    @ApiModelProperty(position = 1, value = "Short description of the category", required = true)
     private String description;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 3, value = "Long description of the category", required = false)
+    @ApiModelProperty(position = 2, value = "Long description of the category", required = false)
     private String longDescription;
 }
