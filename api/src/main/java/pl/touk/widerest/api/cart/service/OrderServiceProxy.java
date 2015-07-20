@@ -38,23 +38,19 @@ public class OrderServiceProxy {
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
-    @PostAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PostAuthorize("hasAnyRole('PERMISSION_ALL_ADMIN_ROLES', 'ROLE_USER')")
     public List<Order> getOrdersByCustomer(CustomerUserDetails customerUserDetails) throws CustomerNotFoundException {
 
-        if(customerUserDetails.getAuthorities().contains(new SimpleGrantedAuthority("'ROLE_ADMIN"))) {
-            return getAllOrders();
-        } else {
-            Customer customer = customerService.readCustomerById(customerUserDetails.getId());
-
-            if(customer == null) {
-                throw new CustomerNotFoundException("Cannot find customer with ID: " + customerUserDetails.getId());
-            }
-
-            return orderService.findOrdersForCustomer(customer);
+        Customer customer = customerService.readCustomerById(customerUserDetails.getId());
+        if(customer == null) {
+            throw new CustomerNotFoundException("Cannot find customer with ID: " + customerUserDetails.getId());
         }
+
+        return orderService.findOrdersForCustomer(customer);
     }
 
-    private List<Order> getAllOrders() {
+    @PostAuthorize("hasRole('PERMISSION_ALL_ORDER')")
+    public List<Order> getAllOrders() {
         CriteriaBuilder builder = this.em.getCriteriaBuilder();
         CriteriaQuery criteria = builder.createQuery(Order.class);
         Root order = criteria.from(OrderImpl.class);
