@@ -13,6 +13,7 @@ import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.token.TokenStore;
@@ -84,6 +85,7 @@ public class CustomerController {
     }
 
 
+    @PostAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
     private List<Customer> getAllCustomers() {
         CriteriaBuilder builder = this.em.getCriteriaBuilder();
         CriteriaQuery criteria = builder.createQuery(Customer.class);
@@ -105,7 +107,7 @@ public class CustomerController {
         UserAuthenticationConverter userAuthenticationConverter;
 
         Collection<OAuth2AccessToken> anonToken = tokenStore.findTokensByClientId(anonymousUser.getId().toString());
-        ;
+
     }
 
 }
