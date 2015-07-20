@@ -29,6 +29,7 @@ import org.broadleafcommerce.core.order.service.exception.RemoveFromCartExceptio
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.core.web.service.UpdateCartService;
+import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -89,7 +90,7 @@ public class OrderController {
 
     /* GET /orders */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all orders",
@@ -99,17 +100,23 @@ public class OrderController {
     @ApiResponses(value =
             @ApiResponse(code = 200, message = "Successful retrieval of orders list")
     )
-    public List<OrderDto> getOrders(@AuthenticationPrincipal UserDetails customerUserDetails,
+    public List<OrderDto> getOrders(@AuthenticationPrincipal UserDetails userDetails,
                                     @RequestParam(value="status", required=false) String status) {
 
+        if(userDetails instanceof CustomerUserDetails) {
+            CustomerUserDetails customerUserDetails = (CustomerUserDetails)userDetails;
+            return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
+                    .map(DtoConverters.orderEntityToDto)
+                    .filter(x -> status == null || x.getStatus().equals(status))
+                    .collect(Collectors.toList());
+        } else if(userDetails instanceof AdminUserDetails) {
+            return orderServiceProxy.getAllOrders().stream()
+                    .map(DtoConverters.orderEntityToDto)
+                    .collect(Collectors.toList());
+        }
 
-        System.out.println("Current User: " + customerUserDetails.getUsername());
-
-        /*return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
-                .map(DtoConverters.orderEntityToDto)
-                .filter(x -> status == null || x.getStatus().equals(status) )
-                .collect(Collectors.toList());*/
-        return Collections.emptyList();
+        // Shouldn't go there, but in case it was unauthorized return null
+        return null;
 }
 
     /* GET /orders/{orderId} */
