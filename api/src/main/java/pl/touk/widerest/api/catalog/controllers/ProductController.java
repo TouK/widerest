@@ -61,7 +61,7 @@ public class ProductController {
         return catalogService.findAllProducts().stream().map(DtoConverters.productEntityToDto).collect(Collectors.toList());
     }
 
-    /* POST /prodcuts */
+    /* POST /products */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
@@ -130,7 +130,7 @@ public class ProductController {
 
     }
 
-    /* DELETE /prodcuts/{id} */
+    /* DELETE /products/{id} */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     @ApiOperation(
@@ -152,7 +152,7 @@ public class ProductController {
         catalogService.removeProduct(productToDelete);
     }
 
-    /* GET /prodcuts/{id}/categories */
+    /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/categories", method = RequestMethod.GET)
@@ -181,7 +181,7 @@ public class ProductController {
 
     }
 
-    /* GET /prodcuts/{id}/skus */
+    /* GET /products/{id}/skus */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/skus", method = RequestMethod.GET)
