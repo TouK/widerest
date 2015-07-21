@@ -50,7 +50,7 @@ public abstract class ApiTestBase {
 
             ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
             resourceDetails.setGrantType("password");
-            resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
+            resourceDetails.setAccessTokenUri("http://localhost:" + /*serverPort*/ "8080" + "/oauth/token");
             resourceDetails.setClientId("test");
             resourceDetails.setScope(scopes);
 

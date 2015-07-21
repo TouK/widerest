@@ -182,7 +182,7 @@ public class OrderController {
 
     /* DELETE /orders/ */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an order",
@@ -193,11 +193,15 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public void deleteOrderForCustomer(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
 
         //orderService.cancelOrder(orders.get(0));
-        orderService.deleteOrder(getOrderForCustomerById(customerUserDetails, orderId));
+        if(userDetails instanceof CustomerUserDetails) {
+            orderService.deleteOrder(getOrderForCustomerById((CustomerUserDetails)userDetails, orderId));
+        } else if(userDetails instanceof AdminUserDetails) {
+            orderService.deleteOrder(orderService.findOrderById(orderId));
+        }
     }
 
 
