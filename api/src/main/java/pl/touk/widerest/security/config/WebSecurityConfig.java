@@ -14,7 +14,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
 import org.springframework.web.bind.annotation.SessionAttributes;
-import pl.touk.widerest.security.authentication.*;
+import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
+import pl.touk.widerest.security.authentication.CustomAuthenticationProvider;
+import pl.touk.widerest.security.authentication.CustomFormLoginConfigurer;
+import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationProvider;
+import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 
 @Configuration
 @EnableWebMvcSecurity
@@ -81,8 +85,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin().disable()
                 .apply(new CustomFormLoginConfigurer<HttpSecurity>()).loginPage("/login").permitAll().and()
                 .logout().permitAll().and()
-                .anonymous()
-                .and().csrf().disable();
+                .anonymous().and()
+                .httpBasic().and()
+                .csrf().disable();
     }
 
 }
