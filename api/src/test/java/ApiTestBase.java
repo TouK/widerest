@@ -39,6 +39,11 @@ public abstract class ApiTestBase {
 
     protected OAuth2RestTemplate oAuth2AnonymousRestTemplate;
 
+    /* This is the way to access admin related REST API!
+     *
+     * TODO: inject constants instead of hardcoding them
+     *
+     */
     protected OAuth2RestTemplate oAuth2AdminRestTemplate() {
         if(oAuth2AnonymousRestTemplate == null) {
 
@@ -48,11 +53,11 @@ public abstract class ApiTestBase {
 
             ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
             resourceDetails.setGrantType("password");
-            resourceDetails.setAccessTokenUri("http://localhost:8080/oauth/authorize");
-            resourceDetails.setClientId("backoffice");
+            resourceDetails.setAccessTokenUri("http://localhost:8080/oauth/token");
+            resourceDetails.setClientId("test");
             resourceDetails.setScope(scopes);
 
-            resourceDetails.setUsername("admin");
+            resourceDetails.setUsername("backoffice/admin");
             resourceDetails.setPassword("admin");
 
 
@@ -63,5 +68,6 @@ public abstract class ApiTestBase {
 
         return this.oAuth2AnonymousRestTemplate;
     }
+
 
 }

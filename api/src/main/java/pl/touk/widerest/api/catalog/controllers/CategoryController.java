@@ -62,8 +62,8 @@ public class CategoryController {
     /* POST /categories */
     //@PreAuthorize("hasRole('ROLE_ADMIN')")
     /* TMP */
-    @PreAuthorize("permitAll")
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    //@PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",

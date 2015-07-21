@@ -18,9 +18,8 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
-//@ContextConfiguration(locations = {"classpath:/blc-config/site/bl-*-applicationContext.xml"})
 //@WebAppConfiguration
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -54,7 +53,7 @@ public class CategoryControllerTest extends ApiTestBase {
         return remoteAddCategoryEntity;
     }
 
-   
+
     @Test
     public void localAndRemoteCountValuesAreEqualTest() {
         assertThat(getRemoteTotalCountValue(), equalTo((long)catalogService.findAllCategories().size()));
@@ -81,7 +80,6 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalCountValue(), equalTo(currentCategoryCount));
 
     }
-
 
 
     @Test
