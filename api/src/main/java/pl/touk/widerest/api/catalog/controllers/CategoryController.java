@@ -139,7 +139,7 @@ public class CategoryController {
     }
 
     /* DELETE /categories/id */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing category",
@@ -163,7 +163,7 @@ public class CategoryController {
 
     /* PUT /categories/{id} */
     // TODO: make sure this actually works as expected
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing category",
@@ -211,7 +211,7 @@ public class CategoryController {
     }
 
     /* POST /categories/{id}/products */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}/products", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a product to the category",
@@ -270,7 +270,7 @@ public class CategoryController {
 
     // TODO: test if it actually works
     /* PUT /categories/{id}/products/{productId} */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}/products/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update details of a single product in a category",
@@ -298,7 +298,7 @@ public class CategoryController {
     }
 
     /* DELETE /categories/{id}/products/{productId} */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}/products/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a product from a category",
