@@ -1,3 +1,5 @@
+package base;
+
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
@@ -16,16 +18,16 @@ public class DtoTestFactory {
         Object returnObjectDto;
 
         switch(dtoTestType) {
-            case CATEGORY_DTO:
+            case DtoTestType.CATEGORY_DTO:
                 returnObjectDto = getTestCategory();
                 break;
-            case PRODUCT_DTO:
+            case DtoTestType.PRODUCT_DTO:
                 returnObjectDto = getTestProduct();
                 break;
-            case SKU_DTO:
+            case DtoTestType.SKU_DTO:
                 returnObjectDto = getTestSku();
                 break;
-            case ORDER_DTO:
+            case DtoTestType.ORDER_DTO:
                 returnObjectDto = getTestOrder();
                 break;
             default:

@@ -1,5 +1,6 @@
 package cart;
 
+import base.ApiTestBase;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;

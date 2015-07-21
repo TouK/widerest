@@ -1,3 +1,5 @@
+package base;
+
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.CatalogServiceImpl;
 import org.springframework.beans.factory.annotation.Value;

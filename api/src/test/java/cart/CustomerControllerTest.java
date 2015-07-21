@@ -1,5 +1,6 @@
 package cart;
 
+import base.ApiTestBase;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

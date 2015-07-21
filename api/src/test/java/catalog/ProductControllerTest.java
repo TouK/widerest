@@ -1,12 +1,9 @@
 package catalog;
 
+import base.ApiTestBase;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 

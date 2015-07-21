@@ -1,5 +1,8 @@
 package catalog;
 
+import base.ApiTestBase;
+import base.DtoTestFactory;
+import base.DtoTestType;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.junit.Before;
 import org.junit.Test;
