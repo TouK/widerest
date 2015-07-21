@@ -2,6 +2,7 @@ package pl.touk.widerest.api.catalog.controllers;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -211,6 +212,9 @@ public class CategoryController {
     }
 
     /* POST /categories/{id}/products */
+    /*
+     * TODO: What if the product has defaultSKU set but no entry in allSkus list? (= copy?)
+     */
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}/products", method = RequestMethod.POST)
     @ApiOperation(
@@ -328,6 +332,18 @@ public class CategoryController {
 
         category.getAllProducts().remove(product);
         catalogService.saveCategory(category);
+    }
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{id}/products/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all products in a specific category",
+            notes = "Gets a number of all products belonging to a specified category",
+            response = Long.class)
+    public Long getAllProductsInCategoryCount(@PathVariable(value = "categoryId") Long categoryId) {
+        return Optional.ofNullable((long)getProductsFromCategoryId(categoryId).size())
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {

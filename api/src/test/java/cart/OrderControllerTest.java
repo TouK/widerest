@@ -1,3 +1,4 @@
+package cart;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -39,7 +40,7 @@ public class OrderControllerTest extends ApiTestBase {
     public void Test1() throws URISyntaxException {
         ;
 
-        URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+        URI orderDtoResponseUri = restTemplate.postForLocation(ApiTestBase.OAUTH_AUTHORIZATION, null);
 
         assertNotNull(orderDtoResponseUri);
 
@@ -64,7 +65,7 @@ public class OrderControllerTest extends ApiTestBase {
         //System.out.println(access_token);
 
         ResponseEntity<OrderDto> responseOrderEntity = restTemplate.postForEntity(
-                ORDERS_URL,
+                ApiTestBase.ORDERS_URL,
                 requestHeadersEntity,
                 OrderDto.class);
 
@@ -84,7 +85,7 @@ public class OrderControllerTest extends ApiTestBase {
     public void Test2() throws URISyntaxException {
 
         // Get anonymous token
-        URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+        URI orderDtoResponseUri = restTemplate.postForLocation(ApiTestBase.OAUTH_AUTHORIZATION, null);
 
         assertNotNull(orderDtoResponseUri);
 
@@ -103,7 +104,7 @@ public class OrderControllerTest extends ApiTestBase {
         loginDetails.put("username", "admin");
         loginDetails.put("password", "admin");
 
-        URI adminUri = restTemplate.postForLocation(LOGIN_URL, loginDetails);
+        URI adminUri = restTemplate.postForLocation(ApiTestBase.LOGIN_URL, loginDetails);
 
 
         assertNotNull(adminUri);

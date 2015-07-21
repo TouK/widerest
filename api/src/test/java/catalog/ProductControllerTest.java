@@ -1,3 +1,5 @@
+package catalog;
+
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +26,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         //when
         ResponseEntity<ProductDto[]> receivedProductsEntity =
-                restTemplate.getForEntity(PRODUCTS_URL, ProductDto[].class, serverPort);
+                restTemplate.getForEntity(ApiTestBase.PRODUCTS_URL, ProductDto[].class, serverPort);
 
 
         assertNotNull(receivedProductsEntity);
@@ -44,7 +46,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void readProductsByIdTest() {
         ResponseEntity<ProductDto[]> receivedProductsEntity =
-                restTemplate.getForEntity(PRODUCTS_URL, ProductDto[].class, serverPort);
+                restTemplate.getForEntity(ApiTestBase.PRODUCTS_URL, ProductDto[].class, serverPort);
 
         assertNotNull(receivedProductsEntity);
         assertTrue("List of products not found", receivedProductsEntity.getStatusCode().value() == 200);
