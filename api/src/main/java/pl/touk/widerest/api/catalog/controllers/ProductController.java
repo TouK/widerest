@@ -62,7 +62,7 @@ public class ProductController {
     }
 
     /* POST /products */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -84,6 +84,23 @@ public class ProductController {
                 .toUri());
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+    }
+
+    /* GET /products/count */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all products",
+            notes = "Gets a number of all available products",
+            response = Long.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of products count")
+    })
+    public Long getAllProductsCount() {
+
+        return catalogService.findAllProducts().stream().count();
     }
 
     /* GET /prodcuts/{id} */
@@ -108,7 +125,7 @@ public class ProductController {
     }
 
     /* PUT /products/{id} */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing product",
@@ -131,7 +148,7 @@ public class ProductController {
     }
 
     /* DELETE /products/{id} */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing product",
@@ -208,7 +225,7 @@ public class ProductController {
 
     //TODO: what about adding SKU by ID?
     /* POST /products/{id}/skus */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @RequestMapping(value = "/{id}/skus", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a SKU to the product",
@@ -331,7 +348,7 @@ public class ProductController {
     }
 
     /* DELETE /products/{productId}/skus/{id} */
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing SKU",
@@ -369,7 +386,7 @@ public class ProductController {
 
     /* GET /products/{id}/reviews */
     @Transactional
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/reviews", method = RequestMethod.GET)
     @ApiOperation(
             value = "List all reviews for the product",
@@ -394,7 +411,7 @@ public class ProductController {
     }
 
     /* POST /products/{id}/reviews */
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ADMIN_ROLES', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/reviews", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a review for a the product",

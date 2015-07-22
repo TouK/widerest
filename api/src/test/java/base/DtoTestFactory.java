@@ -18,16 +18,16 @@ public class DtoTestFactory {
         Object returnObjectDto;
 
         switch(dtoTestType) {
-            case DtoTestType.CATEGORY_DTO:
+            case CATEGORY_DTO:
                 returnObjectDto = getTestCategory();
                 break;
-            case DtoTestType.PRODUCT_DTO:
+            case PRODUCT_DTO:
                 returnObjectDto = getTestProduct();
                 break;
-            case DtoTestType.SKU_DTO:
+            case SKU_DTO:
                 returnObjectDto = getTestSku();
                 break;
-            case DtoTestType.ORDER_DTO:
+            case ORDER_DTO:
                 returnObjectDto = getTestOrder();
                 break;
             default:

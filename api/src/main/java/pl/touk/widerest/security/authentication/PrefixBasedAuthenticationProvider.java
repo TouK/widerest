@@ -1,9 +1,9 @@
 package pl.touk.widerest.security.authentication;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
@@ -19,25 +19,51 @@ public class PrefixBasedAuthenticationProvider implements AuthenticationProvider
         authenticationProviders.put(site, authenticationProvider);
     }
 
+    public void setProviders(Map<String, AuthenticationProvider> providers) {
+        this.authenticationProviders = authenticationProviders;
+    }
+
+    public static Pair<String, String> getAuthDataFromString(String authenticationString) throws AuthenticationException {
+
+        String[] result = StringUtils.split(authenticationString, "/");
+
+        if(result.length == 0 || result.length > 2) {
+            throw new BadCredentialsException("Wrong credentials provided");
+        } else if(result.length == 1) {
+            throw new BadCredentialsException("Missing username or usertype");
+        } else {
+            /* proper form: usertype/username has been provided */
+            Pair<String, String> resultPair = new ImmutablePair<>(result[0], result[1]);
+            return resultPair;
+        }
+    }
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        Authentication auth = null;
-        String[] tab = StringUtils.split(String.valueOf(authentication.getPrincipal()), "/");
 
-        if(tab.length == 0 || tab.length > 2) {
-            throw new BadCredentialsException("Wrong credentials provided");
-        } else if(tab.length == 1) {
-            auth = new UsernamePasswordAuthenticationToken(tab[0], authentication.getCredentials());
-            return authenticationProviders.get("site").authenticate(auth);
-        } else if(tab[0].equals("site")) {
-            auth = new SiteAuthenticationToken(tab[1], authentication.getCredentials());
-        } else if (tab[0].equals("backoffice")) {
-            auth = new BackofficeAuthenticationToken(tab[1], authentication.getCredentials());
-        } else {
-            auth = new UsernamePasswordAuthenticationToken(tab[1], authentication.getCredentials());
+        if(authentication == null || authentication.getPrincipal() == null) {
+            throw new AuthenticationServiceException("");
         }
 
-        return authenticationProviders.get(tab[0]).authenticate(auth);
+        /* left - usertype, right - username */
+        Pair<String, String> authDetails = getAuthDataFromString(String.valueOf(authentication.getPrincipal()));
+
+        String username = authDetails.getRight();
+        Object credentials = authentication.getCredentials();
+        Authentication auth = null;
+
+        switch(authDetails.getLeft()) {
+            case "site":
+                auth = new SiteAuthenticationToken(username, credentials);
+                break;
+            case "backoffice":
+                auth = new BackofficeAuthenticationToken(username, credentials);
+                break;
+            default:
+                auth = new UsernamePasswordAuthenticationToken(username, credentials);
+        }
+
+        return authenticationProviders.get(authDetails.getLeft()).authenticate(auth);
     }
 
     @Override

@@ -11,8 +11,10 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpClientErrorException;
+import org.thymeleaf.util.StringUtils;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
 
 import java.util.List;
 import java.util.Random;
@@ -22,18 +24,18 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
-
-    private static final String CATEGORIES_COUNT_URL = "http://localhost:{port}/catalog/categories/count";
 
     private HttpHeaders httpRequestHeader;
 
     @Before
     public void initCategoryTests() {
         this.httpRequestHeader = new HttpHeaders();
-        cleanupCategoryTests();
+        //tmp
+        serverPort = String.valueOf(8080);
+        //cleanupCategoryTests();
     }
 
     private void cleanupCategoryTests() {
@@ -49,9 +51,22 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
 
-    private long getRemoteTotalCountValue() {
+    private long getRemoteTotalProductsInCategorCountValue(long categoryId) {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort, categoryId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
+    private long getRemoteTotalCategoriesCountValue() {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
 
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
@@ -74,16 +89,16 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void localAndRemoteCountValuesAreEqualTest() {
-        assertThat(getRemoteTotalCountValue(), equalTo((long)catalogService.findAllCategories().size()));
+        assertThat(getRemoteTotalCategoriesCountValue(), equalTo((long)catalogService.findAllCategories().size()));
     }
 
     @Test
     public void addingNewCategoryIncreasesTotalCountNumber() {
-        long currentCategoryCount = getRemoteTotalCountValue();
+        long currentCategoryCount = getRemoteTotalCategoriesCountValue();
 
         addNewTestCategory();
 
-        assertThat(getRemoteTotalCountValue(), equalTo(currentCategoryCount + 1));
+        assertThat(getRemoteTotalCategoriesCountValue(), equalTo(currentCategoryCount + 1));
     }
 
     @Test(expected = HttpClientErrorException.class)
@@ -91,11 +106,11 @@ public class CategoryControllerTest extends ApiTestBase {
 
         addNewTestCategory();
 
-        long currentCategoryCount = getRemoteTotalCountValue();
+        long currentCategoryCount = getRemoteTotalCategoriesCountValue();
 
         addNewTestCategory();
 
-        assertThat(getRemoteTotalCountValue(), equalTo(currentCategoryCount));
+        assertThat(getRemoteTotalCategoriesCountValue(), equalTo(currentCategoryCount));
 
     }
 
@@ -195,6 +210,40 @@ public class CategoryControllerTest extends ApiTestBase {
         if(receivedCategoryDtoAfterDelete.getBody() != null) {
             assertTrue(!receivedCategoryDtoAfterDelete.getBody().getName().equals(categoryDto.getName()));
         }
+    }
+
+
+    @Test
+    public void addNewProductToNewCategoryAndCheckIfItExists() {
+
+        ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();
+
+        assertTrue(addNewCategoryResponse.getStatusCode() == HttpStatus.CREATED);
+
+        String createdCategoryLocationUri = addNewCategoryResponse.getHeaders().getLocation().toString();
+
+        assertNotNull(createdCategoryLocationUri);
+        assertTrue(!createdCategoryLocationUri.isEmpty());
+
+        String[] createdCategoryLocation = StringUtils.split(createdCategoryLocationUri, "/");
+
+        long createdCategoryId = Long.parseLong(createdCategoryLocation[createdCategoryLocation.length - 1]);
+
+        long currentProductsCount = getRemoteTotalProductsInCategorCountValue(createdCategoryId);
+
+        ProductDto productDto = (ProductDto) DtoTestFactory.getDtoTestObject(DtoTestType.PRODUCT_DTO);
+
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL + "/{p}/products", productDto, null, serverPort, createdCategoryId);
+
+        assertNotNull(remoteAddProductEntity);
+        assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        assertThat(getRemoteTotalProductsInCategorCountValue(createdCategoryId), equalTo(currentProductsCount + 1));
+    }
+
+    @Test
+    public void addExistingProductToTheCategoryAndCheckIfCountDoesNotIncrease() {
+
     }
 
 }

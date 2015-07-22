@@ -341,9 +341,13 @@ public class CategoryController {
             value = "Count all products in a specific category",
             notes = "Gets a number of all products belonging to a specified category",
             response = Long.class)
-    public Long getAllProductsInCategoryCount(@PathVariable(value = "categoryId") Long categoryId) {
-        return Optional.ofNullable((long)getProductsFromCategoryId(categoryId).size())
-                .orElseThrow(ResourceNotFoundException::new);
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of products count"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public Long getAllProductsInCategoryCount(@PathVariable(value = "id") Long categoryId) {
+
+        return getProductsFromCategoryId(categoryId).stream().count();
     }
 
     private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {

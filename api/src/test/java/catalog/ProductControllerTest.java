@@ -2,8 +2,9 @@ package catalog;
 
 import base.ApiTestBase;
 import org.broadleafcommerce.core.catalog.domain.Product;
+import org.junit.Before;
 import org.junit.Test;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 
@@ -17,6 +18,42 @@ import static org.junit.Assert.*;
 //@SpringApplicationConfiguration(classes = Application.class)
 
 public class ProductControllerTest extends ApiTestBase {
+
+    private HttpHeaders httpRequestHeader;
+
+    @Before
+    public void initCategoryTests() {
+        this.httpRequestHeader = new HttpHeaders();
+        //tmp
+        serverPort = String.valueOf(8080);
+        //cleanupCategoryTests();
+    }
+
+    private long getRemoteTotalProductsCount() {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
+
+    private long getRemoteTotalSkusForProductCount(long productId) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort, productId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
 
     @Test
     public void readProductsTest() {
@@ -55,6 +92,23 @@ public class ProductControllerTest extends ApiTestBase {
 //        org.broadleafcommerce.core.catalog.domain.Product localProduct = catalogService.findProductById(receivedProductSingleEntity.getId());
 
         assertTrue(receivedProductSingleEntity.equals(localProduct));
+
+    }
+
+
+    @Test
+    public void addingNewSKUIncreasesSkusCount() {
+
+    }
+
+    @Test
+    public void addingNewProductIncreasesProductsCount() {
+
+    }
+
+    /* Duplicate = ??? */
+    @Test
+    public void addingDuplicateProductDoesNotIncreaseProductsCount() {
 
     }
 
