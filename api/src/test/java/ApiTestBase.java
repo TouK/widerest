@@ -57,11 +57,7 @@ public abstract class ApiTestBase {
             resourceDetails.setUsername("backoffice/admin");
             resourceDetails.setPassword("admin");
 
-
-
-
             return new OAuth2RestTemplate(resourceDetails);
     }
-
 
 }

@@ -1,8 +1,10 @@
-
+import org.apache.commons.collections.map.MultiValueMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.restlet.data.Method;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
@@ -32,6 +34,10 @@ import static org.junit.Assert.*;
 //@SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
+    private HttpHeaders httpRequestHeader = new HttpHeaders();
+
+    private final String ORDERS_COUNT = ORDERS_URL+"/count";
+
     private String strapToken(URI response) throws URISyntaxException {
         String authorizationUrl = response.toString().replaceFirst("#", "?");
         List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
@@ -49,9 +55,6 @@ public class OrderControllerTest extends ApiTestBase {
         return new HttpEntity<>(requestHeaders);
     }
 
-    private HttpHeaders httpRequestHeader = new HttpHeaders();
-
-    private final String ORDERS_COUNT = ORDERS_URL+"/count";
 
     private long getRemoteTotalOrdersCountValue(String token) {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
@@ -78,6 +81,19 @@ public class OrderControllerTest extends ApiTestBase {
                 .orElse(null);
 
         return goodOne==null?false:true;
+    }
+
+    private Integer getRemoteItemsInOrderCount(Integer orderId, String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/count",
+                HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().intValue();
     }
 
     @Test
@@ -166,12 +182,38 @@ public class OrderControllerTest extends ApiTestBase {
         template.setQuantity(quantity);
         template.setSkuId(skuId);
 
-        return restTemplate.postForEntity(location, template, null, getProperEntity(token));
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(template, requestHeaders);
+
+        return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class);
+    }
+
+    private Integer strapSufixId(String url) {
+        // Assuming it is /df/ab/{sufix}
+        String[] tab = StringUtils.split(url, "/");
+        return Integer.parseInt(tab[tab.length - 1]);
+    }
+
+    private ResponseEntity<HttpHeaders> deleteRemoveOrderItem(RestTemplate restTemplate, String token,
+                                                              Integer orderId, Integer orderItemId) {
+        //OrderItemDto template = new OrderItemDto();
+        //template.setItemId(orderItemId);
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
+
+        return restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items/"+orderItemId,
+                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class);
+
     }
 
     @Test
     public void AnonymousUserOrderUsageTest() throws URISyntaxException {
-        //TODO: fix addItemToOrder, it doesnt work ok right now
 
         // Creating user and order
         RestTemplate restTemplate = new RestTemplate();
@@ -184,73 +226,31 @@ public class OrderControllerTest extends ApiTestBase {
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
                 restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class);
 
+        Integer orderId = strapSufixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
+
+
         // Add 3 items, check count
         ResponseEntity<HttpHeaders> itemAddResponse =
                 addItemToOrder(10, 5, anonymousOrderHeaders.getHeaders().getLocation()+"/items", accessToken, restTemplate);
         assert(itemAddResponse.getStatusCode().value() == 201);
 
-        itemAddResponse = addItemToOrder(11, 3, anonymousOrderHeaders.getHeaders().getLocation()+"/items", accessToken, restTemplate);
+        itemAddResponse =
+                addItemToOrder(11, 3, anonymousOrderHeaders.getHeaders().getLocation()+"/items", accessToken, restTemplate);
         assert(itemAddResponse.getStatusCode().value() == 201);
 
-        itemAddResponse = addItemToOrder(12, 4, anonymousOrderHeaders.getHeaders().getLocation()+"/items", accessToken, restTemplate);
+        itemAddResponse =
+                addItemToOrder(12, 4, anonymousOrderHeaders.getHeaders().getLocation()+"/items", accessToken, restTemplate);
         assert(itemAddResponse.getStatusCode().value() == 201);
 
-        assert(getRemoteTotalOrdersCountValue(accessToken) == 3);
+        assert(getRemoteItemsInOrderCount(orderId, accessToken) == 12);
 
         // Remove 1 item, check count
-        restTemplate.delete(anonymousOrderHeaders.getHeaders().getLocation()+"/items/1");
-        assert(getRemoteTotalOrdersCountValue(accessToken) == 2);
+        ResponseEntity<HttpHeaders> itemRemovalResponse =
+            deleteRemoveOrderItem(restTemplate, accessToken, orderId, strapSufixId(itemAddResponse.getHeaders().getLocation().toString()));
 
-        // Check order status
-
-
-
+        assert(itemRemovalResponse.getStatusCode().value() == 200);
+        assert(getRemoteItemsInOrderCount(orderId, accessToken) == 8);
 
     }
-
-/*
-    public void Test1() throws URISyntaxException {
-
-        URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
-
-        assertNotNull(orderDtoResponseUri);
-
-        String authorizationUrl = orderDtoResponseUri.toString().replaceFirst("#", "?");
-
-        List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
-
-        /*
-        for(NameValuePair v : authorizationParams) {
-            System.out.println(v.getName() + " : " + v.getValue());
-        }*/
-
-        String access_token = authorizationParams.stream()
-                .filter(x -> x.getName().equals("access_token")).collect(Collectors.toList()).get(0).getValue();
-
-
-        HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.add("Authorization", "Bearer " + access_token);
-        HttpEntity<String> requestHeadersEntity = new HttpEntity<>(requestHeaders);
-
-        //System.out.println("Token length: " + access_token.length());
-        //System.out.println(access_token);
-
-        ResponseEntity<OrderDto> responseOrderEntity = restTemplate.postForEntity(
-                ORDERS_URL,
-                requestHeadersEntity,
-                OrderDto.class);
-
-        assertTrue(responseOrderEntity.getStatusCode() == HttpStatus.CREATED);
-
-        DiscreteOrderItemDto newItem = DiscreteOrderItemDto.builder().skuId(1).quantity(4).build();
-
-        //ResponseEntity<DiscreteOrderItemDto> addNewItemResponseEntity = restTemplate.postForEntity(
-        //        ORDERS_URL + "/items",
-        //        requestHeadersEntity,
-        //        newItem, DiscreteOrderItemDto.class);
-
-
-    }
-*/
 
 }
