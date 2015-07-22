@@ -25,6 +25,10 @@ public class PrefixBasedAuthenticationProvider implements AuthenticationProvider
 
     public static Pair<String, String> getAuthDataFromString(String authenticationString) throws AuthenticationException {
 
+        if(authenticationString == null) {
+            throw new BadCredentialsException("Credentials not passed");
+        }
+
         String[] result = StringUtils.split(authenticationString, "/");
 
         if(result.length == 0 || result.length > 2) {
