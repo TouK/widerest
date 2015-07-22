@@ -75,7 +75,7 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        Product product = catalogService.createProduct(ProductType.PRODUCT);
+        //Product product = catalogService.createProduct(ProductType.PRODUCT);
 
 
 

@@ -30,16 +30,4 @@ public class ProductOptionDto {
     @ApiModelProperty
     private List<String> allowedValues;
 
-    /*
-    public ProductOptionDto(ProductOption productOption) {
-        this.name = productOption.getAttributeName();
-        this.allowedValues = Lists.transform(productOption.getAllowedValues(), new Function<ProductOptionValue, String>() {
-
-            @Nullable
-            @Override
-            public String apply(@Nullable ProductOptionValue productOptionValue) {
-                return productOptionValue.getAttributeValue();
-            }
-        });
-    }*/
 }
