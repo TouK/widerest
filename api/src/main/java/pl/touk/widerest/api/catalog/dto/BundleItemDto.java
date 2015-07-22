@@ -11,8 +11,6 @@ import lombok.experimental.Builder;
 @Data
 @Builder
 public class BundleItemDto {
-
     private long quantity;
-
     private long productId;
 }

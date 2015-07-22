@@ -39,7 +39,7 @@
     </bean>
 
     <!-- Scan DemoSite Sample Payment Gateway Implementation -->
-    <!--context:component-scan base-package="com.mycompany.sample" /-->
+    <!--context:component-scan pl.touk.widerest.base-package="com.mycompany.sample" /-->
 
     <!--bean class="com.mycompany.sample.vendor.nullPaymentGateway.service.payment.NullPaymentGatewayType"/-->
 

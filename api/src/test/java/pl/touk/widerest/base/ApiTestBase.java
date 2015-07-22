@@ -1,14 +1,11 @@
-package base;
+package pl.touk.widerest.base;
 
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.catalog.service.CatalogServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.BroadleafApplicationContextInitializer;
@@ -66,7 +63,7 @@ public abstract class ApiTestBase {
 
             ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
             resourceDetails.setGrantType("password");
-            resourceDetails.setAccessTokenUri("http://localhost:" + /*serverPort*/ "8080" + "/oauth/token");
+            resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
             resourceDetails.setClientId("test");
             resourceDetails.setScope(scopes);
 

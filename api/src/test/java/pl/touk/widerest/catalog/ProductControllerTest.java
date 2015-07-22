@@ -1,10 +1,14 @@
-package catalog;
+package pl.touk.widerest.catalog;
 
-import base.ApiTestBase;
+import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.DtoTestFactory;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
+import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 
@@ -15,7 +19,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 //@RunWith(SpringJUnit4ClassRunner.class)
-//@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = Application.class)
 
 public class ProductControllerTest extends ApiTestBase {
 
@@ -54,6 +58,14 @@ public class ProductControllerTest extends ApiTestBase {
         return remoteCountEntity.getBody().longValue();
     }
 
+    private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
+
+        ProductDto productDto = DtoTestFactory.getTestProduct();
+
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
+
+        return remoteAddProductEntity;
+    }
 
     @Test
     public void readProductsTest() {
@@ -104,6 +116,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void addingNewProductIncreasesProductsCount() {
 
+        addNewTestProduct();
     }
 
     /* Duplicate = ??? */
