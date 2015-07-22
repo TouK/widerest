@@ -1,3 +1,6 @@
+package cart;
+
+import base.ApiTestBase;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
@@ -13,6 +16,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -25,7 +29,7 @@ public class CustomerControllerTest extends ApiTestBase {
     public void Test2() throws URISyntaxException {
 
         // Get anonymous token
-        URI orderDtoResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+        URI orderDtoResponseUri = restTemplate.postForLocation(ApiTestBase.OAUTH_AUTHORIZATION, null);
 
         assertNotNull(orderDtoResponseUri);
 

@@ -1,14 +1,18 @@
+package base;
+
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+
+import java.math.BigDecimal;
 
 /**
  * Created by mst on 20.07.15.
  */
 public class DtoTestFactory {
 
-    /* Implement Flyweight pattern ??? */
+    /* TODO: Implement Flyweight pattern instead of blindly creating the same NEW object every time */
     public static Object getDtoTestObject(DtoTestType dtoTestType) {
 
         Object returnObjectDto;
@@ -45,14 +49,32 @@ public class DtoTestFactory {
     }
 
     private static ProductDto getTestProduct() {
-        return null;
+
+        ProductDto productDto = ProductDto.builder()
+                .name("testProduct")
+                .description("testProductDescription")
+                .longDescription("testProductLongDescription")
+                .defaultSku(getTestSku())
+                .category(getTestCategory())
+                .build();
+
+        return productDto;
     }
 
     private static SkuDto getTestSku() {
-        return null;
+        SkuDto newSku = SkuDto.builder()
+                .description("testSkuDescription")
+                .price(new BigDecimal(99.99))
+                .quantityAvailable(99)
+                .build();
+        return newSku;
     }
 
     private static OrderDto getTestOrder() {
-        return null;
+        OrderDto newOrder = OrderDto.builder()
+                /*...*/
+                .build();
+
+        return newOrder;
     }
 }

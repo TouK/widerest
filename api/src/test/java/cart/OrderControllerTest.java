@@ -1,3 +1,6 @@
+package cart;
+
+import base.ApiTestBase;
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
@@ -116,7 +119,6 @@ public class OrderControllerTest extends ApiTestBase {
         String accessSecondAnonymousToken = strapToken(SecondResponseUri);
 
         // Get logged token
-
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
 
         URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null);
@@ -131,7 +133,6 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         // User makes order, admin can see it and other user not
-
         HttpEntity<?> anonymousFirstHttpEntity = getProperEntity(accessFirstAnonymousToken);
 
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
@@ -199,8 +200,6 @@ public class OrderControllerTest extends ApiTestBase {
 
     private ResponseEntity<HttpHeaders> deleteRemoveOrderItem(RestTemplate restTemplate, String token,
                                                               Integer orderId, Integer orderItemId) {
-        //OrderItemDto template = new OrderItemDto();
-        //template.setItemId(orderItemId);
 
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
