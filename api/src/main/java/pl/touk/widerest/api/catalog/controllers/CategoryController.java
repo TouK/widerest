@@ -79,6 +79,7 @@ public class CategoryController {
 
         long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                 .filter(x -> x.getDescription().equals(categoryDto.getDescription()))
+                .filter(x -> ((Status)x).getArchived() == 'N')
                 .count();
 
         if(duplicatesCount > 0) {

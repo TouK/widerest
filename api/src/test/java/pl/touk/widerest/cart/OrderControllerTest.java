@@ -1,7 +1,6 @@
-package cart;
+package pl.touk.widerest.cart;
 
-import base.ApiTestBase;
-import org.apache.commons.collections.map.MultiValueMap;
+import pl.touk.widerest.base.ApiTestBase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -9,30 +8,17 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.restlet.data.Method;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.Application;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
-import pl.touk.widerest.api.cart.service.OrderServiceProxy;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 
 
 import javax.persistence.Tuple;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 

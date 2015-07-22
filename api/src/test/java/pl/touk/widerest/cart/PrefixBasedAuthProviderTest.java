@@ -1,4 +1,4 @@
-package cart;
+package pl.touk.widerest.cart;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class PrefixBasedAuthProviderTest {
     }
 
     @Test
-    public void followingSlashCausesExceptionTest() {
+    public void properDataFollowedWithASlashParsesCorrectlyTest() {
         resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site/admin/");
         assertThat(resultsPair.getLeft(), equalTo("site"));
         assertThat(resultsPair.getRight(), equalTo("admin"));

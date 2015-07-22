@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.catalog.service.type.ProductType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.rating.domain.RatingDetail;
 import org.broadleafcommerce.core.rating.domain.RatingSummary;
@@ -73,6 +74,10 @@ public class ProductController {
             @ApiResponse(code = 201, message = "A new product successfully created")
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
+
+        //Product product = catalogService.createProduct(ProductType.PRODUCT);
+
+
 
         Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
 

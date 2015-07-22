@@ -1,15 +1,10 @@
-package cart;
+package pl.touk.widerest.cart;
 
-import base.ApiTestBase;
+import pl.touk.widerest.base.ApiTestBase;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -3,7 +3,9 @@ package pl.touk.widerest.api.catalog.dto;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
 
@@ -14,6 +16,8 @@ import java.util.List;
 @ApiModel
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SkuDto extends ResourceSupport {
 
     @ApiModelProperty

@@ -129,7 +129,7 @@
 		<level name="Maven: net.sf.ehcache:ehcache:2.7.2" value="project"/>
 		<level name="Maven: org.broadleafcommerce:broadleaf-framework-web:4.0.0-RC1" value="project"/>
 		<level name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.5.0" value="project"/>
-		<level name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:2.5.0" value="project"/>
+		<level name="Maven: com.fasterxml.jackson.jaxrs:jackson-jaxrs-pl.touk.widerest.base:2.5.0" value="project"/>
 		<level name="Maven: com.fasterxml.jackson.core:jackson-core:2.5.0" value="project"/>
 		<level name="Maven: org.springframework:spring-webmvc:4.1.5.RELEASE" value="project"/>
 		<level name="Maven: org.springframework:spring-expression:4.1.5.RELEASE" value="project"/>
