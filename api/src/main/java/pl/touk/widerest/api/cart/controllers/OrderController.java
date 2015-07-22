@@ -182,7 +182,7 @@ public class OrderController {
 
     /* DELETE /orders/ */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an order",
@@ -193,11 +193,15 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public void deleteOrderForCustomer(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
 
         //orderService.cancelOrder(orders.get(0));
-        orderService.deleteOrder(getOrderForCustomerById(customerUserDetails, orderId));
+        if(userDetails instanceof CustomerUserDetails) {
+            orderService.deleteOrder(getOrderForCustomerById((CustomerUserDetails)userDetails, orderId));
+        } else if(userDetails instanceof AdminUserDetails) {
+            orderService.deleteOrder(orderService.findOrderById(orderId));
+        }
     }
 
 
@@ -239,7 +243,7 @@ public class OrderController {
 
     /* GET /orders/items/ */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.GET)
     @ApiOperation(
             value = "List all items in an order",
@@ -251,29 +255,50 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public List<DiscreteOrderItemDto> getAllItemsInOrder (
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
 
-        Order order = getOrderForCustomerById(customerUserDetails, orderId);
+        if(userDetails instanceof CustomerUserDetails) {
+            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
+                    .orElseThrow(ResourceNotFoundException::new)
+                    .getDiscreteOrderItems().stream()
+                    .map(DtoConverters.discreteOrderItemEntityToDto)
+                    .collect(Collectors.toList());
 
-        return Optional.ofNullable(order.getDiscreteOrderItems().stream().map(DtoConverters.discreteOrderItemEntityToDto).collect(Collectors.toList()))
-                .orElseThrow(ResourceNotFoundException::new);
+        } else if(userDetails instanceof AdminUserDetails) {
+            return Optional.ofNullable(orderService.findOrderById(orderId)).orElseThrow(ResourceNotFoundException::new)
+                    .getDiscreteOrderItems().stream()
+                    .map(DtoConverters.discreteOrderItemEntityToDto)
+                    .collect(Collectors.toList());
+        }
+
+        return null;
     }
 
     /* GET /orders/{orderId}/items/count */
     @Transactional
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
     @ApiOperation(
             value = "Count all items in the order",
             notes = "Gets a number of all items placed already in the specified order",
             response = Integer.class)
     public Integer getItemsCountByOrderId (
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) {
 
-        Order order = getOrderForCustomerById(customerUserDetails, orderId);
-        return order.getItemCount();
+        if(userDetails instanceof CustomerUserDetails) {
+            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails)userDetails, orderId))
+                    .orElseThrow(ResourceNotFoundException::new)
+                    .getItemCount();
+
+        } else if(userDetails instanceof AdminUserDetails) {
+            return Optional.ofNullable(orderService.findOrderById(orderId))
+                    .orElseThrow(ResourceNotFoundException::new)
+                    .getItemCount();
+
+        }
+        return null;
     }
 
     @Transactional

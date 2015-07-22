@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
@@ -20,7 +21,6 @@ import static org.hamcrest.CoreMatchers.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
-//@ContextConfiguration(locations = {"classpath:/blc-config/site/bl-*-applicationContext.xml"})
 //@WebAppConfiguration
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -49,12 +49,12 @@ public class CategoryControllerTest extends ApiTestBase {
 
         CategoryDto categoryDto = (CategoryDto) DtoTestFactory.getDtoTestObject(DtoTestType.CATEGORY_DTO);
 
-        ResponseEntity<CategoryDto> remoteAddCategoryEntity = restTemplate.postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
 
         return remoteAddCategoryEntity;
     }
 
-   
+
     @Test
     public void localAndRemoteCountValuesAreEqualTest() {
         assertThat(getRemoteTotalCountValue(), equalTo((long)catalogService.findAllCategories().size()));
@@ -81,7 +81,6 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalCountValue(), equalTo(currentCategoryCount));
 
     }
-
 
 
     @Test
@@ -122,12 +121,12 @@ public class CategoryControllerTest extends ApiTestBase {
                 receivedCategoryDto.getDescription().equals(localCategoryEntity.getDescription()));
     }
 
-    @Test
+    @Test(expected = HttpClientErrorException.class)
     public void createReadDeleteTest() {
 
         CategoryDto categoryDto = CategoryDto.builder().name("testcategory").description("testcategory").build();
 
-        ResponseEntity<CategoryDto> createdCategoryResponse = restTemplate.postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
+        ResponseEntity<CategoryDto> createdCategoryResponse = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
 
         System.out.println("Location: " + createdCategoryResponse.getHeaders().getLocation());
 
@@ -147,12 +146,14 @@ public class CategoryControllerTest extends ApiTestBase {
                 categoryDto.getDescription().equals(receivedCategoryDto.getBody().getDescription()));
 
 
-        restTemplate.delete(createdCategoryLocationUri, 1);
+        oAuth2AdminRestTemplate().delete(createdCategoryLocationUri, 1);
 
         ResponseEntity<CategoryDto> receivedCategoryDtoAfterDelete = restTemplate.getForEntity(
                 createdCategoryLocationUri, CategoryDto.class, serverPort);
 
         assertNotNull(receivedCategoryDtoAfterDelete);
+
+        assertThat(receivedCategoryDtoAfterDelete.getStatusCode(), equalTo(404));
 
         if(receivedCategoryDtoAfterDelete.getBody() != null) {
             assertTrue(!receivedCategoryDtoAfterDelete.getBody().getName().equals(categoryDto.getName()));
