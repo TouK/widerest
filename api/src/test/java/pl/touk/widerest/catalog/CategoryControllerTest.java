@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -34,7 +34,8 @@ public class CategoryControllerTest extends ApiTestBase {
     @Before
     public void initCategoryTests() {
         this.httpRequestHeader = new HttpHeaders();
-        //serverPort = String.valueOf(8080);
+        /* uncomment the following for "local" testing */
+        serverPort = String.valueOf(8080);
         cleanupCategoryTests();
     }
 
@@ -73,7 +74,7 @@ public class CategoryControllerTest extends ApiTestBase {
                 restTemplate.getForEntity(ApiTestBase.CATEGORIES_URL, CategoryDto[].class, serverPort);
         //then
         assertThat(receivedCategoriesEntity.getStatusCode().value(), equalTo(200));
-        assertThat((long)receivedCategoriesEntity.getBody().length, equalTo(getLocalTotalCategoriesCountValue()));
+        assertThat((long) receivedCategoriesEntity.getBody().length, equalTo(getLocalTotalCategoriesCountValue()));
 
     }
 
@@ -170,7 +171,62 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore("Do not forget to implement me!")
+    public void modifyingExistingCategoryDoesNotCreateANewOneInsteadTest() {
+        /* Create a test category */
+        ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();
+        assertTrue(addNewCategoryResponse.getStatusCode() == HttpStatus.CREATED);
+        String createdCategoryLocationUri = addNewCategoryResponse.getHeaders().getLocation().toString();
+
+        long currentCategoriesCount = getRemoteTotalCategoriesCountValue();
+
+        //when
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        categoryDto.setDescription("ModifiedTestCategoryDescription");
+        categoryDto.setName("ModifiedTestCategoryName");
+        categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
+
+        oAuth2AdminRestTemplate().put(createdCategoryLocationUri, categoryDto, serverPort);
+
+        //then
+        assertThat(getRemoteTotalCategoriesCountValue(), equalTo(currentCategoriesCount));
+
+    }
+
+    @Test
+    public void modifyingExistingCategoryDoesActuallyModifyItsValuesTest() {
+        /* Create a test category */
+        ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();
+        assertTrue(addNewCategoryResponse.getStatusCode() == HttpStatus.CREATED);
+        String createdCategoryLocationUri = addNewCategoryResponse.getHeaders().getLocation().toString();
+
+        long currentCategoriesCount = getRemoteTotalCategoriesCountValue();
+
+        //when
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        categoryDto.setDescription("ModifiedTestCategoryDescription");
+        categoryDto.setName("ModifiedTestCategoryName");
+        categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
+
+        oAuth2AdminRestTemplate().put(createdCategoryLocationUri, categoryDto, serverPort);
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(createdCategoryLocationUri, CategoryDto.class, serverPort);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+
+        //then
+        CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+        assertThat(categoryDto.getName(), equalTo(receivedCategoryDto.getName()));
+        assertThat(categoryDto.getDescription(), equalTo(receivedCategoryDto.getDescription()));
+        assertThat(categoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
+
+    }
+
+
+
+    @Test
+    @Ignore("Do not forget to implement me! :)")
     public void addNewProductToNewCategoryAndCheckIfItExists() {
 
         ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();

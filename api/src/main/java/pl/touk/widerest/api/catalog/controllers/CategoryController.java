@@ -185,6 +185,8 @@ public class CategoryController {
             throw new ResourceNotFoundException("Cannot change category with ID " + id + ". Category not found");
         }
 
+        categoryDto.setCategoryId(categoryToChange.getId());
+
         catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
     }
 
