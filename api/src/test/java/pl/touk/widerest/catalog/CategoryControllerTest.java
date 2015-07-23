@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -35,7 +35,7 @@ public class CategoryControllerTest extends ApiTestBase {
     public void initCategoryTests() {
         this.httpRequestHeader = new HttpHeaders();
         /* uncomment the following for "local" testing */
-        serverPort = String.valueOf(8080);
+        //serverPort = String.valueOf(8080);
         cleanupCategoryTests();
     }
 
@@ -222,6 +222,8 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(categoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
 
     }
+
+
 
 
 

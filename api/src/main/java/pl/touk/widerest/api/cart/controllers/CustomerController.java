@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  * Created by mst on 07.07.15.
  */
 @RestController
-@RequestMapping(value = "/catalog/customers")
+@RequestMapping(value = "/customers")
 @Api(value = "customers", description = "Customer management endpoint")
 public class CustomerController {
 

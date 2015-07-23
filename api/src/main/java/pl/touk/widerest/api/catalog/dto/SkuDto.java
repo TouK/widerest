@@ -1,5 +1,6 @@
 package pl.touk.widerest.api.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -21,24 +22,29 @@ import java.util.List;
 public class SkuDto extends ResourceSupport {
 
     @ApiModelProperty
+    @JsonIgnore
     private Long skuId;
 
+    /*
+    @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty
     private List<ProductOptionSelectionDto> selection;
+*/
 
-    @ApiModelProperty
+    @ApiModelProperty(required = true)
     private String description;
 
-    @ApiModelProperty
+    @ApiModelProperty(required = true)
     private BigDecimal price;
 
+    @ApiModelProperty(required = true)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty
     private Integer quantityAvailable;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private String code;
 
+    @ApiModelProperty
+    private String pictureUrl;
 }

@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.common.persistence.Status;
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -80,18 +81,27 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        //Product product = catalogService.createProduct(ProductType.PRODUCT);
+        Sku defaultSku = Optional.of(productDto.getDefaultSku())
+                .map(DtoConverters.skuDtoToEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
+        Sku savedDefaultSku = catalogService.createSku();
 
+        defaultSku.setId(savedDefaultSku.getId());
 
-        Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
+        savedDefaultSku = catalogService.saveSku(defaultSku);
+
+        //productDto.getDefaultSku().setSkuId(savedDefaultSku.getId());
+        //Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
 
         HttpHeaders responseHeader = new HttpHeaders();
 
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(createdProductEntity.getId())
-                .toUri());
+        //responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+        //        .path("/{id}")
+        //       .buildAndExpand(createdProductEntity.getId())
+        //      .toUri());
+
+        //return new ResponseEntity<>(null, HttpStatus.CREATED);
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
@@ -131,8 +141,6 @@ public class ProductController {
                 .filter(ProductController::validateProductEntity)
                 .map(DtoConverters.productEntityToDto)
                 .orElseThrow(ResourceNotFoundException::new);
-
-
     }
 
     /* PUT /products/{id} */
@@ -147,7 +155,6 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public void changeOneProduct(@PathVariable(value = "id") Long id, @RequestBody ProductDto productDto) {
-
         Optional.ofNullable(catalogService.findProductById(id))
                 .filter(ProductController::validateProductEntity)
                 .map(p -> {
@@ -155,7 +162,6 @@ public class ProductController {
                     return p;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + id + ". Not Found"));
-
     }
 
     /* DELETE /products/{id} */
@@ -171,7 +177,6 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public void removeOneProduct(@PathVariable(value = "id") Long id) {
-
         Optional.ofNullable(catalogService.findProductById(id))
                 .map(e -> {
                     catalogService.removeProduct(e);
@@ -385,7 +390,7 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public List<ReviewDto> getReviewForProduct(@PathVariable(value = "id") Long productId) {
-        
+
         return Optional.ofNullable(ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT))
                 .map(r -> {
                     return r.getReviews().stream()
@@ -510,8 +515,49 @@ public class ProductController {
         return Collections.emptyList();
     }
 
+
+    /* ONLY FOR TESTING */
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/skus", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a new SKU",
+            notes = "Adds a new SKU to the catalog. Returns an URL to the newly added SKU in the Location field" +
+                    "of the HTTP response header",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new SKU entry successfully created")
+    })
+    public ResponseEntity<?> saveOneSku(@RequestBody SkuDto skuDto) {
+
+        Sku createdSku = catalogService.createSku();
+
+        createdSku.setDescription(skuDto.getDescription());
+        createdSku.setTaxCode(skuDto.getCode());
+        createdSku.setQuantityAvailable(skuDto.getQuantityAvailable());
+        createdSku.setSalePrice(new Money(skuDto.getPrice()));
+        createdSku.setRetailPrice(createdSku.getSalePrice());
+        createdSku.setName(skuDto.getDescription());
+        createdSku.setLongDescription(skuDto.getDescription());
+
+        Product sampleProduct = catalogService.findAllProducts().get(2);
+
+        createdSku.setDefaultProduct(sampleProduct);
+        Sku createdSkuEntity = catalogService.saveSku(createdSku);
+
+        // Sku createdSkuEntity = catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
+
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdSkuEntity.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+    }
+
     private static boolean validateProductEntity(Product product) {
-       return ((Status) product).getArchived() == 'N';
+        return ((Status) product).getArchived() == 'N';
     }
 
     private static Boolean validateCategoryEntity(Category category) {

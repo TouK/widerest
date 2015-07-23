@@ -65,7 +65,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
  *
  */
 @RestController
-@RequestMapping("/catalog/orders")
+@RequestMapping("/orders")
 @Api(value = "orders", description = "Order management endpoint")
 public class OrderController {
 

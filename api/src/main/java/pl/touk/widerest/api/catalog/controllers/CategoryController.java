@@ -301,6 +301,7 @@ public class CategoryController {
     }
 
     /* DELETE /categories/{id}/products/{productId} */
+    @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}/products/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(

@@ -61,8 +61,8 @@ public class ProductDto extends ResourceSupport {
     @ApiModelProperty
     List<ProductOptionDto> options;
 
+    @ApiModelProperty(required = true)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty
     private SkuDto defaultSku;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
@@ -79,7 +79,4 @@ public class ProductDto extends ResourceSupport {
 
     @ApiModelProperty
     private String offerMessage;
-
-
-
 }

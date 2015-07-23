@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.catalog;
 
 
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
@@ -72,6 +73,11 @@ public class DtoConverters {
         skuEntity.setDescription(dto.getDescription());
         skuEntity.setTaxCode(dto.getCode());
         skuEntity.setQuantityAvailable(dto.getQuantityAvailable());
+        skuEntity.setSalePrice(new Money(dto.getPrice()));
+        skuEntity.setRetailPrice(skuEntity.getSalePrice());
+        skuEntity.setName(dto.getDescription());
+        skuEntity.setLongDescription(dto.getDescription());
+
         //TODO: co z selection?
 
         return skuEntity;
