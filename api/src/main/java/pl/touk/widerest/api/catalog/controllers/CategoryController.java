@@ -56,19 +56,17 @@ public class CategoryController {
         return new ResponseEntity<>(
                 catalogService.findAllCategories().stream()
                         .filter(entity -> ((Status)entity).getArchived() == 'N')
-                        .map(DtoConverters.categoryEntityToDto).collect(Collectors.toList()),
+                        .map(DtoConverters.categoryEntityToDto)
+                        .collect(Collectors.toList()),
                 HttpStatus.OK);
     }
 
     /* POST /categories */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
-    /* TMP */
-    //@PreAuthorize("permitAll")
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",
-            notes = "Adds a new category to the catalog. It does take duplicates (same name and description ) into account. " +
+            notes = "Adds a new category to the catalog. It does take duplicates (same name and description) into account. " +
                     "Returns an URL to the newly added category in the Location field of the HTTP response header",
             response = ResponseEntity.class)
     @ApiResponses(value = {
@@ -116,7 +114,7 @@ public class CategoryController {
 
     /* GET /categories/{id} */
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{categoryId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single category details",
             notes = "Gets details of a single non-archived category specified by its ID",
@@ -125,7 +123,7 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of category details", response = CategoryDto.class),
             @ApiResponse(code = 404, message = "The specified category does not exist or is marked as archived")
     })
-    public CategoryDto readOneCategoryById(@PathVariable(value="id") Long categoryId) {
+    public CategoryDto readOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
         Category categoryEntity = catalogService.findCategoryById(categoryId);
 
@@ -138,6 +136,11 @@ public class CategoryController {
         }
 
         return DtoConverters.categoryEntityToDto.apply(categoryEntity);
+
+        /*
+        Category c = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with ID: " + categoryId))
+          */
     }
 
     /* DELETE /categories/id */

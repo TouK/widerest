@@ -47,7 +47,7 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
     @Test
-    public void addingNewCategoryIncreasesTotalCountNumber() {
+    public void addingNewCategoryIncreasesTotalCountNumberTest() {
         //when
         long currentCategoryCount = getRemoteTotalCategoriesCountValue();
         addNewTestCategory();
@@ -56,7 +56,7 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
     @Test(expected = HttpClientErrorException.class)
-    public void addingDuplicateCategoryDoesNotIncreaseTotalCountNumber() {
+    public void addingDuplicateCategoryDoesNotIncreaseTotalCountNumberTest() {
         //when
         addNewTestCategory();
         long currentCategoryCount = getRemoteTotalCategoriesCountValue();
@@ -67,7 +67,7 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
     @Test
-    public void readCategoriesTest() {
+    public void numberOfRemotelyRetrievedCategoriesEqualsLocalyStoredCountTest() {
         //when
         ResponseEntity<CategoryDto[]> receivedCategoriesEntity =
                 restTemplate.getForEntity(ApiTestBase.CATEGORIES_URL, CategoryDto[].class, serverPort);
@@ -77,34 +77,42 @@ public class CategoryControllerTest extends ApiTestBase {
 
     }
 
+
+
     @Test
-    public void readCategoriesByIdTest() {
-        //when
-        //
+    public void remotelyRetrievedCategoryEqualsLocalyRetrievedOneTest() {
+        /* retrieve the IDs of all available, non-archived categories */
         List<Long> localCategoryIds = catalogService.findAllCategories().stream()
+                .filter(entity -> ((Status) entity).getArchived() == 'N')
                 .map(id -> id.getId()).collect(Collectors.toList());
 
         Random rnd = new Random();
 
+        /* pick a random category */
         int pickedCategoryIndex = rnd.nextInt(localCategoryIds.size());
         long pickedCategoryId = localCategoryIds.get(pickedCategoryIndex);
 
+        //when
         ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplate.getForEntity(ApiTestBase.CATEGORIES_URL + "/" + pickedCategoryId, CategoryDto.class, serverPort);
 
         assertNotNull(receivedCategoryEntity);
         assertTrue("List of categories not found", receivedCategoryEntity.getStatusCode().value() == 200);
 
-        Category localCategoryEntity = catalogService.findCategoryById(pickedCategoryId);
         CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+
+        //then
+        Category localCategoryEntity = catalogService.findCategoryById(pickedCategoryId);
 
         assertTrue(receivedCategoryDto.getName().equals(localCategoryEntity.getName()) &&
                 receivedCategoryDto.getDescription().equals(localCategoryEntity.getDescription()));
     }
 
     @Test
-    public void createNewCategoryAndCheckIfValuesAreValid() {
+    public void createNewCategoryAndCheckIfValuesAreValidTest() {
+        CategoryDto testCategoryDto = DtoTestFactory.getTestCategory();
 
+        //when
         ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory();
 
         assertThat(newCategoryResponseHeaders.getStatusCode().value(), equalTo(201));
@@ -114,25 +122,20 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertNotNull(receivedCategoryEntity);
         assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
-
-        CategoryDto testCategoryDto = DtoTestFactory.getTestCategory();
+        //then
         CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
         assertThat(testCategoryDto.getName(), equalTo(receivedCategoryDto.getName()));
         assertThat(testCategoryDto.getDescription(), equalTo(receivedCategoryDto.getDescription()));
         assertThat(testCategoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
     }
 
-
-
     @Test(expected = HttpClientErrorException.class)
-    public void createReadDeleteTest() {
+    public void successfullyDeletingANewlyCreatedCategoryTest() {
 
+        /* Creating a new test category */
         CategoryDto categoryDto = CategoryDto.builder().name("testcategory").description("testcategory").build();
 
         ResponseEntity<CategoryDto> createdCategoryResponse = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
-
-        System.out.println("Location: " + createdCategoryResponse.getHeaders().getLocation());
-
         assertTrue(createdCategoryResponse.getStatusCode() == HttpStatus.CREATED);
 
         String createdCategoryLocationUri = createdCategoryResponse.getHeaders().getLocation().toString();
@@ -140,6 +143,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertNotNull(createdCategoryLocationUri);
         assertTrue(!createdCategoryLocationUri.isEmpty());
 
+        /* Reading the newly created category just to make sure it is there */
         ResponseEntity<CategoryDto> receivedCategoryDto = restTemplate.getForEntity(
                 createdCategoryLocationUri, CategoryDto.class, serverPort);
 
@@ -148,9 +152,10 @@ public class CategoryControllerTest extends ApiTestBase {
         assertTrue(categoryDto.getName().equals(receivedCategoryDto.getBody().getName()) &&
                 categoryDto.getDescription().equals(receivedCategoryDto.getBody().getDescription()));
 
-
+        //when
         oAuth2AdminRestTemplate().delete(createdCategoryLocationUri, 1);
 
+        //then
         ResponseEntity<CategoryDto> receivedCategoryDtoAfterDelete = restTemplate.getForEntity(
                 createdCategoryLocationUri, CategoryDto.class, serverPort);
 
@@ -165,7 +170,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore
+    @Ignore("Do not forget to implement me!")
     public void addNewProductToNewCategoryAndCheckIfItExists() {
 
         ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();
@@ -200,17 +205,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     private void cleanupCategoryTests() {
         /* If there is still any test row in a database, delete it */
-
-        /*List<Category> c = catalogService.findCategoriesByName(((CategoryDto) DtoTestFactory.getDtoTestObject(DtoTestType.CATEGORY_DTO)).getName());
-
-        if (c != null && !c.isEmpty()) {
-            for(Category cat : c) {
-                catalogService.removeCategory(cat);
-            }
-        }*/
-
         removeRemoteTestCategory();
-
     }
 
     private long getLocalTotalCategoriesCountValue() {
