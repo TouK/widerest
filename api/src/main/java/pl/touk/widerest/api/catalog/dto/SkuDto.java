@@ -12,7 +12,12 @@ import org.springframework.hateoas.ResourceSupport;
 
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
+
+/*
+ * TODO: (mst) Add SkuMedia (= pictures etc)
+ */
 
 @ApiModel
 @Data
@@ -31,11 +36,16 @@ public class SkuDto extends ResourceSupport {
     private List<ProductOptionSelectionDto> selection;
 */
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    private String name;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     private String description;
 
     @ApiModelProperty(required = true)
-    private BigDecimal price;
+    private BigDecimal salePrice;
 
     @ApiModelProperty(required = true)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
@@ -43,8 +53,13 @@ public class SkuDto extends ResourceSupport {
 
     @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    private String code;
+    private String taxCode;
+
+    @ApiModelProperty(required = true)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    private Date activeStartDate;
 
     @ApiModelProperty
-    private String pictureUrl;
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    private Date activeEndDate;
 }

@@ -40,11 +40,11 @@ public class DtoConverters {
     @Resource(name = "blCatalogService")
     private static CatalogService catalogService;
 
-    public static Function<ProductAttribute, String> getProductAttributeName = input -> {
+    private static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
     };
 
-    public static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
+    private static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
         return input.getAttributeValue();
     };
 
@@ -57,10 +57,15 @@ public class DtoConverters {
 
         SkuDto dto = SkuDto.builder()
                 .skuId(entity.getId())
+                .name(entity.getName())
                 .description(entity.getDescription())
-                .price(Optional.ofNullable(entity.getPrice()).orElse(errCode).getAmount())
+                .salePrice(Optional.ofNullable(entity.getPrice()).orElse(errCode).getAmount())
                 .quantityAvailable(entity.getQuantityAvailable())
-                .code(entity.getTaxCode()).build();
+                .taxCode(entity.getTaxCode())
+                .activeStartDate(entity.getActiveStartDate())
+                .activeEndDate(entity.getActiveEndDate())
+                .build();
+
         // selection wysylany jest tylko od klienta
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId())).withSelfRel());
         return dto;
@@ -69,14 +74,13 @@ public class DtoConverters {
     public static Function<SkuDto, Sku> skuDtoToEntity = dto -> {
         Sku skuEntity = new SkuImpl();
 
-        skuEntity.setId(dto.getSkuId());
+        skuEntity.setName(dto.getName());
         skuEntity.setDescription(dto.getDescription());
-        skuEntity.setTaxCode(dto.getCode());
+        skuEntity.setSalePrice(new Money(dto.getSalePrice()));
         skuEntity.setQuantityAvailable(dto.getQuantityAvailable());
-        skuEntity.setSalePrice(new Money(dto.getPrice()));
-        skuEntity.setRetailPrice(skuEntity.getSalePrice());
-        skuEntity.setName(dto.getDescription());
-        skuEntity.setLongDescription(dto.getDescription());
+        skuEntity.setTaxCode(dto.getTaxCode());
+        skuEntity.setActiveStartDate(dto.getActiveStartDate());
+        skuEntity.setActiveEndDate(dto.getActiveEndDate());
 
         //TODO: co z selection?
 
@@ -144,12 +148,11 @@ public class DtoConverters {
 
         product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
 
-        //product.setId(productDto.getProductId());
         product.setName(productDto.getName());
 
+        /* TODO (mst) Category!!! */
+        if(productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
 
-        if(productDto.getCategory() != null) {
-            product.setCategory(categoryDtoToEntity.apply(productDto.getCategory()));
         }
 
         product.setDescription(productDto.getDescription());
@@ -157,24 +160,35 @@ public class DtoConverters {
         product.setPromoMessage(productDto.getOfferMessage());
         product.setActiveStartDate(productDto.getValidFrom());
         product.setActiveEndDate(productDto.getValidTo());
+        product.setModel(productDto.getModel());
+        product.setManufacturer(productDto.getManufacturer());
 
         List<Sku> allSkus = new ArrayList<>();
         allSkus.add(product.getDefaultSku());
-
 
         /* TODO: Do we have to put DefaultSKU to this list? */
         if(productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
             allSkus.addAll(productDto.getSkus().stream().map(skuDtoToEntity).collect(toList()));
         }
-
         product.setAdditionalSkus(allSkus);
-        //TODO: atrybuty. options
+
+
+
+        product.setProductAttributes(productDto.getAttributes().entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> {
+                            ProductAttribute p = new ProductAttributeImpl();
+                            p.setValue(e.getValue());
+                            return p;
+                        })));
+
+
+
+        //TODO: options
 
         return product;
     };
 
-    public static Function<Product, ProductDto> productEntityToDto
-            = entity -> {
+    public static Function<Product, ProductDto> productEntityToDto = entity -> {
 
         ProductDto dto = null;
 
@@ -184,49 +198,64 @@ public class DtoConverters {
             dto = new ProductDto();
         }
 
-        dto.setName(entity.getName());
-
-        dto.setDescription(entity.getDescription());
+        /* (mst) Do we really need ProductID? */
         dto.setProductId(entity.getId());
 
-        dto.setValidFrom(entity.getActiveStartDate());
-        dto.setValidTo(entity.getActiveEndDate());
+        dto.setName(entity.getName());
+
+        /* TODO: (mst) Do we need the entire CategoryDto here or Category name + HATEAOS link
+         * will do the job?
 
         if(entity.getDefaultCategory() != null) {
             dto.setCategory(categoryEntityToDto.apply(entity.getDefaultCategory()));
         }
+        */
 
+        //if(entity.getCategory() != null)
+        //dto.setCategoryName(Optional.ofNullable(entity.getCategory().getName()).orElse(""));
+
+
+        /* TODO: REMOVE
         if(entity.getLongDescription() != null && !entity.getLongDescription().isEmpty()) {
             dto.setLongDescription(entity.getLongDescription());
         }
+        */
 
+        dto.setLongDescription(Optional.ofNullable(entity.getLongDescription()).orElse(""));
+
+        /* TODO: REMOVE
         if(entity.getPromoMessage() != null && !entity.getPromoMessage().isEmpty()) {
             dto.setOfferMessage(entity.getPromoMessage());
         }
+        */
 
-        Map<String, String> productAttributesCollect = entity.getProductAttributes().entrySet().stream()
-                .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-        dto.setAttributes(productAttributesCollect);
+        dto.setDescription(Optional.ofNullable(entity.getDescription()).orElse(""));
+        dto.setOfferMessage(Optional.ofNullable(entity.getPromoMessage()).orElse(""));
+        dto.setManufacturer(Optional.ofNullable(entity.getManufacturer()).orElse(""));
+        dto.setModel(Optional.ofNullable(entity.getModel()).orElse(""));
 
-        List<ProductOptionDto> productOptionsCollect = entity.getProductOptionXrefs().stream()
+        dto.setValidFrom(Optional.ofNullable(entity.getActiveStartDate()).orElse(null));
+        dto.setValidTo(Optional.ofNullable(entity.getActiveEndDate()).orElse(null));
+
+
+        /* (Map<String, String>) */
+        dto.setAttributes(entity.getProductAttributes().entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
+
+        dto.setOptions(entity.getProductOptionXrefs().stream()
                 .map(productOptionXrefToDto)
-                .collect(toList());
-        dto.setOptions(productOptionsCollect);
+                .collect(toList()));
 
-        /* TODO: (mst) What if there is a product with NO default SKU? */
         dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
 
-        /* TODO: (mst) Does this also include DefaultSku? */
-        List<SkuDto> skuDtosCollect = entity.getAllSkus().stream()
+        /* (mst) As far as I know, this DOES include Default SKU */
+        dto.setSkus(entity.getAllSkus().stream()
                 .map(skuEntityToDto)
-                .collect(toList());
-        dto.setSkus(skuDtosCollect);
+                .collect(toList()));
 
-        // TODO: znalezc w jakich bundlach jest product
+        /* TODO: (mst) Implement Possible Bundles */
 
-        /* TODO: rzutowania zwiazane z Bundle */
-
-        /*
+       /*
         Collection<ProductBundle> possibleBundles = Lists.transform(
                 ((VirginSkuImpl) defaultSku).getSkuBundleItems(),
                 new Function<SkuBundleItem, ProductBundle>() {
@@ -256,8 +285,7 @@ public class DtoConverters {
                     }
                 }
         )));
-
-*/
+        */
 
 
         if(dto instanceof BundleDto) {
@@ -275,14 +303,21 @@ public class DtoConverters {
         /* HATEOAS links */
         dto.add(linkTo(methodOn(ProductController.class).readOneProduct(entity.getId())).withSelfRel());
 
-        /* Link to a default SKU if it exists. I mean...it should exist, right?  */
         if(entity.getDefaultSku() != null) {
             dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getId(), entity.getDefaultSku().getId())).withRel("default-sku"));
         }
 
-        /* Link to a product's category */
+        /* TODO: (mst) REMOVE because AllParentCategoryRefs() already has the DefaultCategory
         if(entity.getCategory() != null) {
             dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getCategory().getId())).withRel("category"));
+        }
+        */
+
+        /* Links to the product's categories */
+        if(entity.getAllParentCategoryXrefs() != null && !entity.getAllParentCategoryXrefs().isEmpty()) {
+            for(CategoryProductXref parentCategoryXrefs : entity.getAllParentCategoryXrefs()) {
+                dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(parentCategoryXrefs.getCategory().getId())).withRel("category"));
+            }
         }
 
         return dto;

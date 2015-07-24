@@ -36,7 +36,7 @@ public class DtoTestFactory {
                     .description("testProductDescription")
                     .longDescription("testProductLongDescription")
                     .defaultSku(getTestSku())
-                    .category(getTestCategory())
+                    //.category(getTestCategory())
                     .build();
         }
 
@@ -47,9 +47,9 @@ public class DtoTestFactory {
         if(newSkuDto == null) {
             newSkuDto = SkuDto.builder()
                     .description("testSkuDescription")
-                    .price(new BigDecimal(99.99))
+                    .salePrice(new BigDecimal(99.99))
                     .quantityAvailable(99)
-                    .code("TaxCode")
+                    .taxCode("TaxCode")
                     .build();
         }
         return newSkuDto;

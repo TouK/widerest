@@ -40,43 +40,63 @@ public class ProductDto extends ResourceSupport {
     @JsonIgnore
     private Long productId;
 
-    @ApiModelProperty(required = true)
-    @JsonIgnore
-    private CategoryDto category;
+    //@JsonIgnore
+    //@ApiModelProperty(required = true)
+    //private CategoryDto category;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private String categoryName;
 
     @ApiModelProperty(required = true)
     private String name;
 
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private String description;
 
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private String longDescription;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
-    private Map attributes;
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private Map<String, String> attributes;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     List<ProductOptionDto> options;
 
     @ApiModelProperty(required = true)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private SkuDto defaultSku;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private List<SkuDto> skus;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty
-    private List<Long> possibleBundles;
-
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty
-    private Date validFrom, validTo;
+    /* TODO: Implement Possbile Blundles */
+    //@JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    //@ApiModelProperty
+    //private List<Long> possibleBundles;
 
     @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private Date validFrom;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private Date validTo;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private String offerMessage;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private String model;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private String manufacturer;
 }

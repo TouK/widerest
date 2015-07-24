@@ -63,7 +63,7 @@ public class ProductController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class)
     })
-    public List<ProductDto> getProducts() {
+    public List<ProductDto> getAllProducts() {
         return catalogService.findAllProducts().stream()
                 .filter(ProductController::validateProductEntity)
                 .map(DtoConverters.productEntityToDto)
@@ -85,12 +85,12 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        //Sku defaultSku = Optional.of(productDto.getDefaultSku())
-        //        .map(DtoConverters.skuDtoToEntity)
-        //        .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
+        /*Sku defaultSku = Optional.of(productDto.getDefaultSku())
+                .map(DtoConverters.skuDtoToEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
-        //Sku savedDefaultSku = catalogService.createSku();
-
+        Sku savedDefaultSku = catalogService.createSku();
+*/
         //defaultSku.setId(savedDefaultSku.getId());
 
        // savedDefaultSku = catalogService.saveSku(defaultSku);
@@ -135,7 +135,7 @@ public class ProductController {
 
         p.setDefaultSku(defaultSku);
 
-        p.setName("phone A");
+        p.setName("phone AB");
         p.setFeaturedProduct(true);
         p.setUrl("/phones/phoneA");
         p.setCanSellWithoutOptions(true);
@@ -585,10 +585,10 @@ public class ProductController {
 
         createdSku.setProduct(catalogService.findAllProducts().get(0));
         createdSku.setDescription(skuDto.getDescription());
-        createdSku.setTaxCode(skuDto.getCode());
+        createdSku.setTaxCode(skuDto.getTaxCode());
         createdSku.setQuantityAvailable(skuDto.getQuantityAvailable());
-        createdSku.setSalePrice(new Money(skuDto.getPrice()));
-        createdSku.setRetailPrice(createdSku.getSalePrice());
+        createdSku.setSalePrice(new Money(skuDto.getSalePrice()));
+        createdSku.setRetailPrice(createdSku.getRetailPrice());
         createdSku.setName(skuDto.getDescription());
         createdSku.setLongDescription(skuDto.getDescription());
 
