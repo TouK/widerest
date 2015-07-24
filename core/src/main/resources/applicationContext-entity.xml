@@ -20,9 +20,9 @@
         
         <!-- This file will contain bean overrides for extensions of Broadleaf entities -->
         <!-- For example, if you have a custom class that extends CustomerImpl, you would note that here -->
-
+<!--
     <bean id="org.broadleafcommerce.core.catalog.domain.Sku" class="pl.touk.widerest.ext.SkuExtImpl" scope="prototype"/>
     <bean id="org.broadleafcommerce.core.order.domain.Order" class="pl.touk.widerest.ext.OrderExtImpl" scope="prototype"/>
     <bean id="org.broadleafcommerce.core.order.domain.DiscreteOrderItem" class="pl.touk.widerest.ext.DiscreteOrderItemExtImpl" scope="prototype"/>
-        
+      -->
 </beans>

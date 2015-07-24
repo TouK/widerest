@@ -185,6 +185,7 @@ public class DtoConverters {
         }
 
         dto.setName(entity.getName());
+
         dto.setDescription(entity.getDescription());
         dto.setProductId(entity.getId());
 

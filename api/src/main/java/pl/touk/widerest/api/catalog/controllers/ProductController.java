@@ -28,8 +28,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.catalog.*;
 import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.ext.SkuExtImpl;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -69,7 +71,9 @@ public class ProductController {
     }
 
     /* POST /products */
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
+    @Transactional
+    @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -81,29 +85,75 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        Sku defaultSku = Optional.of(productDto.getDefaultSku())
-                .map(DtoConverters.skuDtoToEntity)
-                .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
+        //Sku defaultSku = Optional.of(productDto.getDefaultSku())
+        //        .map(DtoConverters.skuDtoToEntity)
+        //        .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
-        Sku savedDefaultSku = catalogService.createSku();
+        //Sku savedDefaultSku = catalogService.createSku();
 
-        defaultSku.setId(savedDefaultSku.getId());
+        //defaultSku.setId(savedDefaultSku.getId());
 
-        savedDefaultSku = catalogService.saveSku(defaultSku);
+       // savedDefaultSku = catalogService.saveSku(defaultSku);
 
         //productDto.getDefaultSku().setSkuId(savedDefaultSku.getId());
         //Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
 
-        HttpHeaders responseHeader = new HttpHeaders();
+        /*
+        Product product = new ProductImpl();
+        product.setDefaultSku(catalogService.createSku());
+        product.setName("phone A");
+        product.setFeaturedProduct(true);
+        product.setUrl("/phones/phoneA");
+        product.setCanSellWithoutOptions(true);
+        product.setManufacturer("manufacturer A");
+        product.setActiveStartDate(new Date());
+        product.setActiveEndDate(null);
+
+        product.setCategory(catalogService.findCategoryById((long) 701));
+        // product.getAllParentCategories().add(category);
+        catalogService.saveProduct(product); //**Exception occurs here**
+*/
+
+        /*
+        Category category = new CategoryImpl();
+
+        category.setName("Phones Category");
+        category.setActiveStartDate(activeStartCal.getTime());
+        category.setDescription("Phones Category Description");
+
+        category = catalogService.saveCategory(category);
+*/
+
+        Calendar activeStartCal = Calendar.getInstance();
+
+        Product p = catalogService.createProduct(ProductType.PRODUCT);
+        Sku defaultSku = catalogService.createSku();
+
+        defaultSku.setRetailPrice(new Money(BigDecimal.valueOf(15.0)));
+        defaultSku.setSalePrice(new Money(BigDecimal.valueOf(10.0)));
+        defaultSku.setActiveStartDate(activeStartCal.getTime());
+
+        p.setDefaultSku(defaultSku);
+
+        p.setName("phone A");
+        p.setFeaturedProduct(true);
+        p.setUrl("/phones/phoneA");
+        p.setCanSellWithoutOptions(true);
+        p.setManufacturer("manufacturer A");
+        p.setActiveEndDate(null);
+
+        p = catalogService.saveProduct(p);
+
+        return new ResponseEntity<>(null, HttpStatus.CREATED);
+
+        //HttpHeaders responseHeader = new HttpHeaders();
 
         //responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
         //        .path("/{id}")
         //       .buildAndExpand(createdProductEntity.getId())
         //      .toUri());
 
-        //return new ResponseEntity<>(null, HttpStatus.CREATED);
-
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        //return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /products/count */
@@ -517,6 +567,7 @@ public class ProductController {
 
 
     /* ONLY FOR TESTING */
+    @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/skus", method = RequestMethod.POST)
     @ApiOperation(
@@ -529,8 +580,10 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneSku(@RequestBody SkuDto skuDto) {
 
+        System.out.println("IN SKU!!!");
         Sku createdSku = catalogService.createSku();
 
+        createdSku.setProduct(catalogService.findAllProducts().get(0));
         createdSku.setDescription(skuDto.getDescription());
         createdSku.setTaxCode(skuDto.getCode());
         createdSku.setQuantityAvailable(skuDto.getQuantityAvailable());
@@ -539,21 +592,34 @@ public class ProductController {
         createdSku.setName(skuDto.getDescription());
         createdSku.setLongDescription(skuDto.getDescription());
 
-        Product sampleProduct = catalogService.findAllProducts().get(2);
-
-        createdSku.setDefaultProduct(sampleProduct);
         Sku createdSkuEntity = catalogService.saveSku(createdSku);
 
         // Sku createdSkuEntity = catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
 
         HttpHeaders responseHeader = new HttpHeaders();
 
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(createdSkuEntity.getId())
-                .toUri());
+       // responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+      //          .path("/{id}")
+      //          .buildAndExpand(createdSkuEntity.getId())
+      //          .toUri());
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+    }
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/skus", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all SKUs",
+            notes = "Gets a list of all available SKUs in the catalog",
+            response = SkuDto.class,
+            responseContainer = "List"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKUs list", response = SkuDto.class)
+    })
+    public List<SkuDto> getAllSkus() {
+        return catalogService.findAllSkus().stream().map(DtoConverters.skuEntityToDto).collect(Collectors.toList());
     }
 
     private static boolean validateProductEntity(Product product) {

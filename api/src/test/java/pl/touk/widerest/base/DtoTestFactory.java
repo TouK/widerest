@@ -49,6 +49,7 @@ public class DtoTestFactory {
                     .description("testSkuDescription")
                     .price(new BigDecimal(99.99))
                     .quantityAvailable(99)
+                    .code("TaxCode")
                     .build();
         }
         return newSkuDto;

@@ -1,5 +1,8 @@
 package pl.touk.widerest.catalog;
 
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.springframework.web.client.HttpServerErrorException;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import org.broadleafcommerce.core.catalog.domain.Product;
@@ -45,6 +48,9 @@ public class ProductControllerTest extends ApiTestBase {
         return remoteCountEntity.getBody().longValue();
     }
 
+    private long getLocalTotalSkus() {
+        return catalogService.findAllSkus().stream().count();
+    }
 
     private long getRemoteTotalSkusForProductCount(long productId) {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
@@ -110,18 +116,47 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Test
     public void addingNewSKUIncreasesSkusCount() {
+        final long totalLocalSkusCount = getLocalTotalSkus();
+
+        ResponseEntity newProductResponseEntity = addNewTestProduct();
+
+       // String newProductLocationUrl = newProductResponseEntity.getHeaders().getLocation().get
+
+
+        SkuDto skuTestDto = DtoTestFactory.getTestSku();
+    try {
+        ResponseEntity<HttpHeaders> remoteSkuDtoEntity = restTemplate.postForEntity(
+                "http://localhost:8080/catalog/products/skus",
+                skuTestDto,
+                HttpHeaders.class);
+
+    } catch (HttpServerErrorException e) {
+        System.out.println(e.getResponseBodyAsString());
+    }
+
 
     }
 
     @Test
     public void addingNewProductIncreasesProductsCount() {
 
-        addNewTestProduct();
+        try {
+            ProductDto productDto = DtoTestFactory.getTestProduct();
+
+            ResponseEntity<HttpHeaders> remoteAddProductEntity = restTemplate.postForEntity(ApiTestBase.PRODUCTS_URL, productDto, HttpHeaders.class, serverPort);
+        }catch (HttpServerErrorException e) {
+            System.out.println(e.getResponseBodyAsString());
+        }
     }
 
     /* Duplicate = ??? */
     @Test
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
+
+    }
+
+    @Test
+    public void addingNewSkuAfterCreatingProductWithDefaultSku() {
 
     }
 
