@@ -1,6 +1,7 @@
 package pl.touk.widerest.paypal.endpoint;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
@@ -11,7 +12,12 @@ import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
+import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
+import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
@@ -20,11 +26,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.swing.text.html.Option;
+import java.util.Optional;
 
 @Controller
 @ResponseBody
@@ -36,6 +45,9 @@ public class PayPalController {
 
     @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
     private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
+
+    @Resource(name = "blOrderService")
+    private OrderService orderService;
 
     private PaymentGatewayConfigurationService configurationService;
     private PaymentGatewayHostedService hostedService;
@@ -51,8 +63,19 @@ public class PayPalController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) throws PaymentException {
 
+        if(userDetails instanceof AdminUserDetails) {
+            throw new PaymentException("Admins can't make orders");
+        }
+        CustomerUserDetails customerUserDetails = (CustomerUserDetails)userDetails;
+
         // find order
-        Order order = null;
+        Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+                .orElseThrow(() -> new ResourceNotFoundException(""));
+
+        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
+            throw new IllegalAccessError("Access Denied");
+        }
+
         String returnUrl = "";
         String cancelUrl = "";
 
@@ -67,7 +90,17 @@ public class PayPalController {
 
         //return redirect URI from the paymentResponse
 
-        return ResponseEntity.notFound().build();
+        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("approval url"))
+                .orElseThrow(() -> new ResourceNotFoundException(""));
+
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(redirectURI)
+                        .build().toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.I_AM_A_TEAPOT);
+
+        //return ResponseEntity.notFound().build();
 
     }
 
