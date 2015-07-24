@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -29,6 +30,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -59,7 +61,10 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class)
     })
     public List<ProductDto> getProducts() {
-        return catalogService.findAllProducts().stream().map(DtoConverters.productEntityToDto).collect(Collectors.toList());
+        return catalogService.findAllProducts().stream()
+                .filter(ProductController::validateProductEntity)
+                .map(DtoConverters.productEntityToDto)
+                .collect(Collectors.toList());
     }
 
     /* POST /products */
@@ -108,7 +113,7 @@ public class ProductController {
         return catalogService.findAllProducts().stream().count();
     }
 
-    /* GET /prodcuts/{id} */
+    /* GET /products/{id} */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
@@ -123,6 +128,7 @@ public class ProductController {
     public ProductDto readOneProduct(@PathVariable(value = "id") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(ProductController::validateProductEntity)
                 .map(DtoConverters.productEntityToDto)
                 .orElseThrow(ResourceNotFoundException::new);
 
@@ -142,18 +148,19 @@ public class ProductController {
     })
     public void changeOneProduct(@PathVariable(value = "id") Long id, @RequestBody ProductDto productDto) {
 
-        Product productToChange = catalogService.findProductById(id);
-
-        if (productToChange != null) {
-            catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-        } else {
-            throw new ResourceNotFoundException("Cannot change product with id " + id + ". Not Found");
-        }
+        Optional.ofNullable(catalogService.findProductById(id))
+                .filter(ProductController::validateProductEntity)
+                .map(p -> {
+                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
+                    return p;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + id + ". Not Found"));
 
     }
 
     /* DELETE /products/{id} */
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
+    @Transactional
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing product",
@@ -165,13 +172,12 @@ public class ProductController {
     })
     public void removeOneProduct(@PathVariable(value = "id") Long id) {
 
-        Product productToDelete = catalogService.findProductById(id);
-
-        if (productToDelete == null) {
-            throw new ResourceNotFoundException("Cannot delete product with ID: " + id + ". Product does not exist");
-        }
-
-        catalogService.removeProduct(productToDelete);
+        Optional.ofNullable(catalogService.findProductById(id))
+                .map(e -> {
+                    catalogService.removeProduct(e);
+                    return e;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + id + ". Product does not exist"));
     }
 
     /* GET /products/{id}/categories */
@@ -189,17 +195,13 @@ public class ProductController {
     })
     public List<CategoryDto> readCategoriesByProduct(@PathVariable(value = "id") Long productId) {
 
-        Product product = catalogService.findProductById(productId);
-
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
-
-        }
-
-        /* Deprecated */
-        List<Category> productCategories = product.getAllParentCategories();
-
-        return productCategories.stream().map(DtoConverters.categoryEntityToDto).collect(Collectors.toList());
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllParentCategoryXrefs().stream()
+                .map(CategoryProductXref::getCategory)
+                .filter(ProductController::validateCategoryEntity)
+                .map(DtoConverters.categoryEntityToDto)
+                .collect(Collectors.toList());
 
     }
 
@@ -218,13 +220,11 @@ public class ProductController {
     })
     public List<SkuDto> readSkusByProduct(@PathVariable(value = "id") Long productId) {
 
-        Product product = catalogService.findProductById(productId);
-
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
-        }
-
-        return product.getAllSkus().stream().map(DtoConverters.skuEntityToDto).collect(Collectors.toList());
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .map(DtoConverters.skuEntityToDto)
+                .collect(Collectors.toList());
 
     }
 
@@ -263,7 +263,7 @@ public class ProductController {
         return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
 
-    /* GET /products/{productId{/skus/{skuId} */
+    /* GET /products/{productId}/skus/{skuId} */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET)
@@ -280,22 +280,17 @@ public class ProductController {
             @PathVariable(value = "productId") Long productId,
             @PathVariable(value = "skuId") Long skuId) {
 
-        Product product = catalogService.findProductById(productId);
-
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
-        }
-
-        List<Sku> skus = product.getAllSkus();
-
-        if (skus == null || skus.isEmpty()) {
-            throw new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId);
-        }
-
-        return skus.stream().filter(x -> x.getId() == skuId).limit(2).map(DtoConverters.skuEntityToDto).collect(Collectors.toList()).get(0);
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(ProductController::validateProductEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId() == skuId)
+                .findAny()
+                .map(DtoConverters.skuEntityToDto)
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
-    /* GET /products/{productId{/skus/{skuId} */
+    /* GET /products/{productId}/skus/{skuId} */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
@@ -311,19 +306,11 @@ public class ProductController {
     public SkuDto getDefaultSkuByProductId(
             @PathVariable(value = "productId") Long productId) {
 
-        Product product = catalogService.findProductById(productId);
-
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
-        }
-
-        Sku defaultSku = product.getDefaultSku();
-
-        if (defaultSku == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not have a default SKU set");
-        }
-
-        return DtoConverters.skuEntityToDto.apply(defaultSku);
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .map(Product::getDefaultSku)
+                .map(DtoConverters.skuEntityToDto)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product with ID: " + productId + " does not exist or does not have a default SKU set"));
     }
 
 
@@ -342,14 +329,9 @@ public class ProductController {
     })
     public Long getAllSkusCount(@PathVariable(value = "productId") Long productId) {
 
-
-        Product product = catalogService.findProductById(productId);
-
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with ID: " + productId + " does not exist");
-        }
-
-        return product.getAllSkus().stream().count();
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream().count();
     }
 
     /* DELETE /products/{productId}/skus/{id} */
@@ -403,16 +385,15 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public List<ReviewDto> getReviewForProduct(@PathVariable(value = "id") Long productId) {
+        
+        return Optional.ofNullable(ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT))
+                .map(r -> {
+                    return r.getReviews().stream()
+                            .map(DtoConverters.reviewEntityToDto)
+                            .collect(Collectors.toList());
+                })
+                .orElse(Collections.emptyList());
 
-        RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
-
-        if (ratingSummary != null) {
-            List<ReviewDetail> reviewDetail = ratingSummary.getReviews();
-
-            return reviewDetail.stream().map(DtoConverters.reviewEntityToDto).collect(Collectors.toList());
-        }
-
-        return Collections.emptyList();
     }
 
     /* POST /products/{id}/reviews */
@@ -527,6 +508,14 @@ public class ProductController {
         }
 
         return Collections.emptyList();
+    }
+
+    private static boolean validateProductEntity(Product product) {
+       return ((Status) product).getArchived() == 'N';
+    }
+
+    private static Boolean validateCategoryEntity(Category category) {
+        return ((Status) category).getArchived() == 'N';
     }
 }
 

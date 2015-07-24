@@ -3,12 +3,14 @@ package pl.touk.widerest.api.catalog.controllers;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.http.HttpHeaders;
@@ -55,20 +57,18 @@ public class CategoryController {
     public ResponseEntity<List<CategoryDto>> readAllCategories() {
         return new ResponseEntity<>(
                 catalogService.findAllCategories().stream()
-                        .filter(entity -> ((Status)entity).getArchived() == 'N')
-                        .map(DtoConverters.categoryEntityToDto).collect(Collectors.toList()),
+                        .filter(e -> validateCategoryEntity(e))
+                        .map(DtoConverters.categoryEntityToDto)
+                        .collect(Collectors.toList()),
                 HttpStatus.OK);
     }
 
     /* POST /categories */
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
-    /* TMP */
-    //@PreAuthorize("permitAll")
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",
-            notes = "Adds a new category to the catalog. It does take duplicates (same name and description ) into account. " +
+            notes = "Adds a new category to the catalog. It does take duplicates (same name and description) into account. " +
                     "Returns an URL to the newly added category in the Location field of the HTTP response header",
             response = ResponseEntity.class)
     @ApiResponses(value = {
@@ -79,7 +79,7 @@ public class CategoryController {
 
         long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                 .filter(x -> x.getDescription().equals(categoryDto.getDescription()))
-                .filter(x -> ((Status)x).getArchived() == 'N')
+                .filter(e -> validateCategoryEntity(e))
                 .count();
 
         if(duplicatesCount > 0) {
@@ -109,14 +109,14 @@ public class CategoryController {
     )
     public Long getAllCategoriesCount() {
         return catalogService.findAllCategories().stream()
-                .filter(entity -> ((Status)entity).getArchived() == 'N')
+                .filter(e -> validateCategoryEntity(e))
                 .count();
     }
 
 
     /* GET /categories/{id} */
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{categoryId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single category details",
             notes = "Gets details of a single non-archived category specified by its ID",
@@ -125,13 +125,10 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of category details", response = CategoryDto.class),
             @ApiResponse(code = 404, message = "The specified category does not exist or is marked as archived")
     })
-    public CategoryDto readOneCategoryById(@PathVariable(value="id") Long categoryId) {
+    public CategoryDto readOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
-        Category categoryEntity = catalogService.findCategoryById(categoryId);
-
-        if(categoryEntity == null) {
-            throw new ResourceNotFoundException("Cannot find category with ID: " + categoryId);
-        }
+        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with ID: " + categoryId));
 
         if(((Status)categoryEntity).getArchived() == 'Y') {
             throw new ResourceNotFoundException("Cannot find category with ID: " + categoryId + ". Category marked as archived");
@@ -153,18 +150,15 @@ public class CategoryController {
     })
     public void removeOneCategoryById(@PathVariable(value = "id") Long id) {
 
-        Category categoryToDelete = catalogService.findCategoryById(id);
-
-        if(!validateCategoryEntity(categoryToDelete)) {
-            throw new ResourceNotFoundException("Cannot delete category with ID: " + id + ". Category does not exist");
-        }
-
-        /* This will actually not delete the category immediately but only mark it as 'archived' */
-        catalogService.removeCategory(categoryToDelete);
+        Optional.ofNullable(catalogService.findCategoryById(id))
+                .map(e -> {
+                    catalogService.removeCategory(e);
+                    return e;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot delete category with ID: " + id + ". Category does not exist"));
     }
 
     /* PUT /categories/{id} */
-    // TODO: make sure this actually works as expected
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     @ApiOperation(
@@ -176,13 +170,16 @@ public class CategoryController {
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
     public void changeOneCategory(@PathVariable(value = "id") Long id, @RequestBody CategoryDto categoryDto) {
-        Category categoryToChange = catalogService.findCategoryById(id);
 
-        if(!validateCategoryEntity(categoryToChange)) {
-            throw new ResourceNotFoundException("Cannot change category with ID " + id + ". Category not found");
-        }
+        Optional.ofNullable(catalogService.findCategoryById(id))
+                .filter(x -> validateCategoryEntity(x))
+                .map(x -> {
+                    categoryDto.setCategoryId(x.getId());
+                    catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
+                    return x;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + id + ". Category not found"));
 
-        catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
     }
 
     /* GET /categories/{id}/products */
@@ -201,14 +198,13 @@ public class CategoryController {
     })
     public List<ProductDto> readProductsFromCategory(@PathVariable(value="id") Long id) {
 
-        Category category = catalogService.findCategoryById(id);
-
-        if(!validateCategoryEntity(category)) {
-            throw new ResourceNotFoundException("Cannot find category with ID: " + id);
-        }
-
-        /* TODO: TEMPORARY - getAllProducts() is depricated! */
-        return category.getAllProducts().stream().map(DtoConverters.productEntityToDto).collect(Collectors.toList());
+        return Optional.ofNullable(catalogService.findCategoryById(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with ID: " + id))
+                .getAllProductXrefs().stream()
+                .map(e -> e.getProduct())
+                .filter(entity -> validateProductEntity(entity))
+                .map(DtoConverters.productEntityToDto)
+                .collect(Collectors.toList());
 
     }
 
@@ -217,6 +213,7 @@ public class CategoryController {
      * TODO: What if the product has defaultSKU set but no entry in allSkus list? (= copy?)
      */
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @Transactional
     @RequestMapping(value = "/{id}/products", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a product to the category",
@@ -266,6 +263,7 @@ public class CategoryController {
                                                  @PathVariable(value = "productId") Long productId) {
 
         return this.getProductsFromCategoryId(categoryId).stream()
+                .filter(entity -> validateProductEntity(entity))
                 .filter(x -> x.getId() == productId)
                 .findAny()
                 .map(DtoConverters.productEntityToDto)
@@ -289,17 +287,17 @@ public class CategoryController {
                                              @PathVariable(value = "productId") Long productId,
                                              @RequestBody ProductDto productDto) {
 
-        Product product = this.getProductsFromCategoryId(categoryId).stream()
+        this.getProductsFromCategoryId(categoryId).stream()
+                .filter(entity -> validateProductEntity(entity))
                 .filter(x -> x.getId() == productId)
-                .limit(2)
-                .collect(Collectors.toList()).get(0);
+                .findAny()
+                .map(e -> {
+                    /* TODO:  Check if products category and categoryId match */
+                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
+                    return e;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId));
 
-        if(product == null) {
-            throw new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId);
-        } else {
-            /* TODO:  Check if products category and categoryId match */
-            catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-        }
     }
 
     /* DELETE /categories/{id}/products/{productId} */
@@ -316,22 +314,26 @@ public class CategoryController {
     public void removeOneProductFromCategory(@PathVariable(value="id") Long categoryId,
                                              @PathVariable(value = "productId") Long productId) {
 
-        Category category = catalogService.findCategoryById(categoryId);
+        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .map(e -> {
+                    if (!validateCategoryEntity(e)) {
+                        return null;
+                    } else return e;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with id: " + categoryId));
 
-        if(!validateCategoryEntity(category)) {
-            throw new ResourceNotFoundException("Cannot find category with id: " + categoryId);
-        }
-
-        Product product = category.getAllProducts().stream()
+        CategoryProductXref productXref = category
+                .getAllProductXrefs().stream()
+                .filter(e -> validateProductEntity(e.getProduct()))
                 .filter(x -> x.getId() == productId)
-                .limit(2)
-                .collect(Collectors.toList()).get(0);
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with ID: " + categoryId + " in category ID: " + categoryId));
 
-        if(product == null) {
-            throw new ResourceNotFoundException("Cannot find product with ID: " + categoryId + " in category ID: " + categoryId);
-        }
+        List<CategoryProductXref> list = category.getAllProductXrefs();
+        list.remove(productXref);
 
-        category.getAllProducts().remove(product);
+        category.setAllProductXrefs(list);
+
         catalogService.saveCategory(category);
     }
 
@@ -357,16 +359,20 @@ public class CategoryController {
         if (!validateCategoryEntity(category)) {
             throw new ResourceNotFoundException("Cannot find category with id: " + categoryId);
         } else {
-            return category.getAllProducts();
+            return category.getAllProductXrefs().stream().map(e -> e.getProduct()).collect(Collectors.toList());
         }
     }
 
-    private boolean validateCategoryEntity(Category categoryToValidate) {
+    private Boolean validateCategoryEntity(Category categoryToValidate) {
         if(categoryToValidate == null || ((Status)categoryToValidate).getArchived() == 'Y') {
             return false;
         } else {
             return true;
         }
+    }
+
+    private boolean validateProductEntity(Product product) {
+        return ((Status) product).getArchived() == 'N';
     }
 
 }
