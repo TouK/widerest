@@ -499,11 +499,26 @@
                 <artifactId>webjars-locator</artifactId>
                 <version>0.26</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.paypal.sdk</groupId>
+                <artifactId>merchantsdk</artifactId>
+                <version>LATEST</version>
+            </dependency>
+            <dependency>
+                <groupId>com.paypal.sdk</groupId>
+                <artifactId>rest-api-sdk</artifactId>
+                <version>1.2.5</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.ws.rs</groupId>
+                <artifactId>javax.ws.rs-api</artifactId>
+                <version>2.0.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>
         <module>core</module>
         <module>api</module>
+        <module>paypal</module>
     </modules>
 </project>
