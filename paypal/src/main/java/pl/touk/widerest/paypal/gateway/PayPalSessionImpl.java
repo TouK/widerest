@@ -46,4 +46,9 @@ public class PayPalSessionImpl implements PayPalSession {
 
         return apiContext;
     }
+
+    public void createNewApiContextFromToken(String token) {
+        apiContext = new APIContext(token);
+        apiContext.setConfigurationMap(sdkConfig);
+    }
 }

@@ -67,49 +67,29 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             List<Transaction> transactions = new ArrayList<Transaction>();
             Transaction transaction = null;
             Amount amount = null;
+            Details details = null;
 
             for( LineItemDTO item : payPalRequest.getWrapped().getLineItems()) {
                 transaction = new Transaction();
                 amount = new Amount();
+                details = new Details();
+
+                details.setShipping("0");
+                details.setTax("0");
+                details.setSubtotal(item.getAmount());
 
                 amount.setCurrency(payPalRequest.getOrderCurrencyCode());
-                amount.setTotal("14.90");
+                amount.setTotal(item.getAmount());
+                amount.setDetails(details);
 
                 transaction.setDescription(item.getName());
                 transaction.setAmount(amount);
                 transactions.add(transaction);
             }
 
-            AddressDTO<PaymentRequestDTO> billingAddressDTO = payPalRequest.getWrapped().getBillTo();
-            AddressDTO<PaymentRequestDTO> shippingAddressDTO = payPalRequest.getWrapped().getShipTo();
-            Address billingAddress = new Address();
-            ShippingAddress shippingAddress = new ShippingAddress();
-            PayerInfo payerInfo = new PayerInfo();
-
-            billingAddress = billingAddress.setCity(billingAddressDTO.getAddressCityLocality());
-            billingAddress = billingAddress.setCountryCode(billingAddressDTO.getAddressCountryCode());
-            billingAddress = billingAddress.setLine1(billingAddressDTO.getAddressLine1());
-            billingAddress = billingAddress.setLine2(billingAddressDTO.getAddressLine2());
-            billingAddress = billingAddress.setPostalCode(billingAddressDTO.getAddressPostalCode());
-            billingAddress = billingAddress.setPhone(billingAddressDTO.getAddressPhone());
-            billingAddress = billingAddress.setState(billingAddressDTO.getAddressStateRegion());
-
-            shippingAddress.setCity(shippingAddressDTO.getAddressCityLocality());
-            shippingAddress.setCountryCode(shippingAddressDTO.getAddressCountryCode());
-            shippingAddress.setLine1(shippingAddressDTO.getAddressLine1());
-            shippingAddress.setLine2(shippingAddressDTO.getAddressLine2());
-            shippingAddress.setPostalCode(shippingAddressDTO.getAddressPostalCode());
-            shippingAddress.setPhone(shippingAddressDTO.getAddressPhone());
-            shippingAddress.setState(shippingAddressDTO.getAddressStateRegion());
-
-            payerInfo.setBillingAddress(billingAddress);
-            payerInfo.setShippingAddress(shippingAddress);
-            payerInfo.setFirstName(shippingAddressDTO.getAddressFirstName());
-            payerInfo.setLastName(shippingAddressDTO.getAddressLastName());
 
             Payer payer = new Payer();
             payer.setPaymentMethod("paypal");
-            payer.setPayerInfo(payerInfo);
 
             Payment payment = new Payment();
             payment.setIntent("sale");

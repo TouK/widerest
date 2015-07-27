@@ -22,10 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
@@ -75,8 +72,10 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
-        String returnUrl = "http://return";
-        String cancelUrl = "http://cancel";
+        String SELF_URL = "http://localhost:8080/orders/"+orderId+"/paypal";
+
+        String returnUrl = SELF_URL+"/return";
+        String cancelUrl = SELF_URL+"/cancel";
 
         PaymentRequestDTO paymentRequest =
                 orderToPaymentRequestDTOService.translateOrder(order)
@@ -103,10 +102,16 @@ public class PayPalController {
     @RequestMapping(value = "/return", method = RequestMethod.GET)
     public ResponseEntity handleReturn(
             @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam String paymentId,
+            @RequestParam String token,
+            @RequestParam String payerID,
             @PathVariable(value = "id") Long orderId) {
 
+        // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
         // call checkout workflow
         // handle no funds failures
+
+
 
         return ResponseEntity.notFound().build();
     }
