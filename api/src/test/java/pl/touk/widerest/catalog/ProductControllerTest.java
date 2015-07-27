@@ -38,15 +38,6 @@ public class ProductControllerTest extends ApiTestBase {
         cleanupProductTests();
     }
 
-    private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
-
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
-
-        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
-
-        return remoteAddProductEntity;
-    }
-
     @Test
     public void readProductsTest() {
 
@@ -74,24 +65,7 @@ public class ProductControllerTest extends ApiTestBase {
        // assertTrue(Arrays.deepEquals(receivedProducts, localProducts.toArray()));
     }
 
-    @Test
-    public void readProductsByIdTest() {
-        ResponseEntity<ProductDto[]> receivedProductsEntity =
-                restTemplate.getForEntity(ApiTestBase.PRODUCTS_URL, ProductDto[].class, serverPort);
 
-        assertNotNull(receivedProductsEntity);
-        assertTrue("List of products not found", receivedProductsEntity.getStatusCode().value() == 200);
-        assertTrue(receivedProductsEntity.getBody().length >= 1);
-
-        ProductDto receivedProductSingleEntity = receivedProductsEntity.getBody()[1];
-        Product localProduct = catalogService.findProductById(receivedProductSingleEntity.getProductId());
-
-//        org.broadleafcommerce.core.catalog.domain.Product localProduct = catalogService.findProductById(receivedProductSingleEntity.getId());
-
-        assertTrue(receivedProductSingleEntity.equals(localProduct));
-
-    }
-    
 
     @Test
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
@@ -168,6 +142,15 @@ public class ProductControllerTest extends ApiTestBase {
     private ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto, null, serverPort);
+
+        return remoteAddProductEntity;
+    }
+
+    private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
+
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
 
         return remoteAddProductEntity;
     }

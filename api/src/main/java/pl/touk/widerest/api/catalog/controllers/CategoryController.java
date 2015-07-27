@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,10 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.persistence.Status;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
-import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -241,23 +239,39 @@ public class CategoryController {
         Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
-                .map(DtoConverters.skuDtoToEntity)
-                .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
+        Optional<Product> product = catalogService.findProductsByName(productDto.getName()).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .findAny();
+
+        /* TODO: (mst) TEST IT!!! */
+        /* In case the product already exists, we just add a reference to Category's products */
+        if(product.isPresent() && !category.getAllProductXrefs().contains(product.get())) {
+            List<CategoryProductXref> categoryProducts = new ArrayList<>(category.getAllProductXrefs());
+            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
+            categoryProductXref.setProduct(product.get());
+            categoryProducts.add(categoryProductXref);
+            category.setAllProductXrefs(categoryProducts);
+            catalogService.saveCategory(category);
+        } else {
+            Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
+                    .map(DtoConverters.skuDtoToEntity)
+                    .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
          /* TODO: (mst) creating Product Bundles */
          
          /* what if both Product and SKU return null?! */
-        //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
+            //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
 
 
-        Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
+            Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
          /* this one is probably redundant */
-        newProduct.setDefaultSku(defaultSku);
+            newProduct.setDefaultSku(defaultSku);
          /* Include information about Categories */
-        newProduct.setCategory(category);
+            newProduct.setCategory(category);
 
-        newProduct = catalogService.saveProduct(newProduct);
+            newProduct = catalogService.saveProduct(newProduct);
+        }
+        /* TODO: update category list references as well! */
 
         HttpHeaders responseHeaders = new HttpHeaders();
 
