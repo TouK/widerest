@@ -32,7 +32,6 @@ import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import javax.swing.text.html.Option;
 import java.util.Optional;
 
 @Controller
@@ -84,7 +83,7 @@ public class PayPalController {
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
                         .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
                         .orderDescription("TODO");
-        populateLineItemsAndSubscriptions(order, paymentRequest);
+        paymentRequest = populateLineItemsAndSubscriptions(order, paymentRequest);
 
         PaymentResponseDTO paymentResponse = hostedService.requestHostedEndpoint(paymentRequest);
 
@@ -99,9 +98,6 @@ public class PayPalController {
                         .build().toUri());
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.I_AM_A_TEAPOT);
-
-        //return ResponseEntity.notFound().build();
-
     }
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
@@ -124,7 +120,7 @@ public class PayPalController {
 
     }
 
-    private void populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
+    private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
         for (OrderItem item : order.getOrderItems()) {
             String name;
             if (item instanceof BundleOrderItem) {
@@ -134,14 +130,15 @@ public class PayPalController {
             } else {
                 name = item.getName();
             }
-            String category = item.getCategory() == null ? null : StringUtils.substringBefore(item.getCategory().getFulfillmentType().getType(), "_");
-            paymentRequest
+            String category = item.getCategory() == null ? null : item.getCategory().getName();
+            paymentRequest = paymentRequest
                     .lineItem()
                     .name(name)
                     .amount(String.valueOf(item.getTotalPrice().getAmount()))
                     .category(category)
                     .done();
         }
+        return paymentRequest;
     }
 
 

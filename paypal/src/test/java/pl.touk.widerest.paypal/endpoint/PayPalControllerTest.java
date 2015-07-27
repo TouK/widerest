@@ -110,11 +110,7 @@ public class PayPalControllerTest {
             String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
                     secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
-            String accessToken = new OAuthTokenCredential(clientIdCredential, secretCredential, sdkConfig).getAccessToken();
-            PayPalSession payPalSession = new PayPalSessionImpl(accessToken);
-            payPalSession.getApiContext().setConfigurationMap(sdkConfig);
-
-            return payPalSession;
+            return new PayPalSessionImpl(clientIdCredential, secretCredential);
         }
 
         @Bean(name = "blOrderService")
