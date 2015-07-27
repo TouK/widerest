@@ -121,7 +121,7 @@ public class CategoryControllerTest extends ApiTestBase {
         //when
         ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory();
 
-        assertThat(newCategoryResponseHeaders.getStatusCode().value(), equalTo(201));
+        assertThat(newCategoryResponseHeaders.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplate.getForEntity(newCategoryResponseHeaders.getHeaders().getLocation().toString(), CategoryDto.class, serverPort);

@@ -47,9 +47,9 @@ public class DtoTestFactory {
     private static ProductDto getTestProduct() {
         if(defaultProductDto == null) {
             defaultProductDto = ProductDto.builder()
-                    .name("testProduct")
-                    .description("testProductDescription")
-                    .longDescription("testProductLongDescription")
+                    .name("DefaultTestProduct")
+                    .description("DefaultTestProductDescription")
+                    .longDescription("DefaultTestProductLongDescription")
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
                     .build();
@@ -86,7 +86,8 @@ public class DtoTestFactory {
     public static SkuDto getTestDefaultSku() {
         if(newSkuDto == null) {
             newSkuDto = SkuDto.builder()
-                    .description("TestDefaultSKUDescription")
+                    .description("DefaultTestProductDescription")
+                    .name("DefaultTestProduct")
                     .salePrice(new BigDecimal(39.99))
                     .quantityAvailable(99)
                     .taxCode("DefaultSKU Tax Code")

@@ -2,6 +2,7 @@ package pl.touk.widerest.catalog;
 
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.springframework.web.client.HttpServerErrorException;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 //@RunWith(SpringJUnit4ClassRunner.class)
@@ -29,39 +31,11 @@ public class ProductControllerTest extends ApiTestBase {
     private HttpHeaders httpRequestHeader;
 
     @Before
-    public void initCategoryTests() {
+    public void initProductTests() {
         this.httpRequestHeader = new HttpHeaders();
         //tmp
         serverPort = String.valueOf(8080);
-        //cleanupCategoryTests();
-    }
-
-    private long getRemoteTotalProductsCount() {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody().longValue();
-    }
-
-    private long getLocalTotalSkus() {
-        return catalogService.findAllSkus().stream().count();
-    }
-
-    private long getRemoteTotalSkusForProductCount(long productId) {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
-                HttpMethod.GET, httpRequestEntity, Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody().longValue();
+        cleanupProductTests();
     }
 
     private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
@@ -117,42 +91,42 @@ public class ProductControllerTest extends ApiTestBase {
         assertTrue(receivedProductSingleEntity.equals(localProduct));
 
     }
-
-
-    @Test
-    public void addingNewSKUIncreasesSkusCount() {
-        final long totalLocalSkusCount = getLocalTotalSkus();
-
-        ResponseEntity newProductResponseEntity = addNewTestProduct();
-
-       // String newProductLocationUrl = newProductResponseEntity.getHeaders().getLocation().get
-
-
-        SkuDto skuTestDto = DtoTestFactory.getTestDefaultSku();
-    try {
-        ResponseEntity<HttpHeaders> remoteSkuDtoEntity = restTemplate.postForEntity(
-                "http://localhost:8080/catalog/products/skus",
-                skuTestDto,
-                HttpHeaders.class);
-
-    } catch (HttpServerErrorException e) {
-        System.out.println(e.getResponseBodyAsString());
-    }
-
-
-    }
+    
 
     @Test
-    public void addingNewProductIncreasesProductsCount() {
+    public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
-        try {
-            ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+        long currentProductsCount = getRemoteTotalProductsCount();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
 
-            ResponseEntity<HttpHeaders> remoteAddProductEntity = restTemplate.postForEntity(ApiTestBase.PRODUCTS_URL, productDto, HttpHeaders.class, serverPort);
-            System.out.println("GOT: " + remoteAddProductEntity.getStatusCode());
-        }catch (HttpServerErrorException e) {
-            System.out.println(e.getResponseBodyAsString());
-        }
+        //when
+        ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
+
+        assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
+
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
+                remoteAddProductEntity.getHeaders().getLocation().toString(),
+                HttpMethod.GET, httpRequestEntity, ProductDto.class, serverPort);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        ProductDto receivedProductDto = receivedProductEntity.getBody();
+
+        /* TODO: (mst) implement a reasonable ProductDto's equalTo() method instead of
+         *       doing this bs:
+         */
+        //then
+        assertThat(receivedProductDto.getName(), equalTo(productDto.getName()));
+        assertThat(receivedProductDto.getDescription(), equalTo(productDto.getDescription()));
+        assertThat(receivedProductDto.getModel(), equalTo(productDto.getModel()));
+        assertThat(receivedProductDto.getDefaultSku().getSalePrice().longValue(), equalTo(productDto.getDefaultSku().getSalePrice().longValue()));
+        assertThat(receivedProductDto.getDefaultSku().getQuantityAvailable(), equalTo(productDto.getDefaultSku().getQuantityAvailable()));
+        /* ... */
+
     }
 
     /* Duplicate = ??? */
@@ -167,5 +141,63 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
 
+    @Test
+    public void addingNewProductWihoutDefaultSKUCausesExceptionTest() {
+        long currentProductsCount = getRemoteTotalProductsCount();
+        ProductDto productWihtoutDefaultSkuDto = DtoTestFactory.getTestProductWithoutDefaultSKU();
+
+        try {
+            //when
+            addNewTestProduct(productWihtoutDefaultSkuDto);
+            fail();
+        } catch (HttpClientErrorException httpClientException) {
+            //then
+            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+            assertThat(currentProductsCount, equalTo(getRemoteTotalProductsCount()));
+        }
+    }
+
+
+
+
+    /* -----------------------------END OF TESTS----------------------------- */
+    private void cleanupProductTests() {
+
+    }
+
+    private ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCTS_URL, productDto, null, serverPort);
+
+        return remoteAddProductEntity;
+    }
+
+    private long getRemoteTotalProductsCount() {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
+    private long getRemoteTotalSkusForProductCount(long productId) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort, productId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
+    private long getLocalTotalSkus() {
+        return catalogService.findAllSkus().stream().count();
+    }
 
 }
