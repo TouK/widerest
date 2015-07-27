@@ -76,8 +76,8 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
-        String returnUrl = "";
-        String cancelUrl = "";
+        String returnUrl = "http://return";
+        String cancelUrl = "http://cancel";
 
         PaymentRequestDTO paymentRequest =
                 orderToPaymentRequestDTOService.translateOrder(order)
@@ -90,7 +90,7 @@ public class PayPalController {
 
         //return redirect URI from the paymentResponse
 
-        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("approval url"))
+        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL))
                 .orElseThrow(() -> new ResourceNotFoundException(""));
 
         HttpHeaders responseHeader = new HttpHeaders();

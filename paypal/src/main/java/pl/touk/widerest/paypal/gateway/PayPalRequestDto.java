@@ -52,12 +52,12 @@ public class PayPalRequestDto {
         return wrapped.getOrderSubtotal();
     }
 
-    public URI getReturnUri() {
-        return (URI) wrapped.getAdditionalFields().get(PayPalMessageConstants.RETURN_URL);
+    public String getReturnUri() {
+        return wrapped.getAdditionalFields().get(PayPalMessageConstants.RETURN_URL).toString();
     }
 
-    public URI getCancelUri() {
-        return (URI) wrapped.getAdditionalFields().get(PayPalMessageConstants.CANCEL_URL);
+    public String getCancelUri() {
+        return wrapped.getAdditionalFields().get(PayPalMessageConstants.CANCEL_URL).toString();
     }
 
     public Object getOrderId() {

@@ -1,7 +1,10 @@
 package pl.touk.widerest.paypal.endpoint;
 
 import com.paypal.base.rest.APIContext;
+import com.paypal.base.rest.OAuthTokenCredential;
+import com.paypal.base.rest.PayPalRESTException;
 import org.broadleafcommerce.common.money.Money;
+import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProviderImpl;
@@ -11,6 +14,7 @@ import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.domain.OrderItemImpl;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
+import org.broadleafcommerce.core.order.service.FulfillmentGroupServiceImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOServiceImpl;
@@ -31,11 +35,16 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.paypal.gateway.PayPalGatewayConfigurationService;
+import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
+import pl.touk.widerest.paypal.gateway.PayPalSessionImpl;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -54,10 +63,13 @@ public class PayPalControllerTest {
         try {
             whenInPayPal.userSendsPaymentRequest(userDetails, Long.valueOf(1));
         } catch (PaymentException e) {
-            assert(true == false);
+            // Could not send payment
+            assert(false);
         }
 
-        thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse);
+        assert(
+        thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse)
+        );
 
     }
 
@@ -80,22 +92,29 @@ public class PayPalControllerTest {
         }
     }
 
-    private PayPalController payPalController;
-    private PayPalBehaviour whenInPayPal;
-    private PayPalExpectations thenInPayPal;
+    @Resource
+    private PayPalController payPalController = new PayPalController();
+
+    private PayPalBehaviour whenInPayPal = new PayPalBehaviour();
+    private PayPalExpectations thenInPayPal = new PayPalExpectations();
 
     @Configuration
     @ComponentScan({"pl.touk.widerest.paypal"})
     public static class TestConfiguration {
 
         @Bean
-        public PayPalSession payPalSession() {
-            return new PayPalSession() {
-                @Override
-                public APIContext getApiContext() {
-                    return null;
-                }
-            };
+        public PayPalSession payPalSession() throws PayPalRESTException {
+            Map<String, String> sdkConfig = new HashMap<String, String>();
+            sdkConfig.put("mode", "sandbox");
+            //TODO: unhardcode credentials
+            String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
+                    secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
+
+            String accessToken = new OAuthTokenCredential(clientIdCredential, secretCredential, sdkConfig).getAccessToken();
+            PayPalSession payPalSession = new PayPalSessionImpl(accessToken);
+            payPalSession.getApiContext().setConfigurationMap(sdkConfig);
+
+            return payPalSession;
         }
 
         @Bean(name = "blOrderService")
@@ -105,12 +124,14 @@ public class PayPalControllerTest {
             Customer customer = new CustomerImpl();
             customer.setId(Long.valueOf(1337));
             preparedOrder.setCustomer(customer);
+            preparedOrder.setId(Long.valueOf(1));
 
             OrderItem orderItem = new OrderItemImpl();
             orderItem.setName("Kanapka");
             orderItem.setPrice(new Money(5.99));
             orderItem.setId(Long.valueOf(1));
             orderItem.setQuantity(4);
+            orderItem.setOrder(preparedOrder);
             preparedOrder.addOrderItem(orderItem);
 
             when(orderServiceMock.findOrderById(Long.valueOf(1))).thenReturn(preparedOrder);
@@ -120,12 +141,60 @@ public class PayPalControllerTest {
 
         @Bean
         public OrderToPaymentRequestDTOService blOrderToPaymentRequestDTOService() {
-            return new OrderToPaymentRequestDTOServiceImpl();
+            //return new OrderToPaymentRequestDTOServiceImpl();
+            OrderToPaymentRequestDTOService orderToPaymentRequestDTOService =
+                    new Mockito().mock(OrderToPaymentRequestDTOServiceImpl.class);
+
+            PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO()
+                    .orderId("1337")
+                    .customer()
+                        .customerId("1")
+                        .firstName("Boguslaw")
+                        .lastName("Miroslawski")
+                        .email("bogus@miro.pl")
+                        .phone("+48900880700")
+                        .done()
+                    .shipTo()
+                        .addressFirstName("Asdf")
+                        .addressLastName("Gsadf")
+                        .addressCompanyName("")
+                        .addressLine1("al. Bohaterow Wrzesnia 8 3/4")
+                        .addressLine2("")
+                        .addressCityLocality("Warszawa")
+                        .addressStateRegion("")
+                        .addressPostalCode("02-110")
+                        .addressCountryCode("PL")
+                        .addressPhone("+48700100200")
+                        .addressEmail("mail@mail.pl")
+                    .done()
+                    .billTo()
+                        .addressFirstName("Asdf")
+                        .addressLastName("Gsadf")
+                        .addressCompanyName("")
+                        .addressLine1("al. Bohaterow Wrzesnia 8 3/4")
+                        .addressLine2("")
+                        .addressCityLocality("Warszawa")
+                        .addressStateRegion("")
+                        .addressPostalCode("02-110")
+                        .addressCountryCode("PL")
+                        .addressPhone("+48700100200")
+                        .addressEmail("mail@mail.pl")
+                    .done()
+                        .transactionTotal("25.23")
+                        .shippingTotal("52.12")
+                        .taxTotal("")
+                        .orderCurrencyCode("USD")
+                    ;
+
+            when(orderToPaymentRequestDTOService.translateOrder(anyObject())).thenReturn(paymentRequestDTO);
+
+            return orderToPaymentRequestDTOService;
         }
 
         @Bean(name = "blFulfillmentGroupService")
         public FulfillmentGroupService fgService() {
             return mock(FulfillmentGroupService.class);
+//            return new FulfillmentGroupServiceImpl();
         }
 
         @Bean(name = "blPaymentGatewayConfigurationServiceProvider")

@@ -1,7 +1,10 @@
 package pl.touk.widerest.paypal.gateway;
 
+import com.paypal.api.payments.*;
+import com.paypal.base.rest.OAuthTokenCredential;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentTransactionType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -17,6 +20,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -49,10 +56,47 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     protected PayPalResponseDto requestPayPalHostedEndpoint(PayPalRequestDto payPalRequest) throws PaymentException {
         log.info("Creating PayPal payment for order {} for amount of {}", payPalRequest.getOrderId(), payPalRequest.getTransactionTotal());
         try {
-            throw new NotImplementedException("Should create com.paypal.api.payments.Payment");
+            //throw new NotImplementedException("Should create com.paypal.api.payments.Payment");
+
+            Amount amount = new Amount();
+            amount.setCurrency(payPalRequest.getOrderCurrencyCode());
+            amount.setTotal(payPalRequest.getTransactionTotal());
+
+            Transaction transaction = new Transaction();
+            transaction.setDescription(payPalRequest.getOrderDescription());
+            transaction.setAmount(amount);
+
+            List<Transaction> transactions = new ArrayList<Transaction>();
+            transactions.add(transaction);
+
+            Payer payer = new Payer();
+            payer.setPaymentMethod("paypal");
+
+            Payment payment = new Payment();
+            payment.setIntent("sale");
+            payment.setPayer(payer);
+            payment.setTransactions(transactions);
+
+            RedirectUrls redirectUrls = new RedirectUrls();
+            redirectUrls.setCancelUrl(payPalRequest.getCancelUri());
+            redirectUrls.setReturnUrl(payPalRequest.getReturnUri());
+            payment.setRedirectUrls(redirectUrls);
+
+            Payment createdPayment = payment.create(payPalSession.getApiContext());
+
+            String redirect = createdPayment.getLinks().stream()
+                    .filter(x -> x.getRel().equalsIgnoreCase("approval_url"))
+                    .findAny()
+                    .map(Links::getHref)
+                    .orElseThrow(() -> new ResourceNotFoundException(""));
+
+            PayPalResponseDto response = new PayPalResponseDto();
+            response.setRedirectUri(redirect);
+
+            return response;
 
         } catch (Exception e) {
-            if (e instanceof PaymentException) throw e;
+            //if (e instanceof PaymentException) throw e;
             throw new PaymentException(e);
         }
     }
