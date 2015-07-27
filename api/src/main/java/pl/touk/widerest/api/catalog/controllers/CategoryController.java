@@ -50,7 +50,7 @@ public class CategoryController {
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all categories",
-            notes = "Gets a list of all available (non-archived) categories in the catalog",
+            notes = "Gets a list of all available categories in the catalog",
             response = CategoryDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
@@ -162,6 +162,7 @@ public class CategoryController {
     }
 
     /* PUT /categories/{id} */
+    /* TODO: (mst) more "efficient" partial update */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.PUT)
@@ -222,9 +223,8 @@ public class CategoryController {
     /*
      * TODO: (mst) What if the product has defaultSKU set but no entry in allSkus list? (= copy?)
      */
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-    @PreAuthorize("permitAll")
     @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}/products", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a product to the category",
@@ -245,7 +245,7 @@ public class CategoryController {
                 .map(DtoConverters.skuDtoToEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
-         /* TODO: creating Product Bundles */
+         /* TODO: (mst) creating Product Bundles */
          
          /* what if both Product and SKU return null?! */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
@@ -258,8 +258,6 @@ public class CategoryController {
         newProduct.setCategory(category);
 
         newProduct = catalogService.saveProduct(newProduct);
-
-
 
         HttpHeaders responseHeaders = new HttpHeaders();
 
@@ -290,11 +288,10 @@ public class CategoryController {
 
         return this.getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId() == productId)
+                .filter(x -> x.getId().longValue() == productId)
                 .findAny()
                 .map(DtoConverters.productEntityToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + productId + " in category: " + categoryId));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with ID: " + productId + " in category with ID: " + categoryId));
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -304,9 +301,8 @@ public class CategoryController {
 
     // TODO: test if this actually works
     /* PUT /categories/{id}/products/{productId} */
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @Transactional
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update details of a single product in a category",
@@ -322,7 +318,7 @@ public class CategoryController {
 
         this.getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId() == productId)
+                .filter(x -> x.getId().longValue() == productId)
                 .findAny()
                 .map(e -> {
                     /* TODO:  Check if products category and categoryId match */
@@ -341,8 +337,7 @@ public class CategoryController {
 
     /* DELETE /categories/{id}/products/{productId} */
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a product from a category",
@@ -357,11 +352,13 @@ public class CategoryController {
 
         Product productToDelete = getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId() == productId)
+                .filter(x -> x.getId().longValue() == productId)
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category ID: " + categoryId));
 
     	/* (mst) do we need to manually delete all SKUS ? */
+
+
         catalogService.removeProduct(productToDelete);
 
     }
@@ -378,20 +375,7 @@ public class CategoryController {
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
     public Long getAllProductsInCategoryCount(@PathVariable(value = "categoryId") Long categoryId) {
-
-    	/*
-    	Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .map(e -> {
-                    if (!CatalogUtils.archivedCategoryFilter(e)) {
-                        return null;
-                    } else return e;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with id: " + categoryId));
-                */
-        //return category.getAllProductXrefs().stream().count();
-
         return getProductsFromCategoryId(categoryId).stream().count();
-
     }
 
 

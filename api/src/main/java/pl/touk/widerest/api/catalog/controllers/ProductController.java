@@ -80,9 +80,8 @@ public class ProductController {
     }
 
     /* POST /products */
-    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @Transactional
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -98,7 +97,7 @@ public class ProductController {
                 .map(DtoConverters.skuDtoToEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
-        /* TODO: creating Product Bundles */
+        /* TODO: (mst) creating Product Bundles */
         
         /* what if both Product and SKU return null?! */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
@@ -106,6 +105,8 @@ public class ProductController {
         Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
         /* this one is probably redundant */
         newProduct.setDefaultSku(defaultSku);
+
+        /* TODO: (mst) what if the Category has not been provided?! */
 
         newProduct = catalogService.saveProduct(newProduct);
 
@@ -132,13 +133,15 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of products count")
     })
     public Long getAllProductsCount() {
-        return catalogService.findAllProducts().stream().count();
+        return catalogService.findAllProducts().stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
     }
 
     /* GET /products/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single product details",
             notes = "Gets details of a single product specified by its ID",
@@ -147,17 +150,18 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public ProductDto readOneProduct(@PathVariable(value = "id") Long productId) {
+    public ProductDto readOneProduct(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(DtoConverters.productEntityToDto)
-                .orElseThrow(ResourceNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
     /* PUT /products/{id} */
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing product",
             notes = "Updates an existing product with new details",
@@ -166,20 +170,20 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful update of the specified product"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public void changeOneProduct(@PathVariable(value = "id") Long id, @RequestBody ProductDto productDto) {
-        Optional.ofNullable(catalogService.findProductById(id))
+    public void changeOneProduct(@PathVariable(value = "productId") Long productId, @RequestBody ProductDto productDto) {
+        Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(p -> {
                     catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
                     return p;
                 })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + id + ". Not Found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + productId + ". Not Found"));
     }
 
     /* DELETE /products/{id} */
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
     @Transactional
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing product",
             notes = "Removes an existing product from catalog",
@@ -188,20 +192,20 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product details"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public void removeOneProduct(@PathVariable(value = "id") Long id) {
-        Optional.ofNullable(catalogService.findProductById(id))
+    public void removeOneProduct(@PathVariable(value = "productId") Long productId) {
+        Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
                     catalogService.removeProduct(e);
                     return e;
                 })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + id + ". Product does not exist"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
     }
 
     /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{id}/categories", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get product's categories",
             notes = "Gets a list of all categories belonging to a specified product",
@@ -211,7 +215,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public List<CategoryDto> readCategoriesByProduct(@PathVariable(value = "id") Long productId) {
+    public List<CategoryDto> readCategoriesByProduct(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -226,7 +230,7 @@ public class ProductController {
     /* GET /products/{id}/skus */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{id}/skus", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/skus", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get product's SKUs",
             notes = "Gets a list of all SKUs available for a specified product",
@@ -236,7 +240,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public List<SkuDto> readSkusByProduct(@PathVariable(value = "id") Long productId) {
+    public List<SkuDto> readSkusByProduct(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -248,7 +252,7 @@ public class ProductController {
 
     /* POST /products/{id}/skus */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a SKU to the product",
@@ -263,6 +267,7 @@ public class ProductController {
                                                  @RequestBody SkuDto skuDto) {
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
         Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
@@ -314,7 +319,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
-    /* GET /products/{productId}/skus/{skuId} */
+    /* GET /products/{productId}/skus/default */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
@@ -331,10 +336,55 @@ public class ProductController {
             @PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .map(Product::getDefaultSku)
                 .map(DtoConverters.skuEntityToDto)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Product with ID: " + productId + " does not exist or does not have a default SKU set"));
+                        new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+    }
+
+    /* POST /products/{productId}/skus/default */
+    /* (mst) Experimental */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Replace default SKU",
+            notes = "Replaces an existing default SKU with a new one",
+            response = SkuDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful replace of default SKU details"),
+            @ApiResponse(code = 404, message = "The specified Product does not exist")
+    })
+    public ResponseEntity<?> changeDefaultSkuByProductId(
+            @PathVariable(value = "productId") Long productId,
+            @RequestBody SkuDto defaultSkuDto) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        Sku currentDefaultSKU = product.getDefaultSku();
+
+        Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(defaultSkuDto);
+        newSkuEntity.setProduct(product);
+        newSkuEntity = catalogService.saveSku(newSkuEntity);
+
+        product.setDefaultSku(newSkuEntity);
+        catalogService.saveProduct(product);
+
+        /* (mst) Removing a default SKU should technically remove the entire product...*/
+        //catalogService.removeSku(currentDefaultSKU);
+
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/products/{productId}/skus/{skuId}")
+                .buildAndExpand(productId,newSkuEntity.getId())
+                .toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
     }
 
 
@@ -354,13 +404,15 @@ public class ProductController {
     public Long getAllSkusCount(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream().count();
+                .getAllSkus().stream()
+                .count();
     }
 
     /* DELETE /products/{productId}/skus/{id} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_ROLES')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing SKU",
@@ -700,16 +752,4 @@ public class SkuController {
     }
 
 
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count all SKUs",
-            notes = "Gets a number of all SKUs available in the catalog",
-            response = Long.class
-    )
-    public Long getAllSkusCount() {
-        return catalogService.findAllSkus().stream().count();
-    }
-}
 */
