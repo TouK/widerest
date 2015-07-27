@@ -1,19 +1,20 @@
 package pl.touk.widerest.api.catalog.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
+
 import org.springframework.hateoas.ResourceSupport;
 
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /*
  * TODO: (mst) Add SkuMedia (= pictures etc)
@@ -46,6 +47,10 @@ public class SkuDto extends ResourceSupport {
 
     @ApiModelProperty(required = true)
     private BigDecimal salePrice;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    private BigDecimal retailPrice;
 
     @ApiModelProperty(required = true)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
