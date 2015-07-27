@@ -66,7 +66,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
 
-        ProductDto productDto = DtoTestFactory.getTestProduct();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
 
@@ -128,7 +128,7 @@ public class ProductControllerTest extends ApiTestBase {
        // String newProductLocationUrl = newProductResponseEntity.getHeaders().getLocation().get
 
 
-        SkuDto skuTestDto = DtoTestFactory.getTestSku();
+        SkuDto skuTestDto = DtoTestFactory.getTestDefaultSku();
     try {
         ResponseEntity<HttpHeaders> remoteSkuDtoEntity = restTemplate.postForEntity(
                 "http://localhost:8080/catalog/products/skus",
@@ -146,7 +146,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingNewProductIncreasesProductsCount() {
 
         try {
-            ProductDto productDto = DtoTestFactory.getTestProduct();
+            ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
 
             ResponseEntity<HttpHeaders> remoteAddProductEntity = restTemplate.postForEntity(ApiTestBase.PRODUCTS_URL, productDto, HttpHeaders.class, serverPort);
             System.out.println("GOT: " + remoteAddProductEntity.getStatusCode());
@@ -165,5 +165,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingNewSkuAfterCreatingProductWithDefaultSku() {
 
     }
+
+
 
 }

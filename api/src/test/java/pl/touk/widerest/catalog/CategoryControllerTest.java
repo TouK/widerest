@@ -1,5 +1,8 @@
 package pl.touk.widerest.catalog;
 
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.springframework.transaction.annotation.Transactional;
+import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import org.broadleafcommerce.common.persistence.Status;
@@ -17,7 +20,9 @@ import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -224,11 +229,42 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
 
+    @Test
+    //@Transactional
+    public void addingNewProductWithDefaultSKUToExistingCategoryIncreasesProductsCount() {
 
+        List<Category> allCategories = catalogService.findAllCategories();
 
+        if(allCategories.isEmpty()) {
+            fail("No categories found?!");
+        }
+
+        Category firstCategory = allCategories.stream().filter(CatalogUtils::archivedCategoryFilter)
+                .findFirst().get();
+
+        //long currentProductsInCategoryCount = firstCategory.getAllProductXrefs().stream().count();
+        long currentProductsInCategoryRemoteCount = getRemoteTotalProductsInCategorCountValue(firstCategory.getId());
+
+        //assertThat(currentProductsInCategoryCount, equalTo(currentProductsInCategoryRemoteCount));
+
+        ProductDto productToAddDto = DtoTestFactory.getTestProductWithoutDefaultCategory();
+
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCTS_IN_CATEGORY_URL, productToAddDto, null, serverPort, 701);
+
+        assertNotNull(remoteAddProductEntity);
+        assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        //long newProductsInCategoryCount = firstCategory.getAllProductXrefs().stream().count();
+        long newProductsInCategoryRemoteCount = getRemoteTotalProductsInCategorCountValue(firstCategory.getId());
+
+       // assertThat(newProductsInCategoryCount, equalTo(newProductsInCategoryRemoteCount));
+        assertThat(newProductsInCategoryRemoteCount, equalTo(currentProductsInCategoryRemoteCount + 1));
+
+    }
 
     @Test
-    @Ignore("Do not forget to implement me! :)")
+    @Ignore("Do not forget to implement me! You should probably move me to ProductControllerTest as well! :)")
     public void addNewProductToNewCategoryAndCheckIfItExists() {
 
         ResponseEntity<?> addNewCategoryResponse = addNewTestCategory();
@@ -246,7 +282,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         long currentProductsCount = getRemoteTotalProductsInCategorCountValue(createdCategoryId);
 
-        ProductDto productDto = DtoTestFactory.getTestProduct();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL + "/{p}/products", productDto, null, serverPort, createdCategoryId);
 
@@ -261,6 +297,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     }
 
+    /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupCategoryTests() {
         /* If there is still any test row in a database, delete it */
         removeRemoteTestCategory();
@@ -323,6 +360,15 @@ public class CategoryControllerTest extends ApiTestBase {
         ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
 
         return remoteAddCategoryEntity;
+    }
+
+    /* (mst) meh.... */
+    private ResponseEntity<?> addNewTestProduct(ProductDto productToAddDto) throws HttpClientErrorException {
+        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCTS_IN_CATEGORY_URL, productToAddDto, null, serverPort);
+
+        return remoteAddProductEntity;
+
     }
 
 }

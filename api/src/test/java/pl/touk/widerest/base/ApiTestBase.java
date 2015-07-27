@@ -29,17 +29,18 @@ public abstract class ApiTestBase {
     /* Products */
     public static final String PRODUCTS_URL = "http://localhost:{port}/catalog/products";
     public static final String PRODUCTS_COUNT_URL = PRODUCTS_URL + "/count";
-    public static final String SKUS_URL = PRODUCTS_URL + "/{productId}/skus";
-    public static final String SKUS_COUNT_URL = SKUS_URL + "/count";
+    public static final String PRODUCT_BY_ID_SKUS = PRODUCTS_URL + "/{productId}/skus";
+    public static final String PRODUCT_BY_ID_SKU_BY_ID = PRODUCT_BY_ID_SKUS + "/{skuId}";
+    public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
 
 
     /* Orders */
-    public static final String ORDERS_URL = "http://localhost:8080/catalog/orders";
+    public static final String ORDERS_URL = "http://localhost:{port}/catalog/orders";
 
-    public static final String LOGIN_URL = "http://localhost:8080/login";
+    public static final String LOGIN_URL = "http://localhost:{port}/login";
 
 
-    public static final String OAUTH_AUTHORIZATION = "http://localhost:8080/oauth/authorize?client_id=test&response_type=token&redirect_uri=/";
+    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=test&response_type=token&redirect_uri=/";
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
