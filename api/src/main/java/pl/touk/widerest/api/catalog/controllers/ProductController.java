@@ -103,73 +103,11 @@ public class ProductController {
         /* what if both Product and SKU return null?! */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
 
-
         Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
         /* this one is probably redundant */
         newProduct.setDefaultSku(defaultSku);
 
         newProduct = catalogService.saveProduct(newProduct);
-
-
-
-
-        //Sku savedDefaultSku = catalogService.createSku();
-
-        //defaultSku.setId(savedDefaultSku.getId());
-
-        // savedDefaultSku = catalogService.saveSku(defaultSku);
-
-        //productDto.getDefaultSku().setSkuId(savedDefaultSku.getId());
-        //Product createdProductEntity = catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-
-        /*
-        Product product = new ProductImpl();
-        product.setDefaultSku(catalogService.createSku());
-        product.setName("phone A");
-        product.setFeaturedProduct(true);
-        product.setUrl("/phones/phoneA");
-        product.setCanSellWithoutOptions(true);
-        product.setManufacturer("manufacturer A");
-        product.setActiveStartDate(new Date());
-        product.setActiveEndDate(null);
-
-        product.setCategory(catalogService.findCategoryById((long) 701));
-        // product.getAllParentCategories().add(category);
-        catalogService.saveProduct(product); //**Exception occurs here**
-*/
-
-        /*
-        Category category = new CategoryImpl();
-
-        category.setName("Phones Category");
-        category.setActiveStartDate(activeStartCal.getTime());
-        category.setDescription("Phones Category Description");
-
-        category = catalogService.saveCategory(category);
-*/
-
-        /*
-        Calendar activeStartCal = Calendar.getInstance();
-
-        Product p = catalogService.createProduct(ProductType.PRODUCT);
-        Sku defaultSku = catalogService.createSku();
-
-        defaultSku.setRetailPrice(new Money(BigDecimal.valueOf(15.0)));
-        defaultSku.setSalePrice(new Money(BigDecimal.valueOf(10.0)));
-        defaultSku.setActiveStartDate(activeStartCal.getTime());
-
-        p.setDefaultSku(defaultSku);
-
-        p.setName("phone AB");
-        p.setFeaturedProduct(true);
-        p.setUrl("/phones/phoneA");
-        p.setCanSellWithoutOptions(true);
-        p.setManufacturer("manufacturer A");
-        p.setActiveEndDate(null);
-
-        p = catalogService.saveProduct(p);
-        */
-
 
         HttpHeaders responseHeader = new HttpHeaders();
 
@@ -194,7 +132,6 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of products count")
     })
     public Long getAllProductsCount() {
-
         return catalogService.findAllProducts().stream().count();
     }
 
@@ -253,6 +190,7 @@ public class ProductController {
     })
     public void removeOneProduct(@PathVariable(value = "id") Long id) {
         Optional.ofNullable(catalogService.findProductById(id))
+                .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
                     catalogService.removeProduct(e);
                     return e;
@@ -469,7 +407,7 @@ public class ProductController {
     }
 
 
-    /* GET /products/{id}/reviews */
+    /* GET /products/{id}/reviews *//*
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/reviews", method = RequestMethod.GET)
@@ -494,7 +432,7 @@ public class ProductController {
 
     }
 
-    /* POST /products/{id}/reviews */
+    *//* POST /products/{id}/reviews *//*
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ADMIN_ROLES', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/reviews", method = RequestMethod.POST)
     @ApiOperation(
@@ -519,7 +457,7 @@ public class ProductController {
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
         if (ratingSummary == null) {
-            /* TODO: Do we create a new one ?! */
+            *//* TODO: Do we create a new one ?! *//*
         }
 
         // TODO: Customer verification
@@ -531,7 +469,7 @@ public class ProductController {
         return new ResponseEntity<>(null, HttpStatus.CREATED);
     }
 
-    /* GET /products/{id}/reviews/count */
+    *//* GET /products/{id}/reviews/count *//*
 
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/reviews/count", method = RequestMethod.GET)
@@ -551,7 +489,7 @@ public class ProductController {
         return reviewCount;
     }
 
-    /* GET /products/{id}/reviews/count */
+    *//* GET /products/{id}/reviews/count *//*
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/ratings/count", method = RequestMethod.GET)
     @ApiOperation(
@@ -570,7 +508,7 @@ public class ProductController {
         return ratingsCount;
     }
 
-    /* GET /products/{id}/ratings/avg */
+    *//* GET /products/{id}/ratings/avg *//*
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/ratings/avg", method = RequestMethod.GET)
     @ApiOperation(
@@ -589,7 +527,7 @@ public class ProductController {
         return avgRating;
     }
 
-    /* GET /products/{id}/ratings */
+    *//* GET /products/{id}/ratings *//*
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{id}/ratings", method = RequestMethod.GET)
     @ApiOperation(
@@ -606,66 +544,7 @@ public class ProductController {
         }
 
         return Collections.emptyList();
-    }
-
-
-    /* ONLY FOR TESTING */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/skus", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add a new SKU",
-            notes = "Adds a new SKU to the catalog. Returns an URL to the newly added SKU in the Location field" +
-                    "of the HTTP response header",
-            response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new SKU entry successfully created")
-    })
-    public ResponseEntity<?> saveOneSku(@RequestBody SkuDto skuDto) {
-
-        System.out.println("IN SKU!!!");
-        Sku createdSku = catalogService.createSku();
-
-        createdSku.setProduct(catalogService.findAllProducts().get(0));
-        createdSku.setDescription(skuDto.getDescription());
-        createdSku.setTaxCode(skuDto.getTaxCode());
-        createdSku.setQuantityAvailable(skuDto.getQuantityAvailable());
-        createdSku.setSalePrice(new Money(skuDto.getSalePrice()));
-        createdSku.setRetailPrice(createdSku.getRetailPrice());
-        createdSku.setName(skuDto.getDescription());
-        createdSku.setLongDescription(skuDto.getDescription());
-
-        Sku createdSkuEntity = catalogService.saveSku(createdSku);
-
-        // Sku createdSkuEntity = catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        // responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-        //          .path("/{id}")
-        //          .buildAndExpand(createdSkuEntity.getId())
-        //          .toUri());
-
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
-    }
-
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/skus", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "List all SKUs",
-            notes = "Gets a list of all available SKUs in the catalog",
-            response = SkuDto.class,
-            responseContainer = "List"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of SKUs list", response = SkuDto.class)
-    })
-    public List<SkuDto> getAllSkus() {
-        return catalogService.findAllSkus().stream().map(DtoConverters.skuEntityToDto).collect(Collectors.toList());
-    }
-
-
+    }*/
 }
 
 

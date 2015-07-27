@@ -228,9 +228,13 @@ public class CategoryControllerTest extends ApiTestBase {
 
     }
 
+    @Test
+    public void modifyingExistingCategoryDoesNotRemoveProductsFromIt() {
+
+    }
 
     @Test
-    //@Transactional
+    @Transactional
     public void addingNewProductWithDefaultSKUToExistingCategoryIncreasesProductsCount() {
 
         List<Category> allCategories = catalogService.findAllCategories();

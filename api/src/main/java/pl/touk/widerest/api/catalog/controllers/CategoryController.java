@@ -50,7 +50,7 @@ public class CategoryController {
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all categories",
-            notes = "Gets a list of all available categories in the catalog",
+            notes = "Gets a list of all available (non-archived) categories in the catalog",
             response = CategoryDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
@@ -115,6 +115,7 @@ public class CategoryController {
 
 
     /* GET /categories/{id} */
+    @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.GET)
     @ApiOperation(
@@ -128,7 +129,7 @@ public class CategoryController {
     public CategoryDto readOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
         Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find category with ID: " + categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         if(((Status)categoryEntity).getArchived() == 'Y') {
             throw new ResourceNotFoundException("Cannot find category with ID: " + categoryId + ". Category marked as archived");
@@ -138,6 +139,7 @@ public class CategoryController {
     }
 
     /* DELETE /categories/id */
+    @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.DELETE)
     @ApiOperation(
@@ -151,6 +153,7 @@ public class CategoryController {
     public void removeOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
                     catalogService.removeCategory(e);
                     return e;
@@ -159,6 +162,7 @@ public class CategoryController {
     }
 
     /* PUT /categories/{id} */
+    @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.PUT)
     @ApiOperation(
@@ -171,15 +175,24 @@ public class CategoryController {
     })
     public void changeOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
 
-        Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .map(x -> {
-                    categoryDto.setCategoryId(x.getId());
-                    catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
-                    return x;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + categoryId + ". Category not found"));
+        Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                                    .filter(CatalogUtils::archivedCategoryFilter)
+                                    .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + categoryId + ". Category not found"));
 
+        /* (mst) UGLY but temporal */
+        if(categoryDto.getDescription() != null) {
+            categoryToUpdate.setDescription(categoryDto.getDescription());
+        }
+
+        if(categoryDto.getName() != null) {
+            categoryToUpdate.setName(categoryDto.getName());
+        }
+
+        if(categoryDto.getLongDescription() != null) {
+            categoryToUpdate.setLongDescription(categoryDto.getLongDescription());
+        }
+
+        catalogService.saveCategory(categoryToUpdate);
     }
 
 
