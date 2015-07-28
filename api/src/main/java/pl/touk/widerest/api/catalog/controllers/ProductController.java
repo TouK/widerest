@@ -97,6 +97,18 @@ public class ProductController {
                 .map(DtoConverters.skuDtoToEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
+        /* TODO: (mst) modify matching rules */
+        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
+                .filter(x -> x.getDescription().equals(productDto.getDescription()) || x.getLongDescription().equals(productDto.getLongDescription()))
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
+
+        if(duplicatesCount > 0) {
+            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+        }
+
+
+
         /* TODO: (mst) creating Product Bundles */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
 

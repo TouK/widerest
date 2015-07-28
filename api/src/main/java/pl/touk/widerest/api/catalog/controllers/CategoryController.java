@@ -80,7 +80,7 @@ public class CategoryController {
     public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
 
         long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                .filter(x -> x.getDescription().equals(categoryDto.getName()) || x.getLongDescription().equals(categoryDto.getLongDescription()))
+                .filter(x -> x.getDescription().equals(categoryDto.getDescription()) || x.getLongDescription().equals(categoryDto.getLongDescription()))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
 

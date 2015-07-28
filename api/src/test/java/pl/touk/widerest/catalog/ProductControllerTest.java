@@ -81,10 +81,22 @@ public class ProductControllerTest extends ApiTestBase {
 
     }
 
-    /* Duplicate = ??? */
+    /* Duplicate check */
     @Test
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
+        long currentProductCount = getRemoteTotalProductsCount();
 
+        ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory();
+
+        ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
+        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        try {
+            retEntity = addNewTestProduct(testProduct);
+            fail();
+        } catch(HttpClientErrorException httpClientException) {
+            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+            assertThat(getRemoteTotalProductsCount(), equalTo(currentProductCount + 1));
+        }
     }
 
     @Test
@@ -112,8 +124,12 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     /* -----------------------------SKUS TESTS----------------------------- */
-    
 
+    @Test
+    public void g() {
+        Resource<ProductDto> p = getProductWithMultipleSkus();
+        System.out.println("d");
+    }
 
 
     /* -----------------------------SKUS TESTS----------------------------- */
@@ -168,17 +184,20 @@ public class ProductControllerTest extends ApiTestBase {
         return catalogService.findAllSkus().stream().count();
     }
 
-    private ProductDto getProductWithMultipleSkus() {
+    private Resource<ProductDto> getProductWithMultipleSkus() {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
 
-        ResponseEntity<ProductDto[]> receivedProductsEntity =
-                restTemplate.exchange(PRODUCTS_URL, HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
+        ResponseEntity<Resource<ProductDto>[]> receivedProductsEntity =
+                hateoasRestTemplate().exchange(PRODUCTS_URL,
+                        HttpMethod.GET, httpRequestEntity,
+                        new ParameterizedTypeReference<Resource<ProductDto>[]>() {},
+                        serverPort);
 
-        ProductDto resultProduct = null;
+        Resource<ProductDto> resultProduct = null;
 
-        for(ProductDto p : receivedProductsEntity.getBody()) {
-            if(p.getSkus().stream().count() >= 2) {
+        for(Resource<ProductDto> p : receivedProductsEntity.getBody()) {
+            if(p.getContent().getSkus().stream().count() >= 2) {
                 resultProduct = p;
                 break;
             }

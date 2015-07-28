@@ -308,7 +308,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalProductsInCategorCountValue(createdCategoryId), equalTo(currentProductsCount + 1));
     }
 
-    @Test
+    @Test /* Duplicate check */
     public void addExistingProductToTheCategoryAndCheckIfCountDoesNotIncrease() {
 
     }
