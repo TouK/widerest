@@ -1,9 +1,14 @@
 package pl.touk.widerest.paypal.gateway;
 
+import com.paypal.api.payments.*;
+import com.paypal.base.rest.PayPalRESTException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentTransactionType;
+import org.broadleafcommerce.common.payment.dto.AddressDTO;
+import org.broadleafcommerce.common.payment.dto.LineItemDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
@@ -17,6 +22,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -49,24 +58,86 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     protected PayPalResponseDto requestPayPalHostedEndpoint(PayPalRequestDto payPalRequest) throws PaymentException {
         log.info("Creating PayPal payment for order {} for amount of {}", payPalRequest.getOrderId(), payPalRequest.getTransactionTotal());
         try {
-            throw new NotImplementedException("Should create com.paypal.api.payments.Payment");
+            //TODO: unhardcode credentials
+            String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
+                    secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
+            payPalSession =
+                    new PayPalSessionImpl(clientIdCredential, secretCredential);
+
+
+            List<Transaction> transactions = new ArrayList<Transaction>();
+            Transaction transaction = null;
+            Amount amount = null;
+
+            transaction = new Transaction();
+            ItemList itemList = new ItemList();
+            List<Item> utilListItem = new ArrayList<>();
+            Item temp = null;
+            for(LineItemDTO item : payPalRequest.getWrapped().getLineItems()) {
+                temp = new Item();
+                temp.setName(item.getName());
+                temp.setQuantity(item.getQuantity());
+                temp.setPrice(item.getAmount());
+                temp.setCurrency(payPalRequest.getOrderCurrencyCode());
+                utilListItem.add(temp);
+            }
+
+            amount = new Amount();
+            amount.setCurrency(payPalRequest.getOrderCurrencyCode());
+            amount.setTotal(payPalRequest.getTransactionTotal());
+
+            itemList.setItems(utilListItem);
+            transaction.setAmount(amount);
+            transaction.setItemList(itemList);
+            transactions.add(transaction);
+
+
+            Payer payer = new Payer();
+            payer.setPaymentMethod("paypal");
+
+            Payment payment = new Payment();
+            payment.setIntent("sale");
+            payment.setPayer(payer);
+            payment.setTransactions(transactions);
+
+            RedirectUrls redirectUrls = new RedirectUrls();
+            redirectUrls.setCancelUrl(payPalRequest.getCancelUri());
+            redirectUrls.setReturnUrl(payPalRequest.getReturnUri());
+            payment.setRedirectUrls(redirectUrls);
+
+            Payment createdPayment = payment.create(payPalSession.getApiContext());
+
+            String redirect = createdPayment.getLinks().stream()
+                    .filter(x -> x.getRel().equalsIgnoreCase("approval_url"))
+                    .findAny()
+                    .map(Links::getHref)
+                    .orElseThrow(() -> new ResourceNotFoundException(""));
+
+            PayPalResponseDto response = new PayPalResponseDto();
+            response.setRedirectUri(redirect);
+
+            return response;
 
         } catch (Exception e) {
-            if (e instanceof PaymentException) throw e;
+            //if (e instanceof PaymentException) throw e;
             throw new PaymentException(e);
         }
     }
 
     protected PayPalResponseDto translatePayPalWebResponse(HttpServletRequest request) throws PaymentException {
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(request.getRequestURI()).build().getQueryParams();
-        String token = queryParams.getFirst(PayPalMessageConstants.HTTP_TOKEN);
+        String token = queryParams.getFirst(PayPalMessageConstants.QUERY_TOKEN);
         String orderId = queryParams.getFirst(PayPalMessageConstants.QUERY_ORDER_ID);
+        String payerId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYER_ID);
+        String paymentId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYMENT_ID);
 
         PayPalRequestDto payPalRequest = new PayPalRequestDto(token);
 
         PayPalResponseDto payPalResponse = findDetailsByPayPalTransaction(payPalRequest);
         payPalResponse.setOrderId(orderId);
         payPalResponse.setPaymentTransactionType(PaymentTransactionType.UNCONFIRMED);
+        payPalResponse.setPayerId(payerId);
+        payPalResponse.setPaymentId(paymentId);
 
         return payPalResponse;
     }
@@ -83,13 +154,22 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
     protected PayPalResponseDto confirmPayPalTransaction(PayPalRequestDto payPalRequest) throws PaymentException {
         Money transactionAmount = new Money(payPalRequest.getTransactionTotal(), payPalRequest.getOrderCurrencyCode());
+        PayPalResponseDto responseDto = new PayPalResponseDto();
         try {
-            throw new NotImplementedException("Should call execute on the payment");
+            //throw new NotImplementedException("Should call execute on the payment");
+           payPalSession.createNewApiContextFromToken(payPalRequest.getAccessToken());
+           Payment payment = new Payment();
+           payment.setId(payPalRequest.getPaymentId());
+           PaymentExecution paymentExecute = new PaymentExecution();
+           paymentExecute.setPayerId(payPalRequest.getPayerId());
+           payment.execute(payPalSession.getApiContext(), paymentExecute);
 
         } catch (Exception e) {
-            if (e instanceof PaymentException) throw e;
+//            if (e instanceof PaymentException) throw e;
             throw new PaymentException(e);
+            //TODO: wyjatek kiedy nie udal sie execute (redirect na strone paypala)
         }
+        return responseDto;
     }
 
 

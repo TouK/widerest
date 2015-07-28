@@ -10,6 +10,7 @@ import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 public class PayPalResponseDto {
 
     private PaymentResponseDTO wrapped = new PaymentResponseDTO(PaymentType.THIRD_PARTY_ACCOUNT, PayPalPaymentGatewayType.PAYPAL);
+    private String paymentId;
 
     public PayPalResponseDto() {}
 
@@ -17,6 +18,13 @@ public class PayPalResponseDto {
         return wrapped;
     }
 
+    public void setPaymentId(String id) {
+        paymentId = id;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
 
     public void setAmount(Money money) {
         wrapped.amount(money);
