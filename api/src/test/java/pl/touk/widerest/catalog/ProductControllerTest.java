@@ -4,6 +4,7 @@ import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpServerErrorException;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
@@ -30,20 +31,20 @@ import static org.junit.Assert.*;
 
 //@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
-
 public class ProductControllerTest extends ApiTestBase {
 
     private HttpHeaders httpRequestHeader;
+    private HttpEntity<String> httpRequestEntity;
 
     @Before
     public void initProductTests() {
         this.httpRequestHeader = new HttpHeaders();
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         //tmp
         serverPort = String.valueOf(8080);
         cleanupProductTests();
     }
-
-
 
     @Test
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
@@ -97,10 +98,6 @@ public class ProductControllerTest extends ApiTestBase {
             assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
             assertThat(getRemoteTotalProductsCount(), equalTo(currentProductCount + 1));
         }
-    }
-
-    @Test
-    public void addingNewSkuAfterCreatingProductWithDefaultSku() {
 
     }
 
@@ -112,7 +109,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         try {
             //when
-            addNewTestProduct(productWihtoutDefaultSkuDto);
+            ResponseEntity<?> retEntity = addNewTestProduct(productWihtoutDefaultSkuDto);
             fail();
         } catch (HttpClientErrorException httpClientException) {
             //then
@@ -122,22 +119,32 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
 
-
     /* -----------------------------SKUS TESTS----------------------------- */
 
     @Test
-    public void g() {
-        Resource<ProductDto> p = getProductWithMultipleSkus();
-        System.out.println("d");
-    }
+    public void addingNewSkuAfterCreatingProductWithDefaultSku() {
+        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory();
 
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        String createdProductUrlString = addedProductEntity.getHeaders().getLocation().toString();
+        long productId = getIdFromLocationUrl(createdProductUrlString);
+
+        assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(1L));
+
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku();
+
+        ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
+        assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
+    }
 
     /* -----------------------------SKUS TESTS----------------------------- */
 
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
-
+        removeRemoteTestProducts();
     }
 
     private ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
@@ -156,9 +163,14 @@ public class ProductControllerTest extends ApiTestBase {
         return remoteAddProductEntity;
     }
 
+    private ResponseEntity<?> addNewSKUToProduct(long productId, SkuDto skuDto) {
+        ResponseEntity<SkuDto> remoteAddSkuEntity = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
+
+        return remoteAddSkuEntity;
+    }
+
     private long getRemoteTotalProductsCount() {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
 
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
@@ -169,10 +181,8 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     private long getRemoteTotalSkusForProductCount(long productId) {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
 
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort, productId);
 
         assertNotNull(remoteCountEntity);
@@ -185,8 +195,7 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     private Resource<ProductDto> getProductWithMultipleSkus() {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
 
         ResponseEntity<Resource<ProductDto>[]> receivedProductsEntity =
                 hateoasRestTemplate().exchange(PRODUCTS_URL,
@@ -204,6 +213,23 @@ public class ProductControllerTest extends ApiTestBase {
         }
 
         return resultProduct;
+    }
+
+    private void removeRemoteTestProducts() {
+        ProductDto productTestDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+
+
+        ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
+                HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
+
+        assertNotNull(receivedProductEntity);
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        for(ProductDto testProduct : receivedProductEntity.getBody()) {
+            if(productTestDto.getName().equals(testProduct.getName())) {
+                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref(), 1);
+            }
+        }
     }
 
 }
