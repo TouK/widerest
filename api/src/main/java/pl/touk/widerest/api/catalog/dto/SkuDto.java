@@ -8,6 +8,7 @@ import java.util.Date;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class SkuDto extends ResourceSupport {
 
     @ApiModelProperty

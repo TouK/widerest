@@ -1,7 +1,21 @@
 package pl.touk.widerest.catalog;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.broadleafcommerce.core.catalog.domain.Product;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.RelProvider;
+import org.springframework.hateoas.Resource;
+import org.springframework.hateoas.core.AnnotationRelProvider;
+import org.springframework.hateoas.core.DefaultRelProvider;
+import org.springframework.hateoas.core.DelegatingRelProvider;
+import org.springframework.hateoas.hal.Jackson2HalModule;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -21,16 +35,14 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 
 import java.lang.reflect.Modifier;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -40,7 +52,7 @@ public class CategoryControllerTest extends ApiTestBase {
     public void initCategoryTests() {
         this.httpRequestHeader = new HttpHeaders();
         /* uncomment the following for "local" testing */
-        //serverPort = String.valueOf(8080);
+        serverPort = String.valueOf(8080);
         cleanupCategoryTests();
     }
 
@@ -300,6 +312,7 @@ public class CategoryControllerTest extends ApiTestBase {
     public void addExistingProductToTheCategoryAndCheckIfCountDoesNotIncrease() {
 
     }
+
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupCategoryTests() {

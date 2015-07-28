@@ -1,6 +1,9 @@
 package pl.touk.widerest.catalog;
 
 import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Resource;
 import org.springframework.web.client.HttpServerErrorException;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
@@ -17,7 +20,9 @@ import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -36,33 +41,6 @@ public class ProductControllerTest extends ApiTestBase {
         //tmp
         serverPort = String.valueOf(8080);
         cleanupProductTests();
-    }
-
-    @Test
-    public void readProductsTest() {
-
-
-        //when
-        ResponseEntity<ProductDto[]> receivedProductsEntity =
-                restTemplate.getForEntity(ApiTestBase.PRODUCTS_URL, ProductDto[].class, serverPort);
-
-
-        assertNotNull(receivedProductsEntity);
-        assertTrue("List of products not found", receivedProductsEntity.getStatusCode().value() == 200);
-
-        for(ProductDto p : receivedProductsEntity.getBody()) {
-            System.out.println(p.getName() + ":" + p.getDescription());
-        }
-
-        ProductDto[] receivedProducts = receivedProductsEntity.getBody();
-
-        /* Enable Spring! */
-        //List<ProductDto> localProducts = catalogService.findAllProducts().stream()
-        //        .map(DtoConverters.productEntityToDto)
-        //        .collect(Collectors.toList());
-
-
-       // assertTrue(Arrays.deepEquals(receivedProducts, localProducts.toArray()));
     }
 
 
@@ -133,6 +111,13 @@ public class ProductControllerTest extends ApiTestBase {
 
 
 
+    /* -----------------------------SKUS TESTS----------------------------- */
+    
+
+
+
+    /* -----------------------------SKUS TESTS----------------------------- */
+
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
@@ -181,6 +166,25 @@ public class ProductControllerTest extends ApiTestBase {
 
     private long getLocalTotalSkus() {
         return catalogService.findAllSkus().stream().count();
+    }
+
+    private ProductDto getProductWithMultipleSkus() {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
+
+        ResponseEntity<ProductDto[]> receivedProductsEntity =
+                restTemplate.exchange(PRODUCTS_URL, HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
+
+        ProductDto resultProduct = null;
+
+        for(ProductDto p : receivedProductsEntity.getBody()) {
+            if(p.getSkus().stream().count() >= 2) {
+                resultProduct = p;
+                break;
+            }
+        }
+
+        return resultProduct;
     }
 
 }

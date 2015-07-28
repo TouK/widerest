@@ -13,8 +13,11 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.broadleafcommerce.common.persistence.Status;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -62,6 +65,7 @@ public class CategoryController {
     }
 
     /* POST /categories */
+    @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
@@ -76,7 +80,7 @@ public class CategoryController {
     public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
 
         long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                .filter(x -> x.getDescription().equals(categoryDto.getDescription()))
+                .filter(x -> x.getDescription().equals(categoryDto.getName()) || x.getLongDescription().equals(categoryDto.getLongDescription()))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
 
@@ -127,11 +131,13 @@ public class CategoryController {
     public CategoryDto readOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
         Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
+        /*
         if(((Status)categoryEntity).getArchived() == 'Y') {
             throw new ResourceNotFoundException("Cannot find category with ID: " + categoryId + ". Category marked as archived");
-        }
+        }*/
 
         return DtoConverters.categoryEntityToDto.apply(categoryEntity);
     }
@@ -175,8 +181,8 @@ public class CategoryController {
     public void changeOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
 
         Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                                    .filter(CatalogUtils::archivedCategoryFilter)
-                                    .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + categoryId + ". Category not found"));
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + categoryId + ". Category not found"));
 
         /* (mst) UGLY but temporal */
         if(categoryDto.getDescription() != null) {
@@ -276,10 +282,10 @@ public class CategoryController {
         HttpHeaders responseHeaders = new HttpHeaders();
 
         /* TODO: (mst) Return url to the product itself? (/catalog/products/{productId}) */
-        responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{categoryId}/products/{productId}")
-                .buildAndExpand(categoryId, newProduct.getId())
-                .toUri());
+        //responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+        //        .path("/{categoryId}/products/{productId}")
+        //       .buildAndExpand(categoryId, newProduct.getId())
+        //       .toUri());
 
         return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
     }

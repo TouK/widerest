@@ -98,8 +98,6 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
         /* TODO: (mst) creating Product Bundles */
-        
-        /* what if both Product and SKU return null?! */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
 
         Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
@@ -428,6 +426,7 @@ public class ProductController {
 
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
         if(product.getDefaultSku().getId() == skuId) {
@@ -456,6 +455,42 @@ public class ProductController {
         catalogService.removeSku(skuToDeleteEntity);
         product.setAdditionalSkus(newProductSkus);
         catalogService.saveProduct(product);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update an existing SKU",
+            notes = "Updates an exising SKU with new details",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified product does not exist")
+    })
+    public void updateOneSkuByProductId(
+            @PathVariable(value = "productId") Long productId,
+            @PathVariable(value = "skuId") Long skuId,
+            @RequestBody SkuDto skuDto) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        Optional<Sku> skuToUpdate = product.getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findFirst();
+
+        if(!skuToUpdate.isPresent()) {
+            throw new ResourceNotFoundException("Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist");
+        }
+
+        Sku skuToDeleteEntity = skuToUpdate.get();
+
+        Sku skuToSaveEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
+        skuToSaveEntity.setId(skuId);
+
+        catalogService.saveSku(skuToSaveEntity);
     }
 
 
