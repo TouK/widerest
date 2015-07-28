@@ -91,10 +91,12 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
+        System.out.println("BOOM");
         Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
                 .map(DtoConverters.skuDtoToEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
+        System.out.println("Should have throws");
         /* TODO: (mst) modify matching rules */
         long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
                 .filter(x -> x.getDescription().equals(productDto.getDescription()) || x.getLongDescription().equals(productDto.getLongDescription()))

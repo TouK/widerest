@@ -14,6 +14,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+
 /**
  * Created by mst on 28.07.15.
  */
@@ -86,4 +87,5 @@ public class CatalogTest extends ApiTestBase {
             }
         }
     }
+
 }

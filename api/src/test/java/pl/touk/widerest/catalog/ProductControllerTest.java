@@ -134,14 +134,6 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
     }
 
-    @Test
-    public void fg() {
-        Resource<ProductDto> p = getProductWithMultipleSkus();
-        System.out.println();
-    }
-
-
-
     /* -----------------------------SKUS TESTS----------------------------- */
 
     @Test
@@ -156,15 +148,12 @@ public class ProductControllerTest extends ApiTestBase {
 
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(1L));
 
+
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku();
 
         ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
-
-
-
-    /* -----------------------------SKUS TESTS----------------------------- */
 
 
     /* -----------------------------END OF TESTS----------------------------- */
