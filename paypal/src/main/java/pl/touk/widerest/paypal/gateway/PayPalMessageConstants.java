@@ -9,6 +9,7 @@ public class PayPalMessageConstants {
     public static final String PAYER_ID = "PAYER_ID";
     public static final String ACCESS_TOKEN = "ACCESS_TOKEN";
     public static final String SUBSCRIPTION = "SUBSCRIPTION";
+    public static final String PAYMENT_ID = "PAYMENT_ID";
 
     public static final String HTTP_TOKEN = "token";
 

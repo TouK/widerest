@@ -3,6 +3,7 @@ package pl.touk.widerest.paypal.gateway;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import lombok.Getter;
+import org.broadleafcommerce.common.payment.PaymentTransactionType;
 import org.broadleafcommerce.common.payment.dto.LineItemDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 
@@ -14,8 +15,6 @@ public class PayPalRequestDto {
 
     @Getter
     private PaymentRequestDTO wrapped;
-
-    private String paymentId;
 
     PayPalRequestDto(PaymentRequestDTO wrapped) {
         this.wrapped = wrapped;
@@ -42,6 +41,14 @@ public class PayPalRequestDto {
         return String.valueOf(wrapped.getAdditionalFields().get(PayPalMessageConstants.PAYER_ID));
     }
 
+    public void setOrderId(String id) {
+        wrapped.orderId(id);
+    }
+
+    public void setPayerId(String id) {
+        wrapped.additionalField(PayPalMessageConstants.PAYER_ID, id);
+    }
+
     public String getOrderCurrencyCode() {
         return wrapped.getOrderCurrencyCode();
     }
@@ -63,11 +70,11 @@ public class PayPalRequestDto {
     }
 
     public void setPaymentId(String id) {
-        paymentId = id;
+        wrapped.additionalField(PayPalMessageConstants.PAYMENT_ID, id);
     }
 
     public String getPaymentId() {
-        return paymentId;
+        return wrapped.getAdditionalFields().get(PayPalMessageConstants.PAYMENT_ID).toString();
     }
 
     public Object getOrderId() {

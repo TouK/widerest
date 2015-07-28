@@ -97,6 +97,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
             Payment payment = new Payment();
             payment.setIntent("sale");
+
             payment.setPayer(payer);
             payment.setTransactions(transactions);
 
@@ -143,18 +144,23 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     }
 
     protected PayPalResponseDto findDetailsByPayPalTransaction(PayPalRequestDto paymentRequest) throws PaymentException {
+        PayPalResponseDto response = null;
         try {
-            throw new NotImplementedException("Should call Payment.get()");
+            //throw new NotImplementedException("Should call Payment.get()");
+            //TODO:
+            response = new PayPalResponseDto();
 
         } catch (Exception e) {
             if (e instanceof PaymentException) throw e;
             throw new PaymentException(e);
         }
+        return response;
     }
 
     protected PayPalResponseDto confirmPayPalTransaction(PayPalRequestDto payPalRequest) throws PaymentException {
         Money transactionAmount = new Money(payPalRequest.getTransactionTotal(), payPalRequest.getOrderCurrencyCode());
         PayPalResponseDto responseDto = new PayPalResponseDto();
+
         try {
             //throw new NotImplementedException("Should call execute on the payment");
            payPalSession.createNewApiContextFromToken(payPalRequest.getAccessToken());

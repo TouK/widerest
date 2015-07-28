@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 

@@ -1,6 +1,7 @@
 package pl.touk.widerest.paypal.endpoint;
 
 import com.paypal.base.rest.APIContext;
+import com.paypal.base.rest.HttpMethod;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
 import org.broadleafcommerce.common.money.Money;
@@ -81,7 +82,12 @@ public class PayPalControllerTest {
 
     @Test
     public void shouldUserReceiveNothing() {
-        whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
+        try {
+            whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
+        } catch (Exception e) {
+            // Sth went wrong
+            assert(false);
+        }
 
         assert(
             thenInPayPal.userDoesntReceiveAnythingSpecial(whenInPayPal.returnRequestResponse)
@@ -97,10 +103,15 @@ public class PayPalControllerTest {
             paymentRequestResponse = payPalController.initiate(userDetails, orderId);
         }
 
-        public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) {
-            HttpServletRequest httpServletRequest = new MockHttpServletRequest();
+        public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException {
+            // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
+            // http://localhost:8080/orders/1/paypal/return?paymentId=PAY-7EE74569FE911601VKW3X7QQ&token=EC-2KE661416F427612K&PayerID=FXHKFGTPBJR4J
+            HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET", "http://localhost:8080/order/1/paypal/return");
+            httpServletRequest.setAttribute("paymentId", "PAY-7EE74569FE911601VKW3X7QQ");
+            httpServletRequest.setAttribute("token", "EC-2KE661416F427612K");
+            httpServletRequest.setAttribute("PayerID", "FXHKFGTPBJR4J");
             //httpServletRequest.setAttribute();
-            //returnRequestResponse = payPalController.handleReturn(userDetails, orderId);
+            returnRequestResponse = payPalController.handleReturn(httpServletRequest, userDetails, orderId);
         }
 
         public ResponseEntity paymentRequestResponse;

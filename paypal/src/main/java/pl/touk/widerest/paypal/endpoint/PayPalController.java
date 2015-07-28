@@ -5,10 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayWebResponseService;
+import org.broadleafcommerce.common.payment.service.*;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -28,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
+import pl.touk.widerest.paypal.gateway.PayPalRequestDto;
 import pl.touk.widerest.paypal.gateway.PayPalResponseDto;
 
 import javax.annotation.PostConstruct;
@@ -52,12 +50,14 @@ public class PayPalController {
     private PaymentGatewayConfigurationService configurationService;
     private PaymentGatewayHostedService hostedService;
     private PaymentGatewayWebResponseService webResponseService;
+    private PaymentGatewayTransactionConfirmationService transactionConfirmationService;
 
     @PostConstruct
     public void afterPropertiesSet() {
         configurationService = paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(PayPalPaymentGatewayType.PAYPAL);
         hostedService = configurationService.getHostedService();
         webResponseService = configurationService.getWebResponseService();
+        transactionConfirmationService = configurationService.getTransactionConfirmationService();
     }
 
     @RequestMapping(method = RequestMethod.GET)
@@ -112,10 +112,41 @@ public class PayPalController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) throws PaymentException {
 
-        // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
+
         // call checkout workflow
         //PaymentResponseDTO response = webResponseService.translateWebResponse(request);
         // handle no funds failures
+
+        if(userDetails instanceof AdminUserDetails) {
+            throw new PaymentException("Admins can't make orders");
+        }
+        CustomerUserDetails customerUserDetails = (CustomerUserDetails)userDetails;
+
+        Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+                .orElseThrow(() -> new ResourceNotFoundException(""));
+        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
+            throw new IllegalAccessError("Access Denied");
+        }
+
+        // get data from link
+        PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
+
+        // create request
+        PayPalRequestDto requestDTO = new PayPalRequestDto();
+        requestDTO.setOrderId(payPalResponse.getOrderId());
+        requestDTO.setPayerId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYER_ID));
+        requestDTO.setPaymentId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYMENT_ID));
+        requestDTO.setAccessToken(payPalResponse.getResponseMap().get(PayPalMessageConstants.ACCESS_TOKEN));
+        requestDTO.getWrapped().transactionTotal(order.getTotal().toString());
+        requestDTO.getWrapped().orderCurrencyCode(order.getCurrency().getCurrencyCode());
+        //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
+        //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
+
+        // execute payment, check if the client has money
+        payPalResponse = transactionConfirmationService.confirmTransaction(requestDTO.getWrapped());
+
+        payPalResponse.getResponseMap().entrySet().stream()
+                .forEach(System.out::println);
 
 
         return ResponseEntity.notFound().build();
