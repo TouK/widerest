@@ -16,7 +16,6 @@ import java.util.TimeZone;
 public class DtoTestFactory {
 
     private static CategoryDto newCategoryDto;
-    private static ProductDto defaultProductDto;
     private static ProductDto defaultProductWithoutSku;
     private static ProductDto fullProductDto;
     private static ProductDto defaultProductWithDefaultSKU;
@@ -45,15 +44,14 @@ public class DtoTestFactory {
     }
 
     private static ProductDto getTestProduct() {
-        if(defaultProductDto == null) {
-            defaultProductDto = ProductDto.builder()
+        ProductDto defaultProductDto = ProductDto.builder()
                     .name("DefaultTestProduct")
                     .description("DefaultTestProductDescription")
                     .longDescription("DefaultTestProductLongDescription")
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
+                    .defaultSku(null)
                     .build();
-        }
 
         return defaultProductDto;
     }

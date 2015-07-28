@@ -60,6 +60,12 @@ public class PayPalController {
         webResponseService = configurationService.getWebResponseService();
     }
 
+    @RequestMapping(value = "/test", method = RequestMethod.GET)
+    public void testEndpoint() {
+        System.out.println("DZIALA!!!");
+    }
+
+
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity initiate(
             @AuthenticationPrincipal UserDetails userDetails,

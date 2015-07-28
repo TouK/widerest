@@ -127,4 +127,8 @@ public abstract class ApiTestBase {
         halConverter.setObjectMapper(halObjectMapper);
         return halConverter;
     }
+
+    protected long getIdFromLocationUrl(String locationUrl) {
+        return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
+    }
 }
