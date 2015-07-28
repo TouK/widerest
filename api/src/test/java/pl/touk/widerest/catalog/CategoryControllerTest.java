@@ -47,10 +47,13 @@ import static org.hamcrest.CoreMatchers.*;
 public class CategoryControllerTest extends ApiTestBase {
 
     private HttpHeaders httpRequestHeader;
+    private HttpEntity<String> httpRequestEntity;
 
     @Before
     public void initCategoryTests() {
         this.httpRequestHeader = new HttpHeaders();
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         /* uncomment the following for "local" testing */
         serverPort = String.valueOf(8080);
         cleanupCategoryTests();
@@ -328,9 +331,6 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     private long getRemoteTotalProductsInCategorCountValue(long categoryId) {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
-
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort, categoryId);
 
@@ -340,10 +340,6 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
     private long getRemoteTotalCategoriesCountValue() {
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
-
-
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
 
