@@ -8,29 +8,13 @@
         <version>1.0</version>
     </parent>
     <artifactId>widerest-core</artifactId>
-    <name>core</name>
+    <packaging>jar</packaging>
     <description>Customizations And Extensions For Broadleaf Commerce Services And Entities</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.zeroturnaround</groupId>
-                <artifactId>jrebel-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-rebel-xml</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <rootPath>${basedir}</rootPath>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>com.googlecode.velocity-maven-plugin</groupId>
                 <artifactId>velocity-maven-plugin</artifactId>
@@ -68,24 +52,39 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.broadleafcommerce</groupId>
-            <artifactId>broadleaf-framework</artifactId>
+            <groupId>pl.touk.widerest</groupId>
+            <artifactId>widerest-blc-deps</artifactId>
+            <type>pom</type>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.broadleafcommerce</groupId>
-            <artifactId>broadleaf-profile</artifactId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.broadleafcommerce</groupId>
-            <artifactId>broadleaf-menu</artifactId>
-        </dependency>
-        <!--dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-        </dependency-->
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
     </dependencies>
 </project>
