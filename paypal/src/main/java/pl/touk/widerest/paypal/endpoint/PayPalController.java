@@ -1,5 +1,6 @@
 package pl.touk.widerest.paypal.endpoint;
 
+import com.paypal.api.payments.PaymentExecution;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -7,6 +8,7 @@ import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayWebResponseService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -26,9 +28,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
+import pl.touk.widerest.paypal.gateway.PayPalResponseDto;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
 @Controller
@@ -47,11 +51,13 @@ public class PayPalController {
 
     private PaymentGatewayConfigurationService configurationService;
     private PaymentGatewayHostedService hostedService;
+    private PaymentGatewayWebResponseService webResponseService;
 
     @PostConstruct
     public void afterPropertiesSet() {
         configurationService = paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(PayPalPaymentGatewayType.PAYPAL);
         hostedService = configurationService.getHostedService();
+        webResponseService = configurationService.getWebResponseService();
     }
 
     @RequestMapping(method = RequestMethod.GET)
@@ -72,6 +78,7 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
+        // TODO: odhardcodowac adres
         String SELF_URL = "http://localhost:8080/orders/"+orderId+"/paypal";
 
         String returnUrl = SELF_URL+"/return";
@@ -101,16 +108,14 @@ public class PayPalController {
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
     public ResponseEntity handleReturn(
+            HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam String paymentId,
-            @RequestParam String token,
-            @RequestParam String payerID,
-            @PathVariable(value = "id") Long orderId) {
+            @PathVariable(value = "id") Long orderId) throws PaymentException {
 
         // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
         // call checkout workflow
+        //PaymentResponseDTO response = webResponseService.translateWebResponse(request);
         // handle no funds failures
-
 
 
         return ResponseEntity.notFound().build();
@@ -139,8 +144,9 @@ public class PayPalController {
             paymentRequest = paymentRequest
                     .lineItem()
                     .name(name)
-                    .amount(String.valueOf(item.getTotalPrice().getAmount()))
+                    .amount(String.valueOf(item.getAveragePrice())) // TODO: blad przyblizen przy mnozeniu
                     .category(category)
+                    .quantity(String.valueOf(item.getQuantity()))
                     .done();
         }
         return paymentRequest;

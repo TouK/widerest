@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,6 +41,7 @@ import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.paypal.gateway.PayPalSessionImpl;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
@@ -52,13 +54,17 @@ import static org.mockito.Mockito.*;
 @ContextConfiguration(classes = PayPalControllerTest.TestConfiguration.class)
 public class PayPalControllerTest {
 
+    @Before
+    public void setUp() {
+        userDetails =
+                new CustomerUserDetails(Long.valueOf(1337), "anonymous", "lolcatz", Collections.EMPTY_LIST);
+    }
+
     // Given user with mocked order
     // When user sends payment request
     // Then user should be redirected
     @Test
     public void shouldUserBeRedirectedToPayPal() {
-        CustomerUserDetails userDetails =
-                new CustomerUserDetails(Long.valueOf(1337), "anonymous", "lolcatz", Collections.EMPTY_LIST);
 
         try {
             whenInPayPal.userSendsPaymentRequest(userDetails, Long.valueOf(1));
@@ -68,27 +74,49 @@ public class PayPalControllerTest {
         }
 
         assert(
-        thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse)
+            thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse)
         );
 
+    }
+
+    @Test
+    public void shouldUserReceiveNothing() {
+        whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
+
+        assert(
+            thenInPayPal.userDoesntReceiveAnythingSpecial(whenInPayPal.returnRequestResponse)
+        );
     }
 
 
     public class PayPalBehaviour {
         public PayPalBehaviour() {
         }
+
         public void userSendsPaymentRequest(UserDetails userDetails, Long orderId)  throws PaymentException {
             paymentRequestResponse = payPalController.initiate(userDetails, orderId);
         }
 
+        public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) {
+            HttpServletRequest httpServletRequest = new MockHttpServletRequest();
+            //httpServletRequest.setAttribute();
+            //returnRequestResponse = payPalController.handleReturn(userDetails, orderId);
+        }
+
         public ResponseEntity paymentRequestResponse;
+        public ResponseEntity returnRequestResponse;
     }
 
     public class PayPalExpectations {
         public PayPalExpectations() {
         }
+
         public Boolean userIsRedirectedToPayPal(ResponseEntity response) {
             return response.getHeaders().getLocation().toString().contains("paypal");
+        }
+
+        public Boolean userDoesntReceiveAnythingSpecial(ResponseEntity response) {
+            return response.getStatusCode().value() == 404;
         }
     }
 
@@ -97,6 +125,8 @@ public class PayPalControllerTest {
 
     private PayPalBehaviour whenInPayPal = new PayPalBehaviour();
     private PayPalExpectations thenInPayPal = new PayPalExpectations();
+
+    private CustomerUserDetails userDetails;
 
     @Configuration
     @ComponentScan({"pl.touk.widerest.paypal"})
@@ -124,7 +154,7 @@ public class PayPalControllerTest {
 
             OrderItem orderItem = new OrderItemImpl();
             orderItem.setName("Kanapka");
-            orderItem.setPrice(new Money(5.99));
+            orderItem.setPrice(new Money(6.0));
             orderItem.setId(Long.valueOf(1));
             orderItem.setQuantity(4);
             orderItem.setOrder(preparedOrder);
@@ -176,9 +206,9 @@ public class PayPalControllerTest {
                         .addressPhone("+48700100200")
                         .addressEmail("mail@mail.pl")
                     .done()
-                        .transactionTotal("25.23")
-                        .shippingTotal("52.12")
-                        .taxTotal("")
+                        .transactionTotal("24.00")
+                        .shippingTotal("0.0")
+                        .taxTotal("0.0")
                         .orderCurrencyCode("USD")
                     ;
 

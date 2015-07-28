@@ -15,6 +15,8 @@ public class PayPalRequestDto {
     @Getter
     private PaymentRequestDTO wrapped;
 
+    private String paymentId;
+
     PayPalRequestDto(PaymentRequestDTO wrapped) {
         this.wrapped = wrapped;
     }
@@ -58,6 +60,14 @@ public class PayPalRequestDto {
 
     public String getCancelUri() {
         return wrapped.getAdditionalFields().get(PayPalMessageConstants.CANCEL_URL).toString();
+    }
+
+    public void setPaymentId(String id) {
+        paymentId = id;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
     }
 
     public Object getOrderId() {
