@@ -3,6 +3,12 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.2.5.RELEASE</version>
+    </parent>
+
     <groupId>pl.touk.widerest</groupId>
     <artifactId>widerest</artifactId>
     <version>1.0</version>
@@ -12,8 +18,9 @@
     <properties>
         <blc.version>4.0.0-RC1</blc.version>
         <blc.menu.version>1.0.0-RC4</blc.menu.version>
-        <tomcat.conf.dir.name>tomcat-server-conf</tomcat.conf.dir.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hibernate.version>4.1.11.Final</hibernate.version>
+        <solr.version>4.10.3</solr.version>
     </properties>
 
     <description>RESTful API for Broadleaf Commerce</description>
@@ -161,37 +168,7 @@
                         </filesets>
                     </configuration>
                 </plugin>
-                
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>keytool-maven-plugin</artifactId>
-                    <version>1.5</version>
-                    <executions>
-                        <execution>
-                            <phase>generate-resources</phase>
-                            <id>clean</id>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <phase>generate-resources</phase>
-                            <id>generateKeyPair</id>
-                            <goals>
-                                <goal>generateKeyPair</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <keystore>${webappDirectory}/WEB-INF/blc-example.keystore</keystore>
-                        <dname>cn=localhost</dname>
-                        <keypass>broadleaf</keypass>
-                        <storepass>broadleaf</storepass>
-                        <alias>broadleaf</alias>
-                        <keyalg>RSA</keyalg>
-                    </configuration>
-                </plugin>
-                
+
                 <!-- Moves the context.xml file into a location that embedded Tomcat can read from -->
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
@@ -216,143 +193,16 @@
                     </executions>
                 </plugin>
                 
-                <!-- Main coniguration for embedded Tomcat -->
-                <plugin>
-                    <groupId>org.apache.tomcat.maven</groupId>
-                    <artifactId>tomcat7-maven-plugin</artifactId>
-                    <version>2.2</version>
-                    <configuration>
-                        <!-- Useful when deploying to Tomcat elsewhere on the system -->
-                        <update>true</update>
-                        <url>http://127.0.0.1:8080/manager/text</url>
-                        <username>tomcatscript</username>
-                        <password>secret</password>
-                        <additionalConfigFilesDir>${project.build.directory}/${tomcat.conf.dir.name}</additionalConfigFilesDir>
-                        <!-- See the configuration in the keytool-maven-plugin -->
-                        <keystorePass>broadleaf</keystorePass>
-                        <keystoreFile>${webappDirectory}/WEB-INF/blc-example.keystore</keystoreFile>
-                        
-                        <!-- System properties for JNDI data sources (database.url, database.driver etc) are passed in via
-                            build.xml as -D arguments-->
-                        
-                    </configuration>
-                    <dependencies>
-                        <!-- Other dependencies -->
-                        <dependency>
-                            <groupId>org.hsqldb</groupId>
-                            <artifactId>hsqldb</artifactId>
-                            <version>2.3.1</version>
-                            <type>jar</type>
-                            <scope>compile</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>commons-dbcp</groupId>
-                            <artifactId>commons-dbcp</artifactId>
-                            <version>1.4</version>
-                            <type>jar</type>
-                            <scope>compile</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>org.apache.tomcat</groupId>
-                            <artifactId>tomcat-jdbc</artifactId>
-                            <version>7.0.30</version>
-                            <type>jar</type>
-                            <scope>compile</scope>
-                        </dependency>
-                    </dependencies>
-                </plugin>
             </plugins>
         </pluginManagement>
     </build>
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>pl.touk.widerest</groupId>
-                <artifactId>widerest-core</artifactId>
-                <version>1.0</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-
-            <!--Broadleaf libraries -->
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-common</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-profile</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-profile-web</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-framework</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-framework-web</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-admin-module</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-contentmanagement-module</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-open-admin-platform</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>broadleaf-menu</artifactId>
-                <version>${blc.menu.version}</version>
-                <type>jar</type>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.broadleafcommerce</groupId>
-                <artifactId>integration</artifactId>
-                <version>${blc.version}</version>
-                <type>jar</type>
-                <classifier>tests</classifier>
-                <scope>test</scope>
-            </dependency>
 
             <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>3.1.0</version>
-                <type>jar</type>
-                <!--scope>provided</scope-->
+                <groupId>org.springframework.security.oauth</groupId>
+                <artifactId>spring-security-oauth2</artifactId>
+                <version>2.0.7.RELEASE</version>
             </dependency>
 
             <dependency>
@@ -362,81 +212,16 @@
             </dependency>
 
             <dependency>
-                <groupId>org.springframework.security.oauth</groupId>
-                <artifactId>spring-security-oauth2</artifactId>
-                <!-- https://github.com/spring-projects/spring-security-oauth/issues/422 -->
-                <version>2.0.7.RELEASE</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.security</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-jwt</artifactId>
-                <version>1.0.2.RELEASE</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-all</artifactId>
-                <version>1.8.4</version>
-            </dependency>
-
-
-            <dependency>
-                <groupId>org.springframework.hateoas</groupId>
-                <artifactId>spring-hateoas</artifactId>
-                <version>0.17.0.RELEASE</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
                 <groupId>io.springfox</groupId>
                 <artifactId>springfox-swagger2</artifactId>
                 <version>2.0.3</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
+
             <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>swagger-ui</artifactId>
                 <version>2.1.0</version>
             </dependency>
-
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.12</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>4.1.5.RELEASE</version>
-            </dependency>
-
-
             <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>jquery</artifactId>
@@ -452,79 +237,25 @@
                 <artifactId>respond</artifactId>
                 <version>1.4.2</version>
             </dependency>
-
-
-
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-web</artifactId>
-                <version>1.2.5.RELEASE</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.security</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>ch.qos.logback</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.hibernate</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-jdbc</artifactId>
-                <version>1.2.5.RELEASE</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hsqldb</groupId>
-                <artifactId>hsqldb</artifactId>
-                <version>2.3.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-validator</artifactId>
-                <version>4.3.1.Final</version>
-            </dependency>
             <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>webjars-locator</artifactId>
                 <version>0.26</version>
             </dependency>
-            <dependency>
-                <groupId>com.paypal.sdk</groupId>
-                <artifactId>merchantsdk</artifactId>
-                <version>LATEST</version>
-            </dependency>
+
             <dependency>
                 <groupId>com.paypal.sdk</groupId>
                 <artifactId>rest-api-sdk</artifactId>
                 <version>1.2.5</version>
             </dependency>
-            <dependency>
-                <groupId>javax.ws.rs</groupId>
-                <artifactId>javax.ws.rs-api</artifactId>
-                <version>2.0.1</version>
-            </dependency>
 
-            <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-validator</artifactId>
-                <version>4.2.0.Final</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>
+        <module>blc-deps</module>
         <module>core</module>
         <module>api</module>
         <module>paypal</module>
+        <module>multitenancy</module>
     </modules>
 </project>
