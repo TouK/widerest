@@ -317,6 +317,9 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
 
+
+
+
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupCategoryTests() {
         /* If there is still any test row in a database, delete it */

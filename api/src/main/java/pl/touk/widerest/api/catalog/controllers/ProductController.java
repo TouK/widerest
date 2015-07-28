@@ -14,9 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
-import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.rating.domain.RatingSummary;
@@ -93,12 +91,10 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
 
-        System.out.println("BOOM");
         Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
                 .map(DtoConverters.skuDtoToEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
 
-        System.out.println("Should have throws");
         /* TODO: (mst) modify matching rules */
         long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
                 .filter(x -> x.getDescription().equals(productDto.getDescription()) || x.getLongDescription().equals(productDto.getLongDescription()))
@@ -238,6 +234,56 @@ public class ProductController {
                 .collect(Collectors.toList());
 
     }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Assign category to the product",
+            notes = "Assigns an existing category to the product. In case the category does not exist, it gets created",
+            response = Void.class
+    )
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Category successfully added to the product"),
+            @ApiResponse(code = 404, message = "The specified product does not exist")
+    })
+    public void addCategoryToTheProduct(
+            @PathVariable(value = "productId") Long productId,
+            @RequestBody CategoryDto categoryDto) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        Optional<Category> category = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+                .filter(x -> x.getDescription().equals(categoryDto.getDescription())
+                        && Optional.ofNullable(x.getLongDescription()).map(e -> e.equals(categoryDto.getLongDescription())).orElse(Boolean.TRUE))
+                .filter(CatalogUtils::archivedCategoryFilter).findAny();
+
+        Category categoryEntity = null;
+
+        if(!category.isPresent()) {
+            categoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
+        } else {
+            categoryEntity = category.get();
+        }
+
+        List<CategoryProductXref> allParentCategories = new ArrayList<>(product.getAllParentCategoryXrefs());
+
+        /*TODO (mst) Account for duplicates */
+
+        if(!allParentCategories.contains(categoryEntity)) {
+            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
+            categoryProductXref.setCategory(categoryEntity);
+            categoryProductXref.setProduct(product);
+            allParentCategories.add(categoryProductXref);
+        }
+
+        product.setAllParentCategoryXrefs(allParentCategories);
+
+        Product d = catalogService.saveProduct(product);
+    }
+
 
     /* GET /products/{id}/skus */
     @Transactional

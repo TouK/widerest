@@ -118,6 +118,29 @@ public class ProductControllerTest extends ApiTestBase {
         }
     }
 
+    @Test
+    public void successfullyDeletingNewlyCreatedProductTest() {
+        long currentProductsCount = getRemoteTotalProductsCount();
+        ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory();
+
+        ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
+
+        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
+
+        //when
+        oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString(), 1);
+
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
+    }
+
+    @Test
+    public void fg() {
+        Resource<ProductDto> p = getProductWithMultipleSkus();
+        System.out.println();
+    }
+
+
 
     /* -----------------------------SKUS TESTS----------------------------- */
 
@@ -138,6 +161,8 @@ public class ProductControllerTest extends ApiTestBase {
         ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
+
+
 
     /* -----------------------------SKUS TESTS----------------------------- */
 
