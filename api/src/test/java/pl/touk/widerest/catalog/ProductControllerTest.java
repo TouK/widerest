@@ -156,6 +156,7 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
 
+
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
         removeRemoteTestProducts();
@@ -245,5 +246,6 @@ public class ProductControllerTest extends ApiTestBase {
             }
         }
     }
+
 
 }

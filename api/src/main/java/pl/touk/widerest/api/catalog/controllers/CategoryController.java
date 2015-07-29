@@ -70,23 +70,41 @@ public class CategoryController {
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",
-            notes = "Adds a new category to the catalog. It does take duplicates (same name and description) into account. " +
+            notes = "Adds a new category to the catalog. It does take duplicates (same NAME) into account. " +
                     "Returns an URL to the newly added category in the Location field of the HTTP response header",
             response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "A new category entry successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 409, message = "Category already exists")
     })
-    public ResponseEntity<?> saveOneCategory(@RequestBody CategoryDto categoryDto) {
+    public ResponseEntity<?> addOneCategory(@RequestBody CategoryDto categoryDto) {
 
+    	/* (mst) CategoryDto has to have at least a Name! */
+        if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    	
+    	/* (mst) Old "duplicate matching" code */
+    	/*
         long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+        		.filter(CatalogUtils::archivedCategoryFilter)
                 .filter(x -> x.getDescription().equals(categoryDto.getDescription()) || x.getLongDescription().equals(categoryDto.getLongDescription()))
+                .count();
+
+        */
+    	
+    	/* (mst) Providing that both Description() and LongDescription() can be null, which...is OK, this one
+    	 *       should do the job "better" IMO
+    	 */
+        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
 
         if(duplicatesCount > 0) {
             return new ResponseEntity<>(null, HttpStatus.CONFLICT);
         }
+
 
         Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
 
@@ -106,7 +124,7 @@ public class CategoryController {
     @RequestMapping(value = "/count", method = RequestMethod.GET)
     @ApiOperation(
             value = "Count all categories",
-            notes = "Gets a number of all, non-archived categories available in the catalog",
+            notes = "Gets a number of all categories available in the catalog",
             response = Long.class
     )
     public Long getAllCategoriesCount() {
@@ -114,7 +132,6 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
     }
-
 
     /* GET /categories/{id} */
     @Transactional
@@ -134,27 +151,22 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        /*
-        if(((Status)categoryEntity).getArchived() == 'Y') {
-            throw new ResourceNotFoundException("Cannot find category with ID: " + categoryId + ". Category marked as archived");
-        }*/
-
         return DtoConverters.categoryEntityToDto.apply(categoryEntity);
     }
 
-    /* DELETE /categories/id */
+    /* DELETE /categories/{categoryId} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.DELETE)
     @ApiOperation(
-            value = "Delete an existing category",
-            notes = "Removes an existing category from catalog by marking it as archived",
+            value = "Delete a category",
+            notes = "Removes an existing category from catalog by marking it (internally) as archived",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful removal of the specified category"),
+            @ApiResponse(code = 204, message = "Successful removal of the specified category"),
             @ApiResponse(code = 404, message = "The specified category does not exist or is already marked as archived")
     })
-    public void removeOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
+    public ResponseEntity<?> removeOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -163,34 +175,89 @@ public class CategoryController {
                     return e;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete category with ID: " + categoryId + ". Category does not exist"));
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     /* PUT /categories/{id} */
-    /* TODO: (mst) more "efficient" partial update */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing category",
-            notes = "Updates an existing category with new details",
+            notes = "Updates an existing category with new details. If the category does not exist, it does NOT create it!",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified category"),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified category does not exist"),
+            @ApiResponse(code = 409, message = "Category with that name already exists")
     })
-    public void changeOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
+    public ResponseEntity<?> updateOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
+
+    	/* (mst) CategoryDto has to have at least a Name! */
+        if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .count();
+
+        if(duplicatesCount > 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
 
         Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot change category with ID " + categoryId + ". Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        /* (mst) UGLY but temporal */
-        if(categoryDto.getDescription() != null) {
-            categoryToUpdate.setDescription(categoryDto.getDescription());
+        /* (mst) Thats one way to do it, without losing any important information */
+        categoryToUpdate.setName(categoryDto.getName());
+        categoryToUpdate.setDescription(categoryDto.getDescription());
+        categoryToUpdate.setLongDescription(categoryDto.getLongDescription());
+
+        catalogService.saveCategory(categoryToUpdate);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PATCH /categories/{id} */
+    /* TODO: (mst) more "efficient" partial update */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/{categoryId}", method = RequestMethod.PATCH)
+    @ApiOperation(
+            value = "Partially update an existing category",
+            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified category"),
+            @ApiResponse(code = 404, message = "The specified category does not exist"),
+            @ApiResponse(code = 409, message = "Category with that name already exists")
+    })
+    public ResponseEntity<?> partialUpdateOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
+
+        Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+        
+        /* (mst) Here...we don't need to have Name set BUT in case we do, we also check for duplicates! */
+        if(categoryDto.getName() != null) {
+
+            long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .count();
+
+            if(duplicatesCount > 0) {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+
+            categoryToUpdate.setName(categoryDto.getName());
         }
 
-        if(categoryDto.getName() != null) {
-            categoryToUpdate.setName(categoryDto.getName());
+        if(categoryDto.getDescription() != null) {
+            categoryToUpdate.setDescription(categoryDto.getDescription());
         }
 
         if(categoryDto.getLongDescription() != null) {
@@ -198,15 +265,15 @@ public class CategoryController {
         }
 
         catalogService.saveCategory(categoryToUpdate);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
-
 
     /* GET /categories/{id}/products */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{categoryId}/products", method = RequestMethod.GET)
     @ApiOperation(
-            value = "Get products in a category",
+            value = "Get all products in a category",
             notes = "Gets a list of all products belonging to a specified category",
             response = ProductDto.class,
             responseContainer = "List"
@@ -311,13 +378,9 @@ public class CategoryController {
                 .filter(x -> x.getId().longValue() == productId)
                 .findAny()
                 .map(DtoConverters.productEntityToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with ID: " + productId + " in category with ID: " + categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
     }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // TODO: test if this actually works
     /* PUT /categories/{id}/products/{productId} */
@@ -350,39 +413,51 @@ public class CategoryController {
 
     }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /* DELETE /categories/{id}/products/{productId} */
+    /* DELETE /categories/{categoryId}/products/{productId} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a product from a category",
-            notes = "Removes a product from a specific category",
+            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes" +
+                    "references to the specified category",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Specified product successfully removed from a category"),
+            @ApiResponse(code = 204, message = "Specified product successfully removed from a category"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public void removeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
-                                             @PathVariable(value = "productId") Long productId) {
+    public ResponseEntity<?> removeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
+                                                          @PathVariable(value = "productId") Long productId) {
+    	
+    	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
 
-        Product productToDelete = getProductsFromCategoryId(categoryId).stream()
+        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+    	
+    	/* (mst) TODO: refactor ! */
+        Product productEntity = getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(x -> x.getId().longValue() == productId)
                 .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category ID: " + categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
 
-    	/* (mst) do we need to manually delete all SKUS ? */
+        List<CategoryProductXref> categoryProductXrefs = new ArrayList<>();
+        categoryProductXrefs.addAll(categoryEntity.getAllProductXrefs());
 
+        CategoryProductXref categoryProductXrefToDelete = categoryProductXrefs.stream()
+                .filter(x -> x.getProduct().getId().longValue() == productId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
 
-        catalogService.removeProduct(productToDelete);
+        categoryProductXrefs.remove(categoryProductXrefToDelete);
+        categoryEntity.setAllProductXrefs(categoryProductXrefs);
 
+        catalogService.saveCategory(categoryEntity);
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-
+    /* GET /categories/{categoryId}/products/count */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{categoryId}/products/count", method = RequestMethod.GET)
@@ -397,7 +472,6 @@ public class CategoryController {
     public Long getAllProductsInCategoryCount(@PathVariable(value = "categoryId") Long categoryId) {
         return getProductsFromCategoryId(categoryId).stream().count();
     }
-
 
     private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {
 
