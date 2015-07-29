@@ -4,6 +4,8 @@ import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.HttpMethod;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
@@ -106,11 +108,9 @@ public class PayPalControllerTest {
         public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException {
             // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
             // http://localhost:8080/orders/1/paypal/return?paymentId=PAY-7EE74569FE911601VKW3X7QQ&token=EC-2KE661416F427612K&PayerID=FXHKFGTPBJR4J
-            HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET", "http://localhost:8080/order/1/paypal/return");
-            httpServletRequest.setAttribute("paymentId", "PAY-7EE74569FE911601VKW3X7QQ");
-            httpServletRequest.setAttribute("token", "EC-2KE661416F427612K");
-            httpServletRequest.setAttribute("PayerID", "FXHKFGTPBJR4J");
-            //httpServletRequest.setAttribute();
+            HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
+                    "http://localhost:8080/orders/1/paypal/return?paymentId=PAY-64F26441BT918940JKW4IGEA&token=EC-0S772925Y03476608&PayerID=FXHKFGTPBJR4J");
+
             returnRequestResponse = payPalController.handleReturn(httpServletRequest, userDetails, orderId);
         }
 
@@ -170,6 +170,10 @@ public class PayPalControllerTest {
             orderItem.setQuantity(4);
             orderItem.setOrder(preparedOrder);
             preparedOrder.addOrderItem(orderItem);
+            BroadleafCurrencyImpl currency = new BroadleafCurrencyImpl();
+            currency.setCurrencyCode("USD");
+            preparedOrder.setCurrency(currency);
+            preparedOrder.setTotal(new Money(24));
 
             when(orderServiceMock.findOrderById(Long.valueOf(1))).thenReturn(preparedOrder);
             return orderServiceMock;

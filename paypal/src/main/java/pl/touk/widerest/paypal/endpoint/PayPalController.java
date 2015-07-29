@@ -103,7 +103,7 @@ public class PayPalController {
         responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(redirectURI)
                         .build().toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.I_AM_A_TEAPOT);
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
     }
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
@@ -114,7 +114,6 @@ public class PayPalController {
 
 
         // call checkout workflow
-        //PaymentResponseDTO response = webResponseService.translateWebResponse(request);
         // handle no funds failures
 
         if(userDetails instanceof AdminUserDetails) {
@@ -142,13 +141,25 @@ public class PayPalController {
         //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
         //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
 
-        // execute payment, check if the client has money
+        // execute payment
         payPalResponse = transactionConfirmationService.confirmTransaction(requestDTO.getWrapped());
 
-        payPalResponse.getResponseMap().entrySet().stream()
-                .forEach(System.out::println);
+        HttpHeaders responseHeader = new HttpHeaders();
 
 
+        // if there was a problem with execution
+        String url = payPalResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL);
+        if(url != null) {
+            responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(url)
+                    .build().toUri());
+            return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        }
+
+        // Checkout/execute order in broadleaf
+        orderService.confirmOrder(order);
+
+
+        //TODO: pkp - co powinno zostac zwrocone?
         return ResponseEntity.notFound().build();
     }
 

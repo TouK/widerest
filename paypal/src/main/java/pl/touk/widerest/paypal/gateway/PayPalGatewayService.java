@@ -149,6 +149,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             //throw new NotImplementedException("Should call Payment.get()");
             //TODO:
             response = new PayPalResponseDto();
+            response.setAccessToken(paymentRequest.getAccessToken());
 
         } catch (Exception e) {
             if (e instanceof PaymentException) throw e;
@@ -163,7 +164,8 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
         try {
             //throw new NotImplementedException("Should call execute on the payment");
-           payPalSession.createNewApiContextFromToken(payPalRequest.getAccessToken());
+           // Generate new with the same credentials or leave commented?
+           //payPalSession.createNewApiContextFromToken(payPalRequest.getAccessToken());
            Payment payment = new Payment();
            payment.setId(payPalRequest.getPaymentId());
            PaymentExecution paymentExecute = new PaymentExecution();
@@ -171,7 +173,9 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
            payment.execute(payPalSession.getApiContext(), paymentExecute);
 
         } catch (Exception e) {
-//            if (e instanceof PaymentException) throw e;
+            if(e instanceof PayPalRESTException) {
+                responseDto.setRedirectUri(payPalRequest.getCancelUri());
+            }
             throw new PaymentException(e);
             //TODO: wyjatek kiedy nie udal sie execute (redirect na strone paypala)
         }

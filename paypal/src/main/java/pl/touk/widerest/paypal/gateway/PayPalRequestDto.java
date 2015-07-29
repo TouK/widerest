@@ -30,7 +30,7 @@ public class PayPalRequestDto {
     }
 
     public void setAccessToken(String accessToken) {
-        wrapped.additionalField(PayPalMessageConstants.ACCESS_TOKEN, accessToken);
+        wrapped = wrapped.additionalField(PayPalMessageConstants.ACCESS_TOKEN, accessToken);
     }
 
     public String getAccessToken() {
@@ -46,7 +46,7 @@ public class PayPalRequestDto {
     }
 
     public void setPayerId(String id) {
-        wrapped.additionalField(PayPalMessageConstants.PAYER_ID, id);
+        wrapped = wrapped.additionalField(PayPalMessageConstants.PAYER_ID, id);
     }
 
     public String getOrderCurrencyCode() {
@@ -70,7 +70,7 @@ public class PayPalRequestDto {
     }
 
     public void setPaymentId(String id) {
-        wrapped.additionalField(PayPalMessageConstants.PAYMENT_ID, id);
+        wrapped = wrapped.additionalField(PayPalMessageConstants.PAYMENT_ID, id);
     }
 
     public String getPaymentId() {
