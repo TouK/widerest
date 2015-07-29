@@ -290,73 +290,6 @@ public class CategoryController {
                 .collect(Collectors.toList());
     }
 
-    /* POST /categories/{id}/products */
-    /*
-     * TODO: (mst) What if the product has defaultSKU set but no entry in allSkus list? (= copy?)
-     */
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-    @RequestMapping(value = "/{categoryId}/products", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add a product to the category",
-            notes = "Adds a product to the specified category and returns" +
-                    " an URL to it in the Location field of the HTTP response header",
-            response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Specified product successfully added"),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
-    })
-    public ResponseEntity<?> saveOneProductInCategory(@PathVariable(value="categoryId") Long categoryId,
-                                                      @RequestBody ProductDto productDto) {
-
-        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-
-        Optional<Product> product = catalogService.findProductsByName(productDto.getName()).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .findAny();
-
-        /* TODO: (mst) TEST IT!!! */
-        /* In case the product already exists, we just add a reference to Category's products */
-        if(product.isPresent() && !category.getAllProductXrefs().contains(product.get())) {
-            List<CategoryProductXref> categoryProducts = new ArrayList<>(category.getAllProductXrefs());
-            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
-            categoryProductXref.setProduct(product.get());
-            categoryProducts.add(categoryProductXref);
-            category.setAllProductXrefs(categoryProducts);
-            catalogService.saveCategory(category);
-        } else {
-            Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
-                    .map(DtoConverters.skuDtoToEntity)
-                    .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
-
-         /* TODO: (mst) creating Product Bundles */
-         
-         /* what if both Product and SKU return null?! */
-            //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
-
-
-            Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
-         /* this one is probably redundant */
-            newProduct.setDefaultSku(defaultSku);
-         /* Include information about Categories */
-            newProduct.setCategory(category);
-
-            newProduct = catalogService.saveProduct(newProduct);
-        }
-        /* TODO: update category list references as well! */
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-
-        /* TODO: (mst) Return url to the product itself? (/catalog/products/{productId}) */
-        //responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-        //        .path("/{categoryId}/products/{productId}")
-        //       .buildAndExpand(categoryId, newProduct.getId())
-        //       .toUri());
-
-        return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
-    }
-
 
     /* GET /categories/{id}/products/{productId} */
     @Transactional
@@ -382,35 +315,52 @@ public class CategoryController {
     }
 
 
-    // TODO: test if this actually works
+
     /* PUT /categories/{id}/products/{productId} */
+    /* (mst) This endpoint inserts only a reference to the product (so it has to exist)
+     *            into Category's product list. In case the product does not exist, use
+     *            ProductController's POST methods first
+     */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
-            value = "Update details of a single product in a category",
-            notes = "Updates details of the specific product in a given category",
+            value = "Insert existing product into category",
+            notes = "Inserts existing product into category. It actually only updates few references therefore" +
+                    " to insert a completely new product refer to ProductControllers' POST methods first",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful update of product details"),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
+            @ApiResponse(code = 201, message = "Product successfully inserted into specified category"),
+            @ApiResponse(code = 404, message = "The specified category or product does not exist"),
+            @ApiResponse(code = 409, message = "Category already contains the specified product")
     })
-    public void changeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
-                                             @PathVariable(value = "productId") Long productId,
-                                             @RequestBody ProductDto productDto) {
+    public ResponseEntity<?> insertOneProductIntoCategory(@PathVariable(value="categoryId") Long categoryId,
+                                             @PathVariable(value = "productId") Long productId) {
 
-        this.getProductsFromCategoryId(categoryId).stream()
+        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
+        Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId().longValue() == productId)
-                .findAny()
-                .map(e -> {
-                    /* TODO:  Check if products category and categoryId match */
-                    productDto.setProductId(productId);
-                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-                    return e;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
+        CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
+        productToAddXref.setProduct(productToAdd);
+        productToAddXref.setCategory(categoryEntity);
+
+        List<CategoryProductXref> categoryProductXrefs = new ArrayList<>();
+        categoryProductXrefs.addAll(categoryEntity.getAllProductXrefs());
+
+        if(!categoryProductXrefs.contains(productToAddXref)) {
+            categoryProductXrefs.add(productToAddXref);
+            categoryEntity.setAllProductXrefs(categoryProductXrefs);
+            catalogService.saveCategory(categoryEntity);
+            return new ResponseEntity<>(HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
     }
 
     /* DELETE /categories/{categoryId}/products/{productId} */
@@ -419,7 +369,7 @@ public class CategoryController {
     @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a product from a category",
-            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes" +
+            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes its " +
                     "references to the specified category",
             response = Void.class)
     @ApiResponses(value = {
@@ -483,3 +433,126 @@ public class CategoryController {
     }
 
 }
+
+/* ------------------------------- ARCHIVE CODE ------------------------------- */
+
+/*
+    */
+/* PUT /categories/{id}/products/{productId} *//*
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update details of a single product in a category",
+            notes = "Updates details of the specific product in a given category",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful update of product details"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public void changeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
+                                             @PathVariable(value = "productId") Long productId,
+                                             @RequestBody ProductDto productDto) {
+
+        this.getProductsFromCategoryId(categoryId).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .filter(x -> x.getId().longValue() == productId)
+                .findAny()
+                .map(e -> {
+                    */
+/* TODO:  Check if products category and categoryId match *//*
+
+                    productDto.setProductId(productId);
+                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
+                    return e;
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId));
+
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/{categoryId}/products", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a product to the category",
+            notes = "Adds a product to the specified category and returns" +
+                    " an URL to it in the Location field of the HTTP response header",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Specified product successfully added"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public ResponseEntity<?> saveOneProductInCategory(@PathVariable(value="categoryId") Long categoryId,
+                                                      @RequestBody ProductDto productDto) {
+
+        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        */
+/* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... *//*
+
+        Optional<Product> product = catalogService.findProductsByName(productDto.getName()).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("Product"))
+
+
+
+        */
+/* TODO: (mst) TEST IT!!! *//*
+
+        */
+/* In case the product already exists, we just add a reference to Category's products *//*
+
+        if(product.isPresent() && !category.getAllProductXrefs().contains(product.get())) {
+            List<CategoryProductXref> categoryProducts = new ArrayList<>(category.getAllProductXrefs());
+            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
+            categoryProductXref.setProduct(product.get());
+            categoryProducts.add(categoryProductXref);
+            category.setAllProductXrefs(categoryProducts);
+            catalogService.saveCategory(category);
+        } else {
+            Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
+                    .map(DtoConverters.skuDtoToEntity)
+                    .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
+
+         */
+/* TODO: (mst) creating Product Bundles *//*
+
+
+         */
+/* what if both Product and SKU return null?! *//*
+
+            //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
+
+
+            Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
+         */
+/* this one is probably redundant *//*
+
+            newProduct.setDefaultSku(defaultSku);
+         */
+/* Include information about Categories *//*
+
+            newProduct.setCategory(category);
+
+            newProduct = catalogService.saveProduct(newProduct);
+        }
+        */
+/* TODO: update category list references as well! *//*
+
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+
+        */
+/* TODO: (mst) Return url to the product itself? (/catalog/products/{productId}) *//*
+
+        //responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+        //        .path("/{categoryId}/products/{productId}")
+        //       .buildAndExpand(categoryId, newProduct.getId())
+        //       .toUri());
+
+        return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
+    }*/
