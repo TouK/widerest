@@ -158,9 +158,9 @@ public class ProductController {
             response = ProductDto.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
+            @ApiResponse(code = 404, message = "The specified product does not exist or is marked as archived")
     })
-    public ProductDto readOneProduct(@PathVariable(value = "productId") Long productId) {
+    public ProductDto readOneProductById(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -192,17 +192,18 @@ public class ProductController {
 
     /* DELETE /products/{id} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
-            value = "Delete an existing product",
+            value = "Delete a product",
             notes = "Removes an existing product from catalog",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful retrieval of product details"),
+            @ApiResponse(code = 204, message = "Successful removal of the specified product"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public void removeOneProduct(@PathVariable(value = "productId") Long productId) {
+    public ResponseEntity<?> removeOneProductById(@PathVariable(value = "productId") Long productId) {
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
@@ -210,6 +211,8 @@ public class ProductController {
                     return e;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     /* GET /products/{id}/categories */
