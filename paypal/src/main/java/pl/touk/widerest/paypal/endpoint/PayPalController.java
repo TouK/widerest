@@ -7,12 +7,17 @@ import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.*;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
+import org.broadleafcommerce.core.checkout.service.CheckoutService;
+import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
+import org.broadleafcommerce.core.checkout.service.workflow.CheckoutResponse;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
+import org.broadleafcommerce.core.web.api.BroadleafWebServicesException;
+import org.broadleafcommerce.core.web.api.wrapper.OrderWrapper;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +52,9 @@ public class PayPalController {
     @Resource(name = "blOrderService")
     private OrderService orderService;
 
+    @Resource(name="blCheckoutService")
+    protected CheckoutService checkoutService;
+
     private PaymentGatewayConfigurationService configurationService;
     private PaymentGatewayHostedService hostedService;
     private PaymentGatewayWebResponseService webResponseService;
@@ -62,6 +70,7 @@ public class PayPalController {
 
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity initiate(
+            HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) throws PaymentException {
 
@@ -78,8 +87,7 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
-        // TODO: odhardcodowac adres
-        String SELF_URL = "http://localhost:8080/orders/"+orderId+"/paypal";
+        String SELF_URL = strapRootURL(request.getRequestURI()) + "/orders/"+orderId+"/paypal";
 
         String returnUrl = SELF_URL+"/return";
         String cancelUrl = SELF_URL+"/cancel";
@@ -156,8 +164,14 @@ public class PayPalController {
         }
 
         // Checkout/execute order in broadleaf
-        orderService.confirmOrder(order);
-
+        //orderService.confirmOrder(order);
+        try {
+            //CheckoutResponse checkoutResponse =
+            checkoutService.performCheckout(order);
+        } catch (CheckoutException e) {
+            throw BroadleafWebServicesException.build(HttpStatus.NOT_FOUND.value())
+                    .addMessage(BroadleafWebServicesException.CART_NOT_FOUND);
+        }
 
         //TODO: pkp - co powinno zostac zwrocone?
         return ResponseEntity.notFound().build();
@@ -165,10 +179,17 @@ public class PayPalController {
 
     @RequestMapping(value = "/cancel", method = RequestMethod.GET)
     public ResponseEntity handleCancel(
+            HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) {
 
-        return ResponseEntity.notFound().build();
+        // Redirects to main page
+
+        HttpHeaders responseHeader = new HttpHeaders();
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURI()))
+                .build().toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
 
     }
 
@@ -187,13 +208,16 @@ public class PayPalController {
                     .lineItem()
                     .name(name)
                     .amount(String.valueOf(item.getAveragePrice())) // TODO: blad przyblizen przy mnozeniu
-                    .category(category)
+                    .category(category)                             // podczas liczenia kwot w paypalu
                     .quantity(String.valueOf(item.getQuantity()))
                     .done();
         }
         return paymentRequest;
     }
 
-
-
+    private String strapRootURL(String url) {
+        // /\/orders(.*)/g
+        return url.replaceFirst("/orders(.*)", "");
+    }
+    
 }

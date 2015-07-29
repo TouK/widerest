@@ -12,6 +12,8 @@ import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationS
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProviderImpl;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
+import org.broadleafcommerce.core.checkout.service.CheckoutService;
+import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
@@ -88,6 +90,7 @@ public class PayPalControllerTest {
             whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
         } catch (Exception e) {
             // Sth went wrong
+            e.printStackTrace();
             assert(false);
         }
 
@@ -102,7 +105,9 @@ public class PayPalControllerTest {
         }
 
         public void userSendsPaymentRequest(UserDetails userDetails, Long orderId)  throws PaymentException {
-            paymentRequestResponse = payPalController.initiate(userDetails, orderId);
+            HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
+                    "http://localhost:8080/orders/1/paypal/");
+            paymentRequestResponse = payPalController.initiate(httpServletRequest, userDetails, orderId);
         }
 
         public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException {
@@ -179,12 +184,20 @@ public class PayPalControllerTest {
             return orderServiceMock;
         }
 
+        @Bean(name="blCheckoutService")
+        public CheckoutService checkoutService() throws CheckoutException {
+            CheckoutService checkoutServiceMock = Mockito.mock(CheckoutService.class);
+
+            when(checkoutServiceMock.performCheckout(anyObject())).thenReturn(null);
+            return checkoutServiceMock;
+        }
+
 
         @Bean
         public OrderToPaymentRequestDTOService blOrderToPaymentRequestDTOService() {
             //return new OrderToPaymentRequestDTOServiceImpl();
             OrderToPaymentRequestDTOService orderToPaymentRequestDTOService =
-                    new Mockito().mock(OrderToPaymentRequestDTOServiceImpl.class);
+                    Mockito.mock(OrderToPaymentRequestDTOServiceImpl.class);
 
             PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO()
                     .orderId("1337")
