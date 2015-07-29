@@ -43,6 +43,7 @@ public abstract class ApiTestBase {
     public static final String PRODUCTS_COUNT_URL = PRODUCTS_URL + "/count";
     public static final String PRODUCT_BY_ID_SKUS = PRODUCTS_URL + "/{productId}/skus";
     public static final String PRODUCT_BY_ID_SKU_BY_ID = PRODUCT_BY_ID_SKUS + "/{skuId}";
+    public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
 
 
@@ -131,4 +132,6 @@ public abstract class ApiTestBase {
     protected long getIdFromLocationUrl(String locationUrl) {
         return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
     }
+
+
 }

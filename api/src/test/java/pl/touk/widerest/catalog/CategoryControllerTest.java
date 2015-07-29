@@ -342,7 +342,7 @@ public class CategoryControllerTest extends ApiTestBase {
         return remoteCountEntity.getBody().longValue();
     }
 
-    private long getRemoteTotalCategoriesCountValue() {
+    public long getRemoteTotalCategoriesCountValue() {
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
 
@@ -362,7 +362,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(receivedCategoriesEntity.getStatusCode().value(), equalTo(200));
 
         for(CategoryDto testCategory : receivedCategoriesEntity.getBody()) {
-            if(categoryTestDto.getName().equals(testCategory.getName()) && categoryTestDto.getDescription().equals(testCategory.getDescription())) {
+            if(testCategory.getName().startsWith(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
                 oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), 1);
             }
         }

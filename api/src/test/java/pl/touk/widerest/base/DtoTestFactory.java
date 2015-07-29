@@ -25,6 +25,11 @@ public class DtoTestFactory {
 
     private static final Date defaultActiveStartDate;
 
+    private static long categoryCounter = 0;
+
+    public static final String TEST_CATEGORY_DEFAULT_NAME = "TestCategoryName";
+    public static final String TEST_PRODUCT_DEFAULT_NAME = "DefaultTestProduct";
+
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         defaultActiveStartDate = gmtCal.getTime();
@@ -34,7 +39,7 @@ public class DtoTestFactory {
     public static CategoryDto getTestCategory() {
         if(newCategoryDto == null) {
             newCategoryDto = CategoryDto.builder()
-                    .name("TestCategoryName")
+                    .name(TEST_CATEGORY_DEFAULT_NAME)
                     .description("TestCategoryDescription")
                     .longDescription("TestCategoryLongDescription")
                     .build();
@@ -43,9 +48,21 @@ public class DtoTestFactory {
         return newCategoryDto;
     }
 
+    public static CategoryDto getNextTestCategory() {
+        CategoryDto nextCategoryDto = CategoryDto.builder()
+                .name(TEST_CATEGORY_DEFAULT_NAME + categoryCounter)
+                .description("TestCategoryDescription" + categoryCounter)
+                .longDescription("TestCategoryLongDescription")
+                .build();
+
+        categoryCounter++;
+
+        return nextCategoryDto;
+    }
+
     private static ProductDto getTestProduct() {
         ProductDto defaultProductDto = ProductDto.builder()
-                    .name("DefaultTestProduct")
+                    .name(TEST_PRODUCT_DEFAULT_NAME)
                     .description("DefaultTestProductDescription")
                     .longDescription("DefaultTestProductLongDescription")
                     .manufacturer("Test Product Manufacturer")
@@ -85,7 +102,7 @@ public class DtoTestFactory {
         if(newSkuDto == null) {
             newSkuDto = SkuDto.builder()
                     .description("DefaultTestProductDescription")
-                    .name("DefaultTestProduct")
+                    .name(TEST_PRODUCT_DEFAULT_NAME)
                     .salePrice(new BigDecimal(39.99))
                     .quantityAvailable(99)
                     .taxCode("DefaultSKU Tax Code")

@@ -39,8 +39,7 @@ public class SkuDto extends ResourceSupport {
     private List<ProductOptionSelectionDto> selection;
 */
 
-    @ApiModelProperty
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty(required = true)
     private String name;
 
     @ApiModelProperty

@@ -229,7 +229,7 @@ public class CategoryController {
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.PATCH)
     @ApiOperation(
             value = "Partially update an existing category",
-            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet",
+            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet though",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified category"),

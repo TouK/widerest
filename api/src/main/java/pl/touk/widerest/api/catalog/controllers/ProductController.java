@@ -200,18 +200,33 @@ public class ProductController {
     }
 
     /* PUT /products/{id} */
+    /* TODO: (mst) Implementation */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing product",
-            notes = "Updates an existing product with new details",
+            notes = "Updates an existing product with new details. If the category does not exist, it does NOT create it!",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified product"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified product does not exist"),
+            @ApiResponse(code = 409, message = "Product with that name already exists")
     })
-    public void changeOneProduct(@PathVariable(value = "productId") Long productId, @RequestBody ProductDto productDto) {
+    public ResponseEntity<?> updateOneProduct(@PathVariable(value = "productId") Long productId,
+                                              @RequestBody ProductDto productDto) {
+
+        if(productDto.getName() == null || productDto.getName().isEmpty() || productDto.getDefaultSku() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        if(!productDto.getName().equals(productDto.getDefaultSku().getName())) {
+            productDto.getDefaultSku().setName(productDto.getName());
+        }
+
+
+
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(p -> {
@@ -219,6 +234,26 @@ public class ProductController {
                     return p;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + productId + ". Not Found"));
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PATCH /products/{id} */
+    /* TODO (mst) Implement? :) */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}", method = RequestMethod.PATCH)
+    @ApiOperation(
+            value = "Partially update an existing product",
+            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet though",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified product"),
+            @ApiResponse(code = 404, message = "The specified product does not exist"),
+            @ApiResponse(code = 409, message = "Product with that name already exists")
+    })
+    public ResponseEntity<?> partialUpdateOneProduct(@PathVariable(value = "productId") Long productId, @RequestBody ProductDto productDto) {
+        throw new ResourceNotFoundException("To be implemented!");
     }
 
     /* DELETE /products/{id} */
@@ -270,55 +305,6 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Assign category to the product",
-            notes = "Assigns an existing category to the product. In case the category does not exist, it gets created",
-            response = Void.class
-    )
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "Category successfully added to the product"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
-    })
-    public void addCategoryToTheProduct(
-            @PathVariable(value = "productId") Long productId,
-            @RequestBody CategoryDto categoryDto) {
-
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-
-        Optional<Category> category = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                .filter(x -> x.getDescription().equals(categoryDto.getDescription())
-                        && Optional.ofNullable(x.getLongDescription()).map(e -> e.equals(categoryDto.getLongDescription())).orElse(Boolean.TRUE))
-                .filter(CatalogUtils::archivedCategoryFilter).findAny();
-
-        Category categoryEntity = null;
-
-        if(!category.isPresent()) {
-            categoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
-        } else {
-            categoryEntity = category.get();
-        }
-
-        List<CategoryProductXref> allParentCategories = new ArrayList<>(product.getAllParentCategoryXrefs());
-
-        /*TODO (mst) Account for duplicates */
-
-        if(!allParentCategories.contains(categoryEntity)) {
-            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
-            categoryProductXref.setCategory(categoryEntity);
-            categoryProductXref.setProduct(product);
-            allParentCategories.add(categoryProductXref);
-        }
-
-        product.setAllParentCategoryXrefs(allParentCategories);
-
-        Product d = catalogService.saveProduct(product);
-    }
-
 
     /* GET /products/{id}/skus */
     @Transactional
@@ -368,12 +354,12 @@ public class ProductController {
         newSkuEntity.setProduct(product);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
-        // !!! (mst)Shallow copy!
-        List<Sku> allProductSkus = new ArrayList<>(product.getAllSkus());
-        allProductSkus.add(newSkuEntity);
+        List<Sku> allProductsSkus = new ArrayList<>();
+        allProductsSkus.addAll(product.getAllSkus());
+        allProductsSkus.add(newSkuEntity);
 
         //product.getAllSkus().add(newSkuEntity);
-        product.setAdditionalSkus(allProductSkus);
+        product.setAdditionalSkus(allProductsSkus);
         catalogService.saveProduct(product);
 
         HttpHeaders responseHeader = new HttpHeaders();
@@ -438,7 +424,7 @@ public class ProductController {
     /* POST /products/{productId}/skus/default */
     /* (mst) Experimental */
     @Transactional
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.POST)
     @ApiOperation(
             value = "Replace default SKU",
@@ -546,25 +532,42 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    /* PUT /products/{productId}/skus/{skuId} */
+    /* TODO: (mst) Implement PATCH for partial updates */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing SKU",
-            notes = "Updates an exising SKU with new details",
+            notes = "Updates an exising SKU with new details. If the SKU does not exist, it does NOT create it!",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
+            @ApiResponse(code = 409, message = "SKU with that name already exists")
     })
-    public void updateOneSkuByProductId(
+    public ResponseEntity<?> updateOneSkuByProductId(
             @PathVariable(value = "productId") Long productId,
             @PathVariable(value = "skuId") Long skuId,
             @RequestBody SkuDto skuDto) {
 
+        if(skuDto.getName() == null || skuDto.getName().isEmpty() || skuDto.getSalePrice() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        /* Try to find SKUs with matching name */
+        long duplicatesCount = product.getAllSkus().stream()
+                .filter(x -> x.getName().equals(skuDto.getName()))
+                .count();
+
+        if(duplicatesCount > 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
 
         Optional<Sku> skuToUpdate = product.getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
@@ -576,10 +579,29 @@ public class ProductController {
 
         Sku skuToDeleteEntity = skuToUpdate.get();
 
+        /*
+        skuToDeleteEntity.setName(skuDto.getName());
+        skuToDeleteEntity.setDescription(skuDto.getDescription());
+        skuToDeleteEntity.setSalePrice(new Money(skuDto.getSalePrice()));
+        skuToDeleteEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
+        skuToDeleteEntity.setTaxCode(skuDto.getTaxCode());
+        skuToDeleteEntity.setActiveStartDate(skuDto.getActiveStartDate());
+        skuToDeleteEntity.setActiveEndDate(skuDto.getActiveEndDate());
+
+        if(skuDto.getRetailPrice() == null) {
+            skuToDeleteEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
+        } else {
+            skuToDeleteEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        }
+        */
+
         Sku skuToSaveEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
         skuToSaveEntity.setId(skuId);
 
+
         catalogService.saveSku(skuToSaveEntity);
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 
@@ -751,3 +773,56 @@ public class ProductController {
         catalogService.saveSku(DtoConverters.skuDtoToEntity.apply(skuDto));
     }
     */
+
+/* ------------------------------- ARCHIVE CODE ------------------------------- */
+
+
+ /*   @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Assign category to the product",
+            notes = "Assigns an existing category to the product. In case the category does not exist, it gets created",
+            response = Void.class
+    )
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Category successfully added to the product"),
+            @ApiResponse(code = 404, message = "The specified product does not exist")
+    })
+    public void addCategoryToTheProduct(
+            @PathVariable(value = "productId") Long productId,
+            @RequestBody CategoryDto categoryDto) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        Optional<Category> category = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+                .filter(x -> x.getDescription().equals(categoryDto.getDescription())
+                        && Optional.ofNullable(x.getLongDescription()).map(e -> e.equals(categoryDto.getLongDescription())).orElse(Boolean.TRUE))
+                .filter(CatalogUtils::archivedCategoryFilter).findAny();
+
+        Category categoryEntity = null;
+
+        if(!category.isPresent()) {
+            categoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
+        } else {
+            categoryEntity = category.get();
+        }
+
+        List<CategoryProductXref> allParentCategories = new ArrayList<>(product.getAllParentCategoryXrefs());
+
+        *//*TODO (mst) Account for duplicates *//*
+
+        if(!allParentCategories.contains(categoryEntity)) {
+            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
+            categoryProductXref.setCategory(categoryEntity);
+            categoryProductXref.setProduct(product);
+            allParentCategories.add(categoryProductXref);
+        }
+
+        product.setAllParentCategoryXrefs(allParentCategories);
+
+        Product d = catalogService.saveProduct(product);
+    }
+*/
