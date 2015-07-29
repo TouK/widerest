@@ -227,7 +227,7 @@ public class ProductController {
     @RequestMapping(value = "/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete a product",
-            notes = "Removes an existing product from catalog",
+            notes = "Removes an existing product along with its SKUs from catalog",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 204, message = "Successful removal of the specified product"),
@@ -261,13 +261,13 @@ public class ProductController {
     public List<CategoryDto> readCategoriesByProduct(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
-
     }
 
     @Transactional
@@ -336,6 +336,7 @@ public class ProductController {
     public List<SkuDto> readSkusByProduct(@PathVariable(value = "productId") Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .map(DtoConverters.skuEntityToDto)
@@ -398,15 +399,14 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public SkuDto getSkuById(
-            @PathVariable(value = "productId") Long productId,
+    public SkuDto getSkuById(@PathVariable(value = "productId") Long productId,
             @PathVariable(value = "skuId") Long skuId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .filter(x -> x.getId() == skuId)
+                .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
                 .map(DtoConverters.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
@@ -432,8 +432,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(Product::getDefaultSku)
                 .map(DtoConverters.skuEntityToDto)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
     /* POST /products/{productId}/skus/default */
@@ -509,22 +508,20 @@ public class ProductController {
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing SKU",
-            notes = "Removes an existing SKU from catalog",
+            notes = "Removes an existing SKU from product",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful removal of the specified SKU"),
+            @ApiResponse(code = 204, message = "Successful removal of the specified SKU"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public void deleteOneSkuById(
-            @PathVariable(value = "productId") Long productId,
+    public ResponseEntity<?> deleteOneSkuById(@PathVariable(value = "productId") Long productId,
             @PathVariable(value = "skuId") Long skuId) {
-
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        if(product.getDefaultSku().getId() == skuId) {
+        if(product.getDefaultSku().getId().longValue() == skuId) {
             throw new RuntimeException("Cannot delete SKU with ID: " + skuId + " of product with ID: " + productId + " - default SKU");
         }
 
@@ -538,18 +535,15 @@ public class ProductController {
 
         Sku skuToDeleteEntity = skuToDelete.get();
 
-        /*
-        List<Sku> newProductSkus = new ArrayList<>(
-        		product.getAllSkus().stream().filter(x -> x.getId().longValue() != skuId).collect(Collectors.toList())
-        		);
-        */
+        List<Sku> newProductSkus = product.getAllSkus().stream()
+                .filter(x -> x.getId().longValue() != skuId)
+                .collect(Collectors.toList());
 
-        List<Sku> newProductSkus = new ArrayList<>(product.getAllSkus());
-        newProductSkus.remove(skuToDeleteEntity);
-        /* TODO: do we need to remove it also from product's getAllSkus() list? I dont think so... */
         catalogService.removeSku(skuToDeleteEntity);
         product.setAdditionalSkus(newProductSkus);
+
         catalogService.saveProduct(product);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @Transactional
