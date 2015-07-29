@@ -102,7 +102,7 @@ public class CategoryController {
                 .count();
 
         if(duplicatesCount > 0) {
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
 

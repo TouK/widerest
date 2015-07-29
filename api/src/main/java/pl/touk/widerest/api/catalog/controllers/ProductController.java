@@ -78,45 +78,76 @@ public class ProductController {
     }
 
     /* POST /products */
+    /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
-            notes = "Adds a new product to the catalog. Returns an URL to the newly added " +
+            notes = "Adds a new product to the catalog. If the provided category does not exist," +
+                    " it is simply ignored. Returns an URL to the newly added " +
                     "product in the Location field of the HTTP response header",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new product successfully created")
+            @ApiResponse(code = 201, message = "A new product successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 409, message = "Product already exists")
     })
-    public ResponseEntity<?> saveOneProduct(@RequestBody ProductDto productDto) {
+    public ResponseEntity<?> addOneProduct(@RequestBody ProductDto productDto) {
 
-        System.out.println("BOOM");
-        Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
-                .map(DtoConverters.skuDtoToEntity)
-                .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
+        /* (mst) every new Product has to have at least a DefaultSKU and a name */
+        if(productDto.getName() == null || productDto.getName().isEmpty() || productDto.getDefaultSku() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
-        System.out.println("Should have throws");
-        /* TODO: (mst) modify matching rules */
+        if(!productDto.getName().equals(productDto.getDefaultSku().getName())) {
+            productDto.getDefaultSku().setName(productDto.getName());
+        }
+
+        /* TODO: (mst) modify matching rules (currently only "by name") + refactor to separate method */
+        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
+
+        /* (mst) Old "duplicate matching" code */
+        /*
         long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
                 .filter(x -> x.getDescription().equals(productDto.getDescription()) || x.getLongDescription().equals(productDto.getLongDescription()))
                 .filter(CatalogUtils::archivedProductFilter)
                 .count();
+                */
 
         if(duplicatesCount > 0) {
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
+
+        Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
+
+        Sku defaultSku = DtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
+
+        /* (mst) if there is a default category set, try to find it and connect it with the product.
+                 Otherwise just ignore it.
+
+                 TODO: Refactor this one using Lambdas
+         */
+        if(productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
+            Optional<Category> categoryToReference = catalogService.findCategoriesByName(productDto.getCategoryName()).stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .findAny();
+
+            if(categoryToReference.isPresent()) {
+                newProduct.setCategory(categoryToReference.get());
+            }
+        }
+
+        newProduct.setDefaultSku(defaultSku);
 
 
         /* TODO: (mst) creating Product Bundles */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
 
-        Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
-        /* this one is probably redundant */
-        newProduct.setDefaultSku(defaultSku);
 
-        /* TODO: (mst) what if the Category has not been provided?! */
 
         newProduct = catalogService.saveProduct(newProduct);
 
@@ -192,8 +223,7 @@ public class ProductController {
 
     /* DELETE /products/{id} */
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete a product",
