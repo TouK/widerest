@@ -560,15 +560,6 @@ public class DtoConverters {
         return orderItemDto;
     };
 
-    public static Function<OrderItemDto, OrderItemRequestDTO> orderItemDtoToRequest = orderItemDto -> {
-        OrderItemRequestDTO req = new OrderItemRequestDTO();
-        req.setQuantity(orderItemDto.getQuantity());
-        req.setSkuId(orderItemDto.getSkuId());
-        // req.setProductId(orderItemDto.getProductId());
-        // req.setItemAttributes(orderItemDto.getAttributes());
-
-        return req;
-    };
     /******************************** ORDERITEM ********************************/
 
     /******************************** DISCRETEORDERITEM ********************************/

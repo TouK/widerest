@@ -69,11 +69,6 @@ public class PayPalController {
         transactionConfirmationService = configurationService.getTransactionConfirmationService();
     }
 
-    @RequestMapping(value = "/test", method = RequestMethod.GET)
-    public void testEndpoint() {
-        System.out.println("DZIALA!!!");
-    }
-
 
     @RequestMapping(method = RequestMethod.GET)
     @Transactional

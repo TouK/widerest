@@ -19,6 +19,7 @@ import javax.persistence.criteria.Root;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
@@ -226,15 +227,26 @@ public class OrderController {
             throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
         }
 
-        orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), false);
+        OrderItemRequestDTO req = new OrderItemRequestDTO();
+        req.setQuantity(orderItemDto.getQuantity());
+        req.setSkuId(orderItemDto.getSkuId());
+
+
+        orderService.addItem(cart.getId(), req, true);
+        cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/{orderId}/items/{id}")
-                        .buildAndExpand(orderId, (cart.getDiscreteOrderItems()
-                                .stream().filter(x -> x.getSku().getId() == orderItemDto.getSkuId())
-                                .collect(Collectors.toList())).get(0).getId()).toUri());
+                .path("/{orderId}/items/{id}")
+                .buildAndExpand(orderId,
+                        (cart.getDiscreteOrderItems().stream()
+                                .filter(x -> x.getSku().getId() == orderItemDto.getSkuId())
+                                .findAny()
+                                .map(DiscreteOrderItem::getId)
+                                .orElseThrow(ResourceNotFoundException::new))
+                )
+                .toUri());
 
         return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
 
