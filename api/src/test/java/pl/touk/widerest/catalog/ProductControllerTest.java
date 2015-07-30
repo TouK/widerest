@@ -114,7 +114,7 @@ public class ProductControllerTest extends ApiTestBase {
             fail();
         } catch (HttpClientErrorException httpClientException) {
             //then
-            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.BAD_REQUEST));
             assertThat(currentProductsCount, equalTo(getRemoteTotalProductsCount()));
         }
     }
@@ -132,6 +132,7 @@ public class ProductControllerTest extends ApiTestBase {
         //when
         oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString(), 1);
 
+        //then
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
     }
 
@@ -155,6 +156,8 @@ public class ProductControllerTest extends ApiTestBase {
         ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
+
+
 
 
 

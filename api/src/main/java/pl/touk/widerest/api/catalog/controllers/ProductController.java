@@ -315,6 +315,29 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
+    /* GET /products/{id}/categories */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/categories/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count product's categories",
+            notes = "Gets a number of categories, specified product belongs to",
+            response = Long.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
+            @ApiResponse(code = 404, message = "The specified product does not exist")
+    })
+    public Long getCategoriesByProductCount(@PathVariable(value = "productId") Long productId) {
+
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllParentCategoryXrefs().stream()
+                .map(CategoryProductXref::getCategory)
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .count();
+    }
+
 
     /* GET /products/{id}/skus */
     @Transactional

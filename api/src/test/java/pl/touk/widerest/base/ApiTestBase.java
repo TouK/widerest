@@ -36,14 +36,17 @@ public abstract class ApiTestBase {
     public static final String CATEGORIES_URL = "http://localhost:{port}/catalog/categories";
     public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
+    public static final String PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "/{productId}";
     public static final String PRODUCTS_IN_CATEGORY_COUNT_URL = PRODUCTS_IN_CATEGORY_URL + "/count";
 
     /* Products */
     public static final String PRODUCTS_URL = "http://localhost:{port}/catalog/products";
+    public static final String PRODUCT_BY_ID_URL = PRODUCTS_URL + "/{productId}";
     public static final String PRODUCTS_COUNT_URL = PRODUCTS_URL + "/count";
     public static final String PRODUCT_BY_ID_SKUS = PRODUCTS_URL + "/{productId}/skus";
     public static final String PRODUCT_BY_ID_SKU_BY_ID = PRODUCT_BY_ID_SKUS + "/{skuId}";
     public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
+    public static final String CATEGORIES_BY_PRODUCT_BY_ID_COUNT = PRODUCT_BY_ID_URL + "/categories/count";
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
 
 

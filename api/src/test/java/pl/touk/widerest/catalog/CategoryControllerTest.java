@@ -43,7 +43,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -56,7 +56,7 @@ public class CategoryControllerTest extends ApiTestBase {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         /* uncomment the following for "local" testing */
-        serverPort = String.valueOf(8080);
+        //serverPort = String.valueOf(8080);
         cleanupCategoryTests();
     }
 
@@ -270,7 +270,7 @@ public class CategoryControllerTest extends ApiTestBase {
         ProductDto productToAddDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_IN_CATEGORY_URL, productToAddDto, null, serverPort, 701);
+                PRODUCTS_IN_CATEGORY_URL, productToAddDto, null, serverPort, firstCategory.getId().longValue());
 
         assertNotNull(remoteAddProductEntity);
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -362,7 +362,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         for(CategoryDto testCategory : receivedCategoriesEntity.getBody()) {
             if(testCategory.getName().startsWith(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), 1);
+                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), serverPort);
             }
         }
     }
