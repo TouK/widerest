@@ -357,7 +357,7 @@ public class DtoConverters {
         }
 
 		/* HATEOAS links */
-        dto.add(linkTo(methodOn(ProductController.class).readOneProduct(entity.getId())).withSelfRel());
+        dto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getId())).withSelfRel());
 
         if (entity.getDefaultSku() != null) {
             dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getId(), entity.getDefaultSku().getId()))
