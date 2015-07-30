@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.springframework.boot.test.IntegrationTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -145,19 +146,19 @@ public class PayPalControllerTest {
     private CustomerUserDetails userDetails;
 
     @Configuration
+    @IntegrationTest(
+            {
+                    "paypal.clientId:AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
+                    "paypal.secret:EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX"
+            })
     @ComponentScan({"pl.touk.widerest.paypal"})
     public static class TestConfiguration {
 
-        @Bean
-        public PayPalSession payPalSession() throws PayPalRESTException {
-            Map<String, String> sdkConfig = new HashMap<String, String>();
-            sdkConfig.put("mode", "sandbox");
-            //TODO: unhardcode credentials
-            String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
-                    secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
-
-            return new PayPalSessionImpl(clientIdCredential, secretCredential);
-        }
+//        @Bean
+//        public PayPalSession payPalSession() throws PayPalRESTException {
+//
+//            return new PayPalSessionImpl(clientIdCredential, secretCredential);
+//        }
 
         @Bean(name = "blOrderService")
         public OrderService orderService() {

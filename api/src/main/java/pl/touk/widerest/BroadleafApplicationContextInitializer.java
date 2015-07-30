@@ -44,6 +44,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
                         "classpath:/bl-open-admin-contentClient-applicationContext.xml\n" +
                         "classpath:/bl-open-admin-contentCreator-applicationContext.xml\n" +
                         "classpath:/bl-cms-contentClient-applicationContext.xml\n" +
+                        "classpath:/bl-common-applicationContext.xml\n" +
                         //"classpath*:/blc-config/site/bl-*-applicationContext.xml\n" +
                         "classpath:/applicationContext.xml\n" +
                         "classpath:/applicationContext-email.xml\n" +

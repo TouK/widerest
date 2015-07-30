@@ -32,6 +32,12 @@
             <artifactId>widerest-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>pl.touk.widerest</groupId>
+            <artifactId>widerest-paypal</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

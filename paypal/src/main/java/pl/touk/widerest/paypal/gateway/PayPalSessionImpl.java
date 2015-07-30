@@ -8,10 +8,13 @@ import com.paypal.base.exception.PayPalException;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Component
 public class PayPalSessionImpl implements PayPalSession {
 
     private APIContext apiContext;
@@ -20,10 +23,14 @@ public class PayPalSessionImpl implements PayPalSession {
     private Map<String, String> sdkConfig;
 
     // Should be replaced so that it uses refresh token instead
-    private String clientId;
-    private String secret;
 
-    public PayPalSessionImpl(String clientId, String secret) throws PayPalRESTException {
+    //@Value("${paypal.clientId:AQkquBDf1zctJ}")
+    private String clientId = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd";
+
+    //@Value("${paypal.secret:EL1tVxAjhT7cJi}")
+    private String secret = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
+
+    public PayPalSessionImpl() throws PayPalRESTException {
         // If exception is thrown then the app shouldnt start
 
         sdkConfig = new HashMap<String, String>();

@@ -61,9 +61,6 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             //TODO: unhardcode credentials
             String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
                     secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
-            payPalSession =
-                    new PayPalSessionImpl(clientIdCredential, secretCredential);
-
 
             List<Transaction> transactions = new ArrayList<Transaction>();
             Transaction transaction = null;
