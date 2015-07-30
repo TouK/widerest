@@ -32,6 +32,7 @@ public class DtoTestFactory {
     public static final String TEST_CATEGORY_DEFAULT_NAME = "TestCategoryName";
     public static final String TEST_PRODUCT_DEFAULT_NAME = "DefaultTestProduct";
     public static final String TEST_DEFAULT_SKU_DESC = "DefaultTestProductDescription";
+    public static final String TEST_ADDITIONAL_SKU_DESC = "TestAdditionalSKUDescription";
 
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -144,6 +145,16 @@ public class DtoTestFactory {
         }
     }
 
+    public static SkuDto getTestAdditionalSku(DtoTestType dtoTestType) {
+        switch (dtoTestType) {
+            case NEXT:
+                return nextTestAdditionalSku();
+            case SAME:
+                return testAdditionalSku();
+            default:
+                return null;
+        }
+    }
 
 
     public static ProductDto getTestProductWithoutDefaultSKU() {
@@ -184,10 +195,10 @@ public class DtoTestFactory {
         return skuDto;
     }
 
-    public static SkuDto getTestAdditionalSku() {
+    private static SkuDto testAdditionalSku() {
         if(newSkuDto2 == null) {
             newSkuDto2 = SkuDto.builder()
-                    .description("TestAdditionalSKUDescription")
+                    .description(TEST_ADDITIONAL_SKU_DESC)
                     .salePrice(new BigDecimal(99.99))
                     .quantityAvailable(34)
                     .taxCode("AdditionalSKU Tax Code")
@@ -195,6 +206,23 @@ public class DtoTestFactory {
                     .build();
         }
         return newSkuDto2;
+    }
+
+    private static SkuDto nextTestAdditionalSku() {
+        SkuDto skuDto = SkuDto.builder()
+                .description(TEST_ADDITIONAL_SKU_DESC + skuCounter)
+                .salePrice(new BigDecimal(3 + skuCounter))
+                .quantityAvailable((int) (3 + skuCounter))
+                .taxCode("AdditionalSKU Tax Code" + skuCounter)
+                .activeStartDate(defaultActiveStartDate)
+                .build();
+
+        skuCounter++;
+
+
+        return skuDto;
+
+
     }
 
     public static OrderDto getTestOrder() {

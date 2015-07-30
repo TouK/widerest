@@ -151,7 +151,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(1L));
 
 
-        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku();
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.SAME);
 
         ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
