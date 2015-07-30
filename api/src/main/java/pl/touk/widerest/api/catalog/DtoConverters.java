@@ -480,8 +480,15 @@ public class DtoConverters {
     /******************************** ORDER ********************************/
     public static Function<Order, OrderDto> orderEntityToDto = entity -> {
         OrderDto orderDto = OrderDto.builder().orderId(entity.getId())
-                .orderNumber(entity.getOrderNumber()).status(entity.getStatus().getType()).orderPaymentDto(entity
+                .orderNumber(entity.getOrderNumber())
+                .status(entity.getStatus().getType())
+                .orderPaymentDto(entity
                         .getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList()))
+                .orderItems(entity.getDiscreteOrderItems().stream()
+                        .map(DtoConverters.discreteOrderItemEntityToDto)
+                        .collect(Collectors.toList()))
+                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+                .totalPrice(entity.getTotal().getAmount())
                 .build();
 		/*
 		 * orderDto.add(linkTo(methodOn(OrderController.class).(entity.getId()))

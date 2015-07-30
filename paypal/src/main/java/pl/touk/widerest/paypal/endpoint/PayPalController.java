@@ -26,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
@@ -69,6 +70,7 @@ public class PayPalController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
+    @Transactional
     public ResponseEntity initiate(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -139,8 +141,14 @@ public class PayPalController {
         PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
 
         // create request
+
+        // strange if it ever happens
+        if(payPalResponse.getOrderId() != null && Long.valueOf(payPalResponse.getOrderId()) != order.getId()) {
+            throw new IllegalAccessError("Wrong request");
+        }
+
         PayPalRequestDto requestDTO = new PayPalRequestDto();
-        requestDTO.setOrderId(payPalResponse.getOrderId());
+        requestDTO.setOrderId(orderId.toString());
         requestDTO.setPayerId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYER_ID));
         requestDTO.setPaymentId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYMENT_ID));
         requestDTO.setAccessToken(payPalResponse.getResponseMap().get(PayPalMessageConstants.ACCESS_TOKEN));
@@ -149,22 +157,22 @@ public class PayPalController {
         //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
         //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
 
-        // execute payment
-        payPalResponse = transactionConfirmationService.confirmTransaction(requestDTO.getWrapped());
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-
-        // if there was a problem with execution
-        String url = payPalResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL);
-        if(url != null) {
-            responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(url)
-                    .build().toUri());
-            return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
-        }
+//        // execute payment
+//        payPalResponse = transactionConfirmationService.confirmTransaction(requestDTO.getWrapped());
+//
+//        HttpHeaders responseHeader = new HttpHeaders();
+//
+//
+//        // if there was a problem with execution
+//        String url = payPalResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL);
+//        if(url != null) {
+//            responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(url)
+//                    .build().toUri());
+//            return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
+//        }
 
         // Checkout/execute order in broadleaf
-        //orderService.confirmOrder(order);
+
         try {
             //CheckoutResponse checkoutResponse =
             checkoutService.performCheckout(order);
@@ -173,8 +181,13 @@ public class PayPalController {
                     .addMessage(BroadleafWebServicesException.CART_NOT_FOUND);
         }
 
-        //TODO: pkp - co powinno zostac zwrocone?
-        return ResponseEntity.notFound().build();
+
+        // After success - redirect to main page
+        HttpHeaders responseHeader = new HttpHeaders();
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURI()))
+                .build().toUri());
+
+        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
     }
 
     @RequestMapping(value = "/cancel", method = RequestMethod.GET)

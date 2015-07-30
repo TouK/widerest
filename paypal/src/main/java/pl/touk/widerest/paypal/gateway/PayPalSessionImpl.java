@@ -30,7 +30,7 @@ public class PayPalSessionImpl implements PayPalSession {
     //@Value("${paypal.secret:EL1tVxAjhT7cJi}")
     private String secret = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
-    public PayPalSessionImpl() throws PayPalRESTException {
+    public void initConnection() throws PayPalRESTException {
         // If exception is thrown then the app shouldnt start
 
         sdkConfig = new HashMap<String, String>();
@@ -50,6 +50,9 @@ public class PayPalSessionImpl implements PayPalSession {
             apiContext = new APIContext(oAuthTokenCredential.getAccessToken());
             apiContext.setConfigurationMap(sdkConfig);
         }*/
+        if(apiContext == null) {
+            initConnection();
+        }
 
         return apiContext;
     }

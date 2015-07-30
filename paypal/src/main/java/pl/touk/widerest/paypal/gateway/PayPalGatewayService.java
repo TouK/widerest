@@ -174,6 +174,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
                 responseDto.setRedirectUri("http://error");
                 // Nazwa bledu z terminologii paypalowej
                 //((PayPalRESTException) e).getDetails().getName();
+                throw new PaymentException(e);
             }
             throw new PaymentException(e);
             //TODO: wyjatek kiedy nie udal sie execute (redirect na strone paypala)

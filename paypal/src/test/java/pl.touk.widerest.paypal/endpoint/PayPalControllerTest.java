@@ -115,7 +115,7 @@ public class PayPalControllerTest {
             // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
             // http://localhost:8080/orders/1/paypal/return?paymentId=PAY-7EE74569FE911601VKW3X7QQ&token=EC-2KE661416F427612K&PayerID=FXHKFGTPBJR4J
             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
-                    "http://localhost:8080/orders/1/paypal/return?paymentId=PAY-64F26441BT918940JKW4IGEA&token=EC-0S772925Y03476608&PayerID=FXHKFGTPBJR4J");
+                    "http://localhost:8080/orders/1/paypal/return");
 
             returnRequestResponse = payPalController.handleReturn(httpServletRequest, userDetails, orderId);
         }

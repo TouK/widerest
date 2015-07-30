@@ -4,10 +4,6 @@ import org.broadleafcommerce.common.payment.PaymentGatewayType;
 
 public class PayPalPaymentGatewayType extends PaymentGatewayType {
 
-    public PayPalPaymentGatewayType() {
-
-    }
-
     public static final PaymentGatewayType PAYPAL = new PaymentGatewayType("PayPal", "PayPal");
 
 }
