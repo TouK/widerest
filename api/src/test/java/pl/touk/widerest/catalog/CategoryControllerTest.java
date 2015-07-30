@@ -2,6 +2,7 @@ package pl.touk.widerest.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import jdk.nashorn.internal.ir.ObjectNode;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.MediaTypes;
@@ -43,7 +44,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.CoreMatchers.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
@@ -56,7 +57,7 @@ public class CategoryControllerTest extends ApiTestBase {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         /* uncomment the following for "local" testing */
-        //serverPort = String.valueOf(8080);
+        serverPort = String.valueOf(8080);
         cleanupCategoryTests();
     }
 
@@ -317,6 +318,41 @@ public class CategoryControllerTest extends ApiTestBase {
 
     }
 
+
+    @Test
+    @Ignore
+    public void partialUpdateCategoryDescriptionAndCheckIfOtherValuesPreserveTest() {
+        long currentTotalCategoriesCount = getRemoteTotalCategoriesCountValue();
+
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
+
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        assertThat(getRemoteTotalCategoriesCountValue(), equalTo(currentTotalCategoriesCount + 1));
+
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+
+        categoryDto.setName("Category Name Changed!");
+
+        final HttpEntity<CategoryDto> requestEntity = new HttpEntity<>(categoryDto);
+
+        ResponseEntity<Void> responseCategoryPatchEntity = oAuth2AdminRestTemplate().exchange(
+                CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+
+        CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+        assertThat(categoryDto.getName(), equalTo(receivedCategoryDto.getName()));
+        assertThat(categoryDto.getDescription(), equalTo(receivedCategoryDto.getDescription()));
+        assertThat(categoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
+
+    }
 
 
 

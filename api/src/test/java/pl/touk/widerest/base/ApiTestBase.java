@@ -34,6 +34,7 @@ public abstract class ApiTestBase {
 
     /* Categories */
     public static final String CATEGORIES_URL = "http://localhost:{port}/catalog/categories";
+    public static final String CATEGORY_BY_ID_URL = CATEGORIES_URL + "/{categoryId}";
     public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
     public static final String PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "/{productId}";
