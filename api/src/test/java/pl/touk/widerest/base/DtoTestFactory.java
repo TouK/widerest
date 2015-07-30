@@ -26,17 +26,30 @@ public class DtoTestFactory {
     private static final Date defaultActiveStartDate;
 
     private static long categoryCounter = 0;
+    private static long productCounter = 0;
+    private static long skuCounter = 0;
 
     public static final String TEST_CATEGORY_DEFAULT_NAME = "TestCategoryName";
     public static final String TEST_PRODUCT_DEFAULT_NAME = "DefaultTestProduct";
+    public static final String TEST_DEFAULT_SKU_DESC = "DefaultTestProductDescription";
 
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         defaultActiveStartDate = gmtCal.getTime();
     }
 
+    public static CategoryDto getTestCategory(DtoTestType dtoTestType) {
+        switch(dtoTestType) {
+            case SAME:
+                return testCategory();
+            case NEXT:
+                return nextTestCategory();
+            default:
+                return null;
+        }
+    }
 
-    public static CategoryDto getTestCategory() {
+    private static CategoryDto testCategory() {
         if(newCategoryDto == null) {
             newCategoryDto = CategoryDto.builder()
                     .name(TEST_CATEGORY_DEFAULT_NAME)
@@ -48,7 +61,7 @@ public class DtoTestFactory {
         return newCategoryDto;
     }
 
-    public static CategoryDto getNextTestCategory() {
+    private static CategoryDto nextTestCategory() {
         CategoryDto nextCategoryDto = CategoryDto.builder()
                 .name(TEST_CATEGORY_DEFAULT_NAME + categoryCounter)
                 .description("TestCategoryDescription" + categoryCounter)
@@ -60,7 +73,8 @@ public class DtoTestFactory {
         return nextCategoryDto;
     }
 
-    private static ProductDto getTestProduct() {
+
+    private static ProductDto testProduct() {
         ProductDto defaultProductDto = ProductDto.builder()
                     .name(TEST_PRODUCT_DEFAULT_NAME)
                     .description("DefaultTestProductDescription")
@@ -73,26 +87,68 @@ public class DtoTestFactory {
         return defaultProductDto;
     }
 
-    public static ProductDto getTestProductWithDefaultSKUandCategory() {
-        if(fullProductDto == null) {
-            fullProductDto = getTestProduct();
-            fullProductDto.setDefaultSku(getTestDefaultSku());
-            fullProductDto.setCategoryName(getTestCategory().getName());
-        }
-        return fullProductDto;
+    private static ProductDto nextTestProduct() {
+        ProductDto nextProductDto = ProductDto.builder()
+                .name(TEST_PRODUCT_DEFAULT_NAME + productCounter)
+                .description("DefaultTestProductDescription" + productCounter)
+                .longDescription("DefaultTestProductLongDescription" + productCounter)
+                .manufacturer("Test Product Manufacturer" + productCounter)
+                .model("Test Product Model" + productCounter)
+                .defaultSku(null)
+                .build();
+
+        productCounter++;
+
+        return nextProductDto;
     }
 
-    public static ProductDto getTestProductWithoutDefaultCategory() {
-        if(defaultProductWithDefaultSKU == null) {
-            defaultProductWithDefaultSKU = getTestProduct();
-            defaultProductWithDefaultSKU.setDefaultSku(getTestDefaultSku());
+
+    public static ProductDto getTestProductWithDefaultSKUandCategory(DtoTestType dtoTestType) {
+        switch(dtoTestType) {
+            case NEXT:
+                ProductDto p = nextTestProduct();
+                p.setDefaultSku(nextTestDefaultSku());
+                p.setCategoryName(nextTestCategory().getName());
+                return p;
+            case SAME: {
+                if (fullProductDto == null) {
+                    fullProductDto = testProduct();
+                    fullProductDto.setDefaultSku(getTestDefaultSku());
+                    fullProductDto.setCategoryName(testCategory().getName());
+                }
+                return fullProductDto;
+            }
+            default:
+                return null;
         }
-        return defaultProductWithDefaultSKU;
+
     }
+
+    public static ProductDto getTestProductWithoutDefaultCategory(DtoTestType dtoTestType) {
+
+        switch(dtoTestType) {
+            case NEXT:
+                ProductDto p = nextTestProduct();
+                p.setDefaultSku(nextTestDefaultSku());
+                return p;
+            case SAME: {
+                if(defaultProductWithDefaultSKU == null) {
+                    defaultProductWithDefaultSKU = testProduct();
+                    defaultProductWithDefaultSKU.setDefaultSku(getTestDefaultSku());
+                }
+                return defaultProductWithDefaultSKU;
+            }
+
+            default:
+                return null;
+        }
+    }
+
+
 
     public static ProductDto getTestProductWithoutDefaultSKU() {
         if(defaultProductWithoutSku == null) {
-            defaultProductWithoutSku = getTestProduct();
+            defaultProductWithoutSku = testProduct();
         }
 
         return defaultProductWithoutSku;
@@ -101,7 +157,7 @@ public class DtoTestFactory {
     public static SkuDto getTestDefaultSku() {
         if(newSkuDto == null) {
             newSkuDto = SkuDto.builder()
-                    .description("DefaultTestProductDescription")
+                    .description(TEST_DEFAULT_SKU_DESC)
                     .name(TEST_PRODUCT_DEFAULT_NAME)
                     .salePrice(new BigDecimal(39.99))
                     .quantityAvailable(99)
@@ -110,6 +166,22 @@ public class DtoTestFactory {
                     .build();
         }
         return newSkuDto;
+    }
+
+    private static SkuDto nextTestDefaultSku() {
+        SkuDto skuDto = SkuDto.builder()
+                .description(TEST_DEFAULT_SKU_DESC + skuCounter)
+                .name(TEST_PRODUCT_DEFAULT_NAME)
+                .salePrice(new BigDecimal(39.99))
+                .quantityAvailable(99)
+                .taxCode("DefaultSKU Tax Code")
+                .activeStartDate(defaultActiveStartDate)
+                .build();
+
+
+        skuCounter++;
+
+        return skuDto;
     }
 
     public static SkuDto getTestAdditionalSku() {

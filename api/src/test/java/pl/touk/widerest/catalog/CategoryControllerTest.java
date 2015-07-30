@@ -33,6 +33,7 @@ import org.thymeleaf.util.StringUtils;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.base.DtoTestType;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -131,7 +132,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void createNewCategoryAndCheckIfValuesAreValidTest() {
-        CategoryDto testCategoryDto = DtoTestFactory.getTestCategory();
+        CategoryDto testCategoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
 
         //when
         ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory();
@@ -200,7 +201,7 @@ public class CategoryControllerTest extends ApiTestBase {
         long currentCategoriesCount = getRemoteTotalCategoriesCountValue();
 
         //when
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
         categoryDto.setDescription("ModifiedTestCategoryDescription");
         categoryDto.setName("ModifiedTestCategoryName");
         categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
@@ -222,7 +223,7 @@ public class CategoryControllerTest extends ApiTestBase {
         long currentCategoriesCount = getRemoteTotalCategoriesCountValue();
 
         //when
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
         categoryDto.setDescription("ModifiedTestCategoryDescription");
         categoryDto.setName("ModifiedTestCategoryName");
         categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
@@ -266,7 +267,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         //assertThat(currentProductsInCategoryCount, equalTo(currentProductsInCategoryRemoteCount));
 
-        ProductDto productToAddDto = DtoTestFactory.getTestProductWithoutDefaultCategory();
+        ProductDto productToAddDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_IN_CATEGORY_URL, productToAddDto, null, serverPort, 701);
@@ -301,7 +302,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         long currentProductsCount = getRemoteTotalProductsInCategorCountValue(createdCategoryId);
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL + "/{p}/products", productDto, null, serverPort, createdCategoryId);
 
@@ -353,8 +354,6 @@ public class CategoryControllerTest extends ApiTestBase {
 
     private void removeRemoteTestCategory() {
 
-        CategoryDto categoryTestDto = DtoTestFactory.getTestCategory();
-
         ResponseEntity<CategoryDto[]> receivedCategoriesEntity =
                 restTemplate.getForEntity(ApiTestBase.CATEGORIES_URL, CategoryDto[].class, serverPort);
 
@@ -371,7 +370,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     private ResponseEntity<?> addNewTestCategory() throws HttpClientErrorException {
 
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
 
         ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
 

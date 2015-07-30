@@ -225,12 +225,22 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
+        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
+
+        if(duplicatesCount > 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
 
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(p -> {
-                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
+                    Product productEntity = DtoConverters.productDtoToEntity.apply(productDto);
+                    productEntity.setId(productId);
+                    catalogService.saveProduct(productEntity);
                     return p;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot change product with id " + productId + ". Not Found"));

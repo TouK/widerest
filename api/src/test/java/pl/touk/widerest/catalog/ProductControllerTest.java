@@ -19,6 +19,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.base.DtoTestType;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +51,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         long currentProductsCount = getRemoteTotalProductsCount();
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
 
         //when
         ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
@@ -87,7 +88,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         long currentProductCount = getRemoteTotalProductsCount();
 
-        ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory();
+        ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -121,7 +122,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void successfullyDeletingNewlyCreatedProductTest() {
         long currentProductsCount = getRemoteTotalProductsCount();
-        ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory();
+        ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
 
@@ -138,7 +139,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Test
     public void addingNewSkuAfterCreatingProductWithDefaultSku() {
-        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory();
+        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -171,7 +172,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
 
         ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
 
@@ -231,8 +232,6 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     private void removeRemoteTestProducts() {
-        ProductDto productTestDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
-
 
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
@@ -241,7 +240,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         for(ProductDto testProduct : receivedProductEntity.getBody()) {
-            if(productTestDto.getName().equals(testProduct.getName())) {
+            if(testProduct.getName().startsWith(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
                 oAuth2AdminRestTemplate().delete(testProduct.getId().getHref(), 1);
             }
         }

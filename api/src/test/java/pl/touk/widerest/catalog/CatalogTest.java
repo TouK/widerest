@@ -1,20 +1,24 @@
 package pl.touk.widerest.catalog;
 
+import org.hamcrest.number.IsCloseTo;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
+import pl.touk.widerest.base.DtoTestType;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -43,12 +47,12 @@ public class CatalogTest extends ApiTestBase {
     }
 
     @Test
-    public void exemplaryCatalogFlow1Test() {
+    public void exemplaryCatalogFlow1Test() throws InterruptedException{
 
         long currentGlobalProductCount = getRemoteTotalProductsCount();
 
         //add test category
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory();
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
 
         ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
                 CATEGORIES_URL,
@@ -64,7 +68,7 @@ public class CatalogTest extends ApiTestBase {
 
         //add test product with default sku into category
 
-        ProductDto productDto1 = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
+        ProductDto productDto1 = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
 
         ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto1, null, serverPort);
@@ -89,14 +93,13 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(receivedSkuDto.getName(), equalTo(defaultTestSku.getName()));
         assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(defaultTestSku.getQuantityAvailable()));
-        assertThat(receivedSkuDto.getSalePrice(), equalTo(defaultTestSku.getSalePrice()));
+        //assertTrue(IsCloseTo.closeTo(receivedSkuDto.getSalePrice().doubleValue(), defaultTestSku.getSalePrice().doubleValue()));
         assertThat(receivedSkuDto.getActiveStartDate(), equalTo(defaultTestSku.getActiveStartDate()));
 
         //add another product without category
 
-        ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory();
-        /* (mst) tmp until I update DtoTestFactory methods */
-        productDto2.setName(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME + "1");
+        ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
 
         ResponseEntity<ProductDto> remoteAddProduct2Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto2, null, serverPort);
@@ -110,23 +113,18 @@ public class CatalogTest extends ApiTestBase {
 
         //remove both products
 
-        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId1);
-        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId2);
+        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId1, serverPort);
+        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId2, serverPort);
 
         assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount));
         assertThat(getRemoteTotalProductsInCategorCountValue(testCategoryId), equalTo(0L));
 
         //remove category
 
-        oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, 1);
+        oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
         /* TODO: (mst) maybe few other checks after removal */
     }
-
-
-
-
-
 
     private void cleanupCatalogTests() {
         removeRemoteTestProducts();
@@ -134,8 +132,6 @@ public class CatalogTest extends ApiTestBase {
     }
 
     private void removeRemoteTestCategory() {
-
-        CategoryDto categoryTestDto = DtoTestFactory.getTestCategory();
 
         ResponseEntity<CategoryDto[]> receivedCategoriesEntity =
                 restTemplate.getForEntity(ApiTestBase.CATEGORIES_URL, CategoryDto[].class, serverPort);
@@ -150,8 +146,6 @@ public class CatalogTest extends ApiTestBase {
         }
     }
     private void removeRemoteTestProducts() {
-        ProductDto productTestDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory();
-
 
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
