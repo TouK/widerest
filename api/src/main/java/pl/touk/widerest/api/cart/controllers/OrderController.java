@@ -227,6 +227,7 @@ public class OrderController {
             throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
         }
 
+
         OrderItemRequestDTO req = new OrderItemRequestDTO();
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
