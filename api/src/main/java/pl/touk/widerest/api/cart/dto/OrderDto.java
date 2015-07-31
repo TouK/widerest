@@ -35,6 +35,7 @@ public class OrderDto extends ResourceSupport {
 
     @ApiModelProperty(required = true)
     private AddressDto shippingAddress;
+
     @ApiModelProperty(required = true)
     private CustomerDto customer;
 
@@ -46,4 +47,7 @@ public class OrderDto extends ResourceSupport {
     private List<CartAttributeDto> cartAttributeDtos;
     @ApiModelProperty
     private List<OrderPaymentDto> orderPaymentDto;
+
+    @ApiModelProperty
+    private String fulfillment;
 }

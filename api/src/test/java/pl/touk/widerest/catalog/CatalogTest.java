@@ -180,7 +180,7 @@ public class CatalogTest extends ApiTestBase {
     }
 
     @Test
-    public void exemplaryCatalogFlow3Test() {
+    public void deletingProductRemovesAllSkusAndCategoriesReferencesTest() {
         long currentGlobalProductCount = getRemoteTotalProductsCount();
         long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
 
@@ -233,8 +233,23 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(getRemoteTotalSkusForProductCount(testProductId), equalTo(currentSkusForProductCount + TEST_SKUS_COUNT));
 
-        // validate everything
+        // delete product
+
+        oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_URL, serverPort, testProductId);
+
+        // validate catalog state after removal
+
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount));
+        assertThat(getRemoteTotalSkusForProductCount(testProductId), equalTo(currentSkusForProductCount));
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
     }
+
 
     private void cleanupCatalogTests() {
         removeRemoteTestProducts();

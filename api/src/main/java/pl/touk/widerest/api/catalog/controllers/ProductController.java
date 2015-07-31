@@ -6,26 +6,20 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
-import org.broadleafcommerce.core.rating.domain.RatingSummary;
 import org.broadleafcommerce.core.rating.service.RatingService;
-import org.broadleafcommerce.core.rating.service.type.RatingType;
-import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,11 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.DtoConverters;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.RatingDto;
-import pl.touk.widerest.api.catalog.dto.ReviewDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 

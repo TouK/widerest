@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.DtoConverters;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;

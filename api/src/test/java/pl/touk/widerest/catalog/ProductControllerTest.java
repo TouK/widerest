@@ -1,31 +1,18 @@
 package pl.touk.widerest.catalog;
 
-import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpServerErrorException;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
-import org.broadleafcommerce.core.catalog.domain.Product;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.catalog.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.base.DtoTestType;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
@@ -156,8 +143,6 @@ public class ProductControllerTest extends ApiTestBase {
         ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
-
-
 
 
 

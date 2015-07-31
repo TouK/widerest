@@ -24,11 +24,11 @@ public class PayPalSessionImpl implements PayPalSession {
 
     // Should be replaced so that it uses refresh token instead
 
-    //@Value("${paypal.clientId:AQkquBDf1zctJ}")
-    private String clientId = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd";
+    @Value("${paypal.clientId}")
+    private String clientId;// = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd";
 
-    //@Value("${paypal.secret:EL1tVxAjhT7cJi}")
-    private String secret = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
+    @Value("${paypal.secret}")
+    private String secret;// = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
     public void initConnection() throws PayPalRESTException {
         // If exception is thrown then the app shouldnt start

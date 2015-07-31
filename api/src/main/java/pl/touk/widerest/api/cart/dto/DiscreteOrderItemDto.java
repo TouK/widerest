@@ -52,6 +52,4 @@ public class DiscreteOrderItemDto {
     @ApiModelProperty
     protected Money retailPrice;
 
-
-
 }

@@ -72,7 +72,8 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             Item temp = null;
             for(LineItemDTO item : payPalRequest.getWrapped().getLineItems()) {
                 temp = new Item();
-                temp.setName(item.getName());
+                //temp.setName(item.getName());
+                temp.setName("tmp!");
                 temp.setQuantity(item.getQuantity());
                 temp.setPrice(item.getAmount());
                 temp.setCurrency(payPalRequest.getOrderCurrencyCode());
@@ -82,6 +83,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             amount = new Amount();
             amount.setCurrency(payPalRequest.getOrderCurrencyCode());
             amount.setTotal(payPalRequest.getTransactionTotal());
+
 
             itemList.setItems(utilListItem);
             transaction.setAmount(amount);
@@ -95,12 +97,14 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             Payment payment = new Payment();
             payment.setIntent("sale");
 
+
             payment.setPayer(payer);
             payment.setTransactions(transactions);
 
             RedirectUrls redirectUrls = new RedirectUrls();
             redirectUrls.setCancelUrl(payPalRequest.getCancelUri());
             redirectUrls.setReturnUrl(payPalRequest.getReturnUri());
+
             payment.setRedirectUrls(redirectUrls);
 
             Payment createdPayment = payment.create(payPalSession.getApiContext());

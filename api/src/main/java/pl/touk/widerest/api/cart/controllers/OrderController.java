@@ -1,47 +1,30 @@
 package pl.touk.widerest.api.cart.controllers;
 
-import java.nio.file.attribute.UserPrincipalNotFoundException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
-import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
-import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
-import org.broadleafcommerce.core.web.service.UpdateCartService;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
-import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,11 +36,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
-import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
-import pl.touk.widerest.api.catalog.DtoConverters;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 
@@ -236,6 +218,7 @@ public class OrderController {
         orderService.addItem(cart.getId(), req, true);
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
+
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()

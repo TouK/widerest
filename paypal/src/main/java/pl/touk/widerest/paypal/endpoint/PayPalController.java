@@ -3,6 +3,8 @@ package pl.touk.widerest.paypal.endpoint;
 import com.paypal.api.payments.PaymentExecution;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.*;
@@ -37,6 +39,7 @@ import pl.touk.widerest.paypal.gateway.PayPalResponseDto;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.Optional;
 
 @Controller
@@ -95,14 +98,23 @@ public class PayPalController {
         String returnUrl = SELF_URL+"/return";
         String cancelUrl = SELF_URL+"/cancel";
 
-        PaymentRequestDTO paymentRequest =
+        BroadleafCurrency bCurrency = new BroadleafCurrencyImpl();
+        bCurrency.setCurrencyCode("USD");
+
+        order.setCurrency(bCurrency);
+
+        //PaymentRequestDTO paymentRequestDTO = orderToPaymentRequestDTOService.translateOrder(order);
+
+
+        PaymentRequestDTO paymentRequestDTO =
                 orderToPaymentRequestDTOService.translateOrder(order)
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
                         .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
                         .orderDescription("TODO");
-        paymentRequest = populateLineItemsAndSubscriptions(order, paymentRequest);
 
-        PaymentResponseDTO paymentResponse = hostedService.requestHostedEndpoint(paymentRequest);
+        paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
+
+        PaymentResponseDTO paymentResponse = hostedService.requestHostedEndpoint(paymentRequestDTO);
 
         //return redirect URI from the paymentResponse
 
@@ -111,10 +123,13 @@ public class PayPalController {
 
         HttpHeaders responseHeader = new HttpHeaders();
 
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(redirectURI)
-                        .build().toUri());
+        //responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(redirectURI)
+        //                .build().toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        responseHeader.setLocation(URI.create(redirectURI));
+        //return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
+
+        return new ResponseEntity<>(responseHeader, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
@@ -206,6 +221,7 @@ public class PayPalController {
         return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
 
     }
+
 
     private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
         for (OrderItem item : order.getOrderItems()) {
