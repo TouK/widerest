@@ -74,6 +74,10 @@
     </bean-->
     <!-- /End DemoSite NullPaymentGateway Config -->
     <bean class="pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType"/>
+
+    <bean id="blFulfillmentGroupService" class="org.broadleafcommerce.core.order.service.FulfillmentGroupServiceImpl" />
+
+
     <bean id="mySampleConfigurationServices" class="org.springframework.beans.factory.config.ListFactoryBean">
         <property name="sourceList">
             <list>

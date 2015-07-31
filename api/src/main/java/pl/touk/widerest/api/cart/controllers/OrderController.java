@@ -34,6 +34,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
@@ -158,7 +159,7 @@ public class OrderController {
             e.printStackTrace();
         }
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     /* DELETE /orders/ */
@@ -283,7 +284,7 @@ public class OrderController {
             @PathVariable(value = "id") Long orderId) {
 
         if(userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails)userDetails, orderId))
+            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
                     .orElseThrow(ResourceNotFoundException::new)
                     .getItemCount();
 
@@ -307,7 +308,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         if(userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer((CustomerUserDetails)userDetails))
+            return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer((CustomerUserDetails) userDetails))
                     .orElseThrow(ResourceNotFoundException::new)
                     .size();
         } else if(userDetails instanceof AdminUserDetails) {
@@ -335,7 +336,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) {
         if(userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails)userDetails, orderId))
+            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
                     .orElseThrow(ResourceNotFoundException::new)
                     .getStatus();
         } else if(userDetails instanceof AdminUserDetails) {
@@ -408,6 +409,20 @@ public class OrderController {
 
     }
 
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillment", method = RequestMethod.GET)
+    public FulfillmentDto getOrderFulfilment(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable(value = "orderId") Long orderId) {
+
+       // DtoConverters d = new DtoConverters();
+
+        return DtoConverters.createFulfillmentDto.apply(getProperCart(userDetails, orderId));
+
+
+    }
 
 
     /* GET /orders/{id}/payments */

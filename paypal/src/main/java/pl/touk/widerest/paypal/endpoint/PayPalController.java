@@ -225,14 +225,15 @@ public class PayPalController {
 
     private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
         for (OrderItem item : order.getOrderItems()) {
-            String name;
+            String name = item.getName();
+            /*
             if (item instanceof BundleOrderItem) {
                 name = ((BundleOrderItem) item).getSku().getDescription();
             } else if (item instanceof DiscreteOrderItem) {
                 name = ((DiscreteOrderItem) item).getSku().getDescription();
             } else {
                 name = item.getName();
-            }
+            }*/
             String category = item.getCategory() == null ? null : item.getCategory().getName();
             paymentRequest = paymentRequest
                     .lineItem()

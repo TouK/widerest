@@ -17,6 +17,7 @@ import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
+import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
@@ -41,6 +42,7 @@ import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
+import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.rating.domain.RatingDetail;
 import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
 import org.broadleafcommerce.core.rating.domain.ReviewDetail;
@@ -54,6 +56,7 @@ import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.dto.*;
+import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.dto.BundleDto;
@@ -72,6 +75,9 @@ public class DtoConverters {
 
     @Resource(name = "blFulfillmentGroupService")
     private static FulfillmentGroupService fulfillmentGroupService;
+
+    @Resource(name = "wdfulfilmentService")
+    private static FulfilmentServiceProxy fulfilmentServiceProxy;
 
     private static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
@@ -637,7 +643,7 @@ public class DtoConverters {
     /******************************** FULFILLMENTS ********************************/
 
 
-    private static Function<Order, FulfillmentDto> createFulfillmentDto = order -> {
+    public static Function<Order, FulfillmentDto> createFulfillmentDto = order -> {
         FulfillmentDto fulfillmentDto = new FulfillmentDto();
 
         FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
@@ -657,6 +663,20 @@ public class DtoConverters {
         } else {
             fulfillmentDto.setPrice(BigDecimal.ZERO);
         }
+
+        try {
+            Map<? extends FulfillmentOption, Money> options = fulfilmentServiceProxy.getFulfillmentOptionsWithPricesAvailableForProductsInCart(order);
+
+            if(options != null) {
+                /* TODO: (mst) Implement options |*/
+            }
+
+        } catch (FulfillmentPriceException e) {
+            e.printStackTrace();
+        }
+
+
+
 
         /*
         Map<? extends FulfillmentOption, Money> options = cartService.getFulfillmentOptionsWithPricesAvailableForProductsInCart(cart);
@@ -683,5 +703,7 @@ public class DtoConverters {
 
         return fulfillmentDto;
     };
+
+
 
 }
