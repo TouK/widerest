@@ -90,7 +90,7 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
-        String SELF_URL = strapRootURL(request.getRequestURI()) + "/orders/"+orderId+"/paypal";
+        String SELF_URL = strapRootURL(request.getRequestURL().toString()) + "/orders/"+orderId+"/paypal";
 
         String returnUrl = SELF_URL+"/return";
         String cancelUrl = SELF_URL+"/cancel";
@@ -185,7 +185,7 @@ public class PayPalController {
 
         // After success - redirect to main page
         HttpHeaders responseHeader = new HttpHeaders();
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURI()))
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
@@ -200,7 +200,7 @@ public class PayPalController {
         // Redirects to main page
 
         HttpHeaders responseHeader = new HttpHeaders();
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURI()))
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
         return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
