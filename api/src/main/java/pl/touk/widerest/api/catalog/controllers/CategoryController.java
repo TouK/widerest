@@ -17,12 +17,7 @@ import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -216,10 +211,8 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        /* (mst) Thats one way to do it, without losing any important information */
-        categoryToUpdate.setName(categoryDto.getName());
-        categoryToUpdate.setDescription(categoryDto.getDescription());
-        categoryToUpdate.setLongDescription(categoryDto.getLongDescription());
+
+        categoryToUpdate = CatalogUtils.updateCategoryEntityFromDto(categoryToUpdate, categoryDto);
 
         catalogService.saveCategory(categoryToUpdate);
 
@@ -256,17 +249,9 @@ public class CategoryController {
             if(duplicatesCount > 0) {
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
-
-            categoryToUpdate.setName(categoryDto.getName());
         }
 
-        if(categoryDto.getDescription() != null) {
-            categoryToUpdate.setDescription(categoryDto.getDescription());
-        }
-
-        if(categoryDto.getLongDescription() != null) {
-            categoryToUpdate.setLongDescription(categoryDto.getLongDescription());
-        }
+        categoryToUpdate = CatalogUtils.partialUpdateCategoryEntityFromDto(categoryToUpdate, categoryDto);
 
         catalogService.saveCategory(categoryToUpdate);
         return new ResponseEntity<>(HttpStatus.OK);
@@ -339,7 +324,7 @@ public class CategoryController {
             @ApiResponse(code = 409, message = "Category already contains the specified product")
     })
     public ResponseEntity<?> insertOneProductIntoCategory(@PathVariable(value="categoryId") Long categoryId,
-                                             @PathVariable(value = "productId") Long productId) {
+                                                          @PathVariable(value = "productId") Long productId) {
 
         Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)

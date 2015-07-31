@@ -566,7 +566,6 @@ public class ProductController {
     }
 
     /* PUT /products/{productId}/skus/{skuId} */
-    /* TODO: (mst) Implement PATCH for partial updates */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PUT)
@@ -593,14 +592,6 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        /* Try to find SKUs with matching name */
-        long duplicatesCount = product.getAllSkus().stream()
-                .filter(x -> x.getName().equals(skuDto.getName()))
-                .count();
-
-        if(duplicatesCount > 0) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
 
         Optional<Sku> skuToUpdate = product.getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
@@ -610,29 +601,50 @@ public class ProductController {
             throw new ResourceNotFoundException("Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist");
         }
 
-        Sku skuToDeleteEntity = skuToUpdate.get();
+        Sku skuToUpdateEntity = skuToUpdate.get();
 
-        /*
-        skuToDeleteEntity.setName(skuDto.getName());
-        skuToDeleteEntity.setDescription(skuDto.getDescription());
-        skuToDeleteEntity.setSalePrice(new Money(skuDto.getSalePrice()));
-        skuToDeleteEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
-        skuToDeleteEntity.setTaxCode(skuDto.getTaxCode());
-        skuToDeleteEntity.setActiveStartDate(skuDto.getActiveStartDate());
-        skuToDeleteEntity.setActiveEndDate(skuDto.getActiveEndDate());
+        skuToUpdateEntity = CatalogUtils.updateSkuEntityFromDto(skuToUpdateEntity, skuDto);
 
-        if(skuDto.getRetailPrice() == null) {
-            skuToDeleteEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
-        } else {
-            skuToDeleteEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        catalogService.saveSku(skuToUpdateEntity);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PATCH /products/{productId}/skus/{skuId} */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PATCH)
+    @ApiOperation(
+            value = "Partially update an existing SKU",
+            notes = "Partially updates an existing SKU with new details. It does not follow the format specified in RFC yet though",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
+            @ApiResponse(code = 404, message = "The specified product or SKU does not exist")
+    })
+    public ResponseEntity<?> partialUpdateOneSkuByProductId(
+            @PathVariable(value = "productId") Long productId,
+            @PathVariable(value = "skuId") Long skuId,
+            @RequestBody SkuDto skuDto) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+
+        Optional<Sku> skuToUpdate = product.getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findFirst();
+
+        if(!skuToUpdate.isPresent()) {
+            throw new ResourceNotFoundException("Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist");
         }
-        */
 
-        Sku skuToSaveEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
-        skuToSaveEntity.setId(skuId);
+        Sku skuToUpdateEntity = skuToUpdate.get();
 
+        skuToUpdateEntity = CatalogUtils.partialUpdateSkuEntityFromDto(skuToUpdateEntity, skuDto);
 
-        catalogService.saveSku(skuToSaveEntity);
+        catalogService.saveSku(skuToUpdateEntity);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }

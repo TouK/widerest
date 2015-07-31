@@ -226,8 +226,8 @@ public class OrderController {
             throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
         }
 
-        orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), false);
-        cart = orderService.save(cart, false);
+        orderService.addItem(cart.getId(), DtoConverters.orderItemDtoToRequest.apply(orderItemDto), true);
+        cart = orderService.save(cart, true);
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()

@@ -1,11 +1,13 @@
 package pl.touk.widerest.api.catalog;
 
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import org.broadleafcommerce.core.catalog.domain.Sku;
 
-import java.util.function.BiPredicate;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 /**
  * Created by mst on 27.07.15.
@@ -19,7 +21,85 @@ public class CatalogUtils {
         return ((Status) category).getArchived() == 'N';
     }
 
+    public static Category updateCategoryEntityFromDto(Category categoryEntity,
+                                                       CategoryDto categoryDto) {
 
+        categoryEntity.setName(categoryDto.getName());
+        categoryEntity.setDescription(categoryDto.getDescription());
+        categoryEntity.setLongDescription(categoryDto.getLongDescription());
 
+        return categoryEntity;
+    }
+
+    public static Category partialUpdateCategoryEntityFromDto(
+            Category categoryEntity, CategoryDto categoryDto) {
+
+        if (categoryDto.getName() != null) {
+            categoryEntity.setName(categoryDto.getName());
+        }
+
+        if (categoryDto.getDescription() != null) {
+            categoryEntity.setDescription(categoryDto.getDescription());
+        }
+
+        if (categoryDto.getLongDescription() != null) {
+            categoryEntity.setLongDescription(categoryDto.getLongDescription());
+        }
+
+        return categoryEntity;
+    }
+
+    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
+
+        skuEntity.setName(skuDto.getName());
+        skuEntity.setDescription(skuDto.getDescription());
+        skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
+        skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
+        skuEntity.setTaxCode(skuDto.getTaxCode());
+        skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
+        skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
+
+		/*
+		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
+		 * new one has not been provided
+		 */
+        if (skuDto.getRetailPrice() != null) {
+            skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        }
+
+        return skuEntity;
+    }
+
+    public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
+
+        if (skuDto.getName() != null) {
+            skuEntity.setName(skuDto.getName());
+        }
+
+        if (skuDto.getDescription() != null) {
+            skuEntity.setDescription(skuDto.getDescription());
+        }
+        if (skuDto.getSalePrice() != null) {
+            skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
+        }
+        if (skuDto.getQuantityAvailable() != null) {
+            skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
+        }
+        if (skuDto.getTaxCode() != null) {
+            skuEntity.setTaxCode(skuDto.getTaxCode());
+        }
+        if (skuDto.getActiveStartDate() != null) {
+            skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
+        }
+        if (skuDto.getActiveEndDate() != null) {
+            skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
+        }
+
+        if (skuDto.getRetailPrice() != null) {
+            skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        }
+
+        return skuEntity;
+    }
 
 }
