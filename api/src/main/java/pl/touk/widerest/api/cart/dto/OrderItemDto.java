@@ -3,15 +3,15 @@ package pl.touk.widerest.api.cart.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.common.money.Money;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 
-import java.math.BigDecimal;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Created by mst on 07.07.15.
@@ -22,31 +22,29 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderItemDto {
-    @ApiModelProperty
+
+    @JsonIgnore
     private long itemId;
 
+
     @ApiModelProperty(required = true)
-    private Integer quantity;
-
-    private String productName;
-
-    private ProductOptionDto options;
-
-    private BigDecimal price;
-
-    private Map attributes;
-
-    private long productId;
+    private int quantity = 1;
 
     @ApiModelProperty(required = true)
     private long skuId;
 
-    private String description;
+    /* (mst) do we need attributes when dealing only with SKUs? */
+    @ApiModelProperty
+    private Map attributes;
 
-    protected Money salePrice;
+    //private String productName;
 
-    protected Money retailPrice;
+    //private ProductOptionDto options;
 
-    // TODO: Bundles and all that other bs
+    //private BigDecimal price;
+
+
+    //private long productId;
+
 
 }

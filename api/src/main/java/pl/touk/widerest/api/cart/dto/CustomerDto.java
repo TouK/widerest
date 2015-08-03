@@ -1,21 +1,24 @@
 package pl.touk.widerest.api.cart.dto;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-import lombok.experimental.Builder;
-import org.broadleafcommerce.profile.core.domain.Address;
 
 import java.util.List;
 import java.util.Locale;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Builder;
 
 /**
  * Created by mst on 07.07.15.
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @ApiModel
 public class CustomerDto {
     private Long id;
@@ -27,13 +30,6 @@ public class CustomerDto {
     @ApiModelProperty
     private String lastName;
 
-    /* ChallengeQuestion type ? */
-    private String challengeQuestion;
-
-    /* ignotr ? */
-    private String challengeAnswer;
-
-    private Boolean passwordChangeRequired = false;
 
     @ApiModelProperty
     private Locale locale;
@@ -43,9 +39,7 @@ public class CustomerDto {
     private Boolean registered = false;
     @ApiModelProperty
     private Boolean deactivaed = false;
-    @ApiModelProperty
-    private Boolean receiveEmail = false;
-
+    
     /* customer attributes */
 
     @ApiModelProperty

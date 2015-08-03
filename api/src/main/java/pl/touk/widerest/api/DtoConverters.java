@@ -17,7 +17,6 @@ import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
-import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
@@ -37,12 +36,15 @@ import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.*;
-import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
+import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
+import org.broadleafcommerce.core.order.domain.DiscreteOrderItemImpl;
+import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderImpl;
+import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.domain.OrderItemImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
-import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.rating.domain.RatingDetail;
 import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
 import org.broadleafcommerce.core.rating.domain.ReviewDetail;
@@ -55,8 +57,13 @@ import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 
 import pl.touk.widerest.api.cart.CartUtils;
-import pl.touk.widerest.api.cart.dto.*;
-import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
+import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
+import pl.touk.widerest.api.cart.dto.CustomerDto;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.OrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.dto.BundleDto;
@@ -73,11 +80,6 @@ public class DtoConverters {
     @Resource(name = "blCatalogService")
     private static CatalogService catalogService;
 
-    @Resource(name = "blFulfillmentGroupService")
-    private static FulfillmentGroupService fulfillmentGroupService;
-
-    @Resource(name = "wdfulfilmentService")
-    private static FulfilmentServiceProxy fulfilmentServiceProxy;
 
     private static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
@@ -397,11 +399,9 @@ public class DtoConverters {
 
         CustomerDto customerDto = CustomerDto.builder().id(entity.getId()).firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
-                        // .challengeAnswer(entity.getChallengeAnswer())
-                .registered(entity.isRegistered()).receiveEmail(entity.isReceiveEmail())
-                        // .challengeQuestion(entity.getChallengeQuestion().getQuestion())
+
                 .deactivaed(entity.isDeactivated())
-                .passwordChangeRequired(entity.isPasswordChangeRequired()).addresses(entity.getCustomerAddresses()
+                .addresses(entity.getCustomerAddresses()
                         .stream().map(DtoConverters.customerAddressEntityToDto).collect(Collectors.toList()))
                 .username(entity.getUsername()).build();
 
@@ -415,9 +415,7 @@ public class DtoConverters {
         customerEntity.setId(dto.getId());
         customerEntity.setFirstName(dto.getFirstName());
         customerEntity.setLastName(dto.getLastName());
-        customerEntity.setChallengeAnswer(dto.getChallengeAnswer());
         customerEntity.setRegistered(dto.getRegistered());
-        customerEntity.setReceiveEmail(dto.getReceiveEmail());
         customerEntity.setUsername(dto.getUsername());
         customerEntity.setCustomerAddresses(
                 dto.getAddresses().stream().map(DtoConverters.customerAddressDtoToEntity).collect(Collectors.toList()));
@@ -489,7 +487,7 @@ public class DtoConverters {
                 .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(entity.getTotal().getAmount())
                 .fulfillment(CartUtils.getFulfilmentOption(entity).getLongDescription())
-                        .build();
+                .build();
 		/*
 		 * orderDto.add(linkTo(methodOn(OrderController.class).(entity.getId()))
 		 * .withRel()); orderDto.add(linkTo(methodOn(OrderController.class).
@@ -542,11 +540,11 @@ public class DtoConverters {
 
     public static Function<OrderItemDto, OrderItem> orderItemDtoToEntity = dto -> {
         OrderItem orderItemEntity = new OrderItemImpl();
-        orderItemEntity.setName(dto.getProductName());
-        orderItemEntity.setRetailPrice(dto.getRetailPrice());
-        orderItemEntity.setSalePrice(dto.getSalePrice());
+        //orderItemEntity.setName(dto.getProductName());
+        //orderItemEntity.setRetailPrice(dto.getRetailPrice());
+        //orderItemEntity.setSalePrice(dto.getSalePrice());
         orderItemEntity.setQuantity(dto.getQuantity());
-        orderItemEntity.setName(dto.getProductName());
+        //orderItemEntity.setName(dto.getProductName());
 
 
         return orderItemEntity;
@@ -554,8 +552,8 @@ public class DtoConverters {
     };
 
     public static Function<OrderItem, OrderItemDto> orderItemEntityToDto = entity -> {
-        OrderItemDto orderItemDto = OrderItemDto.builder().itemId(entity.getId()).salePrice(entity.getSalePrice())
-                .retailPrice(entity.getRetailPrice()).quantity(entity.getQuantity()).productName(entity.getName())
+        OrderItemDto orderItemDto = OrderItemDto.builder().itemId(entity.getId())//.salePrice(entity.getSalePrice())
+               /* .retailPrice(entity.getRetailPrice())*/.quantity(entity.getQuantity())//.productName(entity.getName())
                 .build();
 
         return orderItemDto;
@@ -643,66 +641,6 @@ public class DtoConverters {
     /******************************** FULFILLMENTS ********************************/
 
 
-    public static Function<Order, FulfillmentDto> createFulfillmentDto = order -> {
-        FulfillmentDto fulfillmentDto = new FulfillmentDto();
-
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
-
-        if(fulfillmentGroup != null) {
-            if(fulfillmentGroup.getAddress() != null) {
-                fulfillmentDto.setAddress(DtoConverters.addressEntityToDto.apply(fulfillmentGroup.getAddress()));
-            }
-
-            if(fulfillmentGroup.getFulfillmentOption() != null) {
-                fulfillmentDto.setSelectedOptionId(fulfillmentGroup.getFulfillmentOption().getId());
-            }
-
-            if(fulfillmentGroup.getFulfillmentPrice() != null) {
-                fulfillmentDto.setPrice(fulfillmentGroup.getFulfillmentPrice().getAmount());
-            }
-        } else {
-            fulfillmentDto.setPrice(BigDecimal.ZERO);
-        }
-
-        try {
-            Map<? extends FulfillmentOption, Money> options = fulfilmentServiceProxy.getFulfillmentOptionsWithPricesAvailableForProductsInCart(order);
-
-            if(options != null) {
-                /* TODO: (mst) Implement options |*/
-            }
-
-        } catch (FulfillmentPriceException e) {
-            e.printStackTrace();
-        }
-
-
-
-
-        /*
-        Map<? extends FulfillmentOption, Money> options = cartService.getFulfillmentOptionsWithPricesAvailableForProductsInCart(cart);
-        if (options != null) {
-            fulfillmentDTO.setOptions(Collections2.transform(
-                    options.entrySet(),
-                    new Function<Map.Entry<? extends FulfillmentOption, Money>, FulfillmentOptionDto>() {
-                        @Nullable
-                        @Override
-                        public FulfillmentOptionDto apply(@Nullable Map.Entry<? extends FulfillmentOption, Money> input) {
-                            FulfillmentOptionDto option = new FulfillmentOptionDto();
-                            option.setDescription(input.getKey().getLongDescription());
-                            option.setName(input.getKey().getName());
-                            option.setId(input.getKey().getId());
-                            option.setPrice(input.getValue().getAmount());
-                            return option;
-                        }
-                    }
-            ));
-        }
-         */
-
-
-
-        return fulfillmentDto;
-    };
 
 
 

@@ -1,13 +1,16 @@
 package pl.touk.widerest.api.cart.controllers;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -15,10 +18,14 @@ import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
+import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
+import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
+import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
+import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
@@ -28,19 +35,24 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
+import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 
@@ -68,6 +80,12 @@ public class OrderController {
     @Resource(name = "wdOrderService")
     protected OrderServiceProxy orderServiceProxy;
 
+    @Resource(name = "wdfulfilmentService")
+    protected FulfilmentServiceProxy fulfillmentServiceProxy;
+
+    @Resource(name = "blAddressService")
+    private AddressService addressService;
+
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
     /* GET /orders */
@@ -80,7 +98,7 @@ public class OrderController {
             response = OrderDto.class,
             responseContainer = "List")
     @ApiResponses(value =
-            @ApiResponse(code = 200, message = "Successful retrieval of orders list")
+    @ApiResponse(code = 200, message = "Successful retrieval of orders list")
     )
     public List<OrderDto> getOrders(@AuthenticationPrincipal UserDetails userDetails,
                                     @RequestParam(value="status", required=false) String status) {
@@ -99,7 +117,7 @@ public class OrderController {
 
         // Shouldn't go there, but in case it was unauthorized return null
         return null;
-}
+    }
 
     /* GET /orders/{orderId} */
     @Transactional
@@ -212,8 +230,13 @@ public class OrderController {
 
 
         OrderItemRequestDTO req = new OrderItemRequestDTO();
+
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
+
+        if(orderItemDto.getAttributes() != null) {
+
+        }
 
 
         orderService.addItem(cart.getId(), req, true);
@@ -409,6 +432,76 @@ public class OrderController {
 
     }
 
+    /* PUT /orders/items/{itemId}/quantity */
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/items/{itemId}/quantity", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update item's quantity",
+            notes = "Updates quantity of a specific item placed in order",
+            response = DiscreteOrderItemDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Quantity number successfully updated"),
+            @ApiResponse(code = 404, message = "The specified order or item does not exist"),
+            @ApiResponse(code = 409, message = "Wrong quantity value")
+    })
+    public ResponseEntity<?> updateItemQuantityInOrder (
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable(value = "itemId") Long itemId,
+            @PathVariable(value = "orderId") Long orderId,
+            @RequestBody Integer quantity) throws UpdateCartException, RemoveFromCartException {
+
+
+        if(quantity <= 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
+        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+        if(cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+            throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
+        }
+
+
+        OrderItemRequestDTO orderItemRequestDto = new OrderItemRequestDTO();
+        orderItemRequestDto.setQuantity(quantity);
+        orderItemRequestDto.setOrderItemId(itemId);
+    	
+        /* TODO: (mst) do we need to recalculate the price here? */
+        orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PUT /orders/{orderId}/fulfillment/selectedOption */
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillment/selectedOption", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update order's fulfillment option",
+            notes = "Updates the fulfillment option of the specified order",
+            response = DiscreteOrderItemDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Fulfillment Option successfully updated"),
+            @ApiResponse(code = 404, message = "The specified order or item does not exist"),
+            @ApiResponse(code = 409, message = "Wrong fulfillmentOption value")
+    })
+    public ResponseEntity<?> updatefulfillmentOptionInOrder (
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable(value = "orderId") Long orderId,
+            @RequestBody Long fulfillmentOptionId) throws PricingException {
+
+    	/* TODO: (mst) fulfillmentOptionId validation */
+
+        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+        fulfillmentServiceProxy.updateFulfillmentOption(order, fulfillmentOptionId);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+
 
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
@@ -417,13 +510,56 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
 
-       // DtoConverters d = new DtoConverters();
+        // DtoConverters d = new DtoConverters();
 
-        return DtoConverters.createFulfillmentDto.apply(getProperCart(userDetails, orderId));
+        return fulfillmentServiceProxy.createFulfillmentDto.apply(getProperCart(userDetails, orderId));
 
 
     }
 
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.POST)
+    public void setOrderFulfilmentAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable(value = "orderId") Long orderId,
+            @RequestBody AddressDto addressDto) throws PricingException {
+
+        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+
+        Address shippingAddress = addressService.create();
+        shippingAddress.setFirstName(addressDto.getFirstName());
+        shippingAddress.setLastName(addressDto.getLastName());
+        shippingAddress.setCity(addressDto.getCity());
+        shippingAddress.setPostalCode(addressDto.getPostalCode());
+        shippingAddress.setCompanyName(addressDto.getCompanyName());
+        shippingAddress.setAddressLine1(addressDto.getAddressLine1());
+       
+       /* TODO: (mst) Country! */
+
+        fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
+
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.GET)
+    public AddressDto getOrderFulfilmentAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable(value = "orderId") Long orderId) {
+
+        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+        return Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentAddress(order))
+                .map(DtoConverters.addressEntityToDto)
+                .get();
+    }
+
+    
 
     /* GET /orders/{id}/payments */
     /*
