@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -224,7 +225,10 @@ public class OrderController {
 
         Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
-        if(catalogService.findSkuById(orderItemDto.getSkuId()) == null) {
+
+        Sku productsSku = catalogService.findSkuById(orderItemDto.getSkuId());
+
+        if(productsSku == null) {
             throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
         }
 
@@ -233,6 +237,8 @@ public class OrderController {
 
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
+
+        req.setProductId(productsSku.getProduct().getId());
 
         if(orderItemDto.getAttributes() != null) {
 

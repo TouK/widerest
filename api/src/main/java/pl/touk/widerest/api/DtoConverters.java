@@ -52,6 +52,7 @@ import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 
 import pl.touk.widerest.api.cart.CartUtils;
+import pl.touk.widerest.api.cart.controllers.CustomerController;
 import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
@@ -393,13 +394,20 @@ public class DtoConverters {
     /******************************** CUSTOMER ********************************/
     public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
 
-        CustomerDto customerDto = CustomerDto.builder().id(entity.getId()).firstName(entity.getFirstName())
+        CustomerDto customerDto = CustomerDto.builder()
+                .customerId(entity.getId())
+                .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
-
                 .deactivaed(entity.isDeactivated())
-                .addresses(entity.getCustomerAddresses()
-                        .stream().map(DtoConverters.customerAddressEntityToDto).collect(Collectors.toList()))
-                .username(entity.getUsername()).build();
+                .addresses(entity.getCustomerAddresses().stream()
+                        .map(DtoConverters.customerAddressEntityToDto)
+                        .collect(Collectors.toList()))
+                .username(entity.getUsername())
+                .build();
+
+        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(entity.getId())).withSelfRel());
+
+
 
         return customerDto;
     };
@@ -408,13 +416,14 @@ public class DtoConverters {
 
         Customer customerEntity = new CustomerImpl();
 
-        customerEntity.setId(dto.getId());
+        customerEntity.setId(dto.getCustomerId());
         customerEntity.setFirstName(dto.getFirstName());
         customerEntity.setLastName(dto.getLastName());
         customerEntity.setRegistered(dto.getRegistered());
         customerEntity.setUsername(dto.getUsername());
-        customerEntity.setCustomerAddresses(
-                dto.getAddresses().stream().map(DtoConverters.customerAddressDtoToEntity).collect(Collectors.toList()));
+        customerEntity.setCustomerAddresses(dto.getAddresses().stream()
+                .map(DtoConverters.customerAddressDtoToEntity)
+                .collect(Collectors.toList()));
 
         return customerEntity;
     };
@@ -424,9 +433,16 @@ public class DtoConverters {
     /******************************** ADDRESS ********************************/
 
     public static Function<Address, AddressDto> addressEntityToDto = entity -> {
-        AddressDto addressDto = AddressDto.builder().addressLine1(entity.getAddressLine1())
-                .addressLine2(entity.getAddressLine2()).addressLine3(entity.getAddressLine3()).city(entity.getCity())
-                .postalCode(entity.getPostalCode()).companyName(entity.getCompanyName()).county(entity.getCounty())
+        AddressDto addressDto = AddressDto.builder()
+                .addressLine1(entity.getAddressLine1())
+                .addressLine2(entity.getAddressLine2())
+                .addressLine3(entity.getAddressLine3())
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .city(entity.getCity())
+                .postalCode(entity.getPostalCode())
+                .companyName(entity.getCompanyName())
+                .county(entity.getCounty())
                 .build();
 
         return addressDto;
@@ -438,10 +454,13 @@ public class DtoConverters {
         addressEntity.setAddressLine1(dto.getAddressLine1());
         addressEntity.setAddressLine2(dto.getAddressLine2());
         addressEntity.setAddressLine3(dto.getAddressLine3());
+        addressEntity.setFirstName(dto.getFirstName());
+        addressEntity.setLastName(dto.getLastName());
         addressEntity.setCity(dto.getCity());
         addressEntity.setPostalCode(dto.getPostalCode());
         addressEntity.setCompanyName(dto.getCompanyName());
         addressEntity.setCounty(dto.getCounty());
+
 
         return addressEntity;
     };
@@ -472,7 +491,8 @@ public class DtoConverters {
 
     /******************************** ORDER ********************************/
     public static Function<Order, OrderDto> orderEntityToDto = entity -> {
-        OrderDto orderDto = OrderDto.builder().orderId(entity.getId())
+        OrderDto orderDto = OrderDto.builder()
+                .orderId(entity.getId())
                 .orderNumber(entity.getOrderNumber())
                 .status(entity.getStatus().getType())
                 .orderPaymentDto(entity
@@ -570,6 +590,7 @@ public class DtoConverters {
 
     /******************************** DISCRETEORDERITEM ********************************/
 
+    /*
     public static Function<DiscreteOrderItemDto, DiscreteOrderItem> discreteIrderItemDtoToEntity = dto -> {
         DiscreteOrderItem orderItemEntity = new DiscreteOrderItemImpl();
         orderItemEntity.setName(dto.getProductName());
@@ -577,12 +598,14 @@ public class DtoConverters {
         orderItemEntity.setSalePrice(dto.getSalePrice());
         orderItemEntity.setQuantity(dto.getQuantity());
 
+
+
         // TODO: czy nulla wywali?
         orderItemEntity.setSku(catalogService.findSkuById(dto.getSkuId()));
 
         return orderItemEntity;
 
-    };
+    };*/
 
     public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
         Money errCode = new Money(BigDecimal.valueOf(-1337));
@@ -593,12 +616,15 @@ public class DtoConverters {
                 .retailPrice(entity.getRetailPrice())
                 .quantity(entity.getQuantity())
                 .productName(entity.getName())
+                .productId(entity.getProduct().getId())
                 .skuId(sku.getId())
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(entity.getTotalPrice()).orElse(errCode).getAmount())
                 .build();
 
         orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, entity.getId(), entity.getOrder().getId())).withSelfRel());
+
+        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getProduct().getId())).withRel("product"));
 
         return orderItemDto;
     };
