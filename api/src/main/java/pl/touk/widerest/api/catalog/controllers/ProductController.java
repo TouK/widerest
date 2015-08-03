@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import pl.touk.widerest.api.cart.service.SkuServiceProxy;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
@@ -50,6 +51,9 @@ public class ProductController {
     @Resource(name = "blRatingService")
     protected RatingService ratingService;
 
+    @Resource(name = "wdSkuService")
+    protected SkuServiceProxy skuServiceProxy;
+
     /* GET /products */
     @Transactional
     @PreAuthorize("permitAll")
@@ -65,7 +69,7 @@ public class ProductController {
     public List<ProductDto> getAllProducts() {
         return catalogService.findAllProducts().stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(DtoConverters.productEntityToDto)
+                .map(skuServiceProxy.productEntityToDto)
                 .collect(Collectors.toList());
     }
 
@@ -187,7 +191,7 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(DtoConverters.productEntityToDto)
+                .map(skuServiceProxy.productEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
@@ -350,7 +354,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .map(DtoConverters.skuEntityToDto)
+                .map(skuServiceProxy.skuEntityToDto)
                 .collect(Collectors.toList());
 
     }
@@ -419,7 +423,7 @@ public class ProductController {
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
-                .map(DtoConverters.skuEntityToDto)
+                .map(skuServiceProxy.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
@@ -442,7 +446,7 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(Product::getDefaultSku)
-                .map(DtoConverters.skuEntityToDto)
+                .map(skuServiceProxy.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
