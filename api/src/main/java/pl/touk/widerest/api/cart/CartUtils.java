@@ -14,7 +14,8 @@ import java.util.Optional;
 public class CartUtils {
 
     public static FulfillmentOption getFulfilmentOption(Order order) {
-        return Optional.ofNullable(getFirstShippableFulfilmentGroup(order).getFulfillmentOption())
+        return Optional.ofNullable(getFirstShippableFulfilmentGroup(order))
+                .map(FulfillmentGroup::getFulfillmentOption)
                 .orElse(null);
 
         /*

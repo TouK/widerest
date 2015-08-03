@@ -36,12 +36,7 @@ import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
-import org.broadleafcommerce.core.order.domain.DiscreteOrderItemImpl;
-import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
-import org.broadleafcommerce.core.order.domain.OrderItem;
-import org.broadleafcommerce.core.order.domain.OrderItemImpl;
+import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
@@ -57,6 +52,7 @@ import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 
 import pl.touk.widerest.api.cart.CartUtils;
+import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
@@ -486,13 +482,24 @@ public class DtoConverters {
                         .collect(Collectors.toList()))
                 .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(entity.getTotal().getAmount())
-                .fulfillment(CartUtils.getFulfilmentOption(entity).getLongDescription())
+                .fulfillment(Optional.ofNullable(CartUtils.getFulfilmentOption(entity))
+                        .map(FulfillmentOption::getLongDescription)
+                        .orElse(null))
                 .build();
 		/*
 		 * orderDto.add(linkTo(methodOn(OrderController.class).(entity.getId()))
 		 * .withRel()); orderDto.add(linkTo(methodOn(OrderController.class).
 		 * getAllItemsInOrder(entity.getId())).withRel("items"));
 		 */
+
+        orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
+
+        /* link to items placed in an order */
+        orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, entity.getId())).withRel("items"));
+
+        /* link to fulfillment */
+        orderDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, entity.getId())).withRel("fulfillment"));
+
         return orderDto;
     };
 
@@ -589,9 +596,9 @@ public class DtoConverters {
                 .skuId(sku.getId())
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(entity.getTotalPrice()).orElse(errCode).getAmount())
-
-                        // .price(Optional.ofNullable(sku.getPrice()).orElse(errCode).getAmount())
                 .build();
+
+        orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, entity.getId(), entity.getOrder().getId())).withSelfRel());
 
         return orderItemDto;
     };

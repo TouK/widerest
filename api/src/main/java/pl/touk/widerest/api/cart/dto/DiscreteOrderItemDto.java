@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.broadleafcommerce.common.money.Money;
+import org.springframework.hateoas.ResourceSupport;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 
 import java.math.BigDecimal;
@@ -19,8 +21,10 @@ import java.util.Map;
 @ApiModel
 @NoArgsConstructor
 @AllArgsConstructor
-public class DiscreteOrderItemDto {
+public class DiscreteOrderItemDto extends ResourceSupport {
+
     @ApiModelProperty
+    @JsonIgnore
     private long itemId;
 
     @ApiModelProperty(required = true)
@@ -51,5 +55,6 @@ public class DiscreteOrderItemDto {
     protected Money salePrice;
     @ApiModelProperty
     protected Money retailPrice;
+
 
 }
