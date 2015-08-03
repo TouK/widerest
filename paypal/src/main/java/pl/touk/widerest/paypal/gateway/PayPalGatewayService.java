@@ -62,17 +62,15 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
                     secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
-            List<Transaction> transactions = new ArrayList<Transaction>();
-            Transaction transaction = null;
-            Amount amount = null;
+            List<Transaction> transactions = new ArrayList<>();
 
-            transaction = new Transaction();
+
+            Transaction transaction = new Transaction();
             ItemList itemList = new ItemList();
             List<Item> utilListItem = new ArrayList<>();
             Item temp = null;
             for(LineItemDTO item : payPalRequest.getWrapped().getLineItems()) {
                 temp = new Item();
-                //temp.setName(item.getName());
                 temp.setName(item.getName());
                 temp.setQuantity(item.getQuantity());
                 temp.setPrice(item.getAmount());
@@ -80,12 +78,13 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
                 utilListItem.add(temp);
             }
 
+
             Details details = new Details();
             details.setShipping(payPalRequest.getShippingTotal());
             details.setSubtotal(payPalRequest.getOrderSubtotal());
-            details.setTax(String.valueOf(0));
+            details.setTax("0.00");
 
-            amount = new Amount();
+            Amount amount = new Amount();
             amount.setCurrency(payPalRequest.getOrderCurrencyCode());
             amount.setTotal(payPalRequest.getTransactionTotal());
             amount.setDetails(details);
@@ -95,7 +94,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             itemList.setItems(utilListItem);
 
 
-
+            transaction.setDescription("Examplary Transaction Description");
             transaction.setAmount(amount);
             transaction.setItemList(itemList);
             transactions.add(transaction);
