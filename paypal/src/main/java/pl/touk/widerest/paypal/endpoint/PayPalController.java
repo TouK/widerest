@@ -110,6 +110,7 @@ public class PayPalController {
                 orderToPaymentRequestDTOService.translateOrder(order)
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
                         .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
+                        .additionalField(PayPalRequestDto.SHIPPING_COST, order.getTotalFulfillmentCharges())
                         .orderDescription("TODO");
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);

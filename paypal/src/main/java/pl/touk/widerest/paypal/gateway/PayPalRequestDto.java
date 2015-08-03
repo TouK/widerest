@@ -16,7 +16,7 @@ public class PayPalRequestDto {
     @Getter
     private PaymentRequestDTO wrapped;
 
-    private final String SHIPPING_COST = "SHIPCOST";
+    public final static String SHIPPING_COST = "SHIPCOST";
 
     PayPalRequestDto(PaymentRequestDTO wrapped) {
         this.wrapped = wrapped;
