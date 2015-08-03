@@ -16,6 +16,8 @@ public class PayPalRequestDto {
     @Getter
     private PaymentRequestDTO wrapped;
 
+    private final String SHIPPING_COST = "SHIPCOST";
+
     PayPalRequestDto(PaymentRequestDTO wrapped) {
         this.wrapped = wrapped;
     }
@@ -75,6 +77,14 @@ public class PayPalRequestDto {
 
     public String getPaymentId() {
         return wrapped.getAdditionalFields().get(PayPalMessageConstants.PAYMENT_ID).toString();
+    }
+
+    public void setShippingTotal(String cost) {
+        wrapped = wrapped.additionalField(SHIPPING_COST, cost);
+    }
+
+    public String getShippingTotal() {
+        return wrapped.getAdditionalFields().get(SHIPPING_COST).toString();
     }
 
     public Object getOrderId() {

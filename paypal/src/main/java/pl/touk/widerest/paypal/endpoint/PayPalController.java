@@ -127,9 +127,7 @@ public class PayPalController {
         //                .build().toUri());
 
         responseHeader.setLocation(URI.create(redirectURI));
-        //return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.OK);
+        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
     }
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
