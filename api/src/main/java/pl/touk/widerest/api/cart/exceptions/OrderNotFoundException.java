@@ -1,10 +1,13 @@
 package pl.touk.widerest.api.cart.exceptions;
 
 import org.broadleafcommerce.core.order.domain.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Created by mst on 15.07.15.
  */
+@ResponseStatus(value = HttpStatus.NOT_FOUND)
 public class OrderNotFoundException extends RuntimeException {
 
     public OrderNotFoundException() {

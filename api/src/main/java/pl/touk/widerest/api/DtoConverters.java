@@ -399,7 +399,8 @@ public class DtoConverters {
     /******************************** PAYMENTINFO ********************************/
 
     public static Function<OrderPayment, OrderPaymentDto> orderPaymentEntityToDto = entity -> {
-        OrderPaymentDto orderPaymentDto = OrderPaymentDto.builder().amount(entity.getAmount())
+        OrderPaymentDto orderPaymentDto = OrderPaymentDto.builder()
+                .amount(entity.getAmount())
                 .billingAddress(DtoConverters.addressEntityToDto.apply(entity.getBillingAddress()))
                 .orderId(entity.getOrder().getId()).paymentId(entity.getId())
                 .referenceNumber(entity.getReferenceNumber()).type(entity.getType().getType()).build();
@@ -423,50 +424,7 @@ public class DtoConverters {
 
     /******************************** PAYMENTINFO ********************************/
 
-    /******************************** ORDERITEM ********************************/
-
-    public static Function<OrderItemDto, OrderItem> orderItemDtoToEntity = dto -> {
-        OrderItem orderItemEntity = new OrderItemImpl();
-        //orderItemEntity.setName(dto.getProductName());
-        //orderItemEntity.setRetailPrice(dto.getRetailPrice());
-        //orderItemEntity.setSalePrice(dto.getSalePrice());
-        orderItemEntity.setQuantity(dto.getQuantity());
-        //orderItemEntity.setName(dto.getProductName());
-
-
-        return orderItemEntity;
-
-    };
-
-    public static Function<OrderItem, OrderItemDto> orderItemEntityToDto = entity -> {
-        OrderItemDto orderItemDto = OrderItemDto.builder().itemId(entity.getId())//.salePrice(entity.getSalePrice())
-               /* .retailPrice(entity.getRetailPrice())*/.quantity(entity.getQuantity())//.productName(entity.getName())
-                .build();
-
-        return orderItemDto;
-    };
-
-    /******************************** ORDERITEM ********************************/
-
     /******************************** DISCRETEORDERITEM ********************************/
-
-    /*
-    public static Function<DiscreteOrderItemDto, DiscreteOrderItem> discreteIrderItemDtoToEntity = dto -> {
-        DiscreteOrderItem orderItemEntity = new DiscreteOrderItemImpl();
-        orderItemEntity.setName(dto.getProductName());
-        orderItemEntity.setRetailPrice(dto.getRetailPrice());
-        orderItemEntity.setSalePrice(dto.getSalePrice());
-        orderItemEntity.setQuantity(dto.getQuantity());
-
-
-
-        // TODO: czy nulla wywali?
-        orderItemEntity.setSku(catalogService.findSkuById(dto.getSkuId()));
-
-        return orderItemEntity;
-
-    };*/
-
     public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
         Money errCode = new Money(BigDecimal.valueOf(-1337));
         Sku sku = entity.getSku();

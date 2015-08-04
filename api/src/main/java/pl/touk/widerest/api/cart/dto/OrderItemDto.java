@@ -36,15 +36,4 @@ public class OrderItemDto {
     /* (mst) do we need attributes when dealing only with SKUs? */
     @ApiModelProperty
     private Map attributes;
-
-    //private String productName;
-
-    //private ProductOptionDto options;
-
-    //private BigDecimal price;
-
-
-    //private long productId;
-
-
 }

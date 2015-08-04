@@ -51,6 +51,7 @@ import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
+import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
@@ -145,7 +146,7 @@ public class OrderController {
     @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
-            value = "Add a new order",
+            value = "Create a new order",
             notes = "Adds a new order. A single, authorized customer can have multiple orders. " +
                     "Returns an URL to the newly created order in the Location field of the HTTP response header",
             response = ResponseEntity.class)
@@ -213,7 +214,7 @@ public class OrderController {
     @ApiOperation(
             value = "Add a new item",
             notes = "Adds a new item to the specified order",
-            response = Void.class)
+            response = ResponseEntity.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Specified product successfully added"),
             @ApiResponse(code = 404, message = "The specified order does not exist")
@@ -484,15 +485,15 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment/selectedOption", method = RequestMethod.PUT)
     @ApiOperation(
-            value = "Update order's fulfillment option",
-            notes = "Updates the fulfillment option of the specified order",
-            response = DiscreteOrderItemDto.class)
+            value = "Select fulfillment option",
+            notes = "Updates the selected fulfillment option of the specified order",
+            response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Fulfillment Option successfully updated"),
+            @ApiResponse(code = 200, message = "Fulfillment Option successfully selected/updated"),
             @ApiResponse(code = 404, message = "The specified order or item does not exist"),
-            @ApiResponse(code = 409, message = "Wrong fulfillmentOption value")
+            @ApiResponse(code = 409, message = "The cart is empty or selected Fulfillment Option value does not exist")
     })
-    public ResponseEntity<?> updatefulfillmentOptionInOrder (
+    public ResponseEntity<?> updateSelectedFulfillmentOption (
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId,
             @RequestBody Long fulfillmentOptionId) throws PricingException {
@@ -501,6 +502,10 @@ public class OrderController {
 
         Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
+
+        if(order.getItemCount() <= 0) {
+            throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");
+        }
 
         fulfillmentServiceProxy.updateFulfillmentOption(order, fulfillmentOptionId);
 

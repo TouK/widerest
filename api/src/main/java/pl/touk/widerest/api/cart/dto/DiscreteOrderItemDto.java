@@ -53,6 +53,7 @@ public class DiscreteOrderItemDto extends ResourceSupport {
 
     @ApiModelProperty
     protected Money salePrice;
+
     @ApiModelProperty
     protected Money retailPrice;
 

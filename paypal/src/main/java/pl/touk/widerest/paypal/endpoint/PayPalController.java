@@ -224,15 +224,19 @@ public class PayPalController {
 
     private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
         for (OrderItem item : order.getOrderItems()) {
-            String name = item.getName();
-            /*
+            String name = null;
+
+            /* (mst) Previously, there was SKU's Description used here to set item's name
+                    but because it is not required in our implementation, I chose to use SKU's Name instead */
+
             if (item instanceof BundleOrderItem) {
-                name = ((BundleOrderItem) item).getSku().getDescription();
+                name = ((BundleOrderItem) item).getSku().getName();
             } else if (item instanceof DiscreteOrderItem) {
-                name = ((DiscreteOrderItem) item).getSku().getDescription();
+                name = ((DiscreteOrderItem) item).getSku().getName();
             } else {
                 name = item.getName();
-            }*/
+            }
+
             String category = item.getCategory() == null ? null : item.getCategory().getName();
             paymentRequest = paymentRequest
                     .lineItem()

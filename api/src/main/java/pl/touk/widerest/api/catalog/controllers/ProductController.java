@@ -475,6 +475,7 @@ public class ProductController {
         Sku currentDefaultSKU = product.getDefaultSku();
 
         Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(defaultSkuDto);
+
         newSkuEntity.setProduct(product);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
