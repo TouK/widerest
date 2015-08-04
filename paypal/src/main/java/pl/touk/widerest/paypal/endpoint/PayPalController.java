@@ -16,7 +16,10 @@ import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.payment.domain.OrderPayment;
+import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.web.api.BroadleafWebServicesException;
 import org.broadleafcommerce.core.web.api.wrapper.OrderWrapper;
@@ -31,6 +34,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pl.touk.widerest.paypal.exception.FulfillmentOptionNotSetException;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 import pl.touk.widerest.paypal.gateway.PayPalRequestDto;
@@ -58,6 +62,12 @@ public class PayPalController {
 
     @Resource(name="blCheckoutService")
     protected CheckoutService checkoutService;
+
+    @Resource(name = "blFulfillmentGroupService")
+    private FulfillmentGroupService fulfillmentGroupService;
+
+    @Resource(name = "blPaymentGatewayCheckoutService")
+    private PaymentGatewayCheckoutService paymentGatewayCheckoutService;
 
     private PaymentGatewayConfigurationService configurationService;
     private PaymentGatewayHostedService hostedService;
@@ -93,15 +103,28 @@ public class PayPalController {
             throw new IllegalAccessError("Access Denied");
         }
 
+        if(fulfillmentGroupService.getFirstShippableFulfillmentGroup(order).getFulfillmentOption()
+            == null) {
+            throw new FulfillmentOptionNotSetException("");
+        }
+
         String SELF_URL = strapRootURL(request.getRequestURL().toString()) + "/orders/"+orderId+"/paypal";
 
         String returnUrl = SELF_URL+"/return";
         String cancelUrl = SELF_URL+"/cancel";
 
-        BroadleafCurrency bCurrency = new BroadleafCurrencyImpl();
-        bCurrency.setCurrencyCode("USD");
 
-        order.setCurrency(bCurrency);
+        // Assuming the order has items in one currency, just get one and get currency
+        if(order.getCurrency() == null) {
+            order.setCurrency(
+                Optional.ofNullable(
+                    Optional.ofNullable(order.getDiscreteOrderItems().get(0))
+                            .orElseThrow(() -> new ResourceNotFoundException(""))
+                            .getSku().getCurrency()
+                ).orElse(order.getLocale().getDefaultCurrency())
+            );
+        }
+
 
         //PaymentRequestDTO paymentRequestDTO = orderToPaymentRequestDTOService.translateOrder(order);
 
@@ -132,6 +155,7 @@ public class PayPalController {
     }
 
     @RequestMapping(value = "/return", method = RequestMethod.GET)
+    @Transactional
     public ResponseEntity handleReturn(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -148,20 +172,23 @@ public class PayPalController {
 
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
                 .orElseThrow(() -> new ResourceNotFoundException(""));
-        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
-            throw new IllegalAccessError("Access Denied");
-        }
+//        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
+//            throw new IllegalAccessError("Access Denied");
+//        }
 
         // get data from link
         PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
 
-        // create request
+        // create orderpayment
+        paymentGatewayCheckoutService.applyPaymentToOrder(payPalResponse, configurationService.getConfiguration());
+
 
         // strange if it ever happens
         if(payPalResponse.getOrderId() != null && Long.valueOf(payPalResponse.getOrderId()) != order.getId()) {
             throw new IllegalAccessError("Wrong request");
         }
 
+        // create request
         PayPalRequestDto requestDTO = new PayPalRequestDto();
         requestDTO.setOrderId(orderId.toString());
         requestDTO.setPayerId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYER_ID));

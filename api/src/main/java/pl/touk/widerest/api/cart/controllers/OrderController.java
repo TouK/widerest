@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -90,6 +91,9 @@ public class OrderController {
     @Resource(name = "blAddressService")
     private AddressService addressService;
 
+    @Resource(name = "blLocaleService")
+    private LocaleService localeService;
+
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
     /* GET /orders */
@@ -166,6 +170,7 @@ public class OrderController {
         }
 
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
+        cart.setLocale(localeService.findDefaultLocale());
 
         HttpHeaders responseHeader = new HttpHeaders();
 

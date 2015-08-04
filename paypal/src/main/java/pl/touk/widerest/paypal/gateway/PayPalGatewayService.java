@@ -89,10 +89,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             amount.setTotal(payPalRequest.getTransactionTotal());
             amount.setDetails(details);
 
-
-
             itemList.setItems(utilListItem);
-
 
             transaction.setDescription("Examplary Transaction Description");
             transaction.setAmount(amount);

@@ -52,9 +52,16 @@ public class PayPalSessionImpl implements PayPalSession {
         }*/
         if(apiContext == null) {
             initConnection();
+        } else {
+            refreshWithTheSameToken();
         }
 
         return apiContext;
+    }
+
+    public void refreshWithTheSameToken() throws PayPalRESTException {
+        apiContext = new APIContext(oAuthTokenCredential.getAccessToken());
+        apiContext.setConfigurationMap(sdkConfig);
     }
 
     public void createNewApiContextFromToken(String token) {
