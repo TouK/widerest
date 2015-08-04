@@ -52,9 +52,11 @@ import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
+import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 
@@ -498,8 +500,6 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId,
             @RequestBody Long fulfillmentOptionId) throws PricingException {
 
-    	/* TODO: (mst) fulfillmentOptionId validation */
-
         Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
@@ -517,29 +517,47 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a fulfillment for the order",
+            notes = "Returns details of a current fulfillment for the specified order",
+            response = FulfillmentDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public FulfillmentDto getOrderFulfilment(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
 
-        // DtoConverters d = new DtoConverters();
-
         return fulfillmentServiceProxy.createFulfillmentDto.apply(getProperCart(userDetails, orderId));
-
-
     }
 
 
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.POST)
-    public void setOrderFulfilmentAddress(
+    @ApiOperation(
+            value = "Create fulfillment address",
+            notes = "Adds an address for fulfillment for the specified order",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Fulfillment address entry successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
+    public ResponseEntity<?> setOrderFulfilmentAddress(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId,
             @RequestBody AddressDto addressDto) throws PricingException {
 
+        /* TODO: (mst) address validation, required fields etc */
+
         Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
+        if(order.getItemCount() <= 0) {
+            throw new NotShippableException("Order with ID: " + orderId + " is empty");
+        }
 
         Address shippingAddress = addressService.create();
         shippingAddress.setFirstName(addressDto.getFirstName());
@@ -553,11 +571,24 @@ public class OrderController {
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest().build().toUri());
+
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get an address for fulfillment",
+            notes = "Returns details of a fulfillment address for the specified order",
+            response = AddressDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment address", response = AddressDto.class),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public AddressDto getOrderFulfilmentAddress(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "orderId") Long orderId) {
@@ -567,7 +598,7 @@ public class OrderController {
 
         return Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentAddress(order))
                 .map(DtoConverters.addressEntityToDto)
-                .get();
+                .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
     }
 
     

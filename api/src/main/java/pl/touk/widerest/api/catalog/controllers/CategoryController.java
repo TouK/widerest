@@ -118,7 +118,7 @@ public class CategoryController {
                 .buildAndExpand(createdCategoryEntity.getId())
                 .toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /categories/count */
