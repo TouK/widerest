@@ -139,7 +139,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
         String payerId = request.getParameter(PayPalMessageConstants.QUERY_PAYER_ID);
         String paymentId = request.getParameter(PayPalMessageConstants.QUERY_PAYMENT_ID);
         String orderId = request.getParameter(PayPalMessageConstants.QUERY_ORDER_ID);
-
+        String amount = request.getParameter(PayPalMessageConstants.QUERY_AMOUNT);
 
 //        String token = queryParams.getFirst(PayPalMessageConstants.QUERY_TOKEN);
 //        String payerId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYER_ID);
@@ -150,6 +150,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
         PayPalResponseDto payPalResponse = findDetailsByPayPalTransaction(payPalRequest);
         payPalResponse.setOrderId(orderId);
+        payPalResponse.setAmount(new Money(amount));
         payPalResponse.setPaymentTransactionType(PaymentTransactionType.UNCONFIRMED);
         payPalResponse.setPayerId(payerId);
         payPalResponse.setPaymentId(paymentId);

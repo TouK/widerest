@@ -110,7 +110,9 @@ public class PayPalController {
 
         String SELF_URL = strapRootURL(request.getRequestURL().toString()) + "/orders/"+orderId+"/paypal";
 
-        String returnUrl = SELF_URL+"/return?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
+        String returnUrl = SELF_URL+"/return?"
+                +PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId
+                +"&"+PayPalMessageConstants.QUERY_AMOUNT+"="+order.getTotal().toString();
         String cancelUrl = SELF_URL+"/cancel?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
 
 
