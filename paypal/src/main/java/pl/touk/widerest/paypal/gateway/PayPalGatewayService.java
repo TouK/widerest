@@ -133,11 +133,18 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     }
 
     protected PayPalResponseDto translatePayPalWebResponse(HttpServletRequest request) throws PaymentException {
-        MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(request.getRequestURI()).build().getQueryParams();
-        String token = queryParams.getFirst(PayPalMessageConstants.QUERY_TOKEN);
-        String orderId = queryParams.getFirst(PayPalMessageConstants.QUERY_ORDER_ID);
-        String payerId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYER_ID);
-        String paymentId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYMENT_ID);
+        //MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(request.getRequestURI()).build().getQueryParams();
+
+        String token = request.getParameter(PayPalMessageConstants.QUERY_TOKEN);
+        String payerId = request.getParameter(PayPalMessageConstants.QUERY_PAYER_ID);
+        String paymentId = request.getParameter(PayPalMessageConstants.QUERY_PAYMENT_ID);
+        String orderId = request.getParameter(PayPalMessageConstants.QUERY_ORDER_ID);
+
+
+//        String token = queryParams.getFirst(PayPalMessageConstants.QUERY_TOKEN);
+//        String payerId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYER_ID);
+//        String paymentId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYMENT_ID);
+//        String orderId = queryParams.getFirst(PayPalMessageConstants.QUERY_ORDER_ID);
 
         PayPalRequestDto payPalRequest = new PayPalRequestDto(token);
 

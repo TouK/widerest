@@ -29,7 +29,6 @@ public class PayPalCredentialsController {
     private SystemProperitesServiceProxy spServiceProxy;
 
 
-
     @RequestMapping(value = "/id", method = RequestMethod.GET)
     public String getPayPalClientId(
             @AuthenticationPrincipal UserDetails userDetails

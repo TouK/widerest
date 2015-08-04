@@ -110,8 +110,8 @@ public class PayPalController {
 
         String SELF_URL = strapRootURL(request.getRequestURL().toString()) + "/orders/"+orderId+"/paypal";
 
-        String returnUrl = SELF_URL+"/return";
-        String cancelUrl = SELF_URL+"/cancel";
+        String returnUrl = SELF_URL+"/return?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
+        String cancelUrl = SELF_URL+"/cancel?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
 
 
         // Assuming the order has items in one currency, just get one and get currency
