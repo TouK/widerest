@@ -19,24 +19,7 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
-import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
-import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductBundle;
-import org.broadleafcommerce.core.catalog.domain.ProductImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductOption;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionValueImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.Sku;
-import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
-import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuImpl;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
@@ -65,14 +48,7 @@ import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
-import pl.touk.widerest.api.catalog.dto.BundleDto;
-import pl.touk.widerest.api.catalog.dto.BundleItemDto;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.RatingDto;
-import pl.touk.widerest.api.catalog.dto.ReviewDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.*;
 
 public class DtoConverters {
 
@@ -105,6 +81,18 @@ public class DtoConverters {
         skuEntity.setTaxCode(dto.getTaxCode());
         skuEntity.setActiveStartDate(dto.getActiveStartDate());
         skuEntity.setActiveEndDate(dto.getActiveEndDate());
+
+
+        skuEntity.setProductOptionValueXrefs(dto.getProductOptionValues().stream()
+                        .map(e -> {
+                            // to musi zwracac SkuProductOptionValueXref
+                            SkuProductOptionValueXref productOptionValueXref = new SkuProductOptionValueXrefImpl();
+                            productOptionValueXref.setSku(skuEntity);
+                            productOptionValueXref.setProductOptionValue(DtoConverters.productOptionValueDtoToEntity.apply(e));
+
+                            return productOptionValueXref;
+                        })
+                        .collect(Collectors.toSet()));
 		
 		/* (mst) looks like you have to have the Retail Price so in case used has not provided it,
 		 * just set it to Sale Price
@@ -120,6 +108,52 @@ public class DtoConverters {
         // TODO: co z selection?
 
         return skuEntity;
+    };
+
+
+    public static Function <ProductOption, ProductOptionDto> productOptionEntityToDto = entity -> {
+        ProductOptionDto productOptionDto = ProductOptionDto.builder()
+                .name(entity.getAttributeName())
+                .allowedValues(entity.getAllowedValues().stream()
+                        .map(DtoConverters.getProductOptionValueName)
+                        .collect(toList()))
+                .build();
+
+        return productOptionDto;
+    };
+
+
+    public static Function<ProductOptionDto, ProductOption> productOptionDtoToEntity = dto -> {
+        ProductOption productOption = new ProductOptionImpl();
+        productOption.setAttributeName(dto.getName());
+        productOption.setAllowedValues(dto.getAllowedValues().stream()
+                            .map(e -> {
+                                ProductOptionValue p = new ProductOptionValueImpl();
+                                p.setAttributeValue(e);
+                                return p;
+                            })
+                            .collect(toList()));
+
+        return productOption;
+    };
+
+
+    public static Function<ProductOptionValue, ProductOptionValueDto> productOptionValueEntityToDto = entity -> {
+        ProductOptionValueDto productOptionValueDto = ProductOptionValueDto.builder()
+                .attributeValue(entity.getAttributeValue())
+                .productOption(DtoConverters.productOptionEntityToDto.apply(entity.getProductOption()))
+                .build();
+
+        return productOptionValueDto;
+    };
+
+
+    public static Function<ProductOptionValueDto, ProductOptionValue> productOptionValueDtoToEntity = dto -> {
+        ProductOptionValue productOptionValue = new ProductOptionValueImpl();
+
+        productOptionValue.setAttributeValue(dto.getAttributeValue());
+        productOptionValue.setProductOption(DtoConverters.productOptionDtoToEntity.apply(dto.getProductOption()));
+        return productOptionValue;
     };
 
     /******************************** CATEGORY ********************************/

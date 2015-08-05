@@ -21,6 +21,7 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -35,13 +36,24 @@ public class SkuServiceProxy {
         // ze dana wartosc nie ustawiona => admin widzi objekt, klient nie
         Money errCode = new Money(BigDecimal.valueOf(-1337));
 
-        SkuDto dto = SkuDto.builder().skuId(entity.getId()).name(entity.getName()).description(entity.getDescription())
+        SkuDto dto = SkuDto.builder()
+                .skuId(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
                 .salePrice(Optional.ofNullable(entity.getPrice()).orElse(errCode).getAmount())
                 .quantityAvailable(entity.getQuantityAvailable()).taxCode(entity.getTaxCode())
                 .activeStartDate(entity.getActiveStartDate()).activeEndDate(entity.getActiveEndDate())
                 .currencyCode(Optional.ofNullable(entity.getCurrency())
                         .orElse(localeService.findDefaultLocale().getDefaultCurrency())
                         .getCurrencyCode())
+                .skuAttributes(entity.getSkuAttributes().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            return e.getValue().getName();
+                        })))
+                .productOptionValues(entity.getProductOptionValueXrefs().stream()
+                        .map(SkuProductOptionValueXref::getProductOptionValue)
+                        .map(DtoConverters.productOptionValueEntityToDto)
+                        .collect(toSet()))
                 .build();
 
         // selection wysylany jest tylko od klienta
