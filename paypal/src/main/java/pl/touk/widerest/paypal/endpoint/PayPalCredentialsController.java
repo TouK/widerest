@@ -37,7 +37,7 @@ public class PayPalCredentialsController {
 //        if(!(userDetails instanceof AdminUserDetails)) {
 //            throw new IllegalAccessError("Admin rights required");
 //        }
-        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.CLIENT_ID))
+        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
                 .orElseThrow(() -> new ResourceNotFoundException("Property not set"));
     }
@@ -50,7 +50,7 @@ public class PayPalCredentialsController {
 //        if(!(userDetails instanceof AdminUserDetails)) {
 //            throw new IllegalAccessError("Admin rights required");
 //        }
-        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.SECRET))
+        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET))
                 .map(SystemProperty::getValue)
                 .orElseThrow(() -> new ResourceNotFoundException("Property not set"));
     }
@@ -65,12 +65,12 @@ public class PayPalCredentialsController {
 //            throw new IllegalAccessError("Admin rights required");
 //        }
 
-        spServiceProxy.setOrUpdatePropertyByName(spServiceProxy.CLIENT_ID, clientId);
+        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.CLIENT_ID, clientId);
 
-        if(spServiceProxy.getSystemPropertyByName(spServiceProxy.CLIENT_ID).getValue().equals(clientId))
-            return new ResponseEntity<>(null, null, HttpStatus.CREATED);
+        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID).getValue().equals(clientId))
+            return new ResponseEntity<>(HttpStatus.CREATED);
 
-        return new ResponseEntity<>(null, null, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
     @Transactional
@@ -83,12 +83,12 @@ public class PayPalCredentialsController {
 //            throw new IllegalAccessError("Admin rights required");
 //        }
 
-        spServiceProxy.setOrUpdatePropertyByName(spServiceProxy.CLIENT_ID, secret);
+        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.CLIENT_ID, secret);
 
-        if(spServiceProxy.getSystemPropertyByName(spServiceProxy.CLIENT_ID).getValue().equals(secret))
-            return new ResponseEntity<>(null, null, HttpStatus.CREATED);
+        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID).getValue().equals(secret))
+            return new ResponseEntity<>(HttpStatus.CREATED);
 
-        return new ResponseEntity<>(null, null, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
 }
