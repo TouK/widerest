@@ -5,9 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -33,6 +31,7 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
@@ -379,8 +378,45 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
+
+        Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream().map(ProductOptionValueDto::getProductOption)
+                .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
+
         Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
+
+        Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
+
         newSkuEntity.setProduct(product);
+
+
+        /*
+        skuDto.getProductOptionValues().stream()
+                .map(ProductOptionValueDto::getProductOption)
+                .map(DtoConverters.productOptionDtoToEntity)
+                .forEach(catalogService::saveProductOption);
+
+        */
+
+        newSkuEntity.setProductOptionValueXrefs(null);
+        newSkuEntity = catalogService.saveSku(newSkuEntity);
+
+        for(ProductOption productOption : allProductOptions) {
+
+            ProductOptionValue productOptionValue = new ProductOptionValueImpl();
+            productOptionValue.setProductOption(catalogService.saveProductOption(productOption));
+            productOptionValue.setAttributeValue(productOption.getAttributeName());
+
+
+            SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(newSkuEntity, productOptionValue);
+            skuProductOptionValueXref.setId(productOptionValue.getId());
+
+            skuProductOptionValueXrefs.add(skuProductOptionValueXref);
+        }
+
+
+
+        newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
+
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
         List<Sku> allProductsSkus = new ArrayList<>();
@@ -398,7 +434,7 @@ public class ProductController {
                 .buildAndExpand(productId,newSkuEntity.getId())
                 .toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /products/{productId}/skus/{skuId} */
@@ -492,7 +528,7 @@ public class ProductController {
                 .buildAndExpand(productId,newSkuEntity.getId())
                 .toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
 
