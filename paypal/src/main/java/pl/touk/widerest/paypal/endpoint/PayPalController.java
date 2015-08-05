@@ -82,9 +82,9 @@ public class PayPalController {
         transactionConfirmationService = configurationService.getTransactionConfirmationService();
     }
 
-
-    @RequestMapping(method = RequestMethod.GET)
     @Transactional
+    @RequestMapping(method = RequestMethod.GET)
+
     public ResponseEntity initiate(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -229,7 +229,7 @@ public class PayPalController {
         responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
     }
 
     @RequestMapping(value = "/cancel", method = RequestMethod.GET)
