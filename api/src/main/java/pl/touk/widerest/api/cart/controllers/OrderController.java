@@ -57,6 +57,7 @@ import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
+import pl.touk.widerest.api.cart.service.OrderValidationService;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
@@ -93,6 +94,9 @@ public class OrderController {
 
     @Resource(name = "blLocaleService")
     private LocaleService localeService;
+
+    @Resource(name = "wdOrderValidationService")
+    private OrderValidationService orderValidationService;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
