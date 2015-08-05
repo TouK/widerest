@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.internal.SessionImpl;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy;
@@ -65,7 +66,7 @@ public class TenantEndpoint {
             connection.createStatement().execute("SET SCHEMA " + tenantIdentifier);
 
             Configuration configuration = new Configuration();
-            configuration.setProperty(AvailableSettings.DIALECT, "org.hibernate.dialect.HSQLDialect");
+            configuration.setProperty(AvailableSettings.DIALECT, em.unwrap(SessionImpl.class).getSessionFactory().getDialect().toString());
             configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create");
             configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
             configuration.setProperty(AvailableSettings.DEFAULT_SCHEMA, tenantIdentifier);
