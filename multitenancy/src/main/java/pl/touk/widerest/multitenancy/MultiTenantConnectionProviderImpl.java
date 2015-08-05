@@ -1,6 +1,7 @@
 package pl.touk.widerest.multitenancy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.service.UnknownUnwrapTypeException;
 import org.hibernate.service.config.spi.ConfigurationService;
 import org.hibernate.service.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.service.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -48,17 +49,28 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
 
     @Override
     public boolean supportsAggressiveRelease() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isUnwrappableAs(Class unwrapType) {
-        return false;
+        return ConnectionProvider.class.equals( unwrapType ) ||
+                MultiTenantConnectionProviderImpl.class.isAssignableFrom( unwrapType ) ||
+                DataSource.class.isAssignableFrom( unwrapType );
     }
 
     @Override
     public <T> T unwrap(Class<T> unwrapType) {
-        return null;
+        if ( ConnectionProvider.class.equals( unwrapType ) ||
+                MultiTenantConnectionProviderImpl.class.isAssignableFrom( unwrapType ) ) {
+            return (T) this;
+        }
+        else if ( DataSource.class.isAssignableFrom( unwrapType ) ) {
+            return (T) dataSource;
+        }
+        else {
+            throw new UnknownUnwrapTypeException( unwrapType );
+        }
     }
 
     @Override
