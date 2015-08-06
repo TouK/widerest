@@ -25,15 +25,16 @@
 
     <description>RESTful API for Broadleaf Commerce</description>
     <repositories>
-        <repository>
+        <!--<repository>
             <id>public snapshots</id>
             <name>public snapshots</name>
             <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots/</url>
-        </repository>
+        </repository>!-->
         <repository>
             <id>public releases</id>
             <name>public releases</name>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
+            <!-- <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url> -->
+            <url>http://nexus.touk.pl:8080/nexus/content/repositories/org.broadleafcommerce/</url>
         </repository>
     </repositories>
     <build>
