@@ -16,7 +16,7 @@
     <name>widerest</name>
 
     <properties>
-        <blc.version>4.0.0-RC4</blc.version>
+        <blc.version>4.0.0-RC1</blc.version>
         <blc.menu.version>1.0.0-RC4</blc.menu.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hibernate.version>4.1.11.Final</hibernate.version>

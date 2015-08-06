@@ -13,7 +13,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <blc.version>4.0.0-GA</blc.version>
+        <blc.version>4.0.0-RC1</blc.version>
         <blc.menu.version>1.0.0-RC4</blc.menu.version>
     </properties>
 
