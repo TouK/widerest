@@ -45,7 +45,9 @@ public class CatalogTest extends ApiTestBase {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         /* uncomment the following for "local" testing */
-        serverPort = String.valueOf(8080);
+        //serverPort = String.valueOf(8080);
+
+
         cleanupCatalogTests();
     }
 
@@ -53,6 +55,7 @@ public class CatalogTest extends ApiTestBase {
     public void exemplaryCatalogFlow1Test() {
 
         long currentGlobalProductCount = getRemoteTotalProductsCount();
+        long currentGlobalCategoriesCount = getRemoteTotalCategoriesCount();
 
         //add test category
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
@@ -127,6 +130,8 @@ public class CatalogTest extends ApiTestBase {
         oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
         /* TODO: (mst) maybe few other checks after removal */
+
+        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
     }
 
     @Test
@@ -151,7 +156,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getRemoteTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + TEST_CATEGORIES_COUNT));
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            assertThat(getRemoteTotalProductsInCategorCount(newCategoriesIds.get(i).longValue()), equalTo(0L));
+            assertThat(getRemoteTotalProductsInCategorCount(newCategoriesIds.get(i)), equalTo(0L));
         }
 
 
@@ -292,7 +297,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertNotNull(remoteCountEntity);
 
-        return remoteCountEntity.getBody().longValue();
+        return remoteCountEntity.getBody();
     }
 
     private long getRemoteTotalProductsInCategorCount(long categoryId) {
@@ -301,7 +306,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertNotNull(remoteCountEntity);
 
-        return remoteCountEntity.getBody().longValue();
+        return remoteCountEntity.getBody();
     }
 
     public long getRemoteTotalCategoriesCount() {
@@ -310,7 +315,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertNotNull(remoteCountEntity);
 
-        return remoteCountEntity.getBody().longValue();
+        return remoteCountEntity.getBody();
     }
 
     public long getRemoteTotalCategoriesByProductCount(long productId) {
@@ -319,7 +324,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertNotNull(remoteCountEntity);
 
-        return remoteCountEntity.getBody().longValue();
+        return remoteCountEntity.getBody();
     }
 
     private long getRemoteTotalSkusForProductCount(long productId) {
@@ -329,7 +334,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertNotNull(remoteCountEntity);
 
-        return remoteCountEntity.getBody().longValue();
+        return remoteCountEntity.getBody();
     }
 
 }

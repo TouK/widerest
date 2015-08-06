@@ -83,9 +83,9 @@ public class DtoConverters {
         skuEntity.setActiveEndDate(dto.getActiveEndDate());
 
 
+        /*
         skuEntity.setProductOptionValueXrefs(dto.getProductOptionValues().stream()
                         .map(e -> {
-                            // to musi zwracac SkuProductOptionValueXref
                             SkuProductOptionValueXref productOptionValueXref = new SkuProductOptionValueXrefImpl();
                             productOptionValueXref.setSku(skuEntity);
                             productOptionValueXref.setProductOptionValue(DtoConverters.productOptionValueDtoToEntity.apply(e));
@@ -93,7 +93,7 @@ public class DtoConverters {
                             return productOptionValueXref;
                         })
                         .collect(Collectors.toSet()));
-		
+		*/
 		/* (mst) looks like you have to have the Retail Price so in case used has not provided it,
 		 * just set it to Sale Price
 		 * 

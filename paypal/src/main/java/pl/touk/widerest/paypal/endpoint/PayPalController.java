@@ -250,8 +250,7 @@ public class PayPalController {
         responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
-
+        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
     }
 
 

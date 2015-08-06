@@ -379,8 +379,8 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
 
-        Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream().map(ProductOptionValueDto::getProductOption)
-                .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
+//        Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream().map(ProductOptionValueDto::getProductOption)
+ //               .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
 
         Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
 
@@ -400,6 +400,7 @@ public class ProductController {
         newSkuEntity.setProductOptionValueXrefs(null);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
+        /*
         for(ProductOption productOption : allProductOptions) {
 
             ProductOptionValue productOptionValue = new ProductOptionValueImpl();
@@ -412,10 +413,12 @@ public class ProductController {
 
             skuProductOptionValueXrefs.add(skuProductOptionValueXref);
         }
+*/
 
 
+        //newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
 
-        newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
+        newSkuEntity.setProductOptionValueXrefs(null);
 
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
