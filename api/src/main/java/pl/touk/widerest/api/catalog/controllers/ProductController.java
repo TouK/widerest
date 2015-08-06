@@ -30,10 +30,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 
@@ -381,16 +378,40 @@ public class ProductController {
 
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
 
-
-
-//        Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream().map(ProductOptionValueDto::getProductOption)
- //               .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
-
-
-
-        Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
-
         newSkuEntity.setProduct(product);
+
+
+        if(skuDto.getSkuProductOptionValues() != null) {
+
+            Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
+
+            /*
+            Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream()
+                    .map(ProductOptionValueDto::getProductOption)
+                    .map(DtoConverters.productOptionDtoToEntity)
+                    .collect(Collectors.toSet());
+*/
+
+            /*
+            Set<ProductOptionValue> skusProductOptionValues = skuDto.getProductOptionValues().stream()
+                    .map(DtoConverters.productOptionValueDtoToEntity)
+                    .collect(Collectors.toSet());
+*/
+            for (SkuProductOptionValueDto skuProductOption: skuDto.getSkuProductOptionValues()) {
+
+                ProductOptionValue productOptionValue = new ProductOptionValueImpl();
+                productOptionValue.setProductOption(dtoConverters.getProductOptionByNameForProduct(skuProductOption.getAttributeName(), product));
+                productOptionValue.setAttributeValue(skuProductOption.getAttributeValue());
+
+                SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(newSkuEntity, productOptionValue);
+
+                skuProductOptionValueXrefs.add(skuProductOptionValueXref);
+            }
+
+            newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
+
+        }
+
 
 
         /*
@@ -401,7 +422,6 @@ public class ProductController {
 
         */
 
-        newSkuEntity.setProductOptionValueXrefs(null);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
         /*
@@ -422,9 +442,9 @@ public class ProductController {
 
         //newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
 
-        newSkuEntity.setProductOptionValueXrefs(null);
+        //newSkuEntity.setProductOptionValueXrefs(null);
 
-        newSkuEntity = catalogService.saveSku(newSkuEntity);
+        //newSkuEntity = catalogService.saveSku(newSkuEntity);
 
         List<Sku> allProductsSkus = new ArrayList<>();
         allProductsSkus.addAll(product.getAllSkus());

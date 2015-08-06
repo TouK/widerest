@@ -7,10 +7,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -63,6 +60,9 @@ public class DtoConverters {
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
 
+    @Resource(name = "blCatalogService")
+    protected CatalogService catalogService;
+
     private static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
     };
@@ -92,10 +92,10 @@ public class DtoConverters {
                         .collect(toMap(Map.Entry::getKey, e -> {
                             return e.getValue().getName();
                         })))
-                .productOptionValues(entity.getProductOptionValueXrefs().stream()
+                /*.productOptionValues(entity.getProductOptionValueXrefs().stream()
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueEntityToDto)
-                        .collect(toSet()))
+                        .collect(toSet()))*/
                 .build();
 
         // selection wysylany jest tylko od klienta
@@ -134,6 +134,36 @@ public class DtoConverters {
         skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
         skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
 
+        /* TODO: (mst) refactor all that bs below to Lambda */
+
+
+
+
+//        if(skuDto.getProductOptionValues() != null) {
+//
+//            Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
+//
+//
+//
+//
+//            Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream()
+//                    .map(ProductOptionValueDto::getProductOption)
+//                    .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
+//
+//            for (ProductOption productOption : allProductOptions) {
+//
+//                ProductOptionValue productOptionValue = new ProductOptionValueImpl();
+//                productOptionValue.setProductOption(getProductOptionByNameForProduct(productOption.getAttributeName(), product));
+//                productOptionValue.setAttributeValue(skuDto.getProductOptionValues());
+//
+//                SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(skuEntity, productOptionValue);
+//
+//                skuProductOptionValueXrefs.add(skuProductOptionValueXref);
+//            }
+//
+//            skuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
+//
+//        }
 
         /*
         skuEntity.setProductOptionValueXrefs(dto.getProductOptionValues().stream()
@@ -145,7 +175,8 @@ public class DtoConverters {
                             return productOptionValueXref;
                         })
                         .collect(Collectors.toSet()));
-		*/
+
+        */
 		/* (mst) looks like you have to have the Retail Price so in case used has not provided it,
 		 * just set it to Sale Price
 		 *
@@ -161,6 +192,21 @@ public class DtoConverters {
 
         return skuEntity;
     };
+
+    /* (mst) TMP! */
+    public ProductOption getProductOptionByNameForProduct(String productOptionName, Product product) {
+        ProductOption productOption = null;
+
+        if(product.getProductOptionXrefs() != null) {
+            productOption = product.getProductOptionXrefs().stream()
+                    .map(ProductOptionXref::getProductOption)
+                    .filter(x -> x.getAttributeName().equals(productOptionName))
+                    .findAny()
+                    .orElse(null);
+        }
+
+        return productOption;
+    }
 
 
     public Function<Product, ProductDto> productEntityToDto = entity -> {
