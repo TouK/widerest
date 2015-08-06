@@ -168,6 +168,7 @@ public class PayPalController {
         if(userDetails instanceof AdminUserDetails) {
             throw new PaymentException("Admins can't make orders");
         }
+
         CustomerUserDetails customerUserDetails = (CustomerUserDetails)userDetails;
 
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
@@ -178,6 +179,11 @@ public class PayPalController {
 
         // get data from link
         PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
+
+        if(!payPalResponse.isValid()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
 
         // create orderpayment
         paymentGatewayCheckoutService.applyPaymentToOrder(payPalResponse, configurationService.getConfiguration());
