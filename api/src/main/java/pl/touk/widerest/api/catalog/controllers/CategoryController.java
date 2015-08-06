@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import pl.touk.widerest.api.cart.service.SkuServiceProxy;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
@@ -45,8 +44,8 @@ public class CategoryController {
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
 
-    @Resource(name = "wdSkuService")
-    protected SkuServiceProxy skuServiceProxy;
+    @Resource(name = "wdDtoConverters")
+    protected DtoConverters dtoConverters;
 
     /* GET /categories */
     @Transactional
@@ -279,7 +278,7 @@ public class CategoryController {
 
         return getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(skuServiceProxy.productEntityToDto)
+                .map(dtoConverters.productEntityToDto)
                 .collect(Collectors.toList());
     }
 
@@ -303,7 +302,7 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(x -> x.getId().longValue() == productId)
                 .findAny()
-                .map(skuServiceProxy.productEntityToDto)
+                .map(dtoConverters.productEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
     }
 

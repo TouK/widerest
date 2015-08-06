@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.broadleafcommerce.common.currency.dao.BroadleafCurrencyDao;
+import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
@@ -26,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import pl.touk.widerest.api.cart.service.SkuServiceProxy;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
@@ -50,8 +51,8 @@ public class ProductController {
     @Resource(name = "blRatingService")
     protected RatingService ratingService;
 
-    @Resource(name = "wdSkuService")
-    protected SkuServiceProxy skuServiceProxy;
+    @Resource(name = "wdDtoConverters")
+    protected DtoConverters dtoConverters;
 
     /* GET /products */
     @Transactional
@@ -68,7 +69,7 @@ public class ProductController {
     public List<ProductDto> getAllProducts() {
         return catalogService.findAllProducts().stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(skuServiceProxy.productEntityToDto)
+                .map(dtoConverters.productEntityToDto)
                 .collect(Collectors.toList());
     }
 
@@ -117,9 +118,9 @@ public class ProductController {
         }
 
 
-        Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
+        Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
-        Sku defaultSku = DtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
+        Sku defaultSku = dtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
                  Otherwise just ignore it.
@@ -190,7 +191,7 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(skuServiceProxy.productEntityToDto)
+                .map(dtoConverters.productEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
@@ -233,7 +234,7 @@ public class ProductController {
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(p -> {
-                    Product productEntity = DtoConverters.productDtoToEntity.apply(productDto);
+                    Product productEntity = dtoConverters.productDtoToEntity.apply(productDto);
                     productEntity.setId(productId);
                     catalogService.saveProduct(productEntity);
                     return p;
@@ -353,7 +354,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .map(skuServiceProxy.skuEntityToDto)
+                .map(dtoConverters.skuEntityToDto)
                 .collect(Collectors.toList());
 
     }
@@ -378,11 +379,14 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
+        Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
+
+
 
 //        Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream().map(ProductOptionValueDto::getProductOption)
  //               .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
 
-        Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(skuDto);
+
 
         Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
 
@@ -462,7 +466,7 @@ public class ProductController {
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
-                .map(skuServiceProxy.skuEntityToDto)
+                .map(dtoConverters.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
@@ -485,7 +489,7 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(Product::getDefaultSku)
-                .map(skuServiceProxy.skuEntityToDto)
+                .map(dtoConverters.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
@@ -513,7 +517,7 @@ public class ProductController {
 
         Sku currentDefaultSKU = product.getDefaultSku();
 
-        Sku newSkuEntity = DtoConverters.skuDtoToEntity.apply(defaultSkuDto);
+        Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(defaultSkuDto);
 
         newSkuEntity.setProduct(product);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
