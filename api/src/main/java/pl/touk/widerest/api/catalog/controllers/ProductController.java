@@ -367,6 +367,7 @@ public class ProductController {
             responseContainer = "List")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Specified SKU successfully added"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public ResponseEntity<?> saveOneSkuByProduct(@PathVariable(value = "productId") Long productId,
@@ -376,35 +377,36 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
+        if(skuDto.getSkuProductOptionValues() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
 
         newSkuEntity.setProduct(product);
 
 
+        /* (mst) TODO: Refactor to LAMBDA */
+        /* (mst) TODO: Merge with SKU with the same Product Options set if it already exists in catalog */
         if(skuDto.getSkuProductOptionValues() != null) {
 
             Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
 
-            /*
-            Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream()
-                    .map(ProductOptionValueDto::getProductOption)
-                    .map(DtoConverters.productOptionDtoToEntity)
-                    .collect(Collectors.toSet());
-*/
-
-            /*
-            Set<ProductOptionValue> skusProductOptionValues = skuDto.getProductOptionValues().stream()
-                    .map(DtoConverters.productOptionValueDtoToEntity)
-                    .collect(Collectors.toSet());
-*/
             for (SkuProductOptionValueDto skuProductOption: skuDto.getSkuProductOptionValues()) {
 
-                ProductOptionValue productOptionValue = new ProductOptionValueImpl();
-                productOptionValue.setProductOption(dtoConverters.getProductOptionByNameForProduct(skuProductOption.getAttributeName(), product));
-                productOptionValue.setAttributeValue(skuProductOption.getAttributeValue());
+                ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
+                                                                    skuProductOption.getAttributeName(),
+                                                                    product))
+                        .orElseThrow(() -> new ResourceNotFoundException("Product option: " + skuProductOption.getAttributeName() + " does not exist in product with ID: " + productId));
+
+                ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters.getProductOptionValueByNameForProduct(
+                                                                    currentProductOption,
+                                                                    skuProductOption.getAttributeValue()))
+                        .orElseThrow(() -> new ResourceNotFoundException("'" + skuProductOption.getAttributeValue() + "'" + " is not an allowed value for option: " +
+                                                                    skuProductOption.getAttributeName() + " for product with ID: " + productId));
+
 
                 SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(newSkuEntity, productOptionValue);
-
                 skuProductOptionValueXrefs.add(skuProductOptionValueXref);
             }
 
@@ -412,39 +414,7 @@ public class ProductController {
 
         }
 
-
-
-        /*
-        skuDto.getProductOptionValues().stream()
-                .map(ProductOptionValueDto::getProductOption)
-                .map(DtoConverters.productOptionDtoToEntity)
-                .forEach(catalogService::saveProductOption);
-
-        */
-
         newSkuEntity = catalogService.saveSku(newSkuEntity);
-
-        /*
-        for(ProductOption productOption : allProductOptions) {
-
-            ProductOptionValue productOptionValue = new ProductOptionValueImpl();
-            productOptionValue.setProductOption(catalogService.saveProductOption(productOption));
-            productOptionValue.setAttributeValue(productOption.getAttributeName());
-
-
-            SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(newSkuEntity, productOptionValue);
-            skuProductOptionValueXref.setId(productOptionValue.getId());
-
-            skuProductOptionValueXrefs.add(skuProductOptionValueXref);
-        }
-*/
-
-
-        //newSkuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
-
-        //newSkuEntity.setProductOptionValueXrefs(null);
-
-        //newSkuEntity = catalogService.saveSku(newSkuEntity);
 
         List<Sku> allProductsSkus = new ArrayList<>();
         allProductsSkus.addAll(product.getAllSkus());

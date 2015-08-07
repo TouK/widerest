@@ -92,10 +92,10 @@ public class DtoConverters {
                         .collect(toMap(Map.Entry::getKey, e -> {
                             return e.getValue().getName();
                         })))
-                /*.productOptionValues(entity.getProductOptionValueXrefs().stream()
+                .productOptionValues(entity.getProductOptionValueXrefs().stream()
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueEntityToDto)
-                        .collect(toSet()))*/
+                        .collect(toSet()))
                 .build();
 
         // selection wysylany jest tylko od klienta
@@ -134,49 +134,6 @@ public class DtoConverters {
         skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
         skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
 
-        /* TODO: (mst) refactor all that bs below to Lambda */
-
-
-
-
-//        if(skuDto.getProductOptionValues() != null) {
-//
-//            Set<SkuProductOptionValueXref> skuProductOptionValueXrefs = new HashSet<>();
-//
-//
-//
-//
-//            Set<ProductOption> allProductOptions = skuDto.getProductOptionValues().stream()
-//                    .map(ProductOptionValueDto::getProductOption)
-//                    .map(DtoConverters.productOptionDtoToEntity).collect(Collectors.toSet());
-//
-//            for (ProductOption productOption : allProductOptions) {
-//
-//                ProductOptionValue productOptionValue = new ProductOptionValueImpl();
-//                productOptionValue.setProductOption(getProductOptionByNameForProduct(productOption.getAttributeName(), product));
-//                productOptionValue.setAttributeValue(skuDto.getProductOptionValues());
-//
-//                SkuProductOptionValueXrefImpl skuProductOptionValueXref = new SkuProductOptionValueXrefImpl(skuEntity, productOptionValue);
-//
-//                skuProductOptionValueXrefs.add(skuProductOptionValueXref);
-//            }
-//
-//            skuEntity.setProductOptionValueXrefs(skuProductOptionValueXrefs);
-//
-//        }
-
-        /*
-        skuEntity.setProductOptionValueXrefs(dto.getProductOptionValues().stream()
-                        .map(e -> {
-                            SkuProductOptionValueXref productOptionValueXref = new SkuProductOptionValueXrefImpl();
-                            productOptionValueXref.setSku(skuEntity);
-                            productOptionValueXref.setProductOptionValue(DtoConverters.productOptionValueDtoToEntity.apply(e));
-
-                            return productOptionValueXref;
-                        })
-                        .collect(Collectors.toSet()));
-
-        */
 		/* (mst) looks like you have to have the Retail Price so in case used has not provided it,
 		 * just set it to Sale Price
 		 *
@@ -189,6 +146,7 @@ public class DtoConverters {
         }
 
         // TODO: co z selection?
+        // - (mst) a co ma byc?
 
         return skuEntity;
     };
@@ -208,6 +166,13 @@ public class DtoConverters {
         return productOption;
     }
 
+    public ProductOptionValue getProductOptionValueByNameForProduct(ProductOption productOption,
+                                                              String productOptionValue) {
+        return productOption.getAllowedValues().stream()
+                .filter(x -> x.getAttributeValue().equals(productOptionValue))
+                .findAny()
+                .orElse(null);
+    }
 
     public Function<Product, ProductDto> productEntityToDto = entity -> {
 
