@@ -17,6 +17,7 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
+import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
@@ -96,7 +97,22 @@ public class DtoConverters {
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueEntityToDto)
                         .collect(toSet()))
+                .skuMedia(entity.getSkuMediaXref().entrySet().stream()
+                        .map(Map.Entry::getValue)
+                        .map(DtoConverters.skuMediaXrefToDto)
+                        .collect(toList()))
                 .build();
+
+        /*
+        product.setProductAttributes(
+                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+                        ProductAttribute p = new ProductAttributeImpl();
+                        p.setValue(e.getValue());
+                        return p;
+                    })));
+         */
+
+
 
         // selection wysylany jest tylko od klienta
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
@@ -381,6 +397,39 @@ public class DtoConverters {
 
         return categoryEntity;
     };
+
+    public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
+
+        Media entity = xref.getMedia();
+
+
+        SkuMediaDto skuMediaDto = SkuMediaDto.builder()
+                .mediaId(entity.getId())
+                .title(entity.getTitle())
+                .url(entity.getUrl())
+                .build();
+
+        skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
+                                                                                    xref.getSku().getId(),
+                                                                                    entity.getId())).withSelfRel());
+
+        return skuMediaDto;
+    };
+
+    /*
+
+    public static Function<Media, SkuMediaDto> skuMediaToDto = entity -> {
+        SkuMediaDto skuMediaDto = SkuMediaDto.builder()
+                .mediaId(entity.getId())
+                .title(entity.getTitle())
+                .url(entity.getUrl())
+                .build();
+
+        skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku()).withSelfRel());
+
+        return skuMediaDto;
+    };*/
+
     /******************************** PRODUCT ********************************/
 
     public static Function<SkuBundleItem, BundleItemDto> skuBundleItemToBundleItemDto = entity -> {
@@ -401,7 +450,8 @@ public class DtoConverters {
         org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
 
         List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
-        List<String> collectAllowedValues = productOptionValues.stream().map(getProductOptionValueName)
+        List<String> collectAllowedValues = productOptionValues.stream()
+                .map(getProductOptionValueName)
                 .collect(toList());
         ProductOptionDto dto = new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
         return dto;

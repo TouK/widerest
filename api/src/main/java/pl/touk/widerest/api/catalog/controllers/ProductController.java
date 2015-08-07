@@ -679,6 +679,70 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    /* GET /products/{productId}/skus/{skuId}/media */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all SKU's media",
+            notes = "Gets a list of all medias belonging to a specified SKU",
+            response = SkuMediaDto.class,
+            responseContainer = "List"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public List<SkuMediaDto> getMediaBySkuId(@PathVariable(value = "productId") Long productId,
+                             @PathVariable(value = "skuId") Long skuId) {
+
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
+                .getSkuMediaXref().entrySet().stream()
+                    .map(Map.Entry::getValue)
+                    .map(DtoConverters.skuMediaXrefToDto)
+                    .collect(Collectors.toList());
+    }
+
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a single media details",
+            notes = "Gets details of a particular media belonging to a specified SKU",
+            response = SkuMediaDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public SkuMediaDto getMediaByIdForSku(@PathVariable(value = "productId") Long productId,
+                                                @PathVariable(value = "skuId") Long skuId,
+                                                @PathVariable(value = "mediaId") Long mediaId) {
+
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
+                .getSkuMediaXref().entrySet().stream()
+                    .map(Map.Entry::getValue)
+                    .filter(x -> x.getMedia().getId().longValue() == mediaId)
+                    .map(DtoConverters.skuMediaXrefToDto)
+                    .findAny()
+                    .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId + " of product with ID: " + productId));
+
+
+    }
+
+
 
     /* GET /products/{id}/reviews *//*
     @Transactional

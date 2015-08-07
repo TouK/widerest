@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -86,5 +87,9 @@ public class SkuDto extends ResourceSupport {
     @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private Set<ProductOptionValueDto> productOptionValues;
+
+    @ApiModelProperty
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    private List<SkuMediaDto> skuMedia;
 
 }
