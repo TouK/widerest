@@ -657,21 +657,23 @@ public class DtoConverters {
     public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
         Money errCode = new Money(BigDecimal.valueOf(-1337));
         Sku sku = entity.getSku();
+
+        long productId = sku.getProduct().getId();
+
         DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
                 .itemId(entity.getId())
                 .salePrice(entity.getSalePrice())
                 .retailPrice(entity.getRetailPrice())
                 .quantity(entity.getQuantity())
                 .productName(entity.getName())
-                .productId(entity.getProduct().getId())
+                .productId(productId)
                 .skuId(sku.getId())
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(entity.getTotalPrice()).orElse(errCode).getAmount())
                 .build();
 
         orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, entity.getId(), entity.getOrder().getId())).withSelfRel());
-
-        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getProduct().getId())).withRel("product"));
+        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
 
         return orderItemDto;
     };

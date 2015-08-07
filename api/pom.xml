@@ -39,12 +39,6 @@
         </dependency>
 
         <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-multitenancy</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

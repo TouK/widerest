@@ -250,7 +250,7 @@ public class OrderController {
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
 
-        req.setProductId(productsSku.getProduct().getId());
+        //req.setProductId(productsSku.getProduct().getId());
 
         if(orderItemDto.getAttributes() != null) {
 
