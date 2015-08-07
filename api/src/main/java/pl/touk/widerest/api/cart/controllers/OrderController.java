@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.OrderItemService;
@@ -97,6 +98,9 @@ public class OrderController {
 
     @Resource(name = "wdOrderValidationService")
     private OrderValidationService orderValidationService;
+
+    @Resource(name = "blInventoryService")
+    private InventoryService inventoryService;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 

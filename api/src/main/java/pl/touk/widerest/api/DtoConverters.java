@@ -18,6 +18,7 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
@@ -407,6 +408,7 @@ public class DtoConverters {
                 .mediaId(entity.getId())
                 .title(entity.getTitle())
                 .url(entity.getUrl())
+                .altText(entity.getAltText())
                 .build();
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
@@ -416,19 +418,18 @@ public class DtoConverters {
         return skuMediaDto;
     };
 
-    /*
+    /* (mst) Remember to set SKU after this one */
+    public static Function<SkuMediaDto, SkuMediaXref> skuMediaDtoToXref = dto -> {
+        SkuMediaXref skuMediaXref = new SkuMediaXrefImpl();
+        Media skuMedia = new MediaImpl();
 
-    public static Function<Media, SkuMediaDto> skuMediaToDto = entity -> {
-        SkuMediaDto skuMediaDto = SkuMediaDto.builder()
-                .mediaId(entity.getId())
-                .title(entity.getTitle())
-                .url(entity.getUrl())
-                .build();
+        skuMedia.setTitle(dto.getTitle());
+        skuMedia.setUrl(dto.getUrl());
+        skuMedia.setAltText(dto.getAltText());
 
-        skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku()).withSelfRel());
-
-        return skuMediaDto;
-    };*/
+        skuMediaXref.setMedia(skuMedia);
+        return skuMediaXref;
+    };
 
     /******************************** PRODUCT ********************************/
 
