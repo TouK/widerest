@@ -690,7 +690,7 @@ public class ProductController {
             responseContainer = "List"
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 200, message = "Successful retrieval of media details"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
     public List<SkuMediaDto> getMediaBySkuId(@PathVariable(value = "productId") Long productId,
@@ -709,6 +709,7 @@ public class ProductController {
                     .collect(Collectors.toList());
     }
 
+    /* GET /products/{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
@@ -718,7 +719,7 @@ public class ProductController {
             response = SkuMediaDto.class
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+            @ApiResponse(code = 200, message = "Successful retrieval of media details"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
     public SkuMediaDto getMediaByIdForSku(@PathVariable(value = "productId") Long productId,
@@ -740,6 +741,63 @@ public class ProductController {
                     .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId + " of product with ID: " + productId));
 
 
+    }
+
+    /* DELETE /products/{productId}/skus/{id}/media/{mediaId} */
+    @Transactional
+    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete an existing media",
+            notes = "Removes a specific media related to the specified SKU",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "Successful removal of the specified media"),
+            @ApiResponse(code = 404, message = "The specified media, SKU or product does not exist")
+    })
+    public ResponseEntity<?> deleteOneMediaForSkuById(@PathVariable(value = "productId") Long productId,
+                                                      @PathVariable(value = "skuId") Long skuId,
+                                                      @PathVariable(value = "mediaId") Long mediaId) {
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+
+        if(product.getDefaultSku().getId().longValue() == skuId) {
+            throw new RuntimeException("Cannot delete SKU with ID: " + skuId + " of product with ID: " + productId + " - default SKU");
+        }
+
+        Optional<Sku> mediaSku = product.getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findFirst();
+
+        if(!mediaSku.isPresent()) {
+            throw new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId);
+        }
+
+        Sku mediaSkuEntity = mediaSku.get();
+
+        long currentSkuMediaSize = mediaSkuEntity.getSkuMediaXref().size();
+
+
+        Map<String, SkuMediaXref> newSkuMediaXref = mediaSkuEntity.getSkuMediaXref().entrySet().stream()
+                .filter(x -> x.getValue().getMedia().getId().longValue() != mediaId)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        /* TODO: (mst) This is stupid...*/
+        if(currentSkuMediaSize == newSkuMediaXref.size()) {
+            throw new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not releted to SKU with ID: " + skuId);
+        }
+
+
+        mediaSkuEntity.getSkuMediaXref().clear();
+        mediaSkuEntity.getSkuMediaXref().putAll(newSkuMediaXref);
+
+        catalogService.saveSku(mediaSkuEntity);
+
+        /* TODO: (mst) This might be a bit incomplete since we do nothing with the specified media... */
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 
