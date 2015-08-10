@@ -14,6 +14,7 @@ public class PayPalMessageConstants {
     public static final String HTTP_TOKEN = "token";
 
     public static final String QUERY_TOKEN = "token";
+    public static final String QUERY_AMOUNT = "amount";
     public static final String QUERY_ORDER_ID = "orderId";
     public static final String QUERY_PAYER_ID = "PayerID";
     public static final String QUERY_PAYMENT_ID = "paymentId";
