@@ -14,8 +14,8 @@ public class SystemProperitesServiceProxy {
     @Resource(name = "blSystemPropertiesDao")
     protected SystemPropertiesDao systemPropertiesDao;
 
-    public final String CLIENT_ID = "paypal_client_id";
-    public final String SECRET = "paypal_secret";
+    public final static String CLIENT_ID = "paypal_client_id";
+    public final static String SECRET = "paypal_secret";
 
     public SystemProperty getSystemPropertyByName(String name) {
         return systemPropertiesDao.readAllSystemProperties().stream()

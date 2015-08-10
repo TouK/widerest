@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.OrderItemService;
@@ -57,6 +58,7 @@ import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
+import pl.touk.widerest.api.cart.service.OrderValidationService;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
@@ -93,6 +95,12 @@ public class OrderController {
 
     @Resource(name = "blLocaleService")
     private LocaleService localeService;
+
+    @Resource(name = "wdOrderValidationService")
+    private OrderValidationService orderValidationService;
+
+    @Resource(name = "blInventoryService")
+    private InventoryService inventoryService;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
@@ -246,7 +254,7 @@ public class OrderController {
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
 
-        req.setProductId(productsSku.getProduct().getId());
+        //req.setProductId(productsSku.getProduct().getId());
 
         if(orderItemDto.getAttributes() != null) {
 
