@@ -409,6 +409,7 @@ public class DtoConverters {
                 .title(entity.getTitle())
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
+                .tags(entity.getTags())
                 .build();
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
@@ -426,6 +427,7 @@ public class DtoConverters {
         skuMedia.setTitle(dto.getTitle());
         skuMedia.setUrl(dto.getUrl());
         skuMedia.setAltText(dto.getAltText());
+        skuMedia.setTags(dto.getTags());
 
         skuMediaXref.setMedia(skuMedia);
         return skuMediaXref;

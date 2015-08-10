@@ -242,7 +242,6 @@ public class ProductController {
     }
 
     /* PATCH /products/{id} */
-    /* TODO (mst) Implement? :) */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.PATCH)
@@ -283,6 +282,8 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
+
     /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
@@ -302,10 +303,10 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllParentCategoryXrefs().stream()
-                .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .map(DtoConverters.categoryEntityToDto)
-                .collect(Collectors.toList());
+                    .map(CategoryProductXref::getCategory)
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .map(DtoConverters.categoryEntityToDto)
+                    .collect(Collectors.toList());
     }
 
     /* GET /products/{id}/categories */
@@ -326,10 +327,13 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllParentCategoryXrefs().stream()
-                .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
+                    .map(CategoryProductXref::getCategory)
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .count();
     }
+    /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
+
+    /* ---------------------------- SKU ENDPOINTS ---------------------------- */
 
 
     /* GET /products/{id}/skus */
@@ -351,8 +355,8 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .map(dtoConverters.skuEntityToDto)
-                .collect(Collectors.toList());
+                    .map(dtoConverters.skuEntityToDto)
+                    .collect(Collectors.toList());
 
     }
 
@@ -454,10 +458,10 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findAny()
-                .map(dtoConverters.skuEntityToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+                    .filter(x -> x.getId().longValue() == skuId)
+                    .findAny()
+                    .map(dtoConverters.skuEntityToDto)
+                    .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
     /* GET /products/{productId}/skus/default */
@@ -679,6 +683,10 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    /* ---------------------------- SKU ENDPOINTS ---------------------------- */
+
+    /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
+
     /* GET /products/{productId}/skus/{skuId}/media */
     @Transactional
     @PreAuthorize("permitAll")
@@ -877,7 +885,7 @@ public class ProductController {
         throw new RuntimeException("Implement me! :)");
     }
 
-
+/* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 
     /* GET /products/{id}/reviews *//*
     @Transactional

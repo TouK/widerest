@@ -30,4 +30,7 @@ public class SkuMediaDto extends ResourceSupport {
 
     @ApiModelProperty(required = true)
     private String altText;
+
+    @ApiModelProperty
+    private String tags;
 }

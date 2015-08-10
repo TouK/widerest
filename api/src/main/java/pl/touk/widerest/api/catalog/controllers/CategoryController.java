@@ -23,11 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import pl.touk.widerest.api.catalog.CatalogUtils;
@@ -59,8 +55,24 @@ public class CategoryController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class)
     })
-    public List<CategoryDto> readAllCategories() {
-        return catalogService.findAllCategories().stream()
+    public List<CategoryDto> readAllCategories(
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "offset", required = false) Integer offset) {
+
+        List<Category> returnedCategories;
+
+        if(offset == null && limit == null) {
+            returnedCategories = catalogService.findAllCategories();
+        } else {
+            /* TODO: (mst) There might be a case (at least I think so) when the amount
+                       of categories returned here won't equal the amount requested
+                       because of some categories being marked as archived...
+            */
+            returnedCategories = catalogService.findAllCategories(limit != null ? limit : 0,
+                    offset != null ? offset : 0);
+        }
+
+        return returnedCategories.stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
