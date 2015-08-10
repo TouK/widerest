@@ -111,7 +111,7 @@ public class PayPalControllerTest {
             paymentRequestResponse = payPalController.initiate(httpServletRequest, userDetails, orderId);
         }
 
-        public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException {
+        public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException, CheckoutException {
             // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
             // http://localhost:8080/orders/1/paypal/return?paymentId=PAY-7EE74569FE911601VKW3X7QQ&token=EC-2KE661416F427612K&PayerID=FXHKFGTPBJR4J
             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",

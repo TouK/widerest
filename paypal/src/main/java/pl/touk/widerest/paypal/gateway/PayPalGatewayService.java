@@ -58,10 +58,6 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     protected PayPalResponseDto requestPayPalHostedEndpoint(PayPalRequestDto payPalRequest) throws PaymentException {
         log.info("Creating PayPal payment for order {} for amount of {}", payPalRequest.getOrderId(), payPalRequest.getTransactionTotal());
         try {
-            //TODO: unhardcode credentials
-            String clientIdCredential = "AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
-                    secretCredential = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
-
             List<Transaction> transactions = new ArrayList<>();
 
 
@@ -123,6 +119,8 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
             PayPalResponseDto response = new PayPalResponseDto();
             response.setRedirectUri(redirect);
+            response.setAmount(new Money(payPalRequest.getTransactionTotal()));
+            response.setPaymentTransactionType(PaymentTransactionType.SETTLED);
 
             return response;
 
@@ -133,18 +131,11 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
     }
 
     protected PayPalResponseDto translatePayPalWebResponse(HttpServletRequest request) throws PaymentException {
-        //MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(request.getRequestURI()).build().getQueryParams();
-
         String token = request.getParameter(PayPalMessageConstants.QUERY_TOKEN);
         String payerId = request.getParameter(PayPalMessageConstants.QUERY_PAYER_ID);
         String paymentId = request.getParameter(PayPalMessageConstants.QUERY_PAYMENT_ID);
         String orderId = request.getParameter(PayPalMessageConstants.QUERY_ORDER_ID);
         String amount = request.getParameter(PayPalMessageConstants.QUERY_AMOUNT);
-
-//        String token = queryParams.getFirst(PayPalMessageConstants.QUERY_TOKEN);
-//        String payerId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYER_ID);
-//        String paymentId = queryParams.getFirst(PayPalMessageConstants.QUERY_PAYMENT_ID);
-//        String orderId = queryParams.getFirst(PayPalMessageConstants.QUERY_ORDER_ID);
 
         PayPalRequestDto payPalRequest = new PayPalRequestDto(token);
 
@@ -186,18 +177,17 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
            PaymentExecution paymentExecute = new PaymentExecution();
            paymentExecute.setPayerId(payPalRequest.getPayerId());
            payment.execute(payPalSession.getApiContext(), paymentExecute);
+            responseDto.setAmount(new Money(payPalRequest.getTransactionTotal()));
+            responseDto.setPaymentTransactionType(PaymentTransactionType.AUTHORIZE_AND_CAPTURE);
+            return responseDto;
 
         } catch (Exception e) {
             if(e instanceof PayPalRESTException) {
-                responseDto.setRedirectUri("http://error");
-                // Nazwa bledu z terminologii paypalowej
-                //((PayPalRESTException) e).getDetails().getName();
-                throw new PaymentException(e);
+                //TODO: getName czy getMessage?
+                throw new PaymentException(((PayPalRESTException) e).getDetails().getMessage(), e);
             }
             throw new PaymentException(e);
-            //TODO: wyjatek kiedy nie udal sie execute (redirect na strone paypala)
         }
-        return responseDto;
     }
 
 

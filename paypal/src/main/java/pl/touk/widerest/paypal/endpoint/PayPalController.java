@@ -161,7 +161,7 @@ public class PayPalController {
     public ResponseEntity handleReturn(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable(value = "id") Long orderId) throws PaymentException {
+            @PathVariable(value = "id") Long orderId) throws PaymentException, CheckoutException {
 
 
         // call checkout workflow
@@ -203,6 +203,9 @@ public class PayPalController {
         requestDTO.setPaymentId(payPalResponse.getResponseMap().get(PayPalMessageConstants.PAYMENT_ID));
         requestDTO.setAccessToken(payPalResponse.getResponseMap().get(PayPalMessageConstants.ACCESS_TOKEN));
         requestDTO.getWrapped().transactionTotal(order.getTotal().toString());
+        requestDTO.getWrapped().shippingTotal(order.getTotalShipping().toString());
+        requestDTO.getWrapped().orderSubtotal(order.getSubTotal().toString());
+        requestDTO.getWrapped().taxTotal(order.getTotalTax().toString());
         requestDTO.getWrapped().orderCurrencyCode(order.getCurrency().getCurrencyCode());
         //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
         //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
@@ -227,8 +230,9 @@ public class PayPalController {
             //CheckoutResponse checkoutResponse =
             checkoutService.performCheckout(order);
         } catch (CheckoutException e) {
-            throw BroadleafWebServicesException.build(HttpStatus.NOT_FOUND.value())
-                    .addMessage(BroadleafWebServicesException.CART_NOT_FOUND);
+            //e.printStackTrace();
+            //throw e;
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
         }
 
 
