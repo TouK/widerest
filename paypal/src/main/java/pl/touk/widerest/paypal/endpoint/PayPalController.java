@@ -111,8 +111,7 @@ public class PayPalController {
         String SELF_URL = strapRootURL(request.getRequestURL().toString()) + "/orders/"+orderId+"/paypal";
 
         String returnUrl = SELF_URL+"/return?"
-                +PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId
-                +"&"+PayPalMessageConstants.QUERY_AMOUNT+"="+order.getTotal().toString();
+                +PayPalMessageConstants.QUERY_AMOUNT+"="+order.getTotal().toString();
         String cancelUrl = SELF_URL+"/cancel?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
 
 
@@ -180,6 +179,7 @@ public class PayPalController {
 //        }
 
         // get data from link
+        request.setAttribute(PayPalMessageConstants.QUERY_ORDER_ID, orderId);
         PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
 
         if(!payPalResponse.isValid()) {
@@ -232,7 +232,7 @@ public class PayPalController {
         } catch (CheckoutException e) {
             //e.printStackTrace();
             //throw e;
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
         }
 
 

@@ -134,8 +134,8 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
         String token = request.getParameter(PayPalMessageConstants.QUERY_TOKEN);
         String payerId = request.getParameter(PayPalMessageConstants.QUERY_PAYER_ID);
         String paymentId = request.getParameter(PayPalMessageConstants.QUERY_PAYMENT_ID);
-        String orderId = request.getParameter(PayPalMessageConstants.QUERY_ORDER_ID);
         String amount = request.getParameter(PayPalMessageConstants.QUERY_AMOUNT);
+        String orderId = request.getAttribute(PayPalMessageConstants.QUERY_ORDER_ID).toString();
 
         PayPalRequestDto payPalRequest = new PayPalRequestDto(token);
 
