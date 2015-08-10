@@ -1,10 +1,7 @@
 package pl.touk.widerest.api.catalog.controllers;
 
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,8 +53,10 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class)
     })
     public List<CategoryDto> readAllCategories(
-            @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(value = "offset", required = false) Integer offset) {
+            @ApiParam(value = "Amount of categories to be returned", required = false)
+                @RequestParam(value = "limit") Integer limit,
+            @ApiParam(value = "Offset which to return categories from", required = false)
+                @RequestParam(value = "offset") Integer offset) {
 
         List<Category> returnedCategories;
 
@@ -92,7 +91,9 @@ public class CategoryController {
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 409, message = "Category already exists")
     })
-    public ResponseEntity<?> addOneCategory(@RequestBody CategoryDto categoryDto) {
+    public ResponseEntity<?> addOneCategory(
+            @ApiParam(value = "Description of a new category", required = true)
+                @RequestBody CategoryDto categoryDto) {
 
     	/* (mst) CategoryDto has to have at least a Name! */
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
@@ -159,7 +160,9 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of category details", response = CategoryDto.class),
             @ApiResponse(code = 404, message = "The specified category does not exist or is marked as archived")
     })
-    public CategoryDto readOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
+    public CategoryDto readOneCategoryById(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value="categoryId") Long categoryId) {
 
         Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -180,7 +183,9 @@ public class CategoryController {
             @ApiResponse(code = 204, message = "Successful removal of the specified category"),
             @ApiResponse(code = 404, message = "The specified category does not exist or is already marked as archived")
     })
-    public ResponseEntity<?> removeOneCategoryById(@PathVariable(value="categoryId") Long categoryId) {
+    public ResponseEntity<?> removeOneCategoryById(
+            @ApiParam(value = "ID of a specific category")
+                @PathVariable(value="categoryId") Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -207,7 +212,11 @@ public class CategoryController {
             @ApiResponse(code = 404, message = "The specified category does not exist"),
             @ApiResponse(code = 409, message = "Category with that name already exists")
     })
-    public ResponseEntity<?> updateOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
+    public ResponseEntity<?> updateOneCategory(
+            @ApiParam(value = "Description of a new category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "ID of a specific category", required = true)
+                @RequestBody CategoryDto categoryDto) {
 
     	/* (mst) CategoryDto has to have at least a Name! */
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
@@ -248,7 +257,11 @@ public class CategoryController {
             @ApiResponse(code = 404, message = "The specified category does not exist"),
             @ApiResponse(code = 409, message = "Category with that name already exists")
     })
-    public ResponseEntity<?> partialUpdateOneCategory(@PathVariable(value = "categoryId") Long categoryId, @RequestBody CategoryDto categoryDto) {
+    public ResponseEntity<?> partialUpdateOneCategory(
+            @ApiParam(value = "(Partial) Description of a new category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "ID of a specific category", required = true)
+                @RequestBody CategoryDto categoryDto) {
 
         Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -286,7 +299,9 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of all products in a given category"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public List<ProductDto> readProductsFromCategory(@PathVariable(value="categoryId") Long categoryId) {
+    public List<ProductDto> readProductsFromCategory(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value="categoryId") Long categoryId) {
 
         return getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
@@ -307,8 +322,11 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public ProductDto readOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
-                                                 @PathVariable(value = "productId") Long productId) {
+    public ProductDto readOneProductFromCategory(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value="categoryId") Long categoryId,
+            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+                @PathVariable(value = "productId") Long productId) {
 
         return this.getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
@@ -338,8 +356,11 @@ public class CategoryController {
             @ApiResponse(code = 404, message = "The specified category or product does not exist"),
             @ApiResponse(code = 409, message = "Category already contains the specified product")
     })
-    public ResponseEntity<?> insertOneProductIntoCategory(@PathVariable(value="categoryId") Long categoryId,
-                                                          @PathVariable(value = "productId") Long productId) {
+    public ResponseEntity<?> insertOneProductIntoCategory(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value="categoryId") Long categoryId,
+            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+                @PathVariable(value = "productId") Long productId) {
 
         Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -380,8 +401,11 @@ public class CategoryController {
             @ApiResponse(code = 204, message = "Specified product successfully removed from a category"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public ResponseEntity<?> removeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
-                                                          @PathVariable(value = "productId") Long productId) {
+    public ResponseEntity<?> removeOneProductFromCategory(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value="categoryId") Long categoryId,
+            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+                @PathVariable(value = "productId") Long productId) {
     	
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
 
@@ -423,11 +447,15 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of products count"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public Long getAllProductsInCategoryCount(@PathVariable(value = "categoryId") Long categoryId) {
+    public Long getAllProductsInCategoryCount(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId) {
         return getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .count();
     }
+
+    /* ------------------------------- HELPER METHODS ------------------------------- */
 
     private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {
 
