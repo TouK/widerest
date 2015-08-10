@@ -107,6 +107,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             payment.setPayer(payer);
             payment.setTransactions(transactions);
 
+
             RedirectUrls redirectUrls = new RedirectUrls();
             redirectUrls.setCancelUrl(payPalRequest.getCancelUri());
             redirectUrls.setReturnUrl(payPalRequest.getReturnUri());

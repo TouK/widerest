@@ -204,6 +204,7 @@ public class PayPalController {
         requestDTO.setAccessToken(payPalResponse.getResponseMap().get(PayPalMessageConstants.ACCESS_TOKEN));
         requestDTO.getWrapped().transactionTotal(order.getTotal().toString());
         requestDTO.getWrapped().orderCurrencyCode(order.getCurrency().getCurrencyCode());
+
         //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
         //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
 
