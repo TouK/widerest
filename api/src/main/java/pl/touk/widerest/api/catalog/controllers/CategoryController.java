@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import javafx.util.Pair;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
@@ -382,27 +383,35 @@ public class CategoryController {
     	
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
 
-        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-    	
-    	/* (mst) TODO: refactor ! */
         getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(x -> x.getId().longValue() == productId)
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
 
-        CategoryProductXref categoryProductXrefToDelete = categoryEntity.getAllProductXrefs().stream()
-                .filter(x -> x.getProduct().getId().longValue() == productId)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
 
-        categoryEntity.getAllProductXrefs().remove(categoryProductXrefToDelete);
+        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .map(e -> {
+                    CategoryProductXref xref = e.getAllProductXrefs().stream()
+                        .filter(x -> x.getProduct().getId().longValue() == productId)
+                        .findAny()
+                        .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
+                    return new Pair<>(e,xref);
+                })
+                .map(e -> {
+                    e.getKey().getAllProductXrefs().remove(e.getValue());
+                    return e.getKey();
+                })
+                .map(catalogService::saveCategory)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        catalogService.saveCategory(categoryEntity);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+
+
+
     }
     /* GET /categories/{categoryId}/products/count */
     @Transactional
