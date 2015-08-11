@@ -35,4 +35,8 @@ public class SkuMediaDto extends ResourceSupport {
 
     @ApiModelProperty
     private String tags;
+
+
+    /* (mst) TMP. To be removed after testing */
+    private String key;
 }
