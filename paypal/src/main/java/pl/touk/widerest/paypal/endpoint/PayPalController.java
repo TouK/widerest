@@ -8,6 +8,7 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.*;
+import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
@@ -18,6 +19,7 @@ import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
@@ -28,6 +30,7 @@ import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -83,8 +86,8 @@ public class PayPalController {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(method = RequestMethod.GET)
-
     public ResponseEntity initiate(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -97,6 +100,7 @@ public class PayPalController {
 
         // find order
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+                .filter(PayPalController::archivedOrderFilter)
                 .orElseThrow(() -> new ResourceNotFoundException(""));
 
         if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
@@ -148,15 +152,14 @@ public class PayPalController {
 
         HttpHeaders responseHeader = new HttpHeaders();
 
-        //responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(redirectURI)
-        //                .build().toUri());
 
         responseHeader.setLocation(URI.create(redirectURI));
-        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
     }
 
-    @RequestMapping(value = "/return", method = RequestMethod.GET)
     @Transactional
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @RequestMapping(value = "/return", method = RequestMethod.GET)
     public ResponseEntity handleReturn(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -173,6 +176,7 @@ public class PayPalController {
         CustomerUserDetails customerUserDetails = (CustomerUserDetails)userDetails;
 
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+                .filter(PayPalController::archivedOrderFilter)
                 .orElseThrow(() -> new ResourceNotFoundException(""));
 //        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
 //            throw new IllegalAccessError("Access Denied");
@@ -208,22 +212,6 @@ public class PayPalController {
         requestDTO.getWrapped().taxTotal(order.getTotalTax().toString());
         requestDTO.getWrapped().orderCurrencyCode(order.getCurrency().getCurrencyCode());
 
-        //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
-        //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
-
-//        // execute payment
-//        payPalResponse = transactionConfirmationService.confirmTransaction(requestDTO.getWrapped());
-//
-//        HttpHeaders responseHeader = new HttpHeaders();
-//
-//
-//        // if there was a problem with execution
-//        String url = payPalResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL);
-//        if(url != null) {
-//            responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(url)
-//                    .build().toUri());
-//            return new ResponseEntity<>(null, responseHeader, HttpStatus.MULTIPLE_CHOICES);
-//        }
 
         // Checkout/execute order in broadleaf
 
@@ -242,9 +230,10 @@ public class PayPalController {
         responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
-        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
     }
 
+    @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(value = "/cancel", method = RequestMethod.GET)
     public ResponseEntity handleCancel(
             HttpServletRequest request,
@@ -293,6 +282,10 @@ public class PayPalController {
     private String strapRootURL(String url) {
         // /\/orders(.*)/g
         return url.replaceFirst("/orders(.*)", "");
+    }
+
+    private static boolean archivedOrderFilter(Order order) {
+        return !order.getStatus().equals(OrderStatus.SUBMITTED);
     }
     
 }
