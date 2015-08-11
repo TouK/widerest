@@ -797,6 +797,11 @@ public class ProductController {
             @ApiParam(value = "ID of a specific media", required = true)
                 @PathVariable(value = "mediaId") Long mediaId) {
 
+        /* (mst) Here is the deal: if the specified SKU does not contain any medias
+         *       BL's service will return medias associated with Default SKU instead.,
+         */
+
+
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -874,10 +879,9 @@ public class ProductController {
 
 
 
-    /* TODO: (mst) Fix this! */
     /* POST /{productId}/skus/{skuId}/media */
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add media to the product",
@@ -886,7 +890,8 @@ public class ProductController {
     @ApiResponses({
             @ApiResponse(code = 201, message = "Specified SKU successfully added"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
+            @ApiResponse(code = 404, message = "The specified product does not exist"),
+            @ApiResponse(code = 409, message = "Media with that key already exists")
     })
     public ResponseEntity<?> saveOneMediaForSku(
             @ApiParam(value = "ID of a specific product", required = true)
@@ -895,6 +900,12 @@ public class ProductController {
                 @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "Description of a new media")
                 @RequestBody SkuMediaDto skuMediaDto) {
+
+        List<String> allowableKeys = Arrays.asList("primary", "alt1", "alt2", "alt3", "alt4", "alt5", "alt6", "alt7", "alt8", "alt9");
+
+        if(skuMediaDto.getKey() == null || !allowableKeys.contains(skuMediaDto.getKey()) || skuMediaDto.getUrl() == null || skuMediaDto.getUrl().isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -905,25 +916,25 @@ public class ProductController {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        Map<String, SkuMediaXref> d = new HashMap<>(mediaSkuEntity.getSkuMediaXref());
+       if(mediaSkuEntity.getSkuMediaXref().get(skuMediaDto.getKey()) != null) {
+           return new ResponseEntity<>(HttpStatus.CONFLICT);
+       }
 
         SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(skuMediaDto);
 
         newSkuMediaXref.setSku(mediaSkuEntity);
         newSkuMediaXref.setKey(skuMediaDto.getKey());
 
-        //d.put(skuMediaDto.getKey(), newSkuMediaXref);
-
-        //mediaSkuEntity.setSkuMediaXref(d);
-//        mediaSkuEntity.getSkuMediaXref().clear();
-//        mediaSkuEntity.getSkuMediaXref().putAll(d);
-
         mediaSkuEntity.getSkuMediaXref().put(skuMediaDto.getKey(), newSkuMediaXref);
+
+        /* (mst) Here is the deal: if the specified SKU does not contain any medias,
+         *       BL's service will return medias associated with Default SKU instead. (from GET endpoint)
+         *
+         *       Therefore, when we add a media to a SKU, that does not contain any, all those
+         *       previously visible (eg: through GET endpoints) medias WILL "disappear".
+         */
+
         Sku alreadySavedSku = catalogService.saveSku(mediaSkuEntity);
-        //catalogService.saveProduct(product);
-
-//        Map<String, SkuMediaXref> d2 = alreadySavedSku.getSkuMediaXref();
-
 
         HttpHeaders responseHeader = new HttpHeaders();
 
@@ -951,7 +962,6 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful update of the specified media"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
-            @ApiResponse(code = 409, message = "SKU with that name already exists")
     })
     public ResponseEntity<?> updateOneMediaForSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
