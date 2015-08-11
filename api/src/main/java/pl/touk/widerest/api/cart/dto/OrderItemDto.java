@@ -26,14 +26,9 @@ public class OrderItemDto {
     @JsonIgnore
     private long itemId;
 
-
     @ApiModelProperty(required = true)
     private int quantity = 1;
 
     @ApiModelProperty(required = true)
     private long skuId;
-
-    /* (mst) do we need attributes when dealing only with SKUs? */
-    @ApiModelProperty
-    private Map attributes;
 }

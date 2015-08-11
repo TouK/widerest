@@ -237,10 +237,10 @@ public class OrderController {
     })
     public ResponseEntity<?> addProductToOrder(
             @AuthenticationPrincipal UserDetails userDetails,
-            @ApiParam(value = "Description of a new order item", required = true)
-                @RequestBody OrderItemDto orderItemDto,
             @ApiParam(value = "ID of a specific order", required = true)
-                @PathVariable(value = "orderId") Long orderId) throws PricingException, AddToCartException {
+                @PathVariable(value = "orderId") Long orderId,
+            @ApiParam(value = "Description of a new order item", required = true)
+                @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
         Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
@@ -251,18 +251,10 @@ public class OrderController {
             throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
         }
 
-
         OrderItemRequestDTO req = new OrderItemRequestDTO();
 
         req.setQuantity(orderItemDto.getQuantity());
         req.setSkuId(orderItemDto.getSkuId());
-
-        //req.setProductId(productsSku.getProduct().getId());
-
-        if(orderItemDto.getAttributes() != null) {
-
-        }
-
 
         orderService.addItem(cart.getId(), req, true);
         cart.calculateSubTotal();
