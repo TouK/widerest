@@ -592,7 +592,74 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .count();
+                    .count();
+    }
+
+    /* GET /products/{productId}/skus/{skuId}/quantity */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/quantity", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get SKU's quantity",
+            notes = "Gets a quantity of all available SKUs",
+            response = Integer.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU's quantity"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public Integer getSkuByIdQuantity(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") Long productId,
+            @ApiParam(value = "ID of a specific SKU", required = true)
+                @PathVariable(value = "skuId") Long skuId) {
+
+        return Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
+                .getQuantityAvailable();
+    }
+
+    /* PUT /products/{productId}/skus/{skuId}/quantity */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/quantity", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update SKU's quantity",
+            notes = "Update a quantity of specified SKUs",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful update of SKU's quantity"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public ResponseEntity<?> updateSkuByIdQuantity(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") Long productId,
+            @ApiParam(value = "ID of a specific SKU", required = true)
+                @PathVariable(value = "skuId") Long skuId,
+            @ApiParam(value = "Quantity of a specific SKU")
+                @RequestBody Integer quantity) {
+
+         /* TODO: (mst) Inventory Service??? */
+
+        Sku skuToBeUpdated = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+
+        skuToBeUpdated.setQuantityAvailable(quantity);
+
+        catalogService.saveSku(skuToBeUpdated);
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     /* DELETE /products/{productId}/skus/{id} */
