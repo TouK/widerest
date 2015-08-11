@@ -938,16 +938,17 @@ public class ProductController {
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
+    /* TODO: (mst) Maybe some duplicate/required params checks? */
     /* PUT /{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PUT)
     @ApiOperation(
-            value = "Update an existing SKU",
-            notes = "Updates an existing SKU with new details. If the SKU does not exist, it does NOT create it!",
+            value = "Update an existing media",
+            notes = "Updates an existing media with new details. If the media does not exist, it does NOT create it!",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
+            @ApiResponse(code = 200, message = "Successful update of the specified media"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
             @ApiResponse(code = 409, message = "SKU with that name already exists")
@@ -983,6 +984,51 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId));
 
         CatalogUtils.updateMediaEntityFromDto(skuMediaXref.getMedia(), skuMediaDto);
+
+        catalogService.saveSku(skuMediaEntity);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PATCH /products/{productId}/skus/{skuId}/media/{mediaId} */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PATCH)
+    @ApiOperation(
+            value = "Partially update an existing media",
+            notes = "Partially updates an existing media with new details. It does not follow the format specified in RFC yet though",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified media"),
+            @ApiResponse(code = 404, message = "The specified product or SKU does not exist")
+    })
+    public ResponseEntity<?> partialUpdateOneMediaForSkuById(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") Long productId,
+            @ApiParam(value = "ID of a specific SKU", required = true)
+                @PathVariable(value = "skuId") Long skuId,
+            @ApiParam(value = "ID of a specific media", required = true)
+                @PathVariable(value = "mediaId") Long mediaId,
+            @ApiParam(value = "(Partial) Description of an updated media")
+                @RequestBody SkuMediaDto skuMediaDto) {
+
+        Sku skuMediaEntity = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+
+        /* (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available! */
+
+        SkuMediaXref skuMediaXref = skuMediaEntity.getSkuMediaXref().entrySet().stream()
+                .filter(x -> x.getValue().getMedia().getId().longValue() == mediaId)
+                .map(Map.Entry::getValue)
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId));
+
+        CatalogUtils.partialUpdateMediaEntityFromDto(skuMediaXref.getMedia(), skuMediaDto);
 
         catalogService.saveSku(skuMediaEntity);
 
