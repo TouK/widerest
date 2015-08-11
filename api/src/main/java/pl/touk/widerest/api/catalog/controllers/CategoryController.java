@@ -351,13 +351,9 @@ public class CategoryController {
         CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
         productToAddXref.setProduct(productToAdd);
         productToAddXref.setCategory(categoryEntity);
-
-        List<CategoryProductXref> categoryProductXrefs = new ArrayList<>();
-        categoryProductXrefs.addAll(categoryEntity.getAllProductXrefs());
-
-        if(!categoryProductXrefs.contains(productToAddXref)) {
-            categoryProductXrefs.add(productToAddXref);
-            categoryEntity.setAllProductXrefs(categoryProductXrefs);
+        
+        if(!categoryEntity.getAllProductXrefs().contains(productToAddXref)) {
+            categoryEntity.getAllProductXrefs().add(productToAddXref);
             catalogService.saveCategory(categoryEntity);
             return new ResponseEntity<>(HttpStatus.CREATED);
         } else {
@@ -397,16 +393,12 @@ public class CategoryController {
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
 
-        List<CategoryProductXref> categoryProductXrefs = new ArrayList<>();
-        categoryProductXrefs.addAll(categoryEntity.getAllProductXrefs());
-
-        CategoryProductXref categoryProductXrefToDelete = categoryProductXrefs.stream()
+        CategoryProductXref categoryProductXrefToDelete = categoryEntity.getAllProductXrefs().stream()
                 .filter(x -> x.getProduct().getId().longValue() == productId)
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
 
-        categoryProductXrefs.remove(categoryProductXrefToDelete);
-        categoryEntity.setAllProductXrefs(categoryProductXrefs);
+        categoryEntity.getAllProductXrefs().remove(categoryProductXrefToDelete);
 
         catalogService.saveCategory(categoryEntity);
 
