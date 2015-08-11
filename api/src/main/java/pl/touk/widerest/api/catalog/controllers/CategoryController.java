@@ -59,9 +59,7 @@ public class CategoryController {
             @ApiParam(value = "Offset which to start returning categories from")
                 @RequestParam(value = "offset", required = false) Integer offset) {
 
-        return catalogService.findAllCategories(limit != null ? limit : 0,
-                offset != null ? offset : 0)
-                .stream()
+        return catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
@@ -352,7 +350,7 @@ public class CategoryController {
         CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
         productToAddXref.setProduct(productToAdd);
         productToAddXref.setCategory(categoryEntity);
-        
+
         if(!categoryEntity.getAllProductXrefs().contains(productToAddXref)) {
             categoryEntity.getAllProductXrefs().add(productToAddXref);
             catalogService.saveCategory(categoryEntity);
@@ -446,126 +444,3 @@ public class CategoryController {
     }
 
 }
-
-/* ------------------------------- ARCHIVE CODE ------------------------------- */
-
-/*
-    */
-/* PUT /categories/{id}/products/{productId} *//*
-
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-    @RequestMapping(value = "/{categoryId}/products/{productId}", method = RequestMethod.PUT)
-    @ApiOperation(
-            value = "Update details of a single product in a category",
-            notes = "Updates details of the specific product in a given category",
-            response = Void.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful update of product details"),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
-    })
-    public void changeOneProductFromCategory(@PathVariable(value="categoryId") Long categoryId,
-                                             @PathVariable(value = "productId") Long productId,
-                                             @RequestBody ProductDto productDto) {
-
-        this.getProductsFromCategoryId(categoryId).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId().longValue() == productId)
-                .findAny()
-                .map(e -> {
-                    */
-/* TODO:  Check if products category and categoryId match *//*
-
-                    productDto.setProductId(productId);
-                    catalogService.saveProduct(DtoConverters.productDtoToEntity.apply(productDto));
-                    return e;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot find product with id: " + categoryId + " in category: " + categoryId));
-
-    }
-
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-    @RequestMapping(value = "/{categoryId}/products", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add a product to the category",
-            notes = "Adds a product to the specified category and returns" +
-                    " an URL to it in the Location field of the HTTP response header",
-            response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Specified product successfully added"),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
-    })
-    public ResponseEntity<?> saveOneProductInCategory(@PathVariable(value="categoryId") Long categoryId,
-                                                      @RequestBody ProductDto productDto) {
-
-        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-
-        */
-/* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... *//*
-
-        Optional<Product> product = catalogService.findProductsByName(productDto.getName()).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Product"))
-
-
-
-        */
-/* TODO: (mst) TEST IT!!! *//*
-
-        */
-/* In case the product already exists, we just add a reference to Category's products *//*
-
-        if(product.isPresent() && !category.getAllProductXrefs().contains(product.get())) {
-            List<CategoryProductXref> categoryProducts = new ArrayList<>(category.getAllProductXrefs());
-            CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();
-            categoryProductXref.setProduct(product.get());
-            categoryProducts.add(categoryProductXref);
-            category.setAllProductXrefs(categoryProducts);
-            catalogService.saveCategory(category);
-        } else {
-            Sku defaultSku = Optional.ofNullable(productDto.getDefaultSku())
-                    .map(DtoConverters.skuDtoToEntity)
-                    .orElseThrow(() -> new ResourceNotFoundException("Default SKU for product not provided"));
-
-         */
-/* TODO: (mst) creating Product Bundles *//*
-
-
-         */
-/* what if both Product and SKU return null?! *//*
-
-            //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
-
-
-            Product newProduct = DtoConverters.productDtoToEntity.apply(productDto);
-         */
-/* this one is probably redundant *//*
-
-            newProduct.setDefaultSku(defaultSku);
-         */
-/* Include information about Categories *//*
-
-            newProduct.setCategory(category);
-
-            newProduct = catalogService.saveProduct(newProduct);
-        }
-        */
-/* TODO: update category list references as well! *//*
-
-
-        HttpHeaders responseHeaders = new HttpHeaders();
-
-        */
-/* TODO: (mst) Return url to the product itself? (/catalog/products/{productId}) *//*
-
-        //responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-        //        .path("/{categoryId}/products/{productId}")
-        //       .buildAndExpand(categoryId, newProduct.getId())
-        //       .toUri());
-
-        return new ResponseEntity<>(null, responseHeaders, HttpStatus.CREATED);
-    }*/

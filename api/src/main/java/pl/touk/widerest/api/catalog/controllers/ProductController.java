@@ -62,23 +62,9 @@ public class ProductController {
             @ApiParam(value = "Amount of products to be returned")
                 @RequestParam(value = "limit", required = false) Integer limit,
             @ApiParam(value = "Offset which to  start returning products from")
-                @RequestParam(value = "offset", required = false) Integer offset
-    ) {
+                @RequestParam(value = "offset", required = false) Integer offset) {
 
-        List<Product> returnedProducts;
-
-        if(offset == null && limit == null) {
-            returnedProducts = catalogService.findAllProducts();
-        } else {
-            /* TODO: (mst) There might be a case (at least I think so) when the amount
-                       of products returned here won't equal the amount requested
-                       because of some products being marked as archived...
-            */
-            returnedProducts = catalogService.findAllProducts(limit != null ? limit : 0,
-                    offset != null ? offset : 0);
-        }
-
-        return returnedProducts.stream()
+        return catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(dtoConverters.productEntityToDto)
                 .collect(Collectors.toList());
@@ -118,18 +104,9 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .count();
 
-        /* (mst) Old "duplicate matching" code */
-        /*
-        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
-                .filter(x -> x.getDescription().equals(productDto.getDescription()) || x.getLongDescription().equals(productDto.getLongDescription()))
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
-                */
-
         if(duplicatesCount > 0) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
-
 
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
