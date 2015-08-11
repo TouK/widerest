@@ -58,20 +58,9 @@ public class CategoryController {
             @ApiParam(value = "Offset which to start returning categories from")
                 @RequestParam(value = "offset", required = false) Integer offset) {
 
-        List<Category> returnedCategories;
-
-        if(offset == null && limit == null) {
-            returnedCategories = catalogService.findAllCategories();
-        } else {
-            /* TODO: (mst) There might be a case (at least I think so) when the amount
-                       of categories returned here won't equal the amount requested
-                       because of some categories being marked as archived...
-            */
-            returnedCategories = catalogService.findAllCategories(limit != null ? limit : 0,
-                    offset != null ? offset : 0);
-        }
-
-        return returnedCategories.stream()
+        return catalogService.findAllCategories(limit != null ? limit : 0,
+                offset != null ? offset : 0)
+                .stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
@@ -99,15 +88,6 @@ public class CategoryController {
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-    	
-    	/* (mst) Old "duplicate matching" code */
-    	/*
-        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-        		.filter(CatalogUtils::archivedCategoryFilter)
-                .filter(x -> x.getDescription().equals(categoryDto.getDescription()) || x.getLongDescription().equals(categoryDto.getLongDescription()))
-                .count();
-
-        */
     	
     	/* (mst) Providing that both Description() and LongDescription() can be null, which...is OK, this one
     	 *       should do the job "better" IMO
@@ -164,11 +144,11 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
                 @PathVariable(value="categoryId") Long categoryId) {
 
-        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        return Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
+                .map(DtoConverters.categoryEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        return DtoConverters.categoryEntityToDto.apply(categoryEntity);
     }
 
     /* DELETE /categories/{categoryId} */
@@ -231,14 +211,12 @@ public class CategoryController {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
+                .map(e -> CatalogUtils.updateCategoryEntityFromDto(e, categoryDto))
+                .map(catalogService::saveCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-
-        categoryToUpdate = CatalogUtils.updateCategoryEntityFromDto(categoryToUpdate, categoryDto);
-
-        catalogService.saveCategory(categoryToUpdate);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -262,10 +240,6 @@ public class CategoryController {
                 @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "(Partial) Description of an updated category", required = true)
                 @RequestBody CategoryDto categoryDto) {
-
-        Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
         
         /* (mst) Here...we don't need to have Name set BUT in case we do, we also check for duplicates! */
         if(categoryDto.getName() != null) {
@@ -279,9 +253,12 @@ public class CategoryController {
             }
         }
 
-        categoryToUpdate = CatalogUtils.partialUpdateCategoryEntityFromDto(categoryToUpdate, categoryDto);
+        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .map(e -> CatalogUtils.partialUpdateCategoryEntityFromDto(e, categoryDto))
+                .map(catalogService::saveCategory)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        catalogService.saveCategory(categoryToUpdate);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -414,7 +391,7 @@ public class CategoryController {
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
     	
     	/* (mst) TODO: refactor ! */
-        Product productEntity = getProductsFromCategoryId(categoryId).stream()
+        getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(x -> x.getId().longValue() == productId)
                 .findAny()
@@ -459,11 +436,12 @@ public class CategoryController {
 
     private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {
 
-        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        return Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-
-        return category.getAllProductXrefs().stream().map(CategoryProductXref::getProduct).collect(Collectors.toList());
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"))
+                .getAllProductXrefs().stream()
+                .map(CategoryProductXref::getProduct)
+                .collect(Collectors.toList());
     }
 
 }
