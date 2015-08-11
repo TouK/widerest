@@ -25,6 +25,16 @@
 
     <description>RESTful API for Broadleaf Commerce</description>
     <repositories>
+        <repository>
+            <id>public blc snapshots</id>
+            <name>public blc snapshots</name>
+            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>public blc releases</id>
+            <name>public blc releases</name>
+            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
+        </repository>
         <!--<repository>
             <id>public snapshots</id>
             <name>public snapshots</name>
