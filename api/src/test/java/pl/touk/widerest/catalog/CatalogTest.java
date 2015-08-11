@@ -3,8 +3,10 @@ package pl.touk.widerest.catalog;
 import org.hamcrest.number.IsCloseTo;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.*;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
@@ -28,6 +30,7 @@ import static org.junit.Assert.assertTrue;
  * Created by mst on 28.07.15.
  */
 @SpringApplicationConfiguration(classes = Application.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 public class CatalogTest extends ApiTestBase {
 
 
@@ -253,6 +256,60 @@ public class CatalogTest extends ApiTestBase {
         assertNotNull(receivedCategoryEntity);
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
+    }
+
+    @Test
+    public void modifyingExistingCategoryDoesNotAffectItsProductsTest() {
+        long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
+
+        ResponseEntity<CategoryDto> newCategoryEntity = addTestCategory(DtoTestType.SAME);
+
+        assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
+
+        long testCategoryId = getIdFromLocationUrl(newCategoryEntity.getHeaders().getLocation().toString());
+
+        final int PRODUCT_COUNT = 4;
+
+        List<Long> newProductsIds = new ArrayList<>();
+
+        for(int i = 0; i < PRODUCT_COUNT; i++) {
+
+            ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+            productDto.setCategoryName(DtoTestFactory.getTestCategory(DtoTestType.SAME).getName());
+
+            ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
+                    PRODUCTS_URL,
+                    productDto, null, serverPort);
+
+            assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+            newProductsIds.add(getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString()));
+        }
+
+
+
+        assertThat(getRemoteTotalProductsInCategorCount(testCategoryId), equalTo((long)PRODUCT_COUNT));
+
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
+        categoryDto.setDescription("ModifiedTestCategoryDescription");
+        categoryDto.setName("ModifiedTestCategoryName");
+        categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
+
+        oAuth2AdminRestTemplate().put(newCategoryEntity.getHeaders().getLocation().toString(), categoryDto, serverPort);
+
+        assertThat(getRemoteTotalProductsInCategorCount(testCategoryId), equalTo((long)PRODUCT_COUNT));
+    }
+
+
+    /* ------------------ HELPER METHODS -------------------*/
+
+    public ResponseEntity<CategoryDto> addTestCategory(DtoTestType dtoTestType) {
+        return oAuth2AdminRestTemplate().postForEntity(
+                CATEGORIES_URL,
+                DtoTestFactory.getTestCategory(dtoTestType),
+                null,
+                serverPort);
     }
 
 

@@ -207,6 +207,7 @@ public class PayPalController {
         requestDTO.getWrapped().orderSubtotal(order.getSubTotal().toString());
         requestDTO.getWrapped().taxTotal(order.getTotalTax().toString());
         requestDTO.getWrapped().orderCurrencyCode(order.getCurrency().getCurrencyCode());
+
         //TODO: czy to jest potrzebne by pamietac? (PaymentTransactionType)
         //requestDTO.setPaymentTransactionType(payPalResponse.getPaymentTransactionType());
 

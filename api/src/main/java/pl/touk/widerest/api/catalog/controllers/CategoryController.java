@@ -53,10 +53,10 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class)
     })
     public List<CategoryDto> readAllCategories(
-            @ApiParam(value = "Amount of categories to be returned", required = false)
-                @RequestParam(value = "limit") Integer limit,
-            @ApiParam(value = "Offset which to return categories from", required = false)
-                @RequestParam(value = "offset") Integer offset) {
+            @ApiParam(value = "Amount of categories to be returned")
+                @RequestParam(value = "limit", required = false) Integer limit,
+            @ApiParam(value = "Offset which to start returning categories from")
+                @RequestParam(value = "offset", required = false) Integer offset) {
 
         List<Category> returnedCategories;
 
@@ -213,9 +213,9 @@ public class CategoryController {
             @ApiResponse(code = 409, message = "Category with that name already exists")
     })
     public ResponseEntity<?> updateOneCategory(
-            @ApiParam(value = "Description of a new category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "(Full) Description of an updated category", required = true)
                 @RequestBody CategoryDto categoryDto) {
 
     	/* (mst) CategoryDto has to have at least a Name! */
@@ -258,9 +258,9 @@ public class CategoryController {
             @ApiResponse(code = 409, message = "Category with that name already exists")
     })
     public ResponseEntity<?> partialUpdateOneCategory(
-            @ApiParam(value = "(Partial) Description of a new category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "(Partial) Description of an updated category", required = true)
                 @RequestBody CategoryDto categoryDto) {
 
         Category categoryToUpdate = Optional.ofNullable(catalogService.findCategoryById(categoryId))
