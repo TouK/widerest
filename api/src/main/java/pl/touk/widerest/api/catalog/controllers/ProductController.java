@@ -70,6 +70,10 @@ public class ProductController {
         if(offset == null && limit == null) {
             returnedProducts = catalogService.findAllProducts();
         } else {
+            /* TODO: (mst) There might be a case (at least I think so) when the amount
+                       of products returned here won't equal the amount requested
+                       because of some products being marked as archived...
+            */
             returnedProducts = catalogService.findAllProducts(limit != null ? limit : 0,
                     offset != null ? offset : 0);
         }
