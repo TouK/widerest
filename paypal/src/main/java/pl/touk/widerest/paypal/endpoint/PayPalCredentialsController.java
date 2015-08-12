@@ -1,10 +1,11 @@
 package pl.touk.widerest.paypal.endpoint;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
-import org.broadleafcommerce.common.config.service.SystemPropertiesService;
-import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @Controller
 @ResponseBody
 @RequestMapping("/paypal")
+@Api(value = "paypal-credentials", description = "PayPal credentials endpoint")
 public class PayPalCredentialsController {
 
     @Resource(name = "wdSystemProperties")
@@ -32,6 +34,14 @@ public class PayPalCredentialsController {
 
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "/id", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get client id used in PayPal",
+            notes = "",
+            response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Client ID successfully received"),
+            @ApiResponse(code = 500, message = "Client ID hasn't been set yet")
+    })
     public String getPayPalClientId(@AuthenticationPrincipal UserDetails userDetails) {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID))
@@ -41,6 +51,14 @@ public class PayPalCredentialsController {
 
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "/secret", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get client secret used in PayPal",
+            notes = "",
+            response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Client secret successfully received"),
+            @ApiResponse(code = 500, message = "Client secret hasn't been set yet")
+    })
     public String getPayPalSecret(@AuthenticationPrincipal UserDetails userDetails) {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET))
@@ -51,6 +69,14 @@ public class PayPalCredentialsController {
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "/id", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Set client id used in PayPal",
+            notes = "",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Client ID successfully set"),
+            @ApiResponse(code = 500, message = "Client ID cannot be set")
+    })
     public ResponseEntity<?> setClientId(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody String clientId
@@ -61,23 +87,31 @@ public class PayPalCredentialsController {
         if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID).getValue().equals(clientId))
             return new ResponseEntity<>(HttpStatus.CREATED);
 
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "/secret", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Set client secret used in PayPal",
+            notes = "",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Client secret successfully set"),
+            @ApiResponse(code = 500, message = "Client secret cannot be set")
+    })
     public ResponseEntity<?> setSecret(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody String secret
     ) {
 
-        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.CLIENT_ID, secret);
+        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.SECRET, secret);
 
-        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID).getValue().equals(secret))
+        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET).getValue().equals(secret))
             return new ResponseEntity<>(HttpStatus.CREATED);
 
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
 }

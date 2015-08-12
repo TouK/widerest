@@ -1,18 +1,16 @@
 package pl.touk.widerest.paypal.endpoint;
 
-import com.paypal.api.payments.PaymentExecution;
-import org.apache.commons.lang3.StringUtils;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.*;
-import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
-import org.broadleafcommerce.core.checkout.service.workflow.CheckoutResponse;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -20,11 +18,7 @@ import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
-import org.broadleafcommerce.core.payment.domain.OrderPayment;
-import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
-import org.broadleafcommerce.core.web.api.BroadleafWebServicesException;
-import org.broadleafcommerce.core.web.api.wrapper.OrderWrapper;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpHeaders;
@@ -41,7 +35,6 @@ import pl.touk.widerest.paypal.exception.FulfillmentOptionNotSetException;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 import pl.touk.widerest.paypal.gateway.PayPalRequestDto;
-import pl.touk.widerest.paypal.gateway.PayPalResponseDto;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -52,6 +45,7 @@ import java.util.Optional;
 @Controller
 @ResponseBody
 @RequestMapping("/orders/{id}/paypal")
+@Api(value = "paypal", description = "PayPal payment endpoint")
 public class PayPalController {
 
     @Resource(name = "blOrderToPaymentRequestDTOService")
@@ -88,6 +82,15 @@ public class PayPalController {
     @Transactional
     @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Initiate order payment execution using PayPal",
+            notes = "Initiates for one chosen order",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 303, message = "Redirects to PayPal checkout website"),
+            @ApiResponse(code = 403, message = "Access denied to given order")
+            // and throws
+    })
     public ResponseEntity initiate(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -131,9 +134,6 @@ public class PayPalController {
         }
 
 
-        //PaymentRequestDTO paymentRequestDTO = orderToPaymentRequestDTOService.translateOrder(order);
-
-
         PaymentRequestDTO paymentRequestDTO =
                 orderToPaymentRequestDTOService.translateOrder(order)
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
@@ -160,6 +160,13 @@ public class PayPalController {
     @Transactional
     @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(value = "/return", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Return endpoint for PayPal",
+            notes = "User gets redirected here after successful logging and payment",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 303, message = "Redirects to homepage after payment execution")
+    })
     public ResponseEntity handleReturn(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -235,6 +242,13 @@ public class PayPalController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(value = "/cancel", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Cancel endpoint for PayPal",
+            notes = "User gets redirected here after payment failure or denial",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 303, message = "Redirects to homepage")
+    })
     public ResponseEntity handleCancel(
             HttpServletRequest request,
             @AuthenticationPrincipal UserDetails userDetails,
@@ -246,7 +260,7 @@ public class PayPalController {
         responseHeader.setLocation(ServletUriComponentsBuilder.fromHttpUrl(strapRootURL(request.getRequestURL().toString()))
                 .build().toUri());
 
-        return new ResponseEntity<>(responseHeader, HttpStatus.MULTIPLE_CHOICES);
+        return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
     }
 
 
