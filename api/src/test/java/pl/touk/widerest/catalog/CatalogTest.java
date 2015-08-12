@@ -327,8 +327,8 @@ public class CatalogTest extends ApiTestBase {
         assertThat(receivedCategoriesEntity.getStatusCode().value(), equalTo(200));
 
         for(CategoryDto testCategory : receivedCategoriesEntity.getBody()) {
-            if(testCategory.getName().startsWith(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), 1);
+            if(testCategory.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
+                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), serverPort);
             }
         }
     }
@@ -341,8 +341,8 @@ public class CatalogTest extends ApiTestBase {
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         for(ProductDto testProduct : receivedProductEntity.getBody()) {
-            if(testProduct.getName().startsWith(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref(), 1);
+            if(testProduct.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
+                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref(), serverPort);
             }
         }
     }

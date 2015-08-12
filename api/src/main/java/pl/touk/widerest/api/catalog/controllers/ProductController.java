@@ -74,7 +74,7 @@ public class ProductController {
     /* POST /products */
     /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -124,6 +124,22 @@ public class ProductController {
         }
 
         newProduct.setDefaultSku(defaultSku);
+
+        List<ProductOptionXref> productOptionXrefList = new ArrayList<>();
+
+        if(productDto.getOptions() != null && !productDto.getOptions().isEmpty()) {
+            for(ProductOptionDto productOptionDto : productDto.getOptions()) {
+                ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
+
+                ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
+                productOptionXref.setProduct(newProduct);
+                productOptionXref.setProductOption(p);
+
+                productOptionXrefList.add(productOptionXref);
+            }
+
+            newProduct.setProductOptionXrefs(productOptionXrefList);
+        }
 
 
         /* TODO: (mst) creating Product Bundles */
@@ -385,7 +401,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        if(skuDto.getSkuProductOptionValues() == null) {
+        if(skuDto.getSkuProductOptionValues() == null || skuDto.getProductOptionValues().size() != product.getProductOptionXrefs().size()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 

@@ -1,7 +1,10 @@
 package pl.touk.widerest.catalog;
 
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Resource;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -17,7 +20,7 @@ import pl.touk.widerest.base.DtoTestType;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
@@ -30,11 +33,12 @@ public class ProductControllerTest extends ApiTestBase {
         httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         //tmp
-        serverPort = String.valueOf(8080);
+        //serverPort = String.valueOf(8080);
         cleanupProductTests();
     }
 
     @Test
+    @Ignore
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         long currentProductsCount = getRemoteTotalProductsCount();
@@ -228,8 +232,8 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         for(ProductDto testProduct : receivedProductEntity.getBody()) {
-            if(testProduct.getName().startsWith(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref(), 1);
+            if(testProduct.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
+                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref());
             }
         }
     }

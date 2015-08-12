@@ -485,12 +485,6 @@ public class DtoConverters {
         product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
 
         product.setName(productDto.getName());
-
-		/* TODO (mst) Category!!! */
-        if (productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
-
-        }
-
         product.setDescription(productDto.getDescription());
         product.setLongDescription(productDto.getLongDescription());
         product.setPromoMessage(productDto.getOfferMessage());
@@ -498,7 +492,6 @@ public class DtoConverters {
         product.setActiveEndDate(productDto.getValidTo());
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
-
 
         List<Sku> allSkus = new ArrayList<>();
         allSkus.add(product.getDefaultSku());
@@ -521,12 +514,13 @@ public class DtoConverters {
         }
 
 		/* TODO: (mst) Refactor to lamda */
+        /*
         if(productDto.getOptions() != null) {
             product.setProductOptionXrefs(
                     productDto.getOptions().stream()
                             .map(productOptionDtoToXRef)
                             .collect(toList()));
-        }
+        }*/
 
         // TODO: options
 
