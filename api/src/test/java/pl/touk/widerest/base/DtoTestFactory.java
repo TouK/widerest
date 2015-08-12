@@ -1,14 +1,10 @@
 package pl.touk.widerest.base;
 
 import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.*;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * Created by mst on 20.07.15.
@@ -83,6 +79,7 @@ public class DtoTestFactory {
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
                     .defaultSku(null)
+                    .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1, test2"))))
                     .build();
 
         return defaultProductDto;
@@ -96,6 +93,7 @@ public class DtoTestFactory {
                 .manufacturer("Test Product Manufacturer" + productCounter)
                 .model("Test Product Model" + productCounter)
                 .defaultSku(null)
+                .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1, test2"))))
                 .build();
 
         productCounter++;
@@ -197,24 +195,33 @@ public class DtoTestFactory {
 
     private static SkuDto testAdditionalSku() {
         if(newSkuDto2 == null) {
+
+            Set<SkuProductOptionValueDto> h = new HashSet<>();
+            h.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+
             newSkuDto2 = SkuDto.builder()
                     .description(TEST_ADDITIONAL_SKU_DESC)
                     .salePrice(new BigDecimal(99.99))
                     .quantityAvailable(34)
                     .taxCode("AdditionalSKU Tax Code")
                     .activeStartDate(defaultActiveStartDate)
+                    .skuProductOptionValues(h)
                     .build();
         }
         return newSkuDto2;
     }
 
     private static SkuDto nextTestAdditionalSku() {
+        Set<SkuProductOptionValueDto> h = new HashSet<>();
+        h.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+
         SkuDto skuDto = SkuDto.builder()
                 .description(TEST_ADDITIONAL_SKU_DESC + skuCounter)
                 .salePrice(new BigDecimal(3 + skuCounter))
                 .quantityAvailable((int) (3 + skuCounter))
                 .taxCode("AdditionalSKU Tax Code" + skuCounter)
                 .activeStartDate(defaultActiveStartDate)
+                .skuProductOptionValues(h)
                 .build();
 
         skuCounter++;

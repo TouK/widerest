@@ -191,7 +191,7 @@ public class CategoryControllerTest extends ApiTestBase {
         //when
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
         categoryDto.setDescription("ModifiedTestCategoryDescription");
-        categoryDto.setName("ModifiedTestCategoryName");
+        categoryDto.setName("ModifiedTestCategoryName2");
         categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
 
         oAuth2AdminRestTemplate().put(createdCategoryLocationUri, categoryDto, serverPort);
@@ -234,6 +234,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     @Test
+    @Transactional
     public void addingNewProductWithDefaultSKUToExistingCategoryIncreasesProductsCountTest() {
 
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
@@ -258,8 +259,9 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         //then
-        long newProductsInCategoryRemoteCount = getRemoteTotalProductsInCategoryCountValue(testCategoryId);
-        assertThat(newProductsInCategoryRemoteCount, equalTo(currentProductsInCategoryRemoteCount + 1));
+
+        long newProductsInCategoryLocalCount = catalogService.findCategoryById(testCategoryId).getAllProductXrefs().size();
+        assertThat(newProductsInCategoryLocalCount, equalTo(currentProductsInCategoryRemoteCount + 1));
     }
 
     @Test
@@ -377,8 +379,8 @@ public class CategoryControllerTest extends ApiTestBase {
 
         /* (mst) Remove those, created by tests. Btw: REFACTOR TO LAMBDA */
         for(CategoryDto testCategory : receivedCategoriesEntity.getBody()) {
-            if(testCategory.getName().startsWith(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref(), serverPort);
+            if(testCategory.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
+                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref());
             }
         }
     }
