@@ -24,14 +24,8 @@ import static org.junit.Assert.*;
 @SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
-    private HttpHeaders httpRequestHeader;
-    private HttpEntity<String> httpRequestEntity;
-
     @Before
     public void initProductTests() {
-        this.httpRequestHeader = new HttpHeaders();
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
         //tmp
         //serverPort = String.valueOf(8080);
         cleanupProductTests();
@@ -50,12 +44,10 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
 
-        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<String> httpRequestEntity = new HttpEntity<>(null, httpRequestHeader);
 
         ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
                 remoteAddProductEntity.getHeaders().getLocation().toString(),
-                HttpMethod.GET, httpRequestEntity, ProductDto.class, serverPort);
+                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -152,7 +144,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
-        removeRemoteTestProducts();
+        removeLocalTestProducts();
     }
 
     private ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
@@ -181,7 +173,7 @@ public class ProductControllerTest extends ApiTestBase {
     private long getRemoteTotalProductsCount() {
 
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
 
         assertNotNull(remoteCountEntity);
 
@@ -191,7 +183,7 @@ public class ProductControllerTest extends ApiTestBase {
     private long getRemoteTotalSkusForProductCount(long productId) {
 
         HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, httpRequestEntity, Long.class, serverPort, productId);
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
 
         assertNotNull(remoteCountEntity);
 
@@ -207,7 +199,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         ResponseEntity<Resource<ProductDto>[]> receivedProductsEntity =
                 hateoasRestTemplate().exchange(PRODUCTS_URL,
-                        HttpMethod.GET, httpRequestEntity,
+                        HttpMethod.GET, getHttpJsonRequestEntity(),
                         new ParameterizedTypeReference<Resource<ProductDto>[]>() {},
                         serverPort);
 
@@ -222,26 +214,5 @@ public class ProductControllerTest extends ApiTestBase {
 
         return resultProduct;
     }
-
-    private void removeRemoteTestProducts() {
-
-        /*
-        ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
-                HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
-*/
-
-        ResponseEntity<ProductDto[]> receivedProductEntity = restTemplate.getForEntity(PRODUCTS_URL,
-                ProductDto[].class, serverPort);
-
-        assertNotNull(receivedProductEntity);
-        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        for(ProductDto testProduct : receivedProductEntity.getBody()) {
-            if(testProduct.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref());
-            }
-        }
-    }
-
 
 }
