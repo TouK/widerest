@@ -38,6 +38,7 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Ignore
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         long currentProductsCount = getRemoteTotalProductsCount();
