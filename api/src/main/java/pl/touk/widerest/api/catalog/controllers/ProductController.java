@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.apache.el.stream.Stream;
 import org.broadleafcommerce.common.currency.dao.BroadleafCurrencyDao;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
@@ -74,7 +75,7 @@ public class ProductController {
     /* POST /products */
     /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -125,22 +126,16 @@ public class ProductController {
 
         newProduct.setDefaultSku(defaultSku);
 
-        List<ProductOptionXref> productOptionXrefList = new ArrayList<>();
+        final Product productParam = newProduct;
 
-        if(productDto.getOptions() != null && !productDto.getOptions().isEmpty()) {
-            for(ProductOptionDto productOptionDto : productDto.getOptions()) {
-                ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
-
-                ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
-                productOptionXref.setProduct(newProduct);
-                productOptionXref.setProductOption(p);
-
-                productOptionXrefList.add(productOptionXref);
-            }
-
-            newProduct.setProductOptionXrefs(productOptionXrefList);
-        }
-
+        newProduct.setProductOptionXrefs(
+                Optional.ofNullable(productDto.getOptions())
+                    .filter(e -> !e.isEmpty())
+                    .map(List::stream)
+                    .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                    .map(e -> e.collect(Collectors.toList()))
+                    .orElse(newProduct.getProductOptionXrefs())
+        );
 
         /* TODO: (mst) creating Product Bundles */
         //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
@@ -401,7 +396,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        if(skuDto.getSkuProductOptionValues() == null || skuDto.getProductOptionValues().size() != product.getProductOptionXrefs().size()) {
+        if(skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -465,7 +460,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
-                    .findAny()
+                .findAny()
                 .map(dtoConverters.skuEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
@@ -1089,7 +1084,16 @@ public class ProductController {
 
 
         return new SkuProductOptionValueXrefImpl(sku, productOptionValue);
+    }
 
+    private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
+        ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
+        p.getAllowedValues().forEach(x -> x.setProductOption(p));
+
+        ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
+        productOptionXref.setProduct(product);
+        productOptionXref.setProductOption(p);
+        return productOptionXref;
     }
 
     // ---------------------------- UTILS ---------------------------- //

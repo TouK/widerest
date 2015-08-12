@@ -86,10 +86,11 @@ public class SkuDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
 
+    /*
     @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private Set<ProductOptionValueDto> productOptionValues;
-
+*/
     @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private List<SkuMediaDto> skuMedia;

@@ -38,7 +38,6 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     @Test
-    @Ignore
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         long currentProductsCount = getRemoteTotalProductsCount();
@@ -75,7 +74,7 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     /* Duplicate check */
-    @Test
+    @Test /* HEREEEEEE */
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         long currentProductCount = getRemoteTotalProductsCount();
 
@@ -225,8 +224,13 @@ public class ProductControllerTest extends ApiTestBase {
 
     private void removeRemoteTestProducts() {
 
+        /*
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, httpRequestEntity, ProductDto[].class, serverPort);
+*/
+
+        ResponseEntity<ProductDto[]> receivedProductEntity = restTemplate.getForEntity(PRODUCTS_URL,
+                ProductDto[].class, serverPort);
 
         assertNotNull(receivedProductEntity);
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));

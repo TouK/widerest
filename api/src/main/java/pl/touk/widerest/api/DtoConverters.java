@@ -94,10 +94,14 @@ public class DtoConverters {
                         .collect(toMap(Map.Entry::getKey, e -> {
                             return e.getValue().getName();
                         })))
-                .productOptionValues(entity.getProductOptionValueXrefs().stream()
+                /*.productOptionValues(entity.getProductOptionValueXrefs().stream()
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueEntityToDto)
-                        .collect(toSet()))
+                        .collect(toSet()))*/
+                .skuProductOptionValues(entity.getProductOptionValueXrefs().stream()
+                                .map(SkuProductOptionValueXref::getProductOptionValue)
+                                .map(DtoConverters.productOptionValueToSkuValueDto)
+                                .collect(toSet()))
                 .skuMedia(entity.getSkuMediaXref().entrySet().stream()
                         .map(Map.Entry::getValue)
                         .map(DtoConverters.skuMediaXrefToDto)
@@ -168,7 +172,6 @@ public class DtoConverters {
         return skuEntity;
     };
 
-    /* (mst) TMP! */
     public ProductOption getProductOptionByNameForProduct(String productOptionName, Product product) {
         ProductOption productOption = null;
 
@@ -366,6 +369,16 @@ public class DtoConverters {
         productOptionValue.setAttributeValue(dto.getAttributeValue());
         productOptionValue.setProductOption(DtoConverters.productOptionDtoToEntity.apply(dto.getProductOption()));
         return productOptionValue;
+    };
+
+    public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity -> {
+
+        SkuProductOptionValueDto skuProductOptionValueDto = SkuProductOptionValueDto.builder()
+                .attributeName(entity.getProductOption().getAttributeName())
+                .attributeValue(entity.getAttributeValue())
+                .build();
+
+        return skuProductOptionValueDto;
     };
 
     /******************************** CATEGORY ********************************/

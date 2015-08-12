@@ -38,5 +38,6 @@ public class SkuMediaDto extends ResourceSupport {
 
 
     /* (mst) TMP. To be removed after testing */
+    @JsonIgnore
     private String key;
 }
