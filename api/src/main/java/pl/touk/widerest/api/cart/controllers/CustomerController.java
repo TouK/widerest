@@ -36,9 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Created by mst on 07.07.15.
- */
 @RestController
 @RequestMapping(value = "/customers")
 @Api(value = "customers", description = "Customer management endpoint")
@@ -61,8 +58,8 @@ public class CustomerController {
     public ResponseEntity<CustomerDto> readOneCustomer(@PathVariable(value = "id") Long customerId) {
 
         CustomerDto customer = Optional.ofNullable(customerService.readCustomerById(customerId))
-                           .map(DtoConverters.customerEntityToDto)
-                            .orElseThrow(CustomerNotFoundException::new);
+                .map(DtoConverters.customerEntityToDto)
+                .orElseThrow(CustomerNotFoundException::new);
         return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 

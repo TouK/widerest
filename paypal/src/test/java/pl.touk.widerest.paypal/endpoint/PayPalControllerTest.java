@@ -4,6 +4,10 @@ import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.HttpMethod;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
+import org.broadleafcommerce.common.cache.StatisticsService;
+import org.broadleafcommerce.common.cache.StatisticsServiceImpl;
+import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
+import org.broadleafcommerce.common.config.dao.SystemPropertiesDaoImpl;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.money.Money;
@@ -45,6 +49,7 @@ import pl.touk.widerest.paypal.gateway.PayPalGatewayConfigurationService;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.paypal.gateway.PayPalSessionImpl;
+import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -148,8 +153,8 @@ public class PayPalControllerTest {
     @Configuration
     @IntegrationTest(
             {
-                    "paypal.clientId:AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd",
-                    "paypal.secret:EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX"
+                    "paypal.clientId:EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM",
+                    "paypal.secret:EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM"
             })
     @ComponentScan({"pl.touk.widerest.paypal"})
     public static class TestConfiguration {
@@ -262,6 +267,16 @@ public class PayPalControllerTest {
         public PaymentGatewayConfigurationService paymentGatewayConfigurationService() {
             return new PayPalGatewayConfigurationService();
             //return new Mockito().mock(PaymentGatewayConfigurationService.class);
+        }
+
+        @Bean(name = "blSystemPropertiesDao")
+        public SystemPropertiesDao systemPropertiesDao() {
+            return new SystemPropertiesDaoImpl();
+        }
+
+        @Bean(name = "wdSystemProperties")
+        public SystemProperitesServiceProxy systemProperitesServiceProxy() {
+            return new SystemProperitesServiceProxy();
         }
 
     }

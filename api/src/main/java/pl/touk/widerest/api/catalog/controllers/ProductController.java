@@ -101,11 +101,7 @@ public class ProductController {
         }
 
         /* TODO: (mst) modify matching rules (currently only "by name") + refactor to separate method */
-        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
-
-        if(duplicatesCount > 0) {
+        if(hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
@@ -116,7 +112,6 @@ public class ProductController {
         /* (mst) if there is a default category set, try to find it and connect it with the product.
                  Otherwise just ignore it.
 
-                 TODO: Refactor this one using Lambdas
          */
         if(productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
             Optional<Category> categoryToReference = catalogService.findCategoriesByName(productDto.getCategoryName()).stream()
@@ -217,14 +212,9 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
-        long duplicatesCount = catalogService.findProductsByName(productDto.getName()).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
-
-        if(duplicatesCount > 0) {
+        if(hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
-
 
 
         Optional.ofNullable(catalogService.findProductById(productId))
@@ -512,7 +502,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        Sku currentDefaultSKU = product.getDefaultSku();
+        //Sku currentDefaultSKU = product.getDefaultSku();
 
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(defaultSkuDto);
 
@@ -926,14 +916,13 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+        Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-
-        Sku mediaSkuEntity = product.getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                    .getAllSkus().stream()
+                    .filter(x -> x.getId().longValue() == skuId)
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
        if(mediaSkuEntity.getSkuMediaXref().get(skuMediaDto.getKey()) != null) {
            return new ResponseEntity<>(HttpStatus.CONFLICT);
@@ -1085,6 +1074,14 @@ public class ProductController {
 
         return new SkuProductOptionValueXrefImpl(sku, productOptionValue);
 
+    }
+
+    // ---------------------------- UTILS ---------------------------- //
+
+    private Boolean hasDuplicates(String productName) {
+        return catalogService.findProductsByName(productName).stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count() > 0;
     }
 
     /* GET /products/{id}/reviews *//*

@@ -170,12 +170,9 @@ public class OrderController {
     public ResponseEntity<?> createNewOrder(
             @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
-        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+        Customer currentCustomer = Optional.ofNullable(customerService.readCustomerById(customerUserDetails.getId()))
+                    .orElseThrow(() -> new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId()));
 
-        if (currentCustomer == null && customerUserDetails.getUsername().equals(ANONYMOUS_CUSTOMER)) {
-            // ???
-            throw new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId());
-        }
 
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
         cart.setLocale(localeService.findDefaultLocale());
@@ -245,11 +242,9 @@ public class OrderController {
         Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
-        Sku productsSku = catalogService.findSkuById(orderItemDto.getSkuId());
+        Optional.ofNullable(catalogService.findSkuById(orderItemDto.getSkuId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid Sku Id: does not exist in database"));
 
-        if(productsSku == null) {
-            throw new ResourceNotFoundException("Invalid Sku Id: does not exist in database");
-        }
 
         OrderItemRequestDTO req = new OrderItemRequestDTO();
 
@@ -257,6 +252,7 @@ public class OrderController {
         req.setSkuId(orderItemDto.getSkuId());
 
         orderService.addItem(cart.getId(), req, true);
+        // Possible improvement: calculate subtotal 'lazily' (i.e. just before checking out)
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 

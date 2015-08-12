@@ -40,11 +40,11 @@ public class PayPalSessionImpl implements PayPalSession {
     private void setCredentialsFromSysPropertiesOrSetSandbox() {
         clientId = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
-                .orElse("AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd");
+                .orElse("EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM");
 
         secret = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.SECRET))
                 .map(SystemProperty::getValue)
-                .orElse("EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX");
+                .orElse("EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM");
 
     }
 

@@ -178,9 +178,9 @@ public class PayPalController {
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
                 .filter(PayPalController::archivedOrderFilter)
                 .orElseThrow(() -> new ResourceNotFoundException(""));
-//        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
-//            throw new IllegalAccessError("Access Denied");
-//        }
+        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
+            throw new IllegalAccessError("Access Denied");
+        }
 
         // get data from link
         request.setAttribute(PayPalMessageConstants.QUERY_ORDER_ID, orderId);
@@ -221,7 +221,7 @@ public class PayPalController {
         } catch (CheckoutException e) {
             //e.printStackTrace();
             //throw e;
-            return new ResponseEntity<String>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
         }
 
 

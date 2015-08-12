@@ -142,7 +142,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
         PayPalResponseDto payPalResponse = findDetailsByPayPalTransaction(payPalRequest);
         payPalResponse.setOrderId(orderId);
-        payPalResponse.setAmount(new Money(amount));
+        //payPalResponse.setAmount(new Money(amount));
         payPalResponse.setPaymentTransactionType(PaymentTransactionType.UNCONFIRMED);
         payPalResponse.setPayerId(payerId);
         payPalResponse.setPaymentId(paymentId);
