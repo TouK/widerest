@@ -295,7 +295,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore
+    @Ignore("PATCH method of RestTemplate does not seem to work properly here")
     public void partialUpdateCategoryDescriptionAndCheckIfOtherValuesPreserveTest() {
         long currentTotalCategoriesCount = getRemoteTotalCategoriesCountValue();
 
