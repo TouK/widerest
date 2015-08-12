@@ -25,7 +25,6 @@ import java.util.List;
 @AllArgsConstructor
 @ApiModel(value = "Order", description = "Order resource representation")
 public class OrderDto extends ResourceSupport {
-    @JsonIgnore
     @ApiModelProperty(required = true)
     private Long orderId;
 

@@ -24,7 +24,6 @@ import java.util.Map;
 public class DiscreteOrderItemDto extends ResourceSupport {
 
     @ApiModelProperty
-    @JsonIgnore
     private long itemId;
 
     @ApiModelProperty(required = true)

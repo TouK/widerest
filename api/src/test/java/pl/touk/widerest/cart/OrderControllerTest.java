@@ -1,6 +1,5 @@
 package pl.touk.widerest.cart;
 
-import org.apache.http.HttpResponse;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -13,7 +12,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
@@ -29,14 +27,14 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@SpringApplicationConfiguration(classes = Application.class)
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
-    @Before
-    public void initTests() {
-        serverPort = String.valueOf(8080);
-    }
+//    @Before
+//    public void initTests() {
+//        serverPort = String.valueOf(8080);
+//    }
 
     @Test
     public void CreateAnonymousUserTest() throws URISyntaxException {
@@ -44,7 +42,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When I send POST request
         RestTemplate restTemplate = new RestTemplate();
-        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
 
         // Then the token should be generated
         assertNotNull(FirstResponseUri);
@@ -61,7 +59,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When POSTing to create an order
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, getProperEntity(accessToken), HttpHeaders.class);
+                restTemplate.postForEntity(ORDERS_URL, getProperEntity(accessToken), HttpHeaders.class, serverPort);
 
         // Then it shouldn't be null and its ID must be > 0
         assertNotNull(anonymousOrderHeaders);
@@ -98,7 +96,7 @@ public class OrderControllerTest extends ApiTestBase {
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
         ResponseEntity<HttpHeaders> response = restTemplate.exchange(ORDERS_URL + "/" + orderId,
-                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class);
+                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
 
         // Then the status code should be 200
         assert(response.getStatusCode().value() == 200);
@@ -107,7 +105,7 @@ public class OrderControllerTest extends ApiTestBase {
         //assertNull(orderService.findOrderById(Long.valueOf(orderId)));
         Pair<?, String> adminUser = generateAdminUser();
         String adminToken = adminUser.getRight();
-        assertFalse(givenOrderIdExists(adminToken, orderId.longValue()));
+        assertFalse(givenOrderIdIsCancelled(adminToken, orderId.longValue()));
     }
 
     @Test
@@ -214,7 +212,7 @@ public class OrderControllerTest extends ApiTestBase {
         // When creating order for 1st user
         HttpEntity<?> anonymousFirstHttpEntity = getProperEntity(accessFirstAnonymousToken);
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class);
+                restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class, serverPort);
 
         // Then it should succeed
         assertNotNull(anonymousOrderHeaders);
@@ -225,7 +223,7 @@ public class OrderControllerTest extends ApiTestBase {
                 adminRestTemplate.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
 
         OrderDto goodOne = new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
-                .filter(x -> (ORDERS_URL + "/" + x.getOrderId()).equals(orderLocation.toString()))
+                .filter(x -> (ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + x.getOrderId()).equals(orderLocation.toString()))
                 .findAny()
                 .orElse(null);
 
@@ -249,10 +247,10 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         // When admin deletes the user's cart
-        adminRestTemplate.delete(ORDERS_URL + "/" + goodOne.getOrderId(), 1);
+        adminRestTemplate.delete(ORDERS_URL + "/" + goodOne.getOrderId(), serverPort);
 
         // Then it should exist anymore
-        assertFalse(givenOrderIdExists(accessLoggedToken, goodOne.getOrderId()));
+        assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
 
     }
 
@@ -263,7 +261,7 @@ public class OrderControllerTest extends ApiTestBase {
 
     private Integer createNewOrder(String token) {
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, getProperEntity(token), HttpHeaders.class);
+                restTemplate.postForEntity(ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
 
         return strapSufixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
@@ -276,13 +274,13 @@ public class OrderControllerTest extends ApiTestBase {
 
     private Pair generateAnonymousUser() throws URISyntaxException {
         RestTemplate restTemplate = new RestTemplate();
-        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null);
+        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
         return new ImmutablePair<RestTemplate, String>(restTemplate, strapToken(FirstResponseUri));
     }
 
     private Pair generateAdminUser() throws URISyntaxException {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
-        URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null);
+        URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
         String accessToken = strapToken(adminUri);
         return new ImmutablePair<OAuth2RestTemplate, String>(adminRestTemplate, accessToken);
     }
@@ -296,7 +294,7 @@ public class OrderControllerTest extends ApiTestBase {
         HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
 
         return restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
-                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class);
+                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
 
     }
 
@@ -311,7 +309,7 @@ public class OrderControllerTest extends ApiTestBase {
         requestHeaders.set("Authorization", "Bearer " + token);
         HttpEntity httpRequestEntity = new HttpEntity(template, requestHeaders);
 
-        return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class);
+        return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
 
@@ -349,17 +347,16 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
 
-    private Boolean givenOrderIdExists(String adminToken, Long orderId) {
+    private Boolean givenOrderIdIsCancelled(String adminToken, Long orderId) {
         HttpEntity<?> adminHttpEntity = getProperEntity(adminToken);
         ResponseEntity<OrderDto[]> allOrders =
-                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, adminHttpEntity);
+                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
 
-        OrderDto goodOne = new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
+        return new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
                 .filter(x -> x.getOrderId() == orderId)
                 .findAny()
-                .orElse(null);
-
-        return goodOne==null?false:true;
+                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                .orElse(false);
     }
 
     private Integer getRemoteItemsInOrderCount(Integer orderId, String token) {
