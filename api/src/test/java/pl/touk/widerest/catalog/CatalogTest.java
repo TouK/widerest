@@ -329,16 +329,5 @@ public class CatalogTest extends ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
-    private long getRemoteTotalSkusForProductCount(long productId) {
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
-
 
 }

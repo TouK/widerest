@@ -1,5 +1,6 @@
 package pl.touk.widerest.catalog;
 
+import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,11 +25,24 @@ import static org.junit.Assert.*;
 @SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
+    @javax.annotation.Resource(name="blCurrencyService")
+    protected BroadleafCurrencyService crrencyService;
+
+
     @Before
     public void initProductTests() {
-        //tmp
-        //serverPort = String.valueOf(8080);
         cleanupProductTests();
+    }
+
+
+     /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */
+
+    @Test
+    public void localAndRemoteProductCountValuesAreEqualTest() {
+
+        long remoteTotalProductCount = getRemoteTotalProductsCount();
+
+        assertThat(remoteTotalProductCount, equalTo(getLocalTotalProductsCount()));
     }
 
     @Test
@@ -66,8 +80,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     }
 
-    /* Duplicate check */
-    @Test /* HEREEEEEE */
+    @Test
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         long currentProductCount = getRemoteTotalProductsCount();
 
@@ -78,13 +91,12 @@ public class ProductControllerTest extends ApiTestBase {
         try {
             retEntity = addNewTestProduct(testProduct);
             fail();
-        } catch(HttpClientErrorException httpClientException) {
+        } catch (HttpClientErrorException httpClientException) {
             assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
             assertThat(getRemoteTotalProductsCount(), equalTo(currentProductCount + 1));
         }
 
     }
-
 
     @Test
     public void addingNewProductWihoutDefaultSKUCausesExceptionTest() {
@@ -112,12 +124,27 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
 
+        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+
         //when
-        oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString(), 1);
+        oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString());
 
         //then
+
+        try {
+            restTemplate.exchange(PRODUCT_BY_ID_URL,
+                    HttpMethod.GET,
+                    getHttpJsonRequestEntity(), ProductDto.class, serverPort, productId);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+        }
+
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
     }
+
+
+    /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */
 
     /* -----------------------------SKUS TESTS----------------------------- */
 
@@ -136,57 +163,61 @@ public class ProductControllerTest extends ApiTestBase {
 
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        addNewSKUToProduct(productId, additionalSkuDto);
+        addNewTestSKUToProduct(productId, additionalSkuDto);
 
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
 
+    @Test
+    public void skuAddedWithoutCurrencyGetsADefaultOneTest() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        productDto.getDefaultSku().setCurrencyCode(null);
+
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+                HttpMethod.GET,
+                getHttpJsonRequestEntity(),
+                ProductDto.class, serverPort, productId);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        String defaultCurrencyCode = crrencyService.findDefaultBroadleafCurrency().getCurrencyCode();
+
+        assertThat(receivedProductEntity.getBody().getDefaultSku().getCurrencyCode(), equalTo(defaultCurrencyCode));
+
+    }
+
+    @Test
+    public void whenSkuAndProductNamesDifferThenProductsNameGetsChosenTest() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        String newProductName = "This name should be chosen";
+
+        productDto.setName(newProductName);
+
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+                HttpMethod.GET,
+                getHttpJsonRequestEntity(),
+                ProductDto.class, serverPort, productId);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        assertThat(receivedProductEntity.getBody().getDefaultSku().getName(), equalTo(newProductName));
+
+
+    }
 
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
         removeLocalTestProducts();
     }
-
-    private ResponseEntity<?> addNewSKUToProduct(long productId, SkuDto skuDto) {
-        return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
-    }
-
-
-
-    private long getRemoteTotalSkusForProductCount(long productId) {
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody().longValue();
-    }
-
-    private long getLocalTotalSkus() {
-        return catalogService.findAllSkus().stream().count();
-    }
-
-    private Resource<ProductDto> getProductWithMultipleSkus() {
-
-
-        ResponseEntity<Resource<ProductDto>[]> receivedProductsEntity =
-                hateoasRestTemplate().exchange(PRODUCTS_URL,
-                        HttpMethod.GET, getHttpJsonRequestEntity(),
-                        new ParameterizedTypeReference<Resource<ProductDto>[]>() {},
-                        serverPort);
-
-        Resource<ProductDto> resultProduct = null;
-
-        for(Resource<ProductDto> p : receivedProductsEntity.getBody()) {
-            if(p.getContent().getSkus().stream().count() >= 2) {
-                resultProduct = p;
-                break;
-            }
-        }
-
-        return resultProduct;
-    }
-
 }
