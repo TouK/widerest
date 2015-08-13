@@ -20,6 +20,7 @@ import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.BroadleafApplicationContextInitializer;
@@ -218,6 +219,24 @@ public abstract class ApiTestBase {
     }
 
 
+
+    protected long getRemoteTotalProductsCount() {
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody();
+    }
+
+    protected ResponseEntity<?> addNewTestCategory(DtoTestType dtoTestType) throws HttpClientErrorException {
+        return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
+    }
+
+    protected ResponseEntity<?> addNewTestCategory(CategoryDto categoryDto) throws HttpClientErrorException {
+
+        return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
+    }
 
 
 

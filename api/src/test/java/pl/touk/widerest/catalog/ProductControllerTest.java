@@ -170,15 +170,7 @@ public class ProductControllerTest extends ApiTestBase {
         return remoteAddSkuEntity;
     }
 
-    private long getRemoteTotalProductsCount() {
 
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody().longValue();
-    }
 
     private long getRemoteTotalSkusForProductCount(long productId) {
 
