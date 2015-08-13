@@ -195,7 +195,6 @@ public class ProductController {
     }
 
     /* PUT /products/{id} */
-    /* TODO: (mst) Implementation */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.PUT)

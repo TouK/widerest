@@ -144,7 +144,6 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     @Test
-    @Ignore("Implement me, dammit!")
     public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() {
         ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
@@ -154,13 +153,39 @@ public class ProductControllerTest extends ApiTestBase {
 
         long currentGlobalProductsCount = getRemoteTotalProductsCount();
 
+        ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
+        oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductsCount));
 
     }
 
     @Test
     public void modifyingExistingProductDoesActuallyModifyItsValuesTest() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> retEntity = addNewTestProduct(productDto);
+        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+
+        ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
+
+        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+                HttpMethod.GET,
+                getHttpJsonRequestEntity(),
+                ProductDto.class, serverPort, productId);
+
+        ProductDto receivedProductDto = receivedProductEntity.getBody();
+
+        /* TODO: (mst) maybe few more checks */
+        assertThat(modifiedProductDto.getName(), equalTo(receivedProductDto.getName()));
+        assertThat(modifiedProductDto.getLongDescription(), equalTo(receivedProductDto.getLongDescription()));
+        assertThat(modifiedProductDto.getDescription(), equalTo(receivedProductDto.getDescription()));
+        assertThat(modifiedProductDto.getModel(), equalTo(receivedProductDto.getModel()));
+        assertThat(modifiedProductDto.getManufacturer(), equalTo(receivedProductDto.getManufacturer()));
 
     }
 

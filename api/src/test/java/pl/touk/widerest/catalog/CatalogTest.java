@@ -227,7 +227,7 @@ public class CatalogTest extends ApiTestBase {
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
-            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+            assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         }
 
         // create N skus
