@@ -143,6 +143,50 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
     }
 
+    @Test
+    @Ignore("Implement me, dammit!")
+    public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> retEntity = addNewTestProduct(productDto);
+        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+
+        long currentGlobalProductsCount = getRemoteTotalProductsCount();
+
+
+
+
+    }
+
+    @Test
+    public void modifyingExistingProductDoesActuallyModifyItsValuesTest() {
+
+    }
+
+    @Test
+    public void updatingProductsNameWithAnExistingOneCausesExceptionTest() {
+        ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> retEntity1 = addNewTestProduct(productDto1);
+        assertThat(retEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId1 = getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
+
+        ResponseEntity<?> retEntity2 = addNewTestProduct(productDto2);
+        assertThat(retEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId2 = getIdFromLocationUrl(retEntity2.getHeaders().getLocation().toString());
+
+        productDto1.setName(productDto2.getName());
+
+        try {
+            oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
+            fail();
+        } catch(HttpClientErrorException httpCleintErrorException) {
+            assertThat(httpCleintErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+        }
+    }
+
 
     /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */
 
