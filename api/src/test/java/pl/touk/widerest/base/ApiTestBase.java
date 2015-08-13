@@ -229,6 +229,12 @@ public abstract class ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
+    protected long getLocalTotalProductsCount() {
+        return catalogService.findAllProducts().stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
+    }
+
     protected ResponseEntity<?> addNewTestCategory(DtoTestType dtoTestType) throws HttpClientErrorException {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
     }

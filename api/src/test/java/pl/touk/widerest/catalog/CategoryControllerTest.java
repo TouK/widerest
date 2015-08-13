@@ -322,6 +322,41 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(getLocalTotalProductsInCategoryCount(createdCategoryId), equalTo(currentProductsCount + 1));
     }
 
+    @Test
+    @Transactional
+    public void deletingCategoryDoesNotRemoveProductPreviouslyAssociatedWithItTest() {
+
+        long currentTotalProductsCount = getLocalTotalProductsCount();
+
+
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
+        assertThat(newCategoryResponseHeaders.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long categoryId = getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
+
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        productDto.setCategoryName(categoryDto.getName());
+
+        ResponseEntity<?> newProductInTestCategoryEntity = addNewTestProduct(productDto);
+        assertThat(newProductInTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(newProductInTestCategoryEntity.getHeaders().getLocation().toString());
+
+        assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(1L));
+
+
+        oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, categoryId);
+
+        try {
+            restTemplate.getForEntity(CATEGORY_BY_ID_URL, Void.class, serverPort, categoryId);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+        }
+
+        // our product is still in there!
+        assertThat(getLocalTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
+    }
+
 
     @Test
     @Ignore("PATCH method of RestTemplate does not seem to work properly here")
