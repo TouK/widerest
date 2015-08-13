@@ -259,13 +259,13 @@ public class OrderController {
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{orderId}/items/{id}")
-                .buildAndExpand(orderId,
-                        (cart.getDiscreteOrderItems().stream()
+                .path("/{id}")
+                .buildAndExpand(
+                        cart.getDiscreteOrderItems().stream()
                                 .filter(x -> x.getSku().getId() == orderItemDto.getSkuId())
                                 .findAny()
                                 .map(DiscreteOrderItem::getId)
-                                .orElseThrow(ResourceNotFoundException::new))
+                                .orElseThrow(ResourceNotFoundException::new)
                 )
                 .toUri());
 
@@ -588,8 +588,9 @@ public class OrderController {
         shippingAddress.setPostalCode(addressDto.getPostalCode());
         shippingAddress.setCompanyName(addressDto.getCompanyName());
         shippingAddress.setAddressLine1(addressDto.getAddressLine1());
-       
-       /* TODO: (mst) Country! */
+        shippingAddress.setAddressLine2(addressDto.getAddressLine2());
+        shippingAddress.setAddressLine3(addressDto.getAddressLine3());
+        shippingAddress.setCounty(addressDto.getCounty());
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 

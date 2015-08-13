@@ -1,23 +1,21 @@
 package pl.touk.widerest.cart;
 
+import javafx.util.Pair;
+import org.broadleafcommerce.common.payment.dto.AddressDTO;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.base.ApiTestBase;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.dto.OrderItemDto;
 
 
 import java.net.URI;
@@ -51,11 +49,105 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    public void shouldChangeOrderItemQuantity() throws URISyntaxException {
+        // Given anonymous user with one item in order
+        Pair<RestTemplate, String> user = generateAnonymousUser();
+        RestTemplate restTemplate = user.getKey();
+        String accessToken = user.getValue();
+        Integer orderId = createNewOrder(accessToken);
+        String orderUrl = ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
+        ResponseEntity<HttpHeaders> orderItemResponse =
+                addItemToOrder(10, 5, orderUrl+"/items", accessToken, restTemplate);
+
+        // When PUT /orders/{orderId}/items/{itemId}/quantity
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + accessToken);
+        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity httpRequestEntity = new HttpEntity(10L, requestHeaders);
+        ResponseEntity<HttpHeaders> response = restTemplate.exchange(
+                orderItemResponse.getHeaders().getLocation().toString()+"/quantity",
+                HttpMethod.PUT, httpRequestEntity, HttpHeaders.class, serverPort);
+
+        // When GETting orderItem details
+        httpRequestEntity = new HttpEntity(null, requestHeaders);
+        DiscreteOrderItemDto remoteItem = restTemplate.exchange(orderItemResponse.getHeaders().getLocation().toString(),
+                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort).getBody();
+
+        // Then orderItem quantity should be changed
+        assert(remoteItem.getQuantity() == 10);
+    }
+
+    @Test
+    public void shouldReturnFulfillmentAddressAndOption() throws URISyntaxException {
+        // Given anonymous user with order with 1 item
+        Pair<RestTemplate, String> user = generateAnonymousUser();
+        RestTemplate restTemplate = user.getKey();
+        String accessToken = user.getValue();
+        Integer orderId = createNewOrder(accessToken);
+        String orderUrl = ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
+        addItemToOrder(10, 5, orderUrl+"/items", accessToken, restTemplate);
+
+        // Given address and fulfillment option
+        AddressDto addressDto = new AddressDto();
+        addressDto.setAddressLine1("ul. Warszawska 45");
+        addressDto.setAddressLine2("POLSKA");
+        addressDto.setCity("Poznan");
+        addressDto.setPostalCode("05-134");
+        addressDto.setFirstName("Haskell");
+        addressDto.setLastName("Curry");
+
+        // When POST /orders/{orderId}/fulfillment/address
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + accessToken);
+        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        HttpEntity httpRequestEntity = new HttpEntity(addressDto, requestHeaders);
+        ResponseEntity<HttpHeaders> response = restTemplate.exchange(orderUrl+"/fulfillment/address",
+        HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+
+
+        // Then return status should be 201
+        assert(response.getStatusCode().value() == 201);
+
+
+        // When GET /orders/{orderId}/fulfillment/address
+        httpRequestEntity = new HttpEntity(null, requestHeaders);
+        ResponseEntity<AddressDto> responseAddress = restTemplate.exchange(orderUrl+"/fulfillment/address",
+        HttpMethod.GET, httpRequestEntity, AddressDto.class, serverPort);
+
+
+        // Then return status should be 200
+        assert(response.getStatusCode().value() == 201);
+        // Then address should be the same
+        assert(responseAddress.getBody().equals(addressDto));
+
+        // When PUT /orders/{orderId}/fulfillment/selectedOption
+        httpRequestEntity = new HttpEntity(3L, requestHeaders);
+        response = restTemplate.exchange(orderUrl+"/fulfillment/selectedOption",
+                HttpMethod.PUT, httpRequestEntity, HttpHeaders.class, serverPort);
+
+        // Then return status should be 200
+        assert(response.getStatusCode().value() == 200);
+
+        // When GET /orders/{orderId}/fulfillment/
+        httpRequestEntity = new HttpEntity(null, requestHeaders);
+        ResponseEntity<FulfillmentDto> responseFulfillment = restTemplate.exchange(orderUrl+"/fulfillment",
+                HttpMethod.GET, httpRequestEntity, FulfillmentDto.class, serverPort);
+
+        // Then return status should be 200
+        assert(responseFulfillment.getStatusCode().value() == 200);
+        // Then fulfillment option and address should be the same as sent
+        assert(responseFulfillment.getBody().getAddress().equals(addressDto));
+        assert(responseFulfillment.getBody().getSelectedOptionId() == 3);
+    }
+
+    @Test
     public void CreateEmptyOrderTest() throws URISyntaxException {
         // Given anonymous user
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getLeft();
-        String accessToken = firstUser.getRight();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
 
         // When POSTing to create an order
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
@@ -70,8 +162,8 @@ public class OrderControllerTest extends ApiTestBase {
     public void CheckOrderStatusTest() throws URISyntaxException {
         // Given anonymous user and cart
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        //RestTemplate restTemplate = firstUser.getLeft();
-        String accessToken = firstUser.getRight();
+        //RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
         Integer orderId = createNewOrder(accessToken);
 
         // When GETting order status
@@ -86,8 +178,8 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Given anonymous user and created cart
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getLeft();
-        String accessToken = firstUser.getRight();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
         Integer orderId = createNewOrder(accessToken);
 
         // When sending DELETE message
@@ -104,7 +196,7 @@ public class OrderControllerTest extends ApiTestBase {
         // Then the cart shouldn't exist
         //assertNull(orderService.findOrderById(Long.valueOf(orderId)));
         Pair<?, String> adminUser = generateAdminUser();
-        String adminToken = adminUser.getRight();
+        String adminToken = adminUser.getValue();
         assertFalse(givenOrderIdIsCancelled(adminToken, orderId.longValue()));
     }
 
@@ -112,8 +204,8 @@ public class OrderControllerTest extends ApiTestBase {
     public void AccessingItemsFromOrderTest() throws URISyntaxException {
         // Given anonymous user and cart
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getLeft();
-        String accessToken = firstUser.getRight();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
         Integer orderId = createNewOrder(accessToken);
         String orderUrl = ORDERS_URL+"/"+orderId;
 
@@ -149,8 +241,8 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Given an anonymous user/token
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getLeft();
-        String accessToken = firstUser.getRight();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
 
         //Given an order
         Integer orderId = createNewOrder(accessToken);
@@ -191,17 +283,17 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Given 2 anonymous users
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getLeft();
-        String accessFirstAnonymousToken = firstUser.getRight();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessFirstAnonymousToken = firstUser.getValue();
 
         Pair<RestTemplate, String> secondUser = generateAnonymousUser();
-        RestTemplate restTemplate1 = secondUser.getLeft();
-        String accessSecondAnonymousToken = secondUser.getRight();
+        RestTemplate restTemplate1 = secondUser.getKey();
+        String accessSecondAnonymousToken = secondUser.getValue();
 
         // Given admin user
         Pair<OAuth2RestTemplate, String> adminUser = generateAdminUser();
-        OAuth2RestTemplate adminRestTemplate = adminUser.getLeft();
-        String accessLoggedToken = adminUser.getRight();
+        OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
+        String accessLoggedToken = adminUser.getValue();
 
         // When receiving tokens
         // Then they should be different
@@ -275,14 +367,14 @@ public class OrderControllerTest extends ApiTestBase {
     private Pair generateAnonymousUser() throws URISyntaxException {
         RestTemplate restTemplate = new RestTemplate();
         URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
-        return new ImmutablePair<RestTemplate, String>(restTemplate, strapToken(FirstResponseUri));
+        return new Pair<RestTemplate, String>(restTemplate, strapToken(FirstResponseUri));
     }
 
     private Pair generateAdminUser() throws URISyntaxException {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
         URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
         String accessToken = strapToken(adminUri);
-        return new ImmutablePair<OAuth2RestTemplate, String>(adminRestTemplate, accessToken);
+        return new Pair<OAuth2RestTemplate, String>(adminRestTemplate, accessToken);
     }
 
     private ResponseEntity<HttpHeaders> deleteRemoveOrderItem(RestTemplate restTemplate, String token,
