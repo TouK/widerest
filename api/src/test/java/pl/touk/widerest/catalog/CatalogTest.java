@@ -21,10 +21,9 @@ import pl.touk.widerest.base.DtoTestType;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -71,9 +70,10 @@ public class CatalogTest extends ApiTestBase {
 
         //add test product with default sku into category
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
 
         productDto.setCategoryName(categoryDto.getName());
+
         ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto, null, serverPort);
 
@@ -96,7 +96,7 @@ public class CatalogTest extends ApiTestBase {
         SkuDto receivedSkuDto = receivedSkuEntity.getBody();
         SkuDto defaultTestSku = DtoTestFactory.getTestDefaultSku();
 
-        assertThat(receivedSkuDto.getName(), equalTo(defaultTestSku.getName()));
+        assertThat(receivedSkuDto.getName(), containsString(defaultTestSku.getName()));
         assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(defaultTestSku.getQuantityAvailable()));
         //assertTrue(IsCloseTo.closeTo(receivedSkuDto.getSalePrice().doubleValue(), defaultTestSku.getSalePrice().doubleValue()));
         assertThat(receivedSkuDto.getActiveStartDate(), equalTo(defaultTestSku.getActiveStartDate()));
@@ -167,7 +167,7 @@ public class CatalogTest extends ApiTestBase {
 
         long currentTotalProductsCount = getRemoteTotalProductsCount();
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto, null, serverPort);
@@ -194,7 +194,7 @@ public class CatalogTest extends ApiTestBase {
         long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
 
         //add test category
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
         ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
                 CATEGORIES_URL,
@@ -210,8 +210,9 @@ public class CatalogTest extends ApiTestBase {
 
         // create a product and assign it to that category
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
+        //productDto.setCategoryName(categoryDto.getName());
         ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto, null, serverPort);
 
@@ -222,8 +223,13 @@ public class CatalogTest extends ApiTestBase {
 
         oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId, testProductId);
 
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
-        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentTotalProductsInTestCategoryCount + 1));
+        try {
+            oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId, testProductId);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
+            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentTotalProductsInTestCategoryCount + 1));
+        }
 
         // create N skus
 
@@ -262,9 +268,12 @@ public class CatalogTest extends ApiTestBase {
     @Test
     @Transactional
     public void modifyingExistingCategoryDoesNotAffectItsProductsTest() {
+
+        CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+
         long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
 
-        ResponseEntity<CategoryDto> newCategoryEntity = addTestCategory(DtoTestType.SAME);
+        ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
 
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
@@ -278,7 +287,7 @@ public class CatalogTest extends ApiTestBase {
         for(int i = 0; i < PRODUCT_COUNT; i++) {
 
             ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-            productDto.setCategoryName(DtoTestFactory.getTestCategory(DtoTestType.SAME).getName());
+            productDto.setCategoryName(testCategory.getName());
 
             ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
                     PRODUCTS_URL,
@@ -306,29 +315,9 @@ public class CatalogTest extends ApiTestBase {
 
     /* ------------------ HELPER METHODS -------------------*/
 
-    public ResponseEntity<CategoryDto> addTestCategory(DtoTestType dtoTestType) {
-        return oAuth2AdminRestTemplate().postForEntity(
-                CATEGORIES_URL,
-                DtoTestFactory.getTestCategory(dtoTestType),
-                null,
-                serverPort);
-    }
-
-
     private void cleanupCatalogTests() {
-        removeRemoteTestPorducts();
+        removeLocalTestProducts();
         removeLocalTestCategories();
-    }
-
-
-    private long getRemoteTotalProductsCount() {
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
     }
 
 
