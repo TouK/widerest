@@ -252,6 +252,9 @@ public abstract class ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
+    protected long getLocalTotalSkusForProductCount(long productId) {
+        return catalogService.findProductById(productId).getAllSkus().stream().count();
+    }
 
 
     protected ResponseEntity<?> addNewTestCategory(DtoTestType dtoTestType) throws HttpClientErrorException {

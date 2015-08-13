@@ -3,9 +3,8 @@ package pl.touk.widerest.catalog;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.Resource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -31,6 +30,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Before
     public void initProductTests() {
+        //serverPort = String.valueOf(8080);
         cleanupProductTests();
     }
 
@@ -149,6 +149,7 @@ public class ProductControllerTest extends ApiTestBase {
     /* -----------------------------SKUS TESTS----------------------------- */
 
     @Test
+    @Transactional
     public void addingNewSkuAfterCreatingProductWithDefaultSku() {
         ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
@@ -165,7 +166,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         addNewTestSKUToProduct(productId, additionalSkuDto);
 
-        assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
+        assertThat(getLocalTotalSkusForProductCount(productId), equalTo(2L));
     }
 
     @Test
