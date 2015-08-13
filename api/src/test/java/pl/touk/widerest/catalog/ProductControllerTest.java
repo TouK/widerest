@@ -123,7 +123,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Test
     public void addingNewSkuAfterCreatingProductWithDefaultSku() {
-        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -134,9 +134,10 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(1L));
 
 
-        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.SAME);
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        ResponseEntity<?> addedSkuEntity = addNewSKUToProduct(productId, additionalSkuDto);
+        addNewSKUToProduct(productId, additionalSkuDto);
+
         assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(2L));
     }
 
@@ -147,27 +148,8 @@ public class ProductControllerTest extends ApiTestBase {
         removeLocalTestProducts();
     }
 
-    private ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
-        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_URL, productDto, null, serverPort);
-
-        return remoteAddProductEntity;
-    }
-
-    private ResponseEntity<?> addNewTestProduct() throws HttpClientErrorException {
-
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
-
-        ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.PRODUCTS_URL, productDto, null, serverPort);
-
-        return remoteAddProductEntity;
-    }
-
     private ResponseEntity<?> addNewSKUToProduct(long productId, SkuDto skuDto) {
-        ResponseEntity<SkuDto> remoteAddSkuEntity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
-
-        return remoteAddSkuEntity;
+        return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
 

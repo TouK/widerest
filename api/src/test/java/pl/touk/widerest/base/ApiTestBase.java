@@ -238,7 +238,9 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
     }
 
-
+    protected ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
+        return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
+    }
 
 
     /* ---------------- CLEANUP METHODS ---------------- */
