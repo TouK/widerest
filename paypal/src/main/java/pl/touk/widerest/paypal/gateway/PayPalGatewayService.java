@@ -78,7 +78,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             Details details = new Details();
             details.setShipping(payPalRequest.getShippingTotal());
             details.setSubtotal(payPalRequest.getOrderSubtotal());
-            details.setTax("0.00");
+            details.setTax(payPalRequest.getTaxTotal());
 
             Amount amount = new Amount();
             amount.setCurrency(payPalRequest.getOrderCurrencyCode());

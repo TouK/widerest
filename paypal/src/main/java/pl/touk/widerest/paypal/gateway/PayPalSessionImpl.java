@@ -11,6 +11,7 @@ import com.paypal.base.rest.PayPalRESTException;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
 
 import javax.annotation.Resource;

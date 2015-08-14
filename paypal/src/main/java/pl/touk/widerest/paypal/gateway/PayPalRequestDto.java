@@ -63,6 +63,14 @@ public class PayPalRequestDto {
         return wrapped.getOrderSubtotal();
     }
 
+    public String getTaxTotal() {
+        return wrapped.getTaxTotal();
+    }
+
+    public void setTaxTotal(String taxTotal) {
+        wrapped.taxTotal(taxTotal);
+    }
+
     public String getReturnUri() {
         return wrapped.getAdditionalFields().get(PayPalMessageConstants.RETURN_URL).toString();
     }
