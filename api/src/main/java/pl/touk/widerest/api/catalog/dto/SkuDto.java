@@ -63,6 +63,9 @@ public class SkuDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private Integer quantityAvailable;
 
+    @ApiModelProperty
+    private String availability;
+
     @ApiModelProperty(required = true)
     private String currencyCode;
 
@@ -85,6 +88,8 @@ public class SkuDto extends ResourceSupport {
     @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
+
+
 
     /*
     @ApiModelProperty

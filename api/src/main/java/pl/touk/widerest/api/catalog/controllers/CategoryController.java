@@ -11,11 +11,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import javafx.util.Pair;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -260,6 +258,67 @@ public class CategoryController {
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+
+    /* GET /{categoryId}/availability */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{categoryId}/availability", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get category's products availability",
+            notes = "Gets an availability of all the products in this category",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public String getCategoryByIdAvailability(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId) {
+
+        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        return Optional.ofNullable(category.getInventoryType()).map(InventoryType::getType).orElse(CatalogUtils.EMPTY_STRING);
+
+    }
+
+    /* PUT /{categoryId}/availability */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/{categoryId}/availability", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update category's products availability",
+            notes = "Update an availability of all the products in this category",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability"),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public ResponseEntity<?> updateCategoryByIdAvailability(
+            @ApiParam(value = "ID of a specific category", required = true)
+                @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "Inventory type: ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
+                @RequestBody String availability) {
+
+        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .map(e -> {
+                    e.setInventoryType(Optional.ofNullable(InventoryType.getInstance(availability))
+                            .orElseThrow(() -> new ResourceNotFoundException("The specified Inventory Type does not exist")));
+                    return e;
+                })
+                .map(catalogService::saveCategory)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+
+
 
     /* GET /categories/{id}/products */
     @Transactional

@@ -14,6 +14,7 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
@@ -109,6 +110,8 @@ public class ProductController {
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
         Sku defaultSku = dtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
+        /* (mst) turn on Inventory Service by default */
+        defaultSku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
                  Otherwise just ignore it.
@@ -520,6 +523,7 @@ public class ProductController {
 
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(defaultSkuDto);
 
+
         newSkuEntity.setProduct(product);
         newSkuEntity = catalogService.saveSku(newSkuEntity);
 
@@ -599,7 +603,7 @@ public class ProductController {
     @RequestMapping(value = "/{productId}/skus/{skuId}/quantity", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update SKU's quantity",
-            notes = "Update a quantity of specified SKUs",
+            notes = "Update a quantity of the specified SKUs",
             response = Void.class
     )
     @ApiResponses(value = {
@@ -630,6 +634,85 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* PUT /products/{productId}/skus/{skuId}/availability */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/availability", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Update SKU's availability",
+            notes = "Update an availability of the specified SKUs",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful update of SKU's availability"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public ResponseEntity<?> updateSkuByIdAvailability(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") Long productId,
+            @ApiParam(value = "ID of a specific SKU", required = true)
+                @PathVariable(value = "skuId") Long skuId,
+            @ApiParam(value = "Inventory type: ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
+                @RequestBody String availability) {
+
+
+
+
+        /*
+        public static final InventoryType ALWAYS_AVAILABLE  = new InventoryType("ALWAYS_AVAILABLE", "Always Available");
+    public static final InventoryType UNAVAILABLE  = new InventoryType("UNAVAILABLE", "Unavailable");
+    public static final InventoryType CHECK_QUANTITY
+         */
+
+
+        Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                .filter(x -> x.getId().longValue() == skuId)
+                .findAny()
+                .map(e -> {
+                    e.setInventoryType(Optional.ofNullable(InventoryType.getInstance(availability))
+                                        .orElseThrow(() -> new ResourceNotFoundException("The specified Inventory Type does not exist")));
+                    return e;
+                })
+                .map(catalogService::saveSku)
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /* GET /products/{productId}/skus/{skuId}/availability */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/availability", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get SKU's availability",
+            notes = "Gets an availability of the specified SKUs",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of SKU's availability"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public String getSkuByIdAvailability(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") Long productId,
+            @ApiParam(value = "ID of a specific SKU", required = true)
+                @PathVariable(value = "skuId") Long skuId) {
+
+        Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getAllSkus().stream()
+                    .filter(x -> x.getId().longValue() == skuId)
+                    .findAny()
+                    .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+
+        return Optional.ofNullable(sku.getInventoryType()).map(InventoryType::getType).orElse(CatalogUtils.EMPTY_STRING);
+
     }
 
     /* DELETE /products/{productId}/skus/{id} */
