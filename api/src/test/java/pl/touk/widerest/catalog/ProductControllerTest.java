@@ -46,11 +46,10 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     @Test
-    @Ignore
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         long currentProductsCount = getRemoteTotalProductsCount();
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.SAME);
+        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
         //when
         ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
@@ -58,10 +57,11 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
 
+        long productId = getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
         ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
-                remoteAddProductEntity.getHeaders().getLocation().toString(),
-                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort);
+                PRODUCT_BY_ID_URL,
+                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 

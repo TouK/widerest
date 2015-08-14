@@ -1,12 +1,13 @@
 package pl.touk.widerest.catalog;
 
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -359,7 +360,6 @@ public class CategoryControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore("PATCH method of RestTemplate does not seem to work properly here")
     public void partialUpdateCategoryDescriptionAndCheckIfOtherValuesPreserveTest() {
         long currentTotalCategoriesCount = getRemoteTotalCategoriesCount();
 
@@ -377,7 +377,11 @@ public class CategoryControllerTest extends ApiTestBase {
 
         final HttpEntity<CategoryDto> requestEntity = new HttpEntity<>(categoryDto);
 
-        ResponseEntity<Void> responseCategoryPatchEntity = oAuth2AdminRestTemplate().exchange(
+        /* (mst) Those 2 are needed for RestTemplate to work with PATCH requests... */
+        OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
+        adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+
+        ResponseEntity<Void> responseCategoryPatchEntity = adminRestTemplate.exchange(
                 CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
 
         ResponseEntity<CategoryDto> receivedCategoryEntity =
