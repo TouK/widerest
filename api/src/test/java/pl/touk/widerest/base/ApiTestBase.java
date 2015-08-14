@@ -2,6 +2,8 @@ package pl.touk.widerest.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.broadleafcommerce.common.media.domain.MediaDto;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
@@ -32,9 +34,12 @@ import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 import javax.annotation.Resource;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -347,6 +352,19 @@ public abstract class ApiTestBase {
                 oAuth2AdminRestTemplate().delete(testProduct.getId().getHref());
             }
         }
+    }
+
+
+
+
+
+    protected String getAccessTokenFromLocationUrl(String locationUrl) throws URISyntaxException {
+        String accessTokenUrl = locationUrl.replace("#", "?");
+        List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
+
+        return authorizationParams.stream()
+                .filter(x -> x.getName().equals("access_token"))
+                .collect(Collectors.toList()).get(0).getValue();
     }
 
 }

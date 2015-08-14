@@ -15,6 +15,10 @@ import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
  * Created by mst on 27.07.15.
  */
 public class CatalogUtils {
+
+
+    public static final String EMPTY_STRING = "";
+
     public static boolean archivedProductFilter(Product product) {
         return ((Status) product).getArchived() == 'N';
     }

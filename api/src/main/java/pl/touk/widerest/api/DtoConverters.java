@@ -23,6 +23,7 @@ import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
@@ -108,6 +109,10 @@ public class DtoConverters {
                         .collect(toList()))
                 .build();
 
+        if(entity.getInventoryType() != null) {
+            dto.setAvailability(entity.getInventoryType().getType());
+        }
+
         /*
         product.setProductAttributes(
                     productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
@@ -164,6 +169,13 @@ public class DtoConverters {
             skuEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
         } else {
             skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        }
+
+        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
+            skuEntity.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
+        } else {
+            /* (mst) turn on Inventory Service by default */
+            skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
         // TODO: co z selection?

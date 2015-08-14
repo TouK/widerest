@@ -60,10 +60,6 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 
-/* TODO:
- * 1. Synchronization stuff
- *
- */
 @RestController
 @RequestMapping("/orders")
 @Api(value = "orders", description = "Order management endpoint")
