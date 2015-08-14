@@ -58,6 +58,7 @@ public abstract class ApiTestBase {
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
     public static final String PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "/{productId}";
     public static final String PRODUCTS_IN_CATEGORY_COUNT_URL = PRODUCTS_IN_CATEGORY_URL + "/count";
+    public static final String CATEGORY_AVAILABILITY_BY_ID_URL = CATEGORY_BY_ID_URL + "/availability";
 
     /* Products */
     public static final String PRODUCTS_URL = "http://localhost:{port}/catalog/products";
@@ -340,7 +341,7 @@ public abstract class ApiTestBase {
                 .forEach(catalogService::removeProduct);
     }
 
-    protected void removeRemoteTestPorducts() {
+    protected void removeRemoteTestProducts() {
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
 
@@ -356,6 +357,14 @@ public abstract class ApiTestBase {
 
 
 
+    protected long getRemoteTotalCategoriesForProductCount(long productId) {
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody();
+    }
 
 
     protected String getAccessTokenFromLocationUrl(String locationUrl) throws URISyntaxException {

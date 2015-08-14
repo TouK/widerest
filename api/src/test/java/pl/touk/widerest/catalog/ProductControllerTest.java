@@ -3,8 +3,11 @@ package pl.touk.widerest.catalog;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -16,6 +19,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.base.DtoTestType;
+
+import java.math.BigDecimal;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
@@ -236,6 +241,56 @@ public class ProductControllerTest extends ApiTestBase {
         addNewTestSKUToProduct(productId, additionalSkuDto);
 
         assertThat(getLocalTotalSkusForProductCount(productId), equalTo(2L));
+    }
+
+    @Test
+    public void changingDefaultSkuModifiesValuesCorrectlyTest() {
+
+    }
+
+    @Test
+    public void partiallyUpdatingSkuDoesNotRemoveAlreadySetValuesTest() {
+        ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+        ResponseEntity<?> addedSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
+        assertThat(addedSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long skuId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+
+        additionalSkuDto.setDescription("New Sku Description");
+        additionalSkuDto.setQuantityAvailable(4);
+
+
+        final HttpEntity<SkuDto> requestEntity = new HttpEntity<>(additionalSkuDto);
+
+        OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
+        adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+
+        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
+                requestEntity, Void.class, serverPort, productId, skuId);
+
+        ResponseEntity<SkuDto> receivedSkuEntity =
+                restTemplate.getForEntity(PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
+                        serverPort, productId, skuId);
+
+        assertThat(receivedSkuEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        SkuDto receivedSkuDto = receivedSkuEntity.getBody();
+
+        assertNotNull(receivedSkuDto.getName());
+        assertNotNull(receivedSkuDto.getActiveStartDate());
+        assertNotNull(receivedSkuDto.getTaxCode());
+        assertNotNull(receivedSkuDto.getSalePrice());
+
+        assertThat(receivedSkuDto.getDescription(), equalTo(additionalSkuDto.getDescription()));
+        assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(additionalSkuDto.getQuantityAvailable()));
+
     }
 
     @Test

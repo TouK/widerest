@@ -1,5 +1,6 @@
 package pl.touk.widerest.catalog;
 
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -381,8 +382,7 @@ public class CategoryControllerTest extends ApiTestBase {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
         adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
-        ResponseEntity<Void> responseCategoryPatchEntity = adminRestTemplate.exchange(
-                CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
+        adminRestTemplate.exchange(CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
 
         ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
@@ -395,6 +395,95 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(categoryDto.getDescription(), equalTo(receivedCategoryDto.getDescription()));
         assertThat(categoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
 
+    }
+
+    @Test
+    public void newlyAddedCategoryHasDefaultAvailabilityTest() {
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+
+        CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
+
+        assertThat(receviedCategoryDto.getProductsAvailability(), equalTo(InventoryType.ALWAYS_AVAILABLE.getType()));
+    }
+
+    @Test
+    public void addingCategoryWithIncorrectAvailabilitySetsDefaultValueTest() {
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        categoryDto.setProductsAvailability("dasdadasda");
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+
+        CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
+
+        assertThat(receviedCategoryDto.getProductsAvailability(), equalTo(InventoryType.ALWAYS_AVAILABLE.getType()));
+    }
+
+    @Test
+    public void updatingAndSettingCategoryAvailabilityWorksTest() {
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        categoryDto.setProductsAvailability(InventoryType.UNAVAILABLE.getType());
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity);
+        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+
+        CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
+
+        assertThat(receviedCategoryDto.getProductsAvailability(), equalTo(InventoryType.UNAVAILABLE.getType()));
+
+
+        // update via PUT endpoint
+        oAuth2AdminRestTemplate().put(CATEGORY_AVAILABILITY_BY_ID_URL, InventoryType.CHECK_QUANTITY.getType(), serverPort, testCategoryId);
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity2 =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+
+        assertNotNull(receivedCategoryEntity2);
+        assertThat(receivedCategoryEntity2.getStatusCode().value(), equalTo(200));
+
+        CategoryDto receviedCategoryDto2 = receivedCategoryEntity2.getBody();
+
+        assertThat(receviedCategoryDto2.getProductsAvailability(), equalTo(InventoryType.CHECK_QUANTITY.getType()));
+    }
+
+    @Test
+    public void readingAvailabilityOfAddedCategoryViaGetEndpointReturnsCorrectValueTest() {
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        categoryDto.setProductsAvailability(InventoryType.UNAVAILABLE.getType());
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<String> stringResponseEntity = restTemplate.getForEntity(CATEGORY_AVAILABILITY_BY_ID_URL,
+                String.class, serverPort, testCategoryId);
+
+        assertNotNull(stringResponseEntity);
+        assertThat(stringResponseEntity.getStatusCode().value(), equalTo(200));
+
+        String receivedAvailabilityString = stringResponseEntity.getBody();
+
+        assertThat(receivedAvailabilityString, equalTo(InventoryType.UNAVAILABLE.getType()));
     }
 
     /* ----------------------------- HELPER METHODS ----------------------------- */
