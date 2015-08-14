@@ -75,7 +75,7 @@ public class ProductController {
     /* POST /products */
     /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -195,7 +195,6 @@ public class ProductController {
     }
 
     /* PUT /products/{id} */
-    /* TODO: (mst) Implementation */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.PUT)
@@ -396,9 +395,13 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        if(skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        /* TODO: (mst) additional count check ? */
+        if(product.getProductOptionXrefs() != null && !product.getProductOptionXrefs().isEmpty()) {
+            if(skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
         }
+
 
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
 

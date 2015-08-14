@@ -79,7 +79,7 @@ public class DtoTestFactory {
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
                     .defaultSku(null)
-                    .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1, test2"))))
+                    .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                     .build();
 
         return defaultProductDto;
@@ -93,7 +93,7 @@ public class DtoTestFactory {
                 .manufacturer("Test Product Manufacturer" + productCounter)
                 .model("Test Product Model" + productCounter)
                 .defaultSku(null)
-                .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1, test2"))))
+                .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                 .build();
 
         productCounter++;

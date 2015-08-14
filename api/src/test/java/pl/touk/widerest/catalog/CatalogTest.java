@@ -204,9 +204,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
         long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
-        long currentTotalProductsInTestCategoryCount = getLocalTotalProductsInCategoryCount(testCategoryId);
-
-        assertThat(currentTotalProductsInTestCategoryCount, equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
         // create a product and assign it to that category
 
@@ -221,14 +219,15 @@ public class CatalogTest extends ApiTestBase {
 
         long testProductId = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
 
-        oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId, testProductId);
+        oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null , serverPort, testCategoryId, testProductId);
+
 
         try {
             oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId, testProductId);
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
-            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentTotalProductsInTestCategoryCount + 1));
+            assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         }
 
         // create N skus
@@ -329,17 +328,6 @@ public class CatalogTest extends ApiTestBase {
 
         return remoteCountEntity.getBody();
     }
-
-    private long getRemoteTotalSkusForProductCount(long productId) {
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
 
 
 }

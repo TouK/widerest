@@ -2,12 +2,14 @@ package pl.touk.widerest.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import org.broadleafcommerce.common.media.domain.MediaDto;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
@@ -27,6 +29,7 @@ import pl.touk.widerest.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -229,6 +232,31 @@ public abstract class ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
+    protected long getLocalTotalProductsCount() {
+        return catalogService.findAllProducts().stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .count();
+    }
+
+    protected long getLocalTotalSkus() {
+        return catalogService.findAllSkus().stream().count();
+    }
+
+    protected long getRemoteTotalSkusForProductCount(long productId) {
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody();
+    }
+
+    protected long getLocalTotalSkusForProductCount(long productId) {
+        return catalogService.findProductById(productId).getAllSkus().stream().count();
+    }
+
+
     protected ResponseEntity<?> addNewTestCategory(DtoTestType dtoTestType) throws HttpClientErrorException {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
     }
@@ -238,8 +266,41 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
     }
 
+    protected ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
+        return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
+    }
+
+    protected ResponseEntity<?> addNewTestSKUToProduct(long productId, SkuDto skuDto) {
+        return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
+    }
+
+    protected ResponseEntity<?> addNewTestMediaToSku(MediaDto mediaDto) {
+        throw new RuntimeException("Unimplemented");
+    }
 
 
+
+    private org.springframework.hateoas.Resource<ProductDto> getProductWithMultipleSkus() {
+
+
+        ResponseEntity<org.springframework.hateoas.Resource<ProductDto>[]> receivedProductsEntity =
+                hateoasRestTemplate().exchange(PRODUCTS_URL,
+                        HttpMethod.GET, getHttpJsonRequestEntity(),
+                        new ParameterizedTypeReference<org.springframework.hateoas.Resource<ProductDto>[]>() {
+                        },
+                        serverPort);
+
+        org.springframework.hateoas.Resource<ProductDto> resultProduct = null;
+
+        for (org.springframework.hateoas.Resource<ProductDto> p : receivedProductsEntity.getBody()) {
+            if (p.getContent().getSkus().stream().count() >= 2) {
+                resultProduct = p;
+                break;
+            }
+        }
+
+        return resultProduct;
+    }
 
     /* ---------------- CLEANUP METHODS ---------------- */
     protected void removeRemoteTestCategories() {
