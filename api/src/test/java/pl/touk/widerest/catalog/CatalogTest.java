@@ -183,7 +183,7 @@ public class CatalogTest extends ApiTestBase {
             oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, newCategoriesIds.get(i).longValue(), testProductId);
         }
 
-        assertThat(getRemoteTotalCategoriesByProductCount(testProductId), equalTo(TEST_CATEGORIES_COUNT));
+        assertThat(getRemoteTotalCategoriesForProductCount(testProductId), equalTo(TEST_CATEGORIES_COUNT));
 
     }
 
@@ -325,16 +325,5 @@ public class CatalogTest extends ApiTestBase {
         removeLocalTestProducts();
         removeLocalTestCategories();
     }
-
-
-    public long getRemoteTotalCategoriesByProductCount(long productId) {
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
 
 }

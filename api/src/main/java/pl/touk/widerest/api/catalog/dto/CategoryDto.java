@@ -38,4 +38,8 @@ public class CategoryDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 2, value = "Long description of the category", required = false)
     private String longDescription;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false)
+    private String productsAvailability;
 }

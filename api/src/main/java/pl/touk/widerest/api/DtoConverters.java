@@ -397,12 +397,19 @@ public class DtoConverters {
 
     public static Function<Category, CategoryDto> categoryEntityToDto = entity -> {
 
-        CategoryDto dto = CategoryDto.builder().categoryId(entity.getId()).name(entity.getName())
-                .description(entity.getDescription()).longDescription(entity.getLongDescription()).build();
+        CategoryDto dto = CategoryDto.builder()
+                .categoryId(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .longDescription(entity.getLongDescription())
+                .productsAvailability(Optional.ofNullable(entity.getInventoryType())
+                        .map(InventoryType::getType)
+                        .orElse(null))
+                .build();
 
         dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
-        dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId()))
-                .withRel("products"));
+        dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
+
         return dto;
     };
 
@@ -410,7 +417,6 @@ public class DtoConverters {
 
         Category categoryEntity = new CategoryImpl();
 
-        categoryEntity.setId(dto.getCategoryId());
         categoryEntity.setName(dto.getName());
 
         if (dto.getDescription() != null) {
@@ -419,6 +425,13 @@ public class DtoConverters {
 
         if (dto.getLongDescription() != null) {
             categoryEntity.setLongDescription(dto.getLongDescription());
+        }
+
+        if(dto.getProductsAvailability() != null) {
+            InventoryType inventoryType = InventoryType.getInstance(dto.getProductsAvailability());
+            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
+        } else {
+            categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
         return categoryEntity;
