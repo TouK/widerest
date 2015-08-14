@@ -57,7 +57,7 @@ public class PayPalController {
     @Resource(name = "blOrderService")
     private OrderService orderService;
 
-    @Resource(name="blCheckoutService")
+    @Resource(name = "blCheckoutService")
     protected CheckoutService checkoutService;
 
     @Resource(name = "blFulfillmentGroupService")
@@ -119,7 +119,7 @@ public class PayPalController {
 
         String returnUrl = SELF_URL+"/return?"
                 +PayPalMessageConstants.QUERY_AMOUNT+"="+order.getTotal().toString();
-        String cancelUrl = SELF_URL+"/cancel?"+PayPalMessageConstants.QUERY_ORDER_ID+"="+orderId;
+        String cancelUrl = SELF_URL+"/cancel";
 
 
         // Assuming the order has items in one currency, just get one and get currency
@@ -136,6 +136,10 @@ public class PayPalController {
 
         PaymentRequestDTO paymentRequestDTO =
                 orderToPaymentRequestDTOService.translateOrder(order)
+                        .orderSubtotal(order.getSubTotal().toString())
+                        .shippingTotal(order.getTotalShipping().toString())
+                        .taxTotal(order.getTotalTax().toString())
+                        .transactionTotal(order.getTotal().toString())
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
                         .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
                         .additionalField(PayPalRequestDto.SHIPPING_COST, order.getTotalFulfillmentCharges())
@@ -193,13 +197,13 @@ public class PayPalController {
         request.setAttribute(PayPalMessageConstants.QUERY_ORDER_ID, orderId);
         PaymentResponseDTO payPalResponse = webResponseService.translateWebResponse(request);
 
-        if(!payPalResponse.isValid()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-
 
         // create orderpayment
-        paymentGatewayCheckoutService.applyPaymentToOrder(payPalResponse, configurationService.getConfiguration());
+        try {
+            paymentGatewayCheckoutService.applyPaymentToOrder(payPalResponse, configurationService.getConfiguration());
+        } catch (Exception e){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
 
         // strange if it ever happens
@@ -286,6 +290,7 @@ public class PayPalController {
                     .amount(String.valueOf(item.getAveragePrice())) // TODO: blad przyblizen przy mnozeniu
                     .category(category)                             // podczas liczenia kwot w paypalu
                     .quantity(String.valueOf(item.getQuantity()))
+                    .total(order.getTotal().toString())
                     .done();
         }
 

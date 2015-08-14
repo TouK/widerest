@@ -4,40 +4,57 @@ import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.HttpMethod;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
+import org.apache.commons.httpclient.HttpStatus;
 import org.broadleafcommerce.common.cache.StatisticsService;
 import org.broadleafcommerce.common.cache.StatisticsServiceImpl;
+import org.broadleafcommerce.common.config.dao.ModuleConfigurationDao;
+import org.broadleafcommerce.common.config.dao.ModuleConfigurationDaoImpl;
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDaoImpl;
+import org.broadleafcommerce.common.config.domain.ModuleConfiguration;
+import org.broadleafcommerce.common.config.service.ModuleConfigurationService;
+import org.broadleafcommerce.common.config.service.ModuleConfigurationServiceImpl;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
+import org.broadleafcommerce.common.i18n.dao.ISODao;
+import org.broadleafcommerce.common.i18n.dao.ISODaoImpl;
+import org.broadleafcommerce.common.i18n.service.ISOService;
+import org.broadleafcommerce.common.i18n.service.ISOServiceImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayCheckoutService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProviderImpl;
+import org.broadleafcommerce.common.persistence.EntityConfiguration;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
-import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
-import org.broadleafcommerce.core.order.domain.OrderItem;
-import org.broadleafcommerce.core.order.domain.OrderItemImpl;
+import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupServiceImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
-import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
-import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOServiceImpl;
+import org.broadleafcommerce.core.order.service.type.FulfillmentType;
+import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.broadleafcommerce.core.payment.dao.OrderPaymentDao;
+import org.broadleafcommerce.core.payment.dao.OrderPaymentDaoImpl;
+import org.broadleafcommerce.core.payment.service.*;
+import org.broadleafcommerce.profile.core.dao.*;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.broadleafcommerce.profile.core.service.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.config.ListFactoryBean;
 import org.springframework.boot.test.IntegrationTest;
+import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.GrantedAuthority;
@@ -112,7 +129,7 @@ public class PayPalControllerTest {
 
         public void userSendsPaymentRequest(UserDetails userDetails, Long orderId)  throws PaymentException {
             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
-                    "http://localhost:8080/orders/1/paypal/");
+                    "/orders/1/paypal/");
             paymentRequestResponse = payPalController.initiate(httpServletRequest, userDetails, orderId);
         }
 
@@ -138,7 +155,7 @@ public class PayPalControllerTest {
         }
 
         public Boolean userDoesntReceiveAnythingSpecial(ResponseEntity response) {
-            return response.getStatusCode().value() == 404;
+            return response.getStatusCode().value() != org.springframework.http.HttpStatus.SEE_OTHER.value();
         }
     }
 
@@ -154,20 +171,15 @@ public class PayPalControllerTest {
     @IntegrationTest(
             {
                     "paypal.clientId:EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM",
-                    "paypal.secret:EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM"
+                    "paypal.secret:EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM",
             })
+    @PropertySource("classpath:test.properties")
     @ComponentScan({"pl.touk.widerest.paypal"})
     public static class TestConfiguration {
 
-//        @Bean
-//        public PayPalSession payPalSession() throws PayPalRESTException {
-//
-//            return new PayPalSessionImpl(clientIdCredential, secretCredential);
-//        }
-
         @Bean(name = "blOrderService")
         public OrderService orderService() {
-            OrderService orderServiceMock = Mockito.mock(OrderService.class);
+            OrderService orderServiceMock = mock(OrderService.class);
             Order preparedOrder = new OrderImpl();
             Customer customer = new CustomerImpl();
             customer.setId(Long.valueOf(1337));
@@ -184,7 +196,16 @@ public class PayPalControllerTest {
             BroadleafCurrencyImpl currency = new BroadleafCurrencyImpl();
             currency.setCurrencyCode("USD");
             preparedOrder.setCurrency(currency);
-            preparedOrder.setTotal(new Money(24));
+            //preparedOrder.setTotal(new Money(24));
+            preparedOrder.setStatus(OrderStatus.IN_PROCESS);
+            preparedOrder.setTotalFulfillmentCharges(new Money(14.99));
+            preparedOrder.setSubTotal(new Money(4 * 6.0));
+            preparedOrder.setTotalTax(new Money(0));
+            preparedOrder.setTotal(new Money(38.99));
+
+            Customer preparedCustomer = new CustomerImpl();
+            preparedCustomer.setId(1337L);
+            preparedOrder.setCustomer(preparedCustomer);
 
             when(orderServiceMock.findOrderById(Long.valueOf(1))).thenReturn(preparedOrder);
             return orderServiceMock;
@@ -192,7 +213,7 @@ public class PayPalControllerTest {
 
         @Bean(name="blCheckoutService")
         public CheckoutService checkoutService() throws CheckoutException {
-            CheckoutService checkoutServiceMock = Mockito.mock(CheckoutService.class);
+            CheckoutService checkoutServiceMock = mock(CheckoutService.class);
 
             when(checkoutServiceMock.performCheckout(anyObject())).thenReturn(null);
             return checkoutServiceMock;
@@ -203,7 +224,7 @@ public class PayPalControllerTest {
         public OrderToPaymentRequestDTOService blOrderToPaymentRequestDTOService() {
             //return new OrderToPaymentRequestDTOServiceImpl();
             OrderToPaymentRequestDTOService orderToPaymentRequestDTOService =
-                    Mockito.mock(OrderToPaymentRequestDTOServiceImpl.class);
+                    mock(OrderToPaymentRequestDTOServiceImpl.class);
 
             PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO()
                     .orderId("1337")
@@ -253,8 +274,19 @@ public class PayPalControllerTest {
 
         @Bean(name = "blFulfillmentGroupService")
         public FulfillmentGroupService fgService() {
-            return mock(FulfillmentGroupService.class);
-//            return new FulfillmentGroupServiceImpl();
+            //fulfillmentGroupService.getFirstShippableFulfillmentGroup(order).getFulfillmentOption() != null
+            FulfillmentGroupService fulfillmentGroupService =
+                    mock(FulfillmentGroupService.class);
+            FulfillmentOption fulfillmentOption = new FulfillmentOptionImpl();
+            fulfillmentOption.setFulfillmentType(FulfillmentType.PHYSICAL_SHIP);
+
+            FulfillmentGroup fulfillmentGroup = new FulfillmentGroupImpl();
+            fulfillmentGroup.setFulfillmentOption(fulfillmentOption);
+            fulfillmentGroup.setTotal(new Money(14.99));
+
+            when(fulfillmentGroupService.getFirstShippableFulfillmentGroup(anyObject()))
+                    .thenReturn(fulfillmentGroup);
+            return fulfillmentGroupService;
         }
 
         @Bean(name = "blPaymentGatewayConfigurationServiceProvider")
@@ -269,15 +301,119 @@ public class PayPalControllerTest {
             //return new Mockito().mock(PaymentGatewayConfigurationService.class);
         }
 
-        @Bean(name = "blSystemPropertiesDao")
-        public SystemPropertiesDao systemPropertiesDao() {
-            return new SystemPropertiesDaoImpl();
-        }
-
         @Bean(name = "wdSystemProperties")
         public SystemProperitesServiceProxy systemProperitesServiceProxy() {
-            return new SystemProperitesServiceProxy();
+            return mock(SystemProperitesServiceProxy.class);
         }
+
+        @Bean(name = "blStatisticsService")
+        public StatisticsService statisticsService() {
+            return Mockito.mock(StatisticsServiceImpl.class);
+        }
+//
+        @Bean(name = "blSystemPropertiesDao")
+        public SystemPropertiesDao systemPropertiesDao() {
+            return Mockito.mock(SystemPropertiesDaoImpl.class);
+        }
+
+        @Bean
+        public static PropertySourcesPlaceholderConfigurer propertyConfigInDev() {
+            PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer =
+                    new PropertySourcesPlaceholderConfigurer();
+            propertySourcesPlaceholderConfigurer.setIgnoreUnresolvablePlaceholders(true);
+            return propertySourcesPlaceholderConfigurer;
+        }
+
+        @Bean(name = "blEntityConfiguration")
+        public EntityConfiguration entityConfiguration() {
+            return mock(EntityConfiguration.class);
+        }
+
+        @Bean(name = "blMergedEntityContexts")
+        public ListFactoryBean listFactoryBean() {
+            return mock(ListFactoryBean.class);
+        }
+
+        @Bean(name="blPaymentGatewayCheckoutService")
+        public PaymentGatewayCheckoutService paymentGatewayCheckoutService() {
+            return new DefaultPaymentGatewayCheckoutService();
+        }
+
+        @Bean(name="blOrderPaymentService")
+        public OrderPaymentService orderPaymentService() {
+            return new OrderPaymentServiceImpl();
+        }
+
+        @Bean(name="blOrderPaymentDao")
+        public OrderPaymentDao orderPaymentDao() {
+            return new OrderPaymentDaoImpl();
+        }
+
+        @Bean(name="blAddressService")
+        public AddressService addressService() {
+            return new AddressServiceImpl();
+        }
+
+        @Bean(name="blAddressDao")
+        public AddressDao addressDao() {
+            return new AddressDaoImpl();
+        }
+
+        @Bean(name="blModuleConfigurationService")
+        public ModuleConfigurationService moduleConfigurationService() {
+            return new ModuleConfigurationServiceImpl();
+        }
+
+        @Bean(name="blModuleConfigurationDao")
+        public ModuleConfigurationDao moduleConfigurationDao() {
+            return new ModuleConfigurationDaoImpl();
+        }
+
+        @Bean(name="blAddressVerificationProviders")
+        public AddressVerificationProvider addressVerificationProvider() {
+            return mock(AddressVerificationProvider.class);
+        }
+
+        @Bean(name="blStateService")
+        public StateService stateService() {
+            return new StateServiceImpl();
+        }
+
+        @Bean(name="blStateDao")
+        public StateDao stateDao() {
+            return new StateDaoImpl();
+        }
+
+        @Bean(name="blCountryService")
+        public CountryService countryService() {
+            return new CountryServiceImpl();
+        }
+
+        @Bean(name="blCountryDao")
+        public CountryDao countryDao() {
+            return new CountryDaoImpl();
+        }
+        @Bean(name="blISOService")
+        public ISOService isoService() {
+            return new ISOServiceImpl();
+        }
+        @Bean(name="blISODao")
+        public ISODao isoDao() {
+            return new ISODaoImpl();
+        }
+        @Bean(name="blPhoneService")
+        public PhoneService phoneService() {
+            return new PhoneServiceImpl();
+        }
+        @Bean(name="blPhoneDao")
+        public PhoneDao phoneDao() {
+            return new PhoneDaoImpl();
+        }
+
+//        @Bean(name = "wdPayPalSession")
+//        public PayPalSession payPalSession() {
+//            return mock(PayPalSessionImpl.class);
+//        }
 
     }
 }
