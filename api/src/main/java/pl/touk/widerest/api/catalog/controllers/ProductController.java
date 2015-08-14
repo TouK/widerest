@@ -279,13 +279,19 @@ public class ProductController {
     public ResponseEntity<?> removeOneProductById(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") Long productId) {
-        Optional.ofNullable(catalogService.findProductById(productId))
+
+        /* TODO: (mst) do we need to remove all the related SKUs manually as well? */
+        //product.getAdditionalSkus().stream().forEach(catalogService::removeSku);
+
+        Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
                     catalogService.removeProduct(e);
                     return e;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
+
+
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
