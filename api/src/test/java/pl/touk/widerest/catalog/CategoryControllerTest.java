@@ -382,7 +382,7 @@ public class CategoryControllerTest extends ApiTestBase {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
         adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
-       adminRestTemplate.exchange(CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
+        adminRestTemplate.exchange(CATEGORY_BY_ID_URL, HttpMethod.PATCH, requestEntity, Void.class, serverPort, testCategoryId);
 
         ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);

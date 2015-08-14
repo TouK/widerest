@@ -341,7 +341,7 @@ public abstract class ApiTestBase {
                 .forEach(catalogService::removeProduct);
     }
 
-    protected void removeRemoteTestPorducts() {
+    protected void removeRemoteTestProducts() {
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
 
