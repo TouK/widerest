@@ -4,12 +4,14 @@ package pl.touk.widerest.api.cart.controllers;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,7 @@ import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,7 +40,7 @@ public class CustomerController {
 
 
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
     public ResponseEntity<CustomerDto> readOneCustomer(
@@ -52,7 +55,7 @@ public class CustomerController {
     }
 
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
+    @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
@@ -60,10 +63,22 @@ public class CustomerController {
             response = CustomerDto.class,
             responseContainer = "List"
     )
-    public List<CustomerDto> readAllCustomers() {
-        return customerServiceProxy.getAllCustomers().stream()
-                .map(DtoConverters.customerEntityToDto)
-                .collect(Collectors.toList());
+    public List<CustomerDto> readAllCustomers(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        if(userDetails instanceof AdminUserDetails) {
+            return customerServiceProxy.getAllCustomers().stream()
+                    .map(DtoConverters.customerEntityToDto)
+                    .collect(Collectors.toList());
+        } else if(userDetails instanceof CustomerUserDetails) {
+            List<CustomerDto> list = new ArrayList<>();
+            list.add(DtoConverters.customerEntityToDto.apply(
+                    customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId())
+            ));
+            return list;
+        }
+
+        return null;
     }
 
     @Transactional

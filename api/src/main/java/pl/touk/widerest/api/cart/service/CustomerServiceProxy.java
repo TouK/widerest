@@ -37,4 +37,8 @@ public class CustomerServiceProxy {
         return query.getResultList();
     }
 
+    public Customer getCustomerById(Long id) {
+        return (Customer)this.em.find(CustomerImpl.class, id);
+    }
+
 }
