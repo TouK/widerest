@@ -28,7 +28,7 @@ public class CategoryDto extends ResourceSupport {
     @JsonIgnore
     private Long categoryId;
 
-    @ApiModelProperty(position = 0, value = "Category name", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
