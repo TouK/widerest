@@ -47,6 +47,7 @@ public class TenantEndpoint {
     private MacSigner signerVerifier;
 
     @RequestMapping(method = RequestMethod.POST)
+    @Transactional
     public String create() throws SQLException {
         String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
         createSchema(tenantIdentifier);
@@ -54,6 +55,7 @@ public class TenantEndpoint {
     }
 
     @RequestMapping(method = RequestMethod.GET)
+    @Transactional
     public String read() throws SQLException {
         String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
         checkSchema(tenantIdentifier);
