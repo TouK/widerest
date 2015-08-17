@@ -10,16 +10,17 @@ import lombok.experimental.Builder;
 /**
  * Created by mst on 06.08.15.
  */
-@ApiModel
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ApiModel(value = "Sku Product Option Value", description = "Describes a single product option associated with a particular SKU")
 public class SkuProductOptionValueDto {
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 0, value = "Name of the product option", required = true, dataType = "java.lang.String")
     private String attributeName;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 1, value = "Value of the product option. It must be one of the allowable value for that specific product option",
+            required = true, dataType = "java.lang.String")
     private String attributeValue;
 }

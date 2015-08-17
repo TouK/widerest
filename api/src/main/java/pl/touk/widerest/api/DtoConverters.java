@@ -48,7 +48,6 @@ import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
@@ -211,7 +210,7 @@ public class DtoConverters {
         ProductDto dto = null;
 
         if (entity instanceof ProductBundle) {
-            dto = new BundleDto();
+            dto = new ProductBundleDto();
         } else {
             dto = new ProductDto();
         }
@@ -292,14 +291,16 @@ public class DtoConverters {
 		 * input.getId(); } } )));
 		 */
 
-        if (dto instanceof BundleDto) {
+        if (dto instanceof ProductBundleDto) {
             ProductBundle productBundle = (ProductBundle) entity;
 
-            ((BundleDto) dto).setBundleItems(
-                    productBundle.getSkuBundleItems().stream().map(DtoConverters.skuBundleItemToBundleItemDto).collect(toList()));
+            ((ProductBundleDto) dto).setBundleItems(productBundle.getSkuBundleItems().stream()
+                    .map(DtoConverters.skuBundleItemToBundleItemDto)
+                    .collect(toList()));
 
-            ((BundleDto) dto).setBundlePrice(productBundle.getSalePrice().getAmount());
-            ((BundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
+            ((ProductBundleDto) dto).setBundleRetailPrice(productBundle.getRetailPrice().getAmount());
+            ((ProductBundleDto) dto).setBundleSalePrice(productBundle.getSalePrice().getAmount());
+            ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
         }
 
 		/* HATEOAS links */
@@ -453,8 +454,8 @@ public class DtoConverters {
 
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
-                                                                                    xref.getSku().getId(),
-                                                                                    entity.getId())).withSelfRel());
+                xref.getSku().getId(),
+                entity.getId())).withSelfRel());
 
         return skuMediaDto;
     };
@@ -475,19 +476,35 @@ public class DtoConverters {
 
     /******************************** PRODUCT ********************************/
 
+    /******************************** SKU BUNDLE ITEMS ********************************/
+
     public static Function<SkuBundleItem, BundleItemDto> skuBundleItemToBundleItemDto = entity -> {
-        BundleItemDto bundleItemDto = new BundleItemDto();
-        bundleItemDto.setProductId(entity.getSku().getProduct().getId());
-        bundleItemDto.setQuantity(entity.getQuantity());
+        BundleItemDto bundleItemDto = BundleItemDto.builder()
+                .skuId(entity.getSku().getId())
+                .quantity(entity.getQuantity())
+                .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
+                .build();
+
+        Product associatedProduct = entity.getSku().getProduct();
+
+        bundleItemDto.add(linkTo(methodOn(ProductController.class).getSkuById(
+                associatedProduct.getId(),
+                entity.getSku().getId())).withSelfRel());
+
+
         return bundleItemDto;
     };
 
     public static Function<BundleItemDto, SkuBundleItem> bundleItemDtoToSkuBundleItem = dto -> {
         SkuBundleItem skuBundleItem = new SkuBundleItemImpl();
         skuBundleItem.setQuantity(dto.getQuantity());
-		/* TODO: (mst) To be continued... */
+        skuBundleItem.setSalePrice(new Money(dto.getSalePrice()));
+
+        /* TODO: (mst) setting product bundle + SKU */
         return skuBundleItem;
     };
+
+    /******************************** SKU BUNDLE ITEMS ********************************/
 
     public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
         org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();

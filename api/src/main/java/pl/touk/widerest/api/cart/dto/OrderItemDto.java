@@ -29,6 +29,9 @@ public class OrderItemDto {
     @ApiModelProperty(required = true)
     private int quantity = 1;
 
-    @ApiModelProperty(required = true)
-    private long skuId;
+    @ApiModelProperty//(required = true)
+    private Long skuId;
+
+    @ApiModelProperty
+    private Long bundleProductId;
 }

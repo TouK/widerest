@@ -73,6 +73,26 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
+    /* GET /products/bundles */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/bundles", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all bundles",
+            notes = "Gets a list of all available product bundles in the catalog",
+            response = ProductBundleDto.class,
+            responseContainer = "List")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductBundleDto.class)
+    })
+    public List<ProductDto> getAllBundlesProducts() {
+        return catalogService.findAllProducts().stream()
+                .filter(CatalogUtils::archivedProductFilter)
+                .filter(e -> e instanceof ProductBundle)
+                .map(dtoConverters.productEntityToDto)
+                .collect(Collectors.toList());
+    }
+
     /* POST /products */
     /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
