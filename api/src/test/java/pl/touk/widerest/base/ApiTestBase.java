@@ -74,6 +74,9 @@ public abstract class ApiTestBase {
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";
 
+    /* Customer */
+    public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";
+
     public static final String LOGIN_URL = "http://localhost:{port}/login";
 
 

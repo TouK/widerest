@@ -574,15 +574,17 @@ public class DtoConverters {
                 .customerId(entity.getId())
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
-                .deactivaed(entity.isDeactivated())
+                .deactivated(entity.isDeactivated())
                 .addresses(entity.getCustomerAddresses().stream()
                         .map(DtoConverters.customerAddressEntityToDto)
                         .collect(Collectors.toList()))
                 .username(entity.getUsername())
+                .passwordHash(entity.getPassword())
+                .registered(entity.isRegistered())
+                .email(entity.getEmailAddress())
                 .build();
 
         customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(entity.getId())).withSelfRel());
-
 
 
         return customerDto;
@@ -597,6 +599,8 @@ public class DtoConverters {
         customerEntity.setLastName(dto.getLastName());
         customerEntity.setRegistered(dto.getRegistered());
         customerEntity.setUsername(dto.getUsername());
+        customerEntity.setPassword(dto.getPasswordHash());
+        customerEntity.setEmailAddress(dto.getEmail());
         customerEntity.setCustomerAddresses(dto.getAddresses().stream()
                 .map(DtoConverters.customerAddressDtoToEntity)
                 .collect(Collectors.toList()));

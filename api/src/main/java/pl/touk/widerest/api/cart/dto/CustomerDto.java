@@ -14,9 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
 
-/**
- * Created by mst on 07.07.15.
- */
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,28 +22,30 @@ import org.springframework.hateoas.ResourceSupport;
 @ApiModel
 public class CustomerDto extends ResourceSupport {
 
-
     @JsonIgnore
     private Long customerId;
 
     @ApiModelProperty
     private String username;
     @ApiModelProperty
+    private String passwordHash;
+
+    @ApiModelProperty
     private String firstName;
     @ApiModelProperty
     private String lastName;
 
     @ApiModelProperty
-    private Locale locale;
-
+    private String email;
 
     @ApiModelProperty
-    @JsonIgnore
+    private Locale locale;
+
+    @ApiModelProperty
     private Boolean registered = false;
 
     @ApiModelProperty
-    @JsonIgnore
-    private Boolean deactivaed = false;
+    private Boolean deactivated = false;
     
     /* customer attributes */
 
@@ -55,6 +55,5 @@ public class CustomerDto extends ResourceSupport {
     private AddressDto residenceAddress;
 
     private List<CustomerAddressDto> addresses;
-
 
 }

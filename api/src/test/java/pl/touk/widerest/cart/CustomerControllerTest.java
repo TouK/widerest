@@ -1,45 +1,118 @@
 package pl.touk.widerest.cart;
 
+import javafx.util.Pair;
+import org.broadleafcommerce.profile.core.domain.Customer;
+import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
+import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.base.ApiTestBase;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 
+import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-/**
- * Created by mst on 17.07.15.
- */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CustomerControllerTest extends ApiTestBase {
 
+    @Resource(name="blCustomerService")
+    private CustomerService customerService;
+
+    @Resource(name = "wdCustomerService")
+    private CustomerServiceProxy customerServiceProxy;
+
+
     @Test
-    public void shouldReturnTwoDifferentTokensForAnonUserAndAdminTest() throws URISyntaxException {
+    public void userShouldBeAbleToRegister() throws URISyntaxException {
+        givenAnonymousUser();
 
-        // Get anonymous token
-        URI orderDtoResponseUri = restTemplate.postForLocation(ApiTestBase.OAUTH_AUTHORIZATION, null, serverPort);
-        String accessAnonymousToken = getAccessTokenFromLocationUrl(orderDtoResponseUri.toString());
+        // Given unique username, password and unique email
+        String username = "haskellCurry";
+        String password = "uncurry";
+        String email = "haskell@curry.org";
 
-        // Get admin token
-        String accessAdminToken = oAuth2AdminRestTemplate().getAccessToken().getValue();
-        //then
-        assertThat(accessAdminToken, not(equalTo(accessAnonymousToken)));
+        customerBehaviour.whenUserTriesToRegister(username, password, email);
+
+        customerExpectations.userShouldBeRegistered(username, password, email);
+
+    }
+
+
+    private Pair<RestTemplate, String> userCredentials;
+    private HttpHeaders httpRequestHeader = new HttpHeaders();
+    private ResponseEntity<HttpHeaders> response = null;
+
+    private CustomerBehaviour customerBehaviour = new CustomerBehaviour();
+    private CustomerExpectations customerExpectations = new CustomerExpectations();
+
+    private class CustomerBehaviour {
+        public CustomerBehaviour() {
+        }
+
+        public void whenUserTriesToRegister(String name, String password, String email) {
+            RestTemplate restTemplate = userCredentials.getKey();
+            String token = userCredentials.getValue();
+            httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+            httpRequestHeader.set("Authorization", "Bearer " + token);
+
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+            map.add("email", email);
+            map.add("username", name);
+            map.add("password", password);
+            map.add("passwordConfirm", password);
+
+            HttpEntity httpRequestEntity = new HttpEntity(map, httpRequestHeader);
+
+            response =
+                    restTemplate.exchange(CUSTOMERS_URL+"/register",
+                            HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+        }
+
+    }
+
+    private class CustomerExpectations {
+        public CustomerExpectations() {
+        }
+
+        public void userShouldBeRegistered(String username, String password, String email) {
+            // Read user details server-side
+            Customer remoteCustomer =
+                customerService.readCustomerByUsername(username);
+
+            assert(remoteCustomer.isRegistered());
+            assert(remoteCustomer.getEmailAddress().equals(email));
+            assert(remoteCustomer.getPassword().equals(password));
+
+        }
+    }
+
+    private void givenAnonymousUser() throws URISyntaxException {
+        RestTemplate restTemplate = new RestTemplate();
+        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
+        userCredentials = new Pair<>(restTemplate, strapToken(FirstResponseUri));
+    }
+
+    private String strapToken(URI response) throws URISyntaxException {
+        String authorizationUrl = response.toString().replaceFirst("#", "?");
+        List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
+
+        return authParams.stream()
+                .filter(x -> x.getName().equals("access_token"))
+                .findFirst()
+                .map(NameValuePair::getValue)
+                .orElse(null);
     }
 }
 

@@ -19,9 +19,6 @@ import javax.persistence.criteria.Root;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Created by mst on 17.08.15.
- */
 @Service("wdCustomerService")
 public class CustomerServiceProxy {
 
@@ -39,20 +36,5 @@ public class CustomerServiceProxy {
         query.setHint("org.hibernate.cacheRegion", "query.Order");
         return query.getResultList();
     }
-
-
-    /* TODO: (mst) ???? */
-    public void mergeUsers(
-            @AuthenticationPrincipal CustomerUserDetails anonymousUser,
-            @AuthenticationPrincipal CustomerUserDetails loggedInUser) {
-
-        TokenStore tokenStore = null;
-
-        UserAuthenticationConverter userAuthenticationConverter;
-
-        Collection<OAuth2AccessToken> anonToken = tokenStore.findTokensByClientId(anonymousUser.getId().toString());
-
-    }
-
 
 }
