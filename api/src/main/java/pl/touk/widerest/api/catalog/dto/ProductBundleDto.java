@@ -18,12 +18,13 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BundleDto extends ProductDto {
+public class ProductBundleDto extends ProductDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    private List<BundleItemDto> bundleItems = new ArrayList<>();
+    private List<BundleItemDto> bundleItems;
 
-    private BigDecimal bundlePrice;
+    private BigDecimal bundleSalePrice;
+    private BigDecimal bundleRetailPrice;
 
     private BigDecimal potentialSavings;
 }

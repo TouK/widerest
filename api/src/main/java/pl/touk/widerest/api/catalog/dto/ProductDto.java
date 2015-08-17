@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.core.catalog.domain.Product;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.springframework.hateoas.ResourceSupport;
 
 import java.util.Date;
@@ -32,7 +32,7 @@ import java.util.Map;
         defaultImpl = ProductDto.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ProductDto.class, name = "product"),
-        @JsonSubTypes.Type(value = BundleDto.class, name = "bundle")})
+        @JsonSubTypes.Type(value = ProductBundleDto.class, name = "bundle")})
 
 @Data
 @NoArgsConstructor
@@ -41,6 +41,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductDto extends ResourceSupport {
+
     @JsonIgnore
     private Long productId;
 
