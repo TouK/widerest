@@ -13,31 +13,31 @@ import org.springframework.hateoas.ResourceSupport;
 /**
  * Created by mst on 07.08.15.
  */
-@ApiModel
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ApiModel(value = "Sku Media", description = "Sku Media DTO resource representation")
 public class SkuMediaDto extends ResourceSupport {
 
     @JsonIgnore
     private long mediaId;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 0, value = "Title of the media", required = true, dataType = "java.lang.String")
     private String title;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 1, value = "URL to the resource associated with this media", required = true, dataType = "java.lang.String")
     private String url;
 
-    @ApiModelProperty(required = true)
+    /* TODO: (mst) what is this?! */
+    @ApiModelProperty(position = 2, value = "", dataType = "java.lang.String")
     private String altText;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 3, value = "Tags describing the media", dataType = "java.lang.String")
     private String tags;
 
-
-    /* (mst) TMP. To be removed after testing */
-    @JsonIgnore
+    @ApiModelProperty(position = 4, value = "Key of the media", required = true, dataType = "java.lang.String",
+            allowableValues = "[primary, alt1, alt2, alt3, alt4, alt5, alt6, alt7, alt8, alt9]")
     private String key;
 }
