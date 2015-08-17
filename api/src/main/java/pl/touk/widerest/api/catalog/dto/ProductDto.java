@@ -23,8 +23,12 @@ import java.util.Map;
 /**
  * Created by mst on 06.07.15.
  */
-@ApiModel
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(callSuper = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
@@ -32,25 +36,16 @@ import java.util.Map;
         defaultImpl = ProductDto.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ProductDto.class, name = "product"),
-        @JsonSubTypes.Type(value = ProductBundleDto.class, name = "bundle")})
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@EqualsAndHashCode(callSuper = false)
-@JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonSubTypes.Type(value = ProductBundleDto.class, name = "bundle")
+})
+@ApiModel(value = "Product", description = "Product DTO resource representation")
 public class ProductDto extends ResourceSupport {
 
     @JsonIgnore
     private Long productId;
 
-    //@JsonIgnore
-    //@ApiModelProperty(required = true)
-    //private CategoryDto category;
-
-    @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty
     private String categoryName;
 
     @ApiModelProperty(required = true)

@@ -21,25 +21,28 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-@ApiModel(value = "Category", description = "Category resource representation")
+@ApiModel(value = "Category", description = "Category DTO resource representation")
 public class CategoryDto extends ResourceSupport {
 
 
     @JsonIgnore
     private Long categoryId;
 
-    @ApiModelProperty(position = 0, value = "Category name", required = true)
+    @ApiModelProperty(position = 0, value = "Category name", required = true, dataType = "java.lang.String")
     private String name;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 1, value = "Short description of the category", required = false)
+    @ApiModelProperty(position = 1, value = "Short description of the category", required = false,
+            dataType = "java.lang.String")
     private String description;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 2, value = "Long description of the category", required = false)
+    @ApiModelProperty(position = 2, value = "Long description of the category", required = false,
+            dataType = "java.lang.String")
     private String longDescription;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false)
+    @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false,
+            dataType = "java.lang.String", allowableValues = "[ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY]")
     private String productsAvailability;
 }

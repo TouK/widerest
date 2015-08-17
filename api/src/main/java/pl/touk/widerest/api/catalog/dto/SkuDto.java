@@ -22,30 +22,19 @@ import org.springframework.hateoas.ResourceSupport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-/*
- * TODO: (mst) Add SkuMedia (= pictures etc)
- */
-
-@ApiModel
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ApiModel(value = "Sku", description = "SKU DTO resource representation")
 public class SkuDto extends ResourceSupport {
 
-    @ApiModelProperty
     @JsonIgnore
     private Long skuId;
 
-    /*
-    @ApiModelProperty
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    private List<ProductOptionSelectionDto> selection;
-*/
-
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 0, value = "SKU name", required = true)
     private String name;
 
     @ApiModelProperty
