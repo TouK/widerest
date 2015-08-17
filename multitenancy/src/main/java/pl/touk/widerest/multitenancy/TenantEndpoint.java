@@ -12,6 +12,7 @@ import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 import javax.sql.DataSource;
@@ -58,6 +60,7 @@ public class TenantEndpoint {
         return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
     }
 
+    @Transactional
     private void createSchema(String tenantIdentifier) throws SQLException {
         Connection connection = privilegedDataSource.getConnection();
         try {
@@ -90,6 +93,7 @@ public class TenantEndpoint {
         }
     }
 
+    @Transactional
     private void checkSchema(String tenantIdentifier) {
         // Open a transaction just to see if there is a database schema for the tenant identifier
         // resolved by CurrentTenantIdentifierResolver
