@@ -83,7 +83,7 @@ import static org.mockito.Mockito.*;
 public class PayPalControllerTest {
 
     @Before
-    public void setUp() {
+    public void setUpUserDetails() {
         userDetails =
                 new CustomerUserDetails(Long.valueOf(1337), "anonymous", "lolcatz", Collections.EMPTY_LIST);
     }
@@ -92,14 +92,9 @@ public class PayPalControllerTest {
     // When user sends payment request
     // Then user should be redirected
     @Test
-    public void shouldUserBeRedirectedToPayPal() {
+    public void shouldUserBeRedirectedToPayPal() throws PaymentException {
 
-        try {
-            whenInPayPal.userSendsPaymentRequest(userDetails, Long.valueOf(1));
-        } catch (PaymentException e) {
-            // Could not send payment
-            assert(false);
-        }
+        whenInPayPal.userSendsPaymentRequest(userDetails, Long.valueOf(1));
 
         assert(
             thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse)
@@ -108,17 +103,12 @@ public class PayPalControllerTest {
     }
 
     @Test
-    public void shouldUserReceiveNothing() {
-        try {
-            whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
-        } catch (Exception e) {
-            // Sth went wrong
-            e.printStackTrace();
-            assert(false);
-        }
+    public void shouldUserReceiveNothing() throws PaymentException, CheckoutException {
+
+        whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
 
         assert(
-            thenInPayPal.userDoesntReceiveAnythingSpecial(whenInPayPal.returnRequestResponse)
+            thenInPayPal.userDoesntGetRedirected(whenInPayPal.returnRequestResponse)
         );
     }
 
@@ -154,7 +144,7 @@ public class PayPalControllerTest {
             return response.getHeaders().getLocation().toString().contains("paypal");
         }
 
-        public Boolean userDoesntReceiveAnythingSpecial(ResponseEntity response) {
+        public Boolean userDoesntGetRedirected(ResponseEntity response) {
             return response.getStatusCode().value() != org.springframework.http.HttpStatus.SEE_OTHER.value();
         }
     }
