@@ -3,6 +3,7 @@ package pl.touk.widerest.api.cart.controllers;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
@@ -11,6 +12,7 @@ import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
@@ -44,27 +47,27 @@ public class CustomerController {
     @Resource(name="blCustomerService")
     private CustomerService customerService;
 
-    @Resource(name="blOrderService")
-    private OrderService orderService;
-
-    @PersistenceContext(unitName = "blPU")
-    protected EntityManager em;
+    @Resource(name = "wdCustomerService")
+    private CustomerServiceProxy customerServiceProxy;
 
 
     @Transactional
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
-    public ResponseEntity<CustomerDto> readOneCustomer(@PathVariable(value = "id") Long customerId) {
+    public ResponseEntity<CustomerDto> readOneCustomer(
+            @ApiParam(value = "ID of a customer")
+                @PathVariable(value = "id") Long customerId) {
 
         CustomerDto customer = Optional.ofNullable(customerService.readCustomerById(customerId))
                 .map(DtoConverters.customerEntityToDto)
                 .orElseThrow(CustomerNotFoundException::new);
+
         return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 
     @Transactional
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
@@ -73,33 +76,9 @@ public class CustomerController {
             responseContainer = "List"
     )
     public List<CustomerDto> readAllCustomers() {
-        return getAllCustomers().stream().map(DtoConverters.customerEntityToDto).collect(Collectors.toList());
-    }
-
-
-    @PostAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
-    private List<Customer> getAllCustomers() {
-        CriteriaBuilder builder = this.em.getCriteriaBuilder();
-        CriteriaQuery criteria = builder.createQuery(Customer.class);
-        Root customer = criteria.from(CustomerImpl.class);
-        criteria = criteria.select(customer);
-        TypedQuery query = this.em.createQuery(criteria);
-        query.setHint("org.hibernate.cacheable", Boolean.valueOf(true));
-        query.setHint("org.hibernate.cacheRegion", "query.Order");
-        return query.getResultList();
-    }
-
-
-    private void mergeUsers(
-            @AuthenticationPrincipal CustomerUserDetails anonymousUser,
-            @AuthenticationPrincipal CustomerUserDetails loggedInUser) {
-
-        TokenStore tokenStore = null;
-
-        UserAuthenticationConverter userAuthenticationConverter;
-
-        Collection<OAuth2AccessToken> anonToken = tokenStore.findTokensByClientId(anonymousUser.getId().toString());
-
+        return customerServiceProxy.getAllCustomers().stream()
+                .map(DtoConverters.customerEntityToDto)
+                .collect(Collectors.toList());
     }
 
 }

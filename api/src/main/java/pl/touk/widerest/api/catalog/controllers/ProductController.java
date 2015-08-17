@@ -872,12 +872,6 @@ public class ProductController {
                 @PathVariable(value = "skuId") Long skuId) {
 
 
-        /*
-        catalogService.findProductById(productId).getAllSkus().stream().filter(x -> x.getId().longValue() == skuId).findAny()
-                .get().getSkuMediaXref().entrySet().stream().forEach(x -> System.out.println(x.getKey() + " : " + x.getValue().getKey()));
-*/
-
-
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
