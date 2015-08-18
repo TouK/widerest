@@ -124,8 +124,6 @@ public class PayPalControllerTest {
         }
 
         public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException, CheckoutException {
-            // Przykladowe: http://localhost:8080/orders/1/paypal/return?paymentId=PAY-1RG403957J192763EKW3DDSY&token=EC-2V96560140856305R&PayerID=FXHKFGTPBJR4J
-            // http://localhost:8080/orders/1/paypal/return?paymentId=PAY-7EE74569FE911601VKW3X7QQ&token=EC-2KE661416F427612K&PayerID=FXHKFGTPBJR4J
             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
                     "http://localhost:8080/orders/1/paypal/return");
 
@@ -145,7 +143,7 @@ public class PayPalControllerTest {
         }
 
         public Boolean userDoesntGetRedirected(ResponseEntity response) {
-            return response.getStatusCode().value() != org.springframework.http.HttpStatus.SEE_OTHER.value();
+            return !response.getStatusCode().is3xxRedirection();
         }
     }
 
@@ -333,52 +331,42 @@ public class PayPalControllerTest {
         public OrderPaymentService orderPaymentService() {
             return new OrderPaymentServiceImpl();
         }
-
         @Bean(name="blOrderPaymentDao")
         public OrderPaymentDao orderPaymentDao() {
             return new OrderPaymentDaoImpl();
         }
-
         @Bean(name="blAddressService")
         public AddressService addressService() {
             return new AddressServiceImpl();
         }
-
         @Bean(name="blAddressDao")
         public AddressDao addressDao() {
             return new AddressDaoImpl();
         }
-
         @Bean(name="blModuleConfigurationService")
         public ModuleConfigurationService moduleConfigurationService() {
             return new ModuleConfigurationServiceImpl();
         }
-
         @Bean(name="blModuleConfigurationDao")
         public ModuleConfigurationDao moduleConfigurationDao() {
             return new ModuleConfigurationDaoImpl();
         }
-
         @Bean(name="blAddressVerificationProviders")
         public AddressVerificationProvider addressVerificationProvider() {
             return mock(AddressVerificationProvider.class);
         }
-
         @Bean(name="blStateService")
         public StateService stateService() {
             return new StateServiceImpl();
         }
-
         @Bean(name="blStateDao")
         public StateDao stateDao() {
             return new StateDaoImpl();
         }
-
         @Bean(name="blCountryService")
         public CountryService countryService() {
             return new CountryServiceImpl();
         }
-
         @Bean(name="blCountryDao")
         public CountryDao countryDao() {
             return new CountryDaoImpl();

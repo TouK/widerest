@@ -30,8 +30,7 @@ public class SkuMediaDto extends ResourceSupport {
     @ApiModelProperty(position = 1, value = "URL to the resource associated with this media", required = true, dataType = "java.lang.String")
     private String url;
 
-    /* TODO: (mst) what is this?! */
-    @ApiModelProperty(position = 2, value = "", dataType = "java.lang.String")
+    @ApiModelProperty(position = 2, value = "Attribute (alt) for HTML property of IMG", dataType = "java.lang.String")
     private String altText;
 
     @ApiModelProperty(position = 3, value = "Tags describing the media", dataType = "java.lang.String")

@@ -131,8 +131,6 @@ public class CatalogTest extends ApiTestBase {
 
         oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
-        /* TODO: (mst) maybe few other checks after removal */
-
         assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
     }
 

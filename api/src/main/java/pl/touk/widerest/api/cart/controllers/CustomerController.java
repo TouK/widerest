@@ -91,7 +91,6 @@ public class CustomerController {
             @RequestParam String email
     )  {
         // Assuming user already has token
-        // TODO: (pkp) should activation email be sent here?
 
         Optional.ofNullable(customerUserDetails.getId())
                 .map(customerService::readCustomerById)
