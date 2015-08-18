@@ -30,6 +30,8 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
+import static java.util.stream.Collectors.toMap;
+
 
 @RestController
 @RequestMapping("/catalog/products")
@@ -174,7 +176,7 @@ public class ProductController {
                 .buildAndExpand(newProduct.getId())
                 .toUri());
 
-        return new ResponseEntity<>(null, responseHeader, HttpStatus.CREATED);
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /products/count */

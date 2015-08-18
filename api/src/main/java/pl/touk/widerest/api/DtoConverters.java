@@ -177,8 +177,17 @@ public class DtoConverters {
             skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
-        // TODO: co z selection?
-        // - (mst) a co ma byc?
+
+        if(skuDto.getSkuAttributes() != null) {
+            skuEntity.setSkuAttributes(
+                    skuDto.getSkuAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+                        SkuAttribute s = new SkuAttributeImpl();
+                        s.setName(e.getKey());
+                        s.setValue(e.getValue());
+                        s.setSku(skuEntity);
+                        return s;
+                    })));
+        }
 
         return skuEntity;
     };
@@ -406,6 +415,8 @@ public class DtoConverters {
                 .productsAvailability(Optional.ofNullable(entity.getInventoryType())
                         .map(InventoryType::getType)
                         .orElse(null))
+                .attributes(entity.getCategoryAttributesMap().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
                 .build();
 
         dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
@@ -435,8 +446,22 @@ public class DtoConverters {
             categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
+        if(dto.getAttributes() != null) {
+            categoryEntity.setCategoryAttributesMap(
+                    dto.getAttributes().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            CategoryAttribute a = new CategoryAttributeImpl();
+                            a.setName(e.getKey());
+                            a.setValue(e.getValue());
+                            a.setCategory(categoryEntity);
+                            return a;
+                        })));
+        }
+
         return categoryEntity;
     };
+
+    /******************************** CATEGORY ********************************/
 
     public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
 
