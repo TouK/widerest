@@ -177,8 +177,17 @@ public class DtoConverters {
             skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
-        // TODO: co z selection?
-        // - (mst) a co ma byc?
+
+        if(skuDto.getSkuAttributes() != null) {
+            skuEntity.setSkuAttributes(
+                    skuDto.getSkuAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+                        SkuAttribute s = new SkuAttributeImpl();
+                        s.setName(e.getKey());
+                        s.setValue(e.getValue());
+                        s.setSku(skuEntity);
+                        return s;
+                    })));
+        }
 
         return skuEntity;
     };
@@ -406,6 +415,8 @@ public class DtoConverters {
                 .productsAvailability(Optional.ofNullable(entity.getInventoryType())
                         .map(InventoryType::getType)
                         .orElse(null))
+                .attributes(entity.getCategoryAttributesMap().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
                 .build();
 
         dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
@@ -435,8 +446,22 @@ public class DtoConverters {
             categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
+        if(dto.getAttributes() != null) {
+            categoryEntity.setCategoryAttributesMap(
+                    dto.getAttributes().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            CategoryAttribute a = new CategoryAttributeImpl();
+                            a.setName(e.getKey());
+                            a.setValue(e.getValue());
+                            a.setCategory(categoryEntity);
+                            return a;
+                        })));
+        }
+
         return categoryEntity;
     };
+
+    /******************************** CATEGORY ********************************/
 
     public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
 
@@ -551,33 +576,25 @@ public class DtoConverters {
         List<Sku> allSkus = new ArrayList<>();
         allSkus.add(product.getDefaultSku());
 
-		/* TODO: Do we have to put DefaultSKU to this list? */
         if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
-            allSkus.addAll(productDto.getSkus().stream().map(skuDtoToEntity).collect(toList()));
+            allSkus.addAll(productDto.getSkus().stream()
+                    .map(skuDtoToEntity)
+                    .collect(toList()));
         }
+
         product.setAdditionalSkus(allSkus);
 
-		/* TODO: (mst) Refactor to lamda */
         if (productDto.getAttributes() != null) {
 
             product.setProductAttributes(
                     productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
                         ProductAttribute p = new ProductAttributeImpl();
+                        p.setName(e.getKey());
                         p.setValue(e.getValue());
+                        p.setProduct(product);
                         return p;
                     })));
         }
-
-		/* TODO: (mst) Refactor to lamda */
-        /*
-        if(productDto.getOptions() != null) {
-            product.setProductOptionXrefs(
-                    productDto.getOptions().stream()
-                            .map(productOptionDtoToXRef)
-                            .collect(toList()));
-        }*/
-
-        // TODO: options
 
         return product;
     };

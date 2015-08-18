@@ -13,6 +13,8 @@ import org.springframework.hateoas.ResourceSupport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.util.Map;
+
 /**
  * Created by mst on 06.07.15.
  */
@@ -45,4 +47,9 @@ public class CategoryDto extends ResourceSupport {
     @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false,
             dataType = "java.lang.String", allowableValues = "[ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY]")
     private String productsAvailability;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false,
+            dataType = "java.util.Map")
+    private Map<String, String> attributes;
 }

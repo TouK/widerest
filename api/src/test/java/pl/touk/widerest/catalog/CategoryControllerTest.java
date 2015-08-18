@@ -486,6 +486,40 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(receivedAvailabilityString, equalTo(InventoryType.UNAVAILABLE.getType()));
     }
 
+    @Test
+    public void addingCategoryWithAttributesSavesThemCorrectlyTest() {
+        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+
+        Map<String, String> categoryAttributes = new HashMap<>();
+        categoryAttributes.put("size", String.valueOf(99));
+        categoryAttributes.put("color", "red");
+        categoryAttributes.put("length", String.valueOf(12.222));
+
+        categoryDto.setAttributes(categoryAttributes);
+
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
+        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+
+
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+        Map<String, String> receivedAttributes = receivedCategoryDto.getAttributes();
+
+        assertNotNull(receivedAttributes);
+
+        assertThat(receivedAttributes.size(), equalTo(categoryAttributes.size()));
+        assertThat(receivedAttributes.get("size"), equalTo(String.valueOf(99)));
+        assertThat(receivedAttributes.get("color"), equalTo("red"));
+        assertThat(receivedAttributes.get("length"), equalTo(String.valueOf(12.222)));
+
+    }
+
+
+
     /* ----------------------------- HELPER METHODS ----------------------------- */
 
     private void cleanupCategoryTests() {
