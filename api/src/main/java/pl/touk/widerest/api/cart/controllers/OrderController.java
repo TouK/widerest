@@ -280,8 +280,8 @@ public class OrderController {
 
         if (!isBundleBeingAdded) {
             responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                    .path("/{orderId}/items/{id}")
-                    .buildAndExpand(orderId,
+                    .path("/{id}")
+                    .buildAndExpand(
                             (cart.getDiscreteOrderItems().stream()
                                     .filter(x -> x.getSku().getId().longValue() == orderItemDto.getSkuId())
                                     .findAny()
@@ -291,8 +291,7 @@ public class OrderController {
                     .toUri());
         } else {
             responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                    .path("/{orderId}/items")
-                    .buildAndExpand(orderId)
+                    .build()
                     .toUri());
         }
 
