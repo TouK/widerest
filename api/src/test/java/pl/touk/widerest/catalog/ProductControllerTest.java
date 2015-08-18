@@ -260,7 +260,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         ResponseEntity<?> addedSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
         assertThat(addedSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long skuId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+        long skuId = getIdFromLocationUrl(addedSkuEntity.getHeaders().getLocation().toString());
 
 
         additionalSkuDto.setDescription("New Sku Description");
