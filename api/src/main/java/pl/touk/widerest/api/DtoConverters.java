@@ -551,33 +551,25 @@ public class DtoConverters {
         List<Sku> allSkus = new ArrayList<>();
         allSkus.add(product.getDefaultSku());
 
-		/* TODO: Do we have to put DefaultSKU to this list? */
         if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
-            allSkus.addAll(productDto.getSkus().stream().map(skuDtoToEntity).collect(toList()));
+            allSkus.addAll(productDto.getSkus().stream()
+                    .map(skuDtoToEntity)
+                    .collect(toList()));
         }
+
         product.setAdditionalSkus(allSkus);
 
-		/* TODO: (mst) Refactor to lamda */
         if (productDto.getAttributes() != null) {
 
             product.setProductAttributes(
                     productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
                         ProductAttribute p = new ProductAttributeImpl();
+                        p.setName(e.getKey());
                         p.setValue(e.getValue());
+                        p.setProduct(product);
                         return p;
                     })));
         }
-
-		/* TODO: (mst) Refactor to lamda */
-        /*
-        if(productDto.getOptions() != null) {
-            product.setProductOptionXrefs(
-                    productDto.getOptions().stream()
-                            .map(productOptionDtoToXRef)
-                            .collect(toList()));
-        }*/
-
-        // TODO: options
 
         return product;
     };

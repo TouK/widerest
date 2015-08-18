@@ -344,6 +344,14 @@ public abstract class ApiTestBase {
                 .forEach(catalogService::removeProduct);
     }
 
+
+    protected void removeLocalTestSkus() {
+
+       catalogService.findAllSkus().stream()
+               .filter(x -> (x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_DESC) ||  x.getName().contains(DtoTestFactory.TEST_DEFAULT_SKU_DESC)))
+               .forEach(catalogService::removeSku);
+    }
+
     protected void removeRemoteTestProducts() {
         ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
                 HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
