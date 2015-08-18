@@ -348,7 +348,7 @@ public abstract class ApiTestBase {
     protected void removeLocalTestSkus() {
 
        catalogService.findAllSkus().stream()
-               .filter(x -> (x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_DESC) ||  x.getName().contains(DtoTestFactory.TEST_DEFAULT_SKU_DESC)))
+               .filter(x -> (x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME)))
                .forEach(catalogService::removeSku);
     }
 

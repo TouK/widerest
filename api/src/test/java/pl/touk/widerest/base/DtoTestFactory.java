@@ -29,6 +29,7 @@ public class DtoTestFactory {
     public static final String TEST_PRODUCT_DEFAULT_NAME = "DefaultTestProduct";
     public static final String TEST_DEFAULT_SKU_DESC = "DefaultTestProductDescription";
     public static final String TEST_ADDITIONAL_SKU_DESC = "TestAdditionalSKUDescription";
+    public static final String TEST_ADDITIONAL_SKU_NAME = "TestAdditionalSKUName";
 
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -200,6 +201,7 @@ public class DtoTestFactory {
             h.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
 
             newSkuDto2 = SkuDto.builder()
+                    .name(TEST_ADDITIONAL_SKU_NAME)
                     .description(TEST_ADDITIONAL_SKU_DESC)
                     .salePrice(new BigDecimal(99.99))
                     .quantityAvailable(34)
@@ -216,6 +218,7 @@ public class DtoTestFactory {
         h.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
 
         SkuDto skuDto = SkuDto.builder()
+                .name(TEST_ADDITIONAL_SKU_NAME + skuCounter)
                 .description(TEST_ADDITIONAL_SKU_DESC + skuCounter)
                 .salePrice(new BigDecimal(3 + skuCounter))
                 .quantityAvailable((int) (3 + skuCounter))

@@ -49,6 +49,7 @@ import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
+import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.dto.*;
@@ -94,10 +95,6 @@ public class DtoConverters {
                         .collect(toMap(Map.Entry::getKey, e -> {
                             return e.getValue().getName();
                         })))
-                /*.productOptionValues(entity.getProductOptionValueXrefs().stream()
-                        .map(SkuProductOptionValueXref::getProductOptionValue)
-                        .map(DtoConverters.productOptionValueEntityToDto)
-                        .collect(toSet()))*/
                 .skuProductOptionValues(entity.getProductOptionValueXrefs().stream()
                                 .map(SkuProductOptionValueXref::getProductOptionValue)
                                 .map(DtoConverters.productOptionValueToSkuValueDto)
@@ -112,48 +109,44 @@ public class DtoConverters {
             dto.setAvailability(entity.getInventoryType().getType());
         }
 
-        /*
-        product.setProductAttributes(
-                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
-                        ProductAttribute p = new ProductAttributeImpl();
-                        p.setValue(e.getValue());
-                        return p;
-                    })));
-         */
-
-
-
         // selection wysylany jest tylko od klienta
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
                 .withSelfRel());
         return dto;
     };
 
-    public Function<SkuDto, Sku> skuDtoToEntity = skuDto -> {
+
+
+    public Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
         BroadleafCurrency skuCurrency = null;
 
-        if(skuDto.getCurrencyCode() == null || skuDto.getCurrencyCode().isEmpty()) {
+        if(currencyCode == null || currencyCode.isEmpty()) {
             skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
         } else {
-            skuCurrency = blCurrencyService.findCurrencyByCode(skuDto.getCurrencyCode());
+            skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
 
             /* TODO: (mst) I'm not sure about this: in case BL does not find provided currency,
                      can we just create it or we should only support those which are already in DB
              */
             if (skuCurrency == null) {
                 BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
-                newBLCurrency.setCurrencyCode(skuDto.getCurrencyCode());
+                newBLCurrency.setCurrencyCode(currencyCode);
                 skuCurrency = blCurrencyService.save(newBLCurrency);
             }
 
         }
+        return skuCurrency;
+    };
 
+
+
+    public Function<SkuDto, Sku> skuDtoToEntity = skuDto -> {
         Sku skuEntity = new SkuImpl();
 
         skuEntity.setName(skuDto.getName());
         skuEntity.setDescription(skuDto.getDescription());
         skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
-        skuEntity.setCurrency(skuCurrency);
+        skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
         skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
         skuEntity.setTaxCode(skuDto.getTaxCode());
         skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
@@ -189,6 +182,19 @@ public class DtoConverters {
                     })));
         }
 
+        if(skuDto.getSkuMedia() != null) {
+            skuEntity.setSkuMediaXref(
+                    skuDto.getSkuMedia().stream()
+                            .collect(toMap(e -> e.getKey(), e -> {
+                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e);
+                                newSkuMediaXref.setSku(skuEntity);
+                                newSkuMediaXref.setKey(e.getKey());
+                                return newSkuMediaXref;
+                            })));
+        }
+
+
+
         return skuEntity;
     };
 
@@ -213,6 +219,10 @@ public class DtoConverters {
                 .findAny()
                 .orElse(null);
     }
+
+
+
+
 
     public Function<Product, ProductDto> productEntityToDto = entity -> {
 
@@ -426,39 +436,9 @@ public class DtoConverters {
     };
 
     public static Function<CategoryDto, Category> categoryDtoToEntity = dto -> {
-
         Category categoryEntity = new CategoryImpl();
 
-        categoryEntity.setName(dto.getName());
-
-        if (dto.getDescription() != null) {
-            categoryEntity.setDescription(dto.getDescription());
-        }
-
-        if (dto.getLongDescription() != null) {
-            categoryEntity.setLongDescription(dto.getLongDescription());
-        }
-
-        if(dto.getProductsAvailability() != null) {
-            InventoryType inventoryType = InventoryType.getInstance(dto.getProductsAvailability());
-            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
-        } else {
-            categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
-
-        if(dto.getAttributes() != null) {
-            categoryEntity.setCategoryAttributesMap(
-                    dto.getAttributes().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> {
-                            CategoryAttribute a = new CategoryAttributeImpl();
-                            a.setName(e.getKey());
-                            a.setValue(e.getValue());
-                            a.setCategory(categoryEntity);
-                            return a;
-                        })));
-        }
-
-        return categoryEntity;
+        return CatalogUtils.updateCategoryEntityFromDto(categoryEntity, dto);
     };
 
     /******************************** CATEGORY ********************************/
@@ -496,6 +476,7 @@ public class DtoConverters {
         skuMedia.setTags(dto.getTags());
 
         skuMediaXref.setMedia(skuMedia);
+
         return skuMediaXref;
     };
 

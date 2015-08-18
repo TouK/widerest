@@ -373,7 +373,7 @@ public class ProductController {
     }
     /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
 
-    /* ---------------------------- SKU ENDPOINTS ---------------------------- */
+    /* ---------------------------- SKUs ENDPOINTS ---------------------------- */
 
 
     /* GET /products/{id}/skus */
@@ -422,27 +422,34 @@ public class ProductController {
             @ApiParam(value = "Description of a new SKU", required = true)
                 @RequestBody SkuDto skuDto) {
 
+
+        if(skuDto.getName() == null || skuDto.getName().isEmpty() || skuDto.getQuantityAvailable() == null
+                || skuDto.getActiveStartDate() == null || skuDto.getSalePrice() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        /* TODO: (mst) additional count check ? */
+        /* (mst) Basically, when you're adding a new SKU to a product which has options, you have to
+                provide them.
+         */
         if(product.getProductOptionXrefs() != null && !product.getProductOptionXrefs().isEmpty()) {
-            if(skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty()) {
+            if(skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty() ||
+                    skuDto.getSkuProductOptionValues().size() != product.getProductOptionXrefs().size()) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
 
-
         Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
-
         newSkuEntity.setProduct(product);
 
 
         /* (mst) TODO: Merge with SKU with the same Product Options set if it already exists in catalog */
         final Sku skuParam = newSkuEntity;
 
-        if(skuDto.getSkuProductOptionValues() != null) {
+        if(skuDto.getSkuProductOptionValues() != null && !skuDto.getSkuProductOptionValues().isEmpty()) {
             newSkuEntity.setProductOptionValueXrefs(
                     skuDto.getSkuProductOptionValues().stream()
                             .map(e -> generateXref(e, skuParam, product))
@@ -523,11 +530,10 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
-    /* POST /products/{productId}/skus/default */
-    /* (mst) Experimental */
+    /* PUT /products/{productId}/skus/default */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.POST)
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Replace default SKU",
             notes = "Replaces an existing default SKU with a new one",
@@ -547,25 +553,21 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        //Sku currentDefaultSKU = product.getDefaultSku();
-
-        Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(defaultSkuDto);
+        Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
 
 
-        newSkuEntity.setProduct(product);
-        newSkuEntity = catalogService.saveSku(newSkuEntity);
+        defaultSKU.setProduct(product);
+        defaultSKU = catalogService.saveSku(defaultSKU);
 
-        product.setDefaultSku(newSkuEntity);
-        catalogService.saveProduct(product);
+        //product.setDefaultSku(newSkuEntity);
+        //catalogService.saveProduct(product);
 
-        /* (mst) Removing a default SKU should technically remove the entire product...*/
-        //catalogService.removeSku(currentDefaultSKU);
 
         HttpHeaders responseHeader = new HttpHeaders();
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/products/{productId}/skus/{skuId}")
-                .buildAndExpand(productId,newSkuEntity.getId())
+                .buildAndExpand(productId, defaultSKU.getId())
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
@@ -684,15 +686,6 @@ public class ProductController {
                 @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "Inventory type: ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
                 @RequestBody String availability) {
-
-
-
-
-        /*
-        public static final InventoryType ALWAYS_AVAILABLE  = new InventoryType("ALWAYS_AVAILABLE", "Always Available");
-    public static final InventoryType UNAVAILABLE  = new InventoryType("UNAVAILABLE", "Unavailable");
-    public static final InventoryType CHECK_QUANTITY
-         */
 
 
         Optional.ofNullable(catalogService.findProductById(productId))
@@ -869,7 +862,7 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    /* ---------------------------- SKU ENDPOINTS ---------------------------- */
+    /* ---------------------------- SKUs ENDPOINTS ---------------------------- */
 
     /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 

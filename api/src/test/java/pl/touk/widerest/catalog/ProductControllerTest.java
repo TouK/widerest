@@ -28,7 +28,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
@@ -38,8 +38,8 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Before
     public void initProductTests() {
-        serverPort = String.valueOf(8080);
-        //cleanupProductTests();
+        //serverPort = String.valueOf(8080);
+        cleanupProductTests();
     }
 
      /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */

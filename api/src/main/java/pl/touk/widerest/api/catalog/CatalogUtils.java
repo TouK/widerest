@@ -3,13 +3,18 @@ package pl.touk.widerest.api.catalog;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.persistence.Status;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.*;
 
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Created by mst on 27.07.15.
@@ -34,6 +39,26 @@ public class CatalogUtils {
         categoryEntity.setDescription(categoryDto.getDescription());
         categoryEntity.setLongDescription(categoryDto.getLongDescription());
 
+
+        if(categoryDto.getProductsAvailability() != null) {
+            InventoryType inventoryType = InventoryType.getInstance(categoryDto.getProductsAvailability());
+            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
+        } else {
+            categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        }
+
+        categoryEntity.getCategoryAttributesMap().clear();
+
+        categoryEntity.getCategoryAttributesMap().putAll(
+                Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            CategoryAttribute a = new CategoryAttributeImpl();
+                            a.setName(e.getKey());
+                            a.setValue(e.getValue());
+                            a.setCategory(categoryEntity);
+                            return a;
+                        })));
+
         return categoryEntity;
     }
 
@@ -52,6 +77,24 @@ public class CatalogUtils {
             categoryEntity.setLongDescription(categoryDto.getLongDescription());
         }
 
+        if(categoryDto.getProductsAvailability() != null) {
+            InventoryType inventoryType = InventoryType.getInstance(categoryDto.getProductsAvailability());
+            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
+        }
+
+        if(categoryDto.getAttributes() != null) {
+            categoryEntity.getCategoryAttributesMap().clear();
+            categoryEntity.getCategoryAttributesMap().putAll(
+                    Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                            .collect(toMap(Map.Entry::getKey, e -> {
+                                CategoryAttribute a = new CategoryAttributeImpl();
+                                a.setName(e.getKey());
+                                a.setValue(e.getValue());
+                                a.setCategory(categoryEntity);
+                                return a;
+                            })));
+        }
+
         return categoryEntity;
     }
 
@@ -64,6 +107,7 @@ public class CatalogUtils {
         skuEntity.setTaxCode(skuDto.getTaxCode());
         skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
         skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
+        //skuEntity.setCurrency();
 
 		/*
 		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
