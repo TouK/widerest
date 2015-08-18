@@ -7,6 +7,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
@@ -21,11 +22,13 @@ import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.base.DtoTestType;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
@@ -35,10 +38,9 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Before
     public void initProductTests() {
-        //serverPort = String.valueOf(8080);
-        cleanupProductTests();
+        serverPort = String.valueOf(8080);
+        //cleanupProductTests();
     }
-
 
      /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */
 
@@ -272,8 +274,12 @@ public class ProductControllerTest extends ApiTestBase {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
         adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
-        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
-                requestEntity, Void.class, serverPort, productId, skuId);
+        try {
+            adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
+                    requestEntity, Void.class, serverPort, productId, skuId);
+        } catch(RestClientException ex) {
+            System.out.println(ex.getMessage() + ex.getCause() + ex.getLocalizedMessage() + ex.getStackTrace());
+        }
 
         ResponseEntity<SkuDto> receivedSkuEntity =
                 restTemplate.getForEntity(PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
@@ -343,6 +349,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
+        removeLocalTestSkus();
         removeLocalTestProducts();
     }
 }
