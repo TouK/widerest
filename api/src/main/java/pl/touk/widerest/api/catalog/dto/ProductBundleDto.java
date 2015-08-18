@@ -17,7 +17,6 @@ import java.util.List;
  * Created by mst on 06.07.15.
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
