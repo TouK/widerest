@@ -1,5 +1,6 @@
 package pl.touk.widerest.paypal.endpoint;
 
+import com.paypal.base.rest.PayPalRESTException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -147,18 +148,20 @@ public class PayPalController {
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
-        PaymentResponseDTO paymentResponse = hostedService.requestHostedEndpoint(paymentRequestDTO);
+        try {
+            PaymentResponseDTO paymentResponse = hostedService.requestHostedEndpoint(paymentRequestDTO);
 
-        //return redirect URI from the paymentResponse
+            //return redirect URI from the paymentResponse
+            String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL))
+                    .orElseThrow(() -> new ResourceNotFoundException(""));
 
-        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL))
-                .orElseThrow(() -> new ResourceNotFoundException(""));
+            HttpHeaders responseHeader = new HttpHeaders();
 
-        HttpHeaders responseHeader = new HttpHeaders();
-
-
-        responseHeader.setLocation(URI.create(redirectURI));
-        return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
+            responseHeader.setLocation(URI.create(redirectURI));
+            return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
+        } catch (PaymentException e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Transactional
@@ -287,8 +290,8 @@ public class PayPalController {
             paymentRequest = paymentRequest
                     .lineItem()
                     .name(name)
-                    .amount(String.valueOf(item.getAveragePrice())) // TODO: blad przyblizen przy mnozeniu
-                    .category(category)                             // podczas liczenia kwot w paypalu
+                    .amount(String.valueOf(item.getAveragePrice()))
+                    .category(category)
                     .quantity(String.valueOf(item.getQuantity()))
                     .total(order.getTotal().toString())
                     .done();

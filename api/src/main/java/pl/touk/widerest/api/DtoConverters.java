@@ -594,7 +594,8 @@ public class DtoConverters {
                         .map(DtoConverters.customerAddressEntityToDto)
                         .collect(Collectors.toList()))
                 .username(entity.getUsername())
-                .passwordHash(entity.getPassword())
+//                disabled due to security reasons
+//                .passwordHash(entity.getPassword())
                 .registered(entity.isRegistered())
                 .email(entity.getEmailAddress())
                 .build();
