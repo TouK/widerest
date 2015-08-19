@@ -30,6 +30,7 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,8 +62,8 @@ import pl.touk.widerest.api.cart.service.OrderValidationService;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
-
 @RestController
+@Scope("session")
 @RequestMapping("/orders")
 @Api(value = "orders", description = "Order management endpoint")
 public class OrderController {
@@ -218,7 +219,7 @@ public class OrderController {
     }
 
 
-    /* POST /orders/items */
+    /* POST /orders/{orderId}/items */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.POST)
@@ -479,7 +480,6 @@ public class OrderController {
     }
 
     /* PUT /orders/items/{itemId}/quantity */
-    @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}/quantity", method = RequestMethod.PUT)
     @ApiOperation(
@@ -498,30 +498,13 @@ public class OrderController {
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId,
             @ApiParam(value = "Quantity value", required = true)
-            @RequestBody Integer quantity) throws UpdateCartException, RemoveFromCartException {
+            @RequestBody Integer quantity) {
 
-
-        if (quantity <= 0) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
-
-        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
-
-        if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
-            throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
-        }
-
-        /* TODO: (mst) What is the requested quantity is greater than available quantity ? */
-
-
-        OrderItemRequestDTO orderItemRequestDto = new OrderItemRequestDTO();
-        orderItemRequestDto.setQuantity(quantity);
-        orderItemRequestDto.setOrderItemId(itemId);
-    	
-        /* TODO: (mst) do we need to recalculate the price here? */
-        orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
-        return new ResponseEntity<>(HttpStatus.OK);
+       try {
+           return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
+       } catch(Exception e) {
+           return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+       }
     }
 
     /* PUT /orders/{orderId}/fulfillment/selectedOption */
