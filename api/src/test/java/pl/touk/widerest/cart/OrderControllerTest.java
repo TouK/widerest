@@ -3,9 +3,11 @@ package pl.touk.widerest.cart;
 import javafx.util.Pair;
 import org.broadleafcommerce.common.payment.dto.AddressDTO;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.base.ApiTestBase;
@@ -25,14 +27,14 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
-//    @Before
-//    public void initTests() {
-//        serverPort = String.valueOf(8080);
-//    }
+    @Before
+    public void initTests() {
+        serverPort = String.valueOf(8080);
+    }
 
     @Test
     public void CreateAnonymousUserTest() throws URISyntaxException {
@@ -343,6 +345,53 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Then it should exist anymore
         assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
+
+    }
+
+    @Test
+    public void shouldNotModifyOrderItemQuantity() throws URISyntaxException {
+        // Given admin
+        Pair<OAuth2RestTemplate, String> adminCredentials = generateAdminUser();
+        OAuth2RestTemplate adminRestTemplate = adminCredentials.getKey();
+
+        // Given sku with limited quantity
+        // assuming that there is product with id 10 and skuId 10
+        HttpEntity<String> requestEntity =  new HttpEntity<>("CHECK_QUANTITY");
+        HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
+        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+
+        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/availability", HttpMethod.PUT,
+                requestEntity, HttpHeaders.class, serverPort, 10L, 10L);
+        HttpEntity<Integer> quantityEntity = new HttpEntity<>(100, httpJsonRequestHeaders);
+        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/quantity", HttpMethod.PUT,
+                quantityEntity, HttpHeaders.class, serverPort, 10L, 10L);
+
+
+        // Given anonymous user
+        Pair<OAuth2RestTemplate, String> userCredentials = generateAnonymousUser();
+        RestTemplate userRestTemplate = userCredentials.getKey();
+        String userAccessToken = userCredentials.getValue();
+        Integer orderId = createNewOrder(userAccessToken);
+        String orderUrl = ORDERS_URL+"/"+orderId;
+
+        // When adding item with not too big quantity
+        ResponseEntity<HttpHeaders> itemAddResponse =
+            addItemToOrder(10L, 90, orderUrl+"/items", userAccessToken, userRestTemplate);
+
+        // When trying to change quantity to too big
+        httpJsonRequestHeaders.set("Authorization", "Bearer "+userAccessToken);
+        quantityEntity = new HttpEntity<>(101, httpJsonRequestHeaders);
+
+        // Then user shouldn't be able to change quantity
+        try {
+           userRestTemplate.exchange(itemAddResponse.getHeaders().getLocation().toString() + "/quantity",
+               HttpMethod.PUT, quantityEntity, HttpHeaders.class);
+           // Exception should be thrown, if not then test failed
+           assert(false);
+        } catch (HttpClientErrorException e) {
+            assert(e.getStatusCode().is4xxClientError());
+        }
 
     }
 

@@ -3,15 +3,25 @@ package pl.touk.widerest.api.cart.service;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
+import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
+import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
+import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
+import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
@@ -22,6 +32,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by mst on 15.07.15.
@@ -59,6 +70,53 @@ public class OrderServiceProxy {
         query.setHint("org.hibernate.cacheable", Boolean.valueOf(true));
         query.setHint("org.hibernate.cacheRegion", "query.Order");
         return query.getResultList();
+    }
+
+    @Transactional
+    public ResponseEntity<?> updateItemQuantityInOrder (
+            Integer quantity, UserDetails userDetails, Long orderId, Long itemId)
+                throws UpdateCartException, RemoveFromCartException {
+
+        if (quantity <= 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
+        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+        if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+            throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
+        }
+
+        OrderItemRequestDTO orderItemRequestDto = new OrderItemRequestDTO();
+        orderItemRequestDto.setQuantity(quantity);
+        orderItemRequestDto.setOrderItemId(itemId);
+
+
+        orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private Order getProperCart(UserDetails userDetails, Long orderId) {
+        Order cart = null;
+
+        if (userDetails instanceof CustomerUserDetails) {
+            cart = getOrderForCustomerById((CustomerUserDetails) userDetails, orderId);
+        } else if (userDetails instanceof AdminUserDetails) {
+            cart = orderService.findOrderById(orderId);
+        }
+
+        return cart;
+    }
+
+    private Order getOrderForCustomerById(CustomerUserDetails customerUserDetails, Long orderId) throws OrderNotFoundException {
+
+        return Optional.ofNullable(getOrdersByCustomer(customerUserDetails))
+                .orElseThrow(() -> new OrderNotFoundException("Cannot find order with ID: " + orderId + " for customer with ID: " + customerUserDetails.getId()))
+                .stream()
+                .filter(x -> x.getId().equals(orderId))
+                .findAny()
+                .orElseThrow(() -> new OrderNotFoundException("Cannot find order with ID: " + orderId + " for customer with ID: " + customerUserDetails.getId()));
     }
 
 }
