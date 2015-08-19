@@ -27,14 +27,14 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
-    @Before
-    public void initTests() {
-        serverPort = String.valueOf(8080);
-    }
+//    @Before
+//    public void initTests() {
+//        serverPort = String.valueOf(8080);
+//    }
 
     @Test
     public void CreateAnonymousUserTest() throws URISyntaxException {
