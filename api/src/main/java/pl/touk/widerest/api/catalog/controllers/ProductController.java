@@ -173,6 +173,7 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
+
         /* TODO: (mst) modify matching rules (currently only "by name") + refactor to separate method */
         if(hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
@@ -180,9 +181,7 @@ public class ProductController {
 
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
-        Sku defaultSku = dtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
-        /* (mst) turn on Inventory Service by default */
-        defaultSku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
                  Otherwise just ignore it.
@@ -198,20 +197,37 @@ public class ProductController {
             }
         }
 
-        newProduct.setDefaultSku(defaultSku);
-
         final Product productParam = newProduct;
 
         newProduct.setProductOptionXrefs(
                 Optional.ofNullable(productDto.getOptions())
-                    .filter(e -> !e.isEmpty())
-                    .map(List::stream)
-                    .map(e -> e.map(x -> generateProductXref(x, productParam)))
-                    .map(e -> e.collect(Collectors.toList()))
-                    .orElse(newProduct.getProductOptionXrefs())
+                        .filter(e -> !e.isEmpty())
+                        .map(List::stream)
+                        .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                        .map(e -> e.collect(Collectors.toList()))
+                        .orElse(newProduct.getProductOptionXrefs())
         );
 
+
         newProduct = catalogService.saveProduct(newProduct);
+
+
+        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
+
+            List<Sku> savedSkus = new ArrayList<>();
+            savedSkus.addAll(newProduct.getAllSkus());
+
+            for(SkuDto skuDto : productDto.getSkus()) {
+                Sku s = dtoConverters.skuDtoToEntity.apply(skuDto);
+                s.setProduct(newProduct);
+                s = catalogService.saveSku(s);
+                savedSkus.add(s);
+            }
+
+            newProduct.setAdditionalSkus(savedSkus);
+            newProduct = catalogService.saveProduct(newProduct);
+        }
+
 
         HttpHeaders responseHeader = new HttpHeaders();
 
@@ -1059,10 +1075,10 @@ public class ProductController {
     @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add media to the product",
-            notes = "Adds a SKU to the existing product",
+            notes = "Adds a new media to the existing SKU",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 201, message = "Specified SKU successfully added"),
+            @ApiResponse(code = 201, message = "Specified media successfully added"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product does not exist"),
             @ApiResponse(code = 409, message = "Media with that key already exists")

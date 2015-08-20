@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import org.junit.Before;
@@ -346,6 +347,84 @@ public class ProductControllerTest extends ApiTestBase {
 
     }
 
+
+
+
+
+
+    @Test
+    public void addingNewSkuMediaInsertsAllValuesCorrectlyTest() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
+        assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long skuId = getIdFromLocationUrl(addedAdditionalSkuEntity.getHeaders().getLocation().toString());
+
+        SkuMediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+
+        testSkuMedia.setKey("alt1");
+        ResponseEntity<?> addedSkuMediaEntity = addNewTestSkuMediaToProductSku(productId, skuId, testSkuMedia);
+        assertThat(addedSkuMediaEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long skuMediaId = getIdFromLocationUrl(addedSkuMediaEntity.getHeaders().getLocation().toString());
+
+        System.out.println("just added: " + skuMediaId);
+
+        ResponseEntity<SkuMediaDto> receivedSkuMediaentity = restTemplate.exchange(
+                MEDIA_BY_ID_URL,
+                HttpMethod.GET,
+                getHttpJsonRequestEntity(),
+                SkuMediaDto.class,
+                serverPort,
+                productId,
+                skuId,
+                skuMediaId);
+
+        SkuMediaDto receivedSkuMediaDto = receivedSkuMediaentity.getBody();
+
+        assertThat(receivedSkuMediaDto, equalTo(testSkuMedia));
+
+
+    }
+
+    @Test
+    public void addingNewSkuMediaWithInvalidOrNoKeyCausesAnException() {
+        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+
+        ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
+        assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long skuId = getIdFromLocationUrl(addedAdditionalSkuEntity.getHeaders().getLocation().toString());
+
+        SkuMediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+
+        try {
+            addNewTestSkuMediaToProductSku(productId, skuId, testSkuMedia);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+        }
+
+        testSkuMedia.setKey("randomKey");
+
+        try {
+            addNewTestSkuMediaToProductSku(productId, skuId, testSkuMedia);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+        }
+
+        testSkuMedia.setKey("primary");
+
+        ResponseEntity<?> addedSkuMediaEntity = addNewTestSkuMediaToProductSku(productId, skuId, testSkuMedia);
+        assertThat(addedSkuMediaEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long skuMediaId = getIdFromLocationUrl(addedSkuMediaEntity.getHeaders().getLocation().toString());
+
+    }
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {

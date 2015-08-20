@@ -32,6 +32,7 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
@@ -71,7 +72,8 @@ public abstract class ApiTestBase {
     public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
     public static final String CATEGORIES_BY_PRODUCT_BY_ID_COUNT = PRODUCT_BY_ID_URL + "/categories/count";
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
-
+    public static final String MEDIAS_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media";
+    public static final String MEDIA_BY_ID_URL = MEDIAS_URL + "/{mediaId}";
 
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";
@@ -299,13 +301,27 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
     }
 
+    protected ResponseEntity<?> addNewTestSkuMediaToProductSku(long productId, long skuId, SkuMediaDto skuMediaDto) {
+        return oAuth2AdminRestTemplate().postForEntity(
+                MEDIAS_URL,
+                skuMediaDto,
+                null,
+                serverPort,
+                productId,
+                skuId);
+    }
+
+
+
+
+
+
+
+
     protected ResponseEntity<?> addNewTestSKUToProduct(long productId, SkuDto skuDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
-    protected ResponseEntity<?> addNewTestMediaToSku(MediaDto mediaDto) {
-        throw new RuntimeException("Unimplemented");
-    }
 
 
 
@@ -381,7 +397,8 @@ public abstract class ApiTestBase {
 
     protected void removeLocalTestSkus() {
        catalogService.findAllSkus().stream()
-               .filter(x -> (x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME)))
+               .filter(x -> ((x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME) ||
+                            x.getName().contains("Sku"))))
                .forEach(catalogService::removeSku);
     }
 

@@ -179,9 +179,6 @@ public class DtoConverters {
             dto = new ProductDto();
         }
 
-		/* (mst) Do we really need ProductID? */
-        dto.setProductId(entity.getId());
-
         dto.setName(entity.getName());
 
 		/*
@@ -201,6 +198,8 @@ public class DtoConverters {
 		 * !entity.getLongDescription().isEmpty()) {
 		 * dto.setLongDescription(entity.getLongDescription()); }
 		 */
+
+
 
         dto.setLongDescription(Optional.ofNullable(entity.getLongDescription()).orElse(""));
 
@@ -226,8 +225,8 @@ public class DtoConverters {
 
         dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
 
-		/* (mst) As far as I know, this DOES include Default SKU */
-        dto.setSkus(entity.getAllSkus().stream().map(skuEntityToDto).collect(toList()));
+
+        dto.setSkus(entity.getAdditionalSkus().stream().map(skuEntityToDto).collect(toList()));
 
 		/* TODO: (mst) Implement Possible Bundles */
 
@@ -491,16 +490,16 @@ public class DtoConverters {
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
 
-        List<Sku> allSkus = new ArrayList<>();
-        allSkus.add(product.getDefaultSku());
+       /* List<Sku> s;
 
         if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
-            allSkus.addAll(productDto.getSkus().stream()
+            s = productDto.getSkus().stream()
                     .map(skuDtoToEntity)
-                    .collect(toList()));
-        }
+                    .collect(toList());
 
-        product.setAdditionalSkus(allSkus);
+            product.setAdditionalSkus(s);
+        }*/
+
 
         if (productDto.getAttributes() != null) {
 

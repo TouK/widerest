@@ -1,10 +1,12 @@
 package pl.touk.widerest.base;
 
+import org.broadleafcommerce.common.media.domain.MediaDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.*;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by mst on 20.07.15.
@@ -19,11 +21,14 @@ public class DtoTestFactory {
     private static SkuDto newSkuDto2;
     private static OrderDto newOrderDto;
 
+    private static SkuMediaDto newMediaDto;
+
     private static final Date defaultActiveStartDate;
 
     private static long categoryCounter = 0;
     private static long productCounter = 0;
     private static long skuCounter = 0;
+    private static AtomicLong skuMediaCounter;
 
     public static final String TEST_CATEGORY_DEFAULT_NAME = "TestCategoryName";
     public static final String TEST_PRODUCT_DEFAULT_NAME = "DefaultTestProduct";
@@ -34,6 +39,8 @@ public class DtoTestFactory {
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         defaultActiveStartDate = gmtCal.getTime();
+
+        skuMediaCounter = new AtomicLong(0);
     }
 
     public static CategoryDto getTestCategory(DtoTestType dtoTestType) {
@@ -42,6 +49,15 @@ public class DtoTestFactory {
                 return testCategory();
             case NEXT:
                 return nextTestCategory();
+            default:
+                return null;
+        }
+    }
+
+    public static SkuMediaDto getTestSkuMedia(DtoTestType dtoTestType) {
+        switch (dtoTestType) {
+            case NEXT:
+                return nextTestMediaDto();
             default:
                 return null;
         }
@@ -79,6 +95,7 @@ public class DtoTestFactory {
                     .longDescription("DefaultTestProductLongDescription")
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
+                    .offerMessage("Test Product Offer Message")
                     .defaultSku(null)
                     .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                     .build();
@@ -93,6 +110,7 @@ public class DtoTestFactory {
                 .longDescription("DefaultTestProductLongDescription" + productCounter)
                 .manufacturer("Test Product Manufacturer" + productCounter)
                 .model("Test Product Model" + productCounter)
+                .offerMessage("Test Product Offer Message" + productCounter)
                 .defaultSku(null)
                 .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                 .categoryName(null)
@@ -235,6 +253,23 @@ public class DtoTestFactory {
 
 
     }
+
+
+    private static SkuMediaDto nextTestMediaDto() {
+
+        long currentSkuMediaCounter = skuMediaCounter.incrementAndGet();
+
+        return SkuMediaDto.builder()
+                    .altText("Test Media Alt Text" + currentSkuMediaCounter)
+                    .tags("Test Media Tags" + currentSkuMediaCounter)
+                    .title("Test Media Title" + currentSkuMediaCounter)
+                    .url("http://localhost:8080/images/testmedia" + currentSkuMediaCounter + ".png")
+                    .build();
+    }
+
+
+
+
 
     public static OrderDto getTestOrder() {
         if(newOrderDto == null) {
