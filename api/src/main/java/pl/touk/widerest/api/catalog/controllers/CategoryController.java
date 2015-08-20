@@ -83,7 +83,7 @@ public class CategoryController {
 
     	/* (mst) CategoryDto has to have at least a Name! */
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     	
     	/* (mst) Providing that both Description() and LongDescription() can be null, which...is OK, this one
@@ -282,7 +282,6 @@ public class CategoryController {
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         return Optional.ofNullable(category.getInventoryType()).map(InventoryType::getType).orElse(CatalogUtils.EMPTY_STRING);
-
     }
 
     /* PUT /{categoryId}/availability */
@@ -498,8 +497,8 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"))
                 .getAllProductXrefs().stream()
-                .map(CategoryProductXref::getProduct)
-                .collect(Collectors.toList());
+                    .map(CategoryProductXref::getProduct)
+                    .collect(Collectors.toList());
     }
 
 }

@@ -77,17 +77,17 @@ public class DtoConverters {
     /******************************** SKU ********************************/
 
     public Function<Sku, SkuDto> skuEntityToDto = entity -> {
-        // Na przyszlosc: jesli dostanie sie wartosc z errCoda to znaczy
-        // ze dana wartosc nie ustawiona => admin widzi objekt, klient nie
-        Money errCode = new Money(BigDecimal.valueOf(-1337));
 
         SkuDto dto = SkuDto.builder()
-                .skuId(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
-                .salePrice(Optional.ofNullable(entity.getPrice()).orElse(errCode).getAmount())
-                .quantityAvailable(entity.getQuantityAvailable()).taxCode(entity.getTaxCode())
-                .activeStartDate(entity.getActiveStartDate()).activeEndDate(entity.getActiveEndDate())
+                .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
+                .retailPrice(Optional.ofNullable(entity.getRetailPrice()).map(Money::getAmount).orElse(null))
+                .quantityAvailable(entity.getQuantityAvailable())
+                .availability(Optional.ofNullable(entity.getInventoryType()).map(InventoryType::getType).orElse(null))
+                .taxCode(entity.getTaxCode())
+                .activeStartDate(entity.getActiveStartDate())
+                .activeEndDate(entity.getActiveEndDate())
                 .currencyCode(Optional.ofNullable(entity.getCurrency())
                         .orElse(localeService.findDefaultLocale().getDefaultCurrency())
                         .getCurrencyCode())
@@ -96,20 +96,15 @@ public class DtoConverters {
                             return e.getValue().getName();
                         })))
                 .skuProductOptionValues(entity.getProductOptionValueXrefs().stream()
-                                .map(SkuProductOptionValueXref::getProductOptionValue)
-                                .map(DtoConverters.productOptionValueToSkuValueDto)
-                                .collect(toSet()))
+                        .map(SkuProductOptionValueXref::getProductOptionValue)
+                        .map(DtoConverters.productOptionValueToSkuValueDto)
+                        .collect(toSet()))
                 .skuMedia(entity.getSkuMediaXref().entrySet().stream()
                         .map(Map.Entry::getValue)
                         .map(DtoConverters.skuMediaXrefToDto)
                         .collect(toList()))
                 .build();
 
-        if(entity.getInventoryType() != null) {
-            dto.setAvailability(entity.getInventoryType().getType());
-        }
-
-        // selection wysylany jest tylko od klienta
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
                 .withSelfRel());
         return dto;
@@ -143,59 +138,9 @@ public class DtoConverters {
     public Function<SkuDto, Sku> skuDtoToEntity = skuDto -> {
         Sku skuEntity = new SkuImpl();
 
-        skuEntity.setName(skuDto.getName());
-        skuEntity.setDescription(skuDto.getDescription());
-        skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
         skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
-        skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
-        skuEntity.setTaxCode(skuDto.getTaxCode());
-        skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
-        skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
 
-		/* (mst) looks like you have to have the Retail Price so in case used has not provided it,
-		 * just set it to Sale Price
-		 *
-		 * TODO: (mst) Refactor to lambda
-		 */
-        if(skuDto.getRetailPrice() == null) {
-            skuEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
-        } else {
-            skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
-        }
-
-        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
-            skuEntity.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
-        } else {
-            /* (mst) turn on Inventory Service by default */
-            skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
-
-
-        if(skuDto.getSkuAttributes() != null) {
-            skuEntity.setSkuAttributes(
-                    skuDto.getSkuAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
-                        SkuAttribute s = new SkuAttributeImpl();
-                        s.setName(e.getKey());
-                        s.setValue(e.getValue());
-                        s.setSku(skuEntity);
-                        return s;
-                    })));
-        }
-
-        if(skuDto.getSkuMedia() != null) {
-            skuEntity.setSkuMediaXref(
-                    skuDto.getSkuMedia().stream()
-                            .collect(toMap(e -> e.getKey(), e -> {
-                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e);
-                                newSkuMediaXref.setSku(skuEntity);
-                                newSkuMediaXref.setKey(e.getKey());
-                                return newSkuMediaXref;
-                            })));
-        }
-
-
-
-        return skuEntity;
+        return CatalogUtils.updateSkuEntityFromDto(skuEntity, skuDto);
     };
 
     public ProductOption getProductOptionByNameForProduct(String productOptionName, Product product) {
@@ -417,8 +362,7 @@ public class DtoConverters {
 
     public static Function<Category, CategoryDto> categoryEntityToDto = entity -> {
 
-        CategoryDto dto = CategoryDto.builder()
-                .categoryId(entity.getId())
+        final CategoryDto dto = CategoryDto.builder()
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .longDescription(entity.getLongDescription())
@@ -436,7 +380,7 @@ public class DtoConverters {
     };
 
     public static Function<CategoryDto, Category> categoryDtoToEntity = dto -> {
-        Category categoryEntity = new CategoryImpl();
+        final Category categoryEntity = new CategoryImpl();
 
         return CatalogUtils.updateCategoryEntityFromDto(categoryEntity, dto);
     };
@@ -445,18 +389,15 @@ public class DtoConverters {
 
     public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
 
-        Media entity = xref.getMedia();
+        final Media entity = xref.getMedia();
 
-
-        SkuMediaDto skuMediaDto = SkuMediaDto.builder()
-                .mediaId(entity.getId())
+        final SkuMediaDto skuMediaDto = SkuMediaDto.builder()
                 .title(entity.getTitle())
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
                 .tags(entity.getTags())
                 .key(xref.getKey())
                 .build();
-
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
                 xref.getSku().getId(),
@@ -470,13 +411,9 @@ public class DtoConverters {
         SkuMediaXref skuMediaXref = new SkuMediaXrefImpl();
         Media skuMedia = new MediaImpl();
 
-        skuMedia.setTitle(dto.getTitle());
-        skuMedia.setUrl(dto.getUrl());
-        skuMedia.setAltText(dto.getAltText());
-        skuMedia.setTags(dto.getTags());
+        skuMedia = CatalogUtils.updateMediaEntityFromDto(skuMedia, dto);
 
         skuMediaXref.setMedia(skuMedia);
-
         return skuMediaXref;
     };
 
