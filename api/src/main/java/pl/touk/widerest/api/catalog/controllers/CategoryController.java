@@ -465,9 +465,6 @@ public class CategoryController {
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-
-
-
     }
     /* GET /categories/{categoryId}/products/count */
     @Transactional

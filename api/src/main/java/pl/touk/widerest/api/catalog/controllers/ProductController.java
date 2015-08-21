@@ -819,7 +819,8 @@ public class ProductController {
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 204, message = "Successful removal of the specified SKU"),
-            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist"),
+            @ApiResponse(code = 409, message = "Cannot delete Default SKU. If you need to change it, use PUT endpoint")
     })
     public ResponseEntity<?> deleteOneSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
@@ -832,7 +833,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
         if(product.getDefaultSku().getId().longValue() == skuId) {
-            throw new RuntimeException("Cannot delete SKU with ID: " + skuId + " of product with ID: " + productId + " - default SKU");
+            return new ResponseEntity(HttpStatus.CONFLICT);
         }
 
         product.getAllSkus().stream()

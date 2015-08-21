@@ -196,7 +196,9 @@ public abstract class ApiTestBase {
         return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
     }
 
-
+    protected long getIdFromEntity(ResponseEntity responseEntity) {
+        return getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
+    }
 
     /* ---------------- TEST HELPER/COMMON METHODS ---------------- */
     public long getRemoteTotalCategoriesCount() {
