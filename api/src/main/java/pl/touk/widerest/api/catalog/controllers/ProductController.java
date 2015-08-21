@@ -30,6 +30,7 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 
@@ -95,6 +96,54 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/bundles", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a new bundle",
+            notes = "Adds a new bundle to the catalog. Returns an URL to the newly created " +
+                    "bundle in the Location field of the HTTP response header",
+            response = Void.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new bundle successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 409, message = "Bundle already exists or provided SKUs do not exist")
+    })
+    public ResponseEntity<?> createNewBundle(
+            @ApiParam(value = "Description of a new bundle", required = true)
+                @RequestBody ProductBundleDto productBundleDto) {
+
+        Product newProduct = dtoConverters.productDtoToEntity.apply(productBundleDto);
+
+        ProductBundle newProductBundle = (ProductBundle)newProduct;
+
+        newProductBundle.setSkuBundleItems(
+            productBundleDto.getBundleItems().stream()
+                .map(DtoConverters.bundleItemDtoToSkuBundleItem)
+                .collect(toList()));
+
+
+
+        newProductBundle = (ProductBundle)catalogService.saveProduct(newProductBundle);
+
+
+        HttpHeaders responseHeader = new HttpHeaders();
+
+        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newProductBundle.getId())
+                .toUri());
+
+        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+
+
+    }
+
+
+
+
+
     /* POST /products */
     /* TODO: (mst) Merging existing products SKUs instead of blindly refusing to add existing product */
     @Transactional
@@ -124,6 +173,7 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
+
         /* TODO: (mst) modify matching rules (currently only "by name") + refactor to separate method */
         if(hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
@@ -131,9 +181,7 @@ public class ProductController {
 
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
-        Sku defaultSku = dtoConverters.skuDtoToEntity.apply(productDto.getDefaultSku());
-        /* (mst) turn on Inventory Service by default */
-        defaultSku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
                  Otherwise just ignore it.
@@ -149,25 +197,49 @@ public class ProductController {
             }
         }
 
-        newProduct.setDefaultSku(defaultSku);
-
         final Product productParam = newProduct;
 
         newProduct.setProductOptionXrefs(
                 Optional.ofNullable(productDto.getOptions())
-                    .filter(e -> !e.isEmpty())
-                    .map(List::stream)
-                    .map(e -> e.map(x -> generateProductXref(x, productParam)))
-                    .map(e -> e.collect(Collectors.toList()))
-                    .orElse(newProduct.getProductOptionXrefs())
+                        .filter(e -> !e.isEmpty())
+                        .map(List::stream)
+                        .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                        .map(e -> e.collect(Collectors.toList()))
+                        .orElse(newProduct.getProductOptionXrefs())
         );
 
-        /* TODO: (mst) creating Product Bundles */
-        //Product newProduct = catalogService.createProduct(ProductType.PRODUCT);
-
-
-
         newProduct = catalogService.saveProduct(newProduct);
+
+
+        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
+
+            List<Sku> savedSkus = new ArrayList<>();
+            savedSkus.addAll(newProduct.getAllSkus());
+
+            for(SkuDto skuDto : productDto.getSkus()) {
+
+                Sku s = dtoConverters.skuDtoToEntity.apply(skuDto);
+
+                final Sku skuParam = s;
+                final Product p = newProduct;
+
+                if(skuDto.getSkuProductOptionValues() != null && !skuDto.getSkuProductOptionValues().isEmpty()) {
+                    s.setProductOptionValueXrefs(
+                            skuDto.getSkuProductOptionValues().stream()
+                                    .map(e -> generateXref(e, skuParam, p))
+                                    .collect(Collectors.toSet())
+                    );
+                }
+
+                s.setProduct(newProduct);
+                s = catalogService.saveSku(s);
+                savedSkus.add(s);
+            }
+
+            newProduct.setAdditionalSkus(savedSkus);
+            newProduct = catalogService.saveProduct(newProduct);
+        }
+
 
         HttpHeaders responseHeader = new HttpHeaders();
 
@@ -535,8 +607,8 @@ public class ProductController {
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.PUT)
     @ApiOperation(
-            value = "Replace default SKU",
-            notes = "Replaces an existing default SKU with a new one",
+            value = "Update default SKU",
+            notes = "Updates an existing default SKU with new details",
             response = SkuDto.class
     )
     @ApiResponses(value = {
@@ -555,8 +627,9 @@ public class ProductController {
 
         Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
 
+        defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
 
-        defaultSKU.setProduct(product);
+        //defaultSKU.setProduct(product);
         defaultSKU = catalogService.saveSku(defaultSKU);
 
         //product.setDefaultSku(newSkuEntity);
@@ -774,7 +847,6 @@ public class ProductController {
                 ));
 
 
-        // (pkp) TODO: what if default sku is deleted?
         product.setAdditionalSkus(
                 product.getAllSkus().stream()
                     .filter(x -> x.getId().longValue() != skuId)
@@ -784,6 +856,7 @@ public class ProductController {
         catalogService.saveProduct(product);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
 
     /* PUT /products/{productId}/skus/{skuId} */
     @Transactional
@@ -811,7 +884,6 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-
         Optional.ofNullable(catalogService.findProductById(productId))
             .filter(CatalogUtils::archivedProductFilter)
             .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -819,6 +891,10 @@ public class ProductController {
                 .filter(x -> x.getId().longValue() == skuId)
                 .findFirst()
                     .map(e -> CatalogUtils.updateSkuEntityFromDto(e, skuDto))
+                    .map(e -> {
+                        e.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
+                        return e;
+                    })
                     .map(catalogService::saveSku)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
@@ -854,6 +930,11 @@ public class ProductController {
                     .filter(x -> x.getId().longValue() == skuId)
                     .findFirst()
                     .map(e -> CatalogUtils.partialUpdateSkuEntityFromDto(e, skuDto))
+                    .map(e -> {
+                        if(skuDto.getCurrencyCode() != null)
+                            e.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
+                        return e;
+                    })
                     .map(catalogService::saveSku)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
@@ -1006,10 +1087,10 @@ public class ProductController {
     @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add media to the product",
-            notes = "Adds a SKU to the existing product",
+            notes = "Adds a new media to the existing SKU",
             response = Void.class)
     @ApiResponses({
-            @ApiResponse(code = 201, message = "Specified SKU successfully added"),
+            @ApiResponse(code = 201, message = "Specified media successfully added"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product does not exist"),
             @ApiResponse(code = 409, message = "Media with that key already exists")

@@ -10,14 +10,10 @@ import lombok.experimental.Builder;
 
 import org.springframework.hateoas.ResourceSupport;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Map;
 
-/**
- * Created by mst on 06.07.15.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -25,10 +21,6 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Category", description = "Category DTO resource representation")
 public class CategoryDto extends ResourceSupport {
-
-
-    @JsonIgnore
-    private Long categoryId;
 
     @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;

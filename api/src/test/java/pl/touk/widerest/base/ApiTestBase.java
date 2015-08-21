@@ -32,13 +32,13 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -69,7 +69,8 @@ public abstract class ApiTestBase {
     public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
     public static final String CATEGORIES_BY_PRODUCT_BY_ID_COUNT = PRODUCT_BY_ID_URL + "/categories/count";
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
-
+    public static final String MEDIAS_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media";
+    public static final String MEDIA_BY_ID_URL = MEDIAS_URL + "/{mediaId}";
 
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";
@@ -261,6 +262,24 @@ public abstract class ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
+    protected long getRemoteTotalCategoriesForProductCount(long productId) {
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
+                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody();
+    }
+
+    protected long getLocalTotalCategoriesForProductCount(long productId) {
+        return catalogService.findProductById(productId)
+                .getAllParentCategoryXrefs().stream()
+                .map(CategoryProductXref::getCategory)
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .count();
+    }
+
+
     protected long getLocalTotalSkusForProductCount(long productId) {
         return catalogService.findProductById(productId).getAllSkus().stream().count();
     }
@@ -279,13 +298,48 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
     }
 
+    protected ResponseEntity<?> addNewTestSkuMediaToProductSku(long productId, long skuId, SkuMediaDto skuMediaDto) {
+        return oAuth2AdminRestTemplate().postForEntity(
+                MEDIAS_URL,
+                skuMediaDto,
+                null,
+                serverPort,
+                productId,
+                skuId);
+    }
+
+
+    protected ResponseEntity<CategoryDto> getRemoteTestCategoryByIdEntity(long categoryId) {
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
+
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        return receivedCategoryEntity;
+    }
+
+    protected CategoryDto getRemoteTestCategoryByIdDto(long categoryId) {
+        return getRemoteTestCategoryByIdEntity(categoryId).getBody();
+    }
+
+
+    protected ResponseEntity<ProductDto> getRemoteTestProductByIdEntity(long productId) {
+        ResponseEntity<ProductDto> receivedProductEntity =
+                restTemplate.getForEntity(PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        return receivedProductEntity;
+    }
+
+    protected ProductDto getRemoteTestProductByIdDto(long productId) {
+        return getRemoteTestProductByIdEntity(productId).getBody();
+    }
+
     protected ResponseEntity<?> addNewTestSKUToProduct(long productId, SkuDto skuDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
-    protected ResponseEntity<?> addNewTestMediaToSku(MediaDto mediaDto) {
-        throw new RuntimeException("Unimplemented");
-    }
 
 
 
@@ -311,22 +365,21 @@ public abstract class ApiTestBase {
         return resultProduct;
     }
 
-    /* ---------------- CLEANUP METHODS ---------------- */
+    /* --------------------------------  CLEANUP METHODS -------------------------------- */
+
     protected void removeRemoteTestCategories() {
 
-        /* (mst) Retrieve all categories */
         ResponseEntity<CategoryDto[]> receivedCategoriesEntity =
                 restTemplate.getForEntity(CATEGORIES_URL, CategoryDto[].class, serverPort);
 
-        assertNotNull(receivedCategoriesEntity);
         assertThat(receivedCategoriesEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        /* (mst) Remove those, created by tests. Btw: REFACTOR TO LAMBDA */
-        for(CategoryDto testCategory : receivedCategoriesEntity.getBody()) {
-            if(testCategory.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testCategory.getId().getHref());
-            }
-        }
+        Arrays.asList(receivedCategoriesEntity.getBody()).stream()
+                .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
+                .map(x -> {
+                    oAuth2AdminRestTemplate().delete(x.getId().getHref());
+                    return x;
+                });
     }
 
     protected void removeLocalTestCategories() {
@@ -334,6 +387,21 @@ public abstract class ApiTestBase {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
                 .forEach(catalogService::removeCategory);
+    }
+
+
+    protected void removeRemoteTestProduct() {
+        ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
+                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        Arrays.asList(receivedProductEntity.getBody()).stream()
+                .filter(x -> x.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME))
+                .map(x -> {
+                    oAuth2AdminRestTemplate().delete(x.getId().getHref());
+                    return x;
+                });
     }
 
 
@@ -346,36 +414,13 @@ public abstract class ApiTestBase {
 
 
     protected void removeLocalTestSkus() {
-
        catalogService.findAllSkus().stream()
-               .filter(x -> (x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME)))
+               .filter(x -> ((x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME) ||
+                            x.getName().contains("Sku"))))
                .forEach(catalogService::removeSku);
     }
 
-    protected void removeRemoteTestProducts() {
-        ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
-
-        assertNotNull(receivedProductEntity);
-        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        for (ProductDto testProduct : receivedProductEntity.getBody()) {
-            if(testProduct.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME)) {
-                oAuth2AdminRestTemplate().delete(testProduct.getId().getHref());
-            }
-        }
-    }
-
-
-
-    protected long getRemoteTotalCategoriesForProductCount(long productId) {
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
+      /* --------------------------------  CLEANUP METHODS -------------------------------- */
 
 
     protected String getAccessTokenFromLocationUrl(String locationUrl) throws URISyntaxException {
@@ -385,6 +430,14 @@ public abstract class ApiTestBase {
         return authorizationParams.stream()
                 .filter(x -> x.getName().equals("access_token"))
                 .collect(Collectors.toList()).get(0).getValue();
+    }
+
+    protected Date addNDaysToDate(Date date, int N) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.DATE, N);
+
+        return cal.getTime();
     }
 
 }

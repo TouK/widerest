@@ -6,6 +6,7 @@ import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.*;
 
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
@@ -22,6 +23,8 @@ import static java.util.stream.Collectors.toMap;
 public class CatalogUtils {
 
 
+
+
     public static final String EMPTY_STRING = "";
 
     public static boolean archivedProductFilter(Product product) {
@@ -30,6 +33,11 @@ public class CatalogUtils {
 
     public static boolean archivedCategoryFilter(Category category) {
         return ((Status) category).getArchived() == 'N';
+    }
+
+    public static InventoryType getInventoryTypeByAvailability(String availability) {
+        final InventoryType inventoryType = InventoryType.getInstance(availability);
+        return (inventoryType != null) ? inventoryType : InventoryType.ALWAYS_AVAILABLE;
     }
 
     public static Category updateCategoryEntityFromDto(Category categoryEntity,
@@ -41,14 +49,13 @@ public class CatalogUtils {
 
 
         if(categoryDto.getProductsAvailability() != null) {
-            InventoryType inventoryType = InventoryType.getInstance(categoryDto.getProductsAvailability());
-            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
+            categoryEntity.setInventoryType(getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));
         } else {
+            /* (mst) Remove this if you don't want to have a "default" availability set */
             categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
 
         categoryEntity.getCategoryAttributesMap().clear();
-
         categoryEntity.getCategoryAttributesMap().putAll(
                 Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> {
@@ -78,8 +85,7 @@ public class CatalogUtils {
         }
 
         if(categoryDto.getProductsAvailability() != null) {
-            InventoryType inventoryType = InventoryType.getInstance(categoryDto.getProductsAvailability());
-            categoryEntity.setInventoryType(inventoryType != null ? inventoryType : InventoryType.ALWAYS_AVAILABLE);
+            categoryEntity.setInventoryType(getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));;
         }
 
         if(categoryDto.getAttributes() != null) {
@@ -107,7 +113,6 @@ public class CatalogUtils {
         skuEntity.setTaxCode(skuDto.getTaxCode());
         skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
         skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
-        //skuEntity.setCurrency();
 
 		/*
 		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
@@ -115,6 +120,39 @@ public class CatalogUtils {
 		 */
         if (skuDto.getRetailPrice() != null) {
             skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        } else {
+            skuEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
+        }
+
+        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
+            skuEntity.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
+        } else {
+            /* (mst) turn on Inventory Service by default */
+            skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        }
+
+
+        skuEntity.getSkuAttributes().clear();
+        skuEntity.getSkuAttributes().putAll(
+                Optional.ofNullable(skuDto.getSkuAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            SkuAttribute s = new SkuAttributeImpl();
+                            s.setName(e.getKey());
+                            s.setValue(e.getValue());
+                            s.setSku(skuEntity);
+                            return s;
+                        })));
+
+
+        if(skuDto.getSkuMedia() != null) {
+            skuEntity.setSkuMediaXref(
+                    skuDto.getSkuMedia().stream()
+                            .collect(toMap(e -> e.getKey(), e -> {
+                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e);
+                                newSkuMediaXref.setSku(skuEntity);
+                                newSkuMediaXref.setKey(e.getKey());
+                                return newSkuMediaXref;
+                            })));
         }
 
         return skuEntity;
@@ -148,6 +186,8 @@ public class CatalogUtils {
         if (skuDto.getRetailPrice() != null) {
             skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
         }
+
+
 
         return skuEntity;
     }

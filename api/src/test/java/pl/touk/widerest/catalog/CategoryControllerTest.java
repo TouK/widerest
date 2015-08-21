@@ -509,8 +509,6 @@ public class CategoryControllerTest extends ApiTestBase {
         CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
         Map<String, String> receivedAttributes = receivedCategoryDto.getAttributes();
 
-        assertNotNull(receivedAttributes);
-
         assertThat(receivedAttributes.size(), equalTo(categoryAttributes.size()));
         assertThat(receivedAttributes.get("size"), equalTo(String.valueOf(99)));
         assertThat(receivedAttributes.get("color"), equalTo("red"));

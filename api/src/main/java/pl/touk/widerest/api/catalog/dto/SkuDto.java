@@ -31,9 +31,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @ApiModel(value = "Sku", description = "SKU DTO resource representation")
 public class SkuDto extends ResourceSupport {
 
-    @JsonIgnore
-    private Long skuId;
-
     @ApiModelProperty(position = 0, value = "SKU name", required = true, dataType = "java.lang.String")
     private String name;
 
@@ -41,6 +38,7 @@ public class SkuDto extends ResourceSupport {
     @ApiModelProperty(position = 1, value = "Description of the SKU", dataType = "java.lang.String")
     private String description;
 
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 2, value = "Sale price of the SKU", required = true, dataType = "java.math.BigDecimal")
     private BigDecimal salePrice;
 
@@ -81,5 +79,4 @@ public class SkuDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
     private List<SkuMediaDto> skuMedia;
-
 }
