@@ -6,6 +6,7 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
+import org.springframework.hateoas.Link;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -451,6 +452,28 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
 
+    @Test
+    public void attemptingToRemoveDefaultSkuCausesExceptionTest() {
+        ResponseEntity<?> responseEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+        long productId = getIdFromEntity(responseEntity);
+
+        ResponseEntity<ProductDto> receivedProductEntity =
+                restTemplate.getForEntity(PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
+
+        Link defaultSkuLink = receivedProductEntity.getBody().getLink("default-sku");
+
+        assertNotNull(defaultSkuLink);
+
+        long defaultSkuId = getIdFromLocationUrl(defaultSkuLink.getHref());
+
+        try {
+            oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_SKU_BY_ID, serverPort, productId, defaultSkuId);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+        }
+    }
+
 
 
     @Test
@@ -571,7 +594,6 @@ public class ProductControllerTest extends ApiTestBase {
         SkuDto localDefaultSku = complexProductDto.getDefaultSku();
 
         assertThat(receivedDefaultSku.getTaxCode(), equalTo(localDefaultSku.getTaxCode()));
-        assertThat(receivedDefaultSku.getDescription(), equalTo(localDefaultSku.getDescription()));
         assertThat(receivedDefaultSku.getName(), equalTo(complexProductDto.getName()));
         assertThat(receivedDefaultSku.getSalePrice(), equalTo(localDefaultSku.getSalePrice()));
         assertThat(receivedDefaultSku.getRetailPrice(), equalTo(localDefaultSku.getRetailPrice()));
@@ -589,6 +611,12 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProduct.getDescription(), equalTo(complexProductDto.getDescription()));
         assertThat(receivedProduct.getLongDescription(), equalTo(complexProductDto.getLongDescription()));
     }
+
+
+
+
+
+
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
