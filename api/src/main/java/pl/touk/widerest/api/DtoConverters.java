@@ -16,6 +16,9 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
+import org.broadleafcommerce.common.i18n.domain.ISOCountry;
+import org.broadleafcommerce.common.i18n.domain.ISOCountryImpl;
+import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
@@ -65,6 +68,9 @@ public class DtoConverters {
 
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
+
+    @Resource
+    protected ISOService isoService;
 
     private static Function<ProductAttribute, String> getProductAttributeName = input -> {
         return input.getValue();
@@ -544,7 +550,7 @@ public class DtoConverters {
         return customerDto;
     };
 
-    public static Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
+    public Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
 
         Customer customerEntity = new CustomerImpl();
 
@@ -556,7 +562,7 @@ public class DtoConverters {
         customerEntity.setPassword(dto.getPasswordHash());
         customerEntity.setEmailAddress(dto.getEmail());
         customerEntity.setCustomerAddresses(dto.getAddresses().stream()
-                .map(DtoConverters.customerAddressDtoToEntity)
+                .map(this.customerAddressDtoToEntity)
                 .collect(Collectors.toList()));
 
         return customerEntity;
@@ -577,12 +583,13 @@ public class DtoConverters {
                 .postalCode(entity.getPostalCode())
                 .companyName(entity.getCompanyName())
                 .county(entity.getCounty())
+                .countryAbbreviation(entity.getIsoCountryAlpha2().getAlpha2())
                 .build();
 
         return addressDto;
     };
 
-    public static Function<AddressDto, Address> addressDtoToEntity = dto -> {
+    public Function<AddressDto, Address> addressDtoToEntity = dto -> {
         Address addressEntity = new AddressImpl();
 
         addressEntity.setAddressLine1(dto.getAddressLine1());
@@ -594,6 +601,7 @@ public class DtoConverters {
         addressEntity.setPostalCode(dto.getPostalCode());
         addressEntity.setCompanyName(dto.getCompanyName());
         addressEntity.setCounty(dto.getCounty());
+        addressEntity.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(dto.getCountryAbbreviation()));
 
 
         return addressEntity;
@@ -611,11 +619,11 @@ public class DtoConverters {
         return customerAddressDto;
     };
 
-    public static Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
+    public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
         CustomerAddress customerAddress = new CustomerAddressImpl();
 
         customerAddress.setId(dto.getId());
-        customerAddress.setAddress(DtoConverters.addressDtoToEntity.apply(dto.getAddressDto()));
+        customerAddress.setAddress(this.addressDtoToEntity.apply(dto.getAddressDto()));
         customerAddress.setAddressName(dto.getAddressName());
 
         return customerAddress;
@@ -657,13 +665,13 @@ public class DtoConverters {
         return orderDto;
     };
 
-    public static Function<OrderDto, Order> orderDtoToEntity = dto -> {
+    public Function<OrderDto, Order> orderDtoToEntity = dto -> {
         Order orderEntity = new OrderImpl();
 
         orderEntity.setId(dto.getOrderId());
         orderEntity.setOrderNumber(dto.getOrderNumber());
         orderEntity.setStatus(OrderStatus.getInstance(dto.getStatus()));
-        orderEntity.setPayments(dto.getOrderPaymentDto().stream().map(DtoConverters.orderPaymentDtoToEntity)
+        orderEntity.setPayments(dto.getOrderPaymentDto().stream().map(this.orderPaymentDtoToEntity)
                 .collect(Collectors.toList()));
 
         return orderEntity;
@@ -683,12 +691,12 @@ public class DtoConverters {
 
     };
 
-    public static Function<OrderPaymentDto, OrderPayment> orderPaymentDtoToEntity = dto -> {
+    public Function<OrderPaymentDto, OrderPayment> orderPaymentDtoToEntity = dto -> {
         OrderPayment orderPayment = new OrderPaymentImpl();
 
         orderPayment.setId(dto.getOrderId());
         orderPayment.setAmount(dto.getAmount());
-        orderPayment.setBillingAddress(DtoConverters.addressDtoToEntity.apply(dto.getBillingAddress()));
+        orderPayment.setBillingAddress(this.addressDtoToEntity.apply(dto.getBillingAddress()));
         orderPayment.setReferenceNumber(dto.getReferenceNumber());
         orderPayment.setType(PaymentType.getInstance(dto.getType()));
 
@@ -754,11 +762,11 @@ public class DtoConverters {
         return ratingDto;
     };
 
-    public static Function<RatingDto, RatingDetail> ratingDtoToEntity = dto -> {
+    public Function<RatingDto, RatingDetail> ratingDtoToEntity = dto -> {
         RatingDetail ratingDetailEntity = new RatingDetailImpl();
 
         ratingDetailEntity.setRating(dto.getRating());
-        ratingDetailEntity.setCustomer(DtoConverters.customerDtoToEntity.apply(dto.getCustomer()));
+        ratingDetailEntity.setCustomer(this.customerDtoToEntity.apply(dto.getCustomer()));
         ratingDetailEntity.setRatingSubmittedDate(dto.getSubmissionDate());
 
         return ratingDetailEntity;

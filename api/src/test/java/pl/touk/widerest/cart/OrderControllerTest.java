@@ -100,6 +100,7 @@ public class OrderControllerTest extends ApiTestBase {
         addressDto.setPostalCode("05-134");
         addressDto.setFirstName("Haskell");
         addressDto.setLastName("Curry");
+        addressDto.setCountryAbbreviation("US");
 
         // When POST /orders/{orderId}/fulfillment/address
         HttpHeaders requestHeaders = new HttpHeaders();
@@ -121,8 +122,8 @@ public class OrderControllerTest extends ApiTestBase {
         HttpMethod.GET, httpRequestEntity, AddressDto.class, serverPort);
 
 
-        // Then return status should be 200
-        assert(response.getStatusCode().value() == 201);
+        // Then return status should be 2xx
+        assert(responseAddress.getStatusCode().is2xxSuccessful());
         // Then address should be the same
         assert(responseAddress.getBody().equals(addressDto));
 
