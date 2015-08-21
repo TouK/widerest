@@ -63,7 +63,6 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 @RestController
-@Scope("session")
 @RequestMapping("/orders")
 @Api(value = "orders", description = "Order management endpoint")
 public class OrderController {
@@ -134,7 +133,6 @@ public class OrderController {
     }
 
     /* GET /orders/{orderId} */
-    @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(
@@ -150,7 +148,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        return DtoConverters.orderEntityToDto.apply(getProperCart(userDetails, orderId));
+        return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId));
 
     }
 
@@ -212,7 +210,7 @@ public class OrderController {
 
         //orderService.cancelOrder(orders.get(0));
         if (userDetails instanceof CustomerUserDetails) {
-            orderService.deleteOrder(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId));
+            orderService.deleteOrder(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId));
         } else if (userDetails instanceof AdminUserDetails) {
             orderService.deleteOrder(orderService.findOrderById(orderId));
         }
@@ -247,7 +245,7 @@ public class OrderController {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         OrderItemRequestDTO req = new OrderItemRequestDTO();
@@ -318,9 +316,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId) {
 
         if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .getDiscreteOrderItems().stream()
+            return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
                     .map(DtoConverters.discreteOrderItemEntityToDto)
                     .collect(Collectors.toList());
 
@@ -348,7 +344,7 @@ public class OrderController {
             @PathVariable(value = "id") Long orderId) {
 
         if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
+            return Optional.ofNullable(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
                     .orElseThrow(ResourceNotFoundException::new)
                     .getItemCount();
 
@@ -402,7 +398,7 @@ public class OrderController {
             @PathVariable(value = "id") Long orderId) {
 
         if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
+            return Optional.ofNullable(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
                     .orElseThrow(ResourceNotFoundException::new)
                     .getStatus();
         } else if (userDetails instanceof AdminUserDetails) {
@@ -433,7 +429,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId) {
 
-        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
@@ -470,7 +466,7 @@ public class OrderController {
             @PathVariable(value = "itemId") Long itemId) {
 
 
-        return Optional.ofNullable(getProperCart(userDetails, orderId))
+        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new)
                 .getDiscreteOrderItems().stream()
                 .filter(x -> x.getId() == itemId).findAny()
@@ -527,7 +523,7 @@ public class OrderController {
             @ApiParam(value = "Fulfillment Option value", required = true)
             @RequestBody Long fulfillmentOptionId) throws PricingException {
 
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+        Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
@@ -556,7 +552,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        return fulfillmentServiceProxy.createFulfillmentDto.apply(getProperCart(userDetails, orderId));
+        return fulfillmentServiceProxy.createFulfillmentDto(orderServiceProxy.getProperCart(userDetails, orderId));
     }
 
 
@@ -581,7 +577,7 @@ public class OrderController {
 
         /* TODO: (mst) address validation, required fields etc */
 
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+        Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
@@ -608,7 +604,7 @@ public class OrderController {
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
-    @Transactional
+
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.GET)
     @ApiOperation(
@@ -624,12 +620,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
-
-        return Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentAddress(order))
-                .map(DtoConverters.addressEntityToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
+        return orderServiceProxy.getOrderFulfilmentAddress(userDetails, orderId);
     }
 
     
@@ -658,26 +649,4 @@ public class OrderController {
         return cart.getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList());
     }
     */
-
-    private Order getProperCart(UserDetails userDetails, Long orderId) {
-        Order cart = null;
-
-        if (userDetails instanceof CustomerUserDetails) {
-            cart = getOrderForCustomerById((CustomerUserDetails) userDetails, orderId);
-        } else if (userDetails instanceof AdminUserDetails) {
-            cart = orderService.findOrderById(orderId);
-        }
-
-        return cart;
-    }
-
-    private Order getOrderForCustomerById(CustomerUserDetails customerUserDetails, Long orderId) throws OrderNotFoundException {
-
-        return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(customerUserDetails))
-                .orElseThrow(() -> new OrderNotFoundException("Cannot find order with ID: " + orderId + " for customer with ID: " + customerUserDetails.getId()))
-                .stream()
-                .filter(x -> x.getId().equals(orderId))
-                .findAny()
-                .orElseThrow(() -> new OrderNotFoundException("Cannot find order with ID: " + orderId + " for customer with ID: " + customerUserDetails.getId()));
-    }
 }

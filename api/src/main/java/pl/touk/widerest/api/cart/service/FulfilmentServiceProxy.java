@@ -8,6 +8,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
@@ -21,8 +23,12 @@ import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;
@@ -30,9 +36,6 @@ import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.UnknownFulfillmentOptionException;
 
-/**
- * Created by mst on 31.07.15.
- */
 @Service("wdfulfilmentService")
 public class FulfilmentServiceProxy {
 
@@ -88,8 +91,7 @@ public class FulfilmentServiceProxy {
         return order;
     }
 
-
-
+    @Transactional
     public Address getFulfillmentAddress(Order order) {
         FulfillmentGroup shippableFulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
 
@@ -117,7 +119,8 @@ public class FulfilmentServiceProxy {
         return order;
     }
 
-    public Function<Order, FulfillmentDto> createFulfillmentDto = order -> {
+    @Transactional
+    public FulfillmentDto createFulfillmentDto(Order order) {
         FulfillmentDto fulfillmentDto = new FulfillmentDto();
 
         FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
@@ -162,7 +165,7 @@ public class FulfilmentServiceProxy {
 
 
         return fulfillmentDto;
-    };
+    }
 
 
 }
