@@ -1,8 +1,9 @@
 package pl.touk.widerest.api.cart.exceptions;
 
-/**
- * Created by mst on 05.08.15.
- */
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class OrderValidationException extends RuntimeException {
     public OrderValidationException() {
     }

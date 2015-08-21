@@ -25,7 +25,6 @@ public class OrderPaymentDto {
     @ApiModelProperty
     protected AddressDto billingAddress;
 
-    /* TODO: Currency - Money */
     @ApiModelProperty
     protected Money amount;
 

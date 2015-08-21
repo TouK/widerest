@@ -8,9 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
-/**
- * Created by mst on 08.07.15.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,8 +24,7 @@ public class AddressDto {
     @ApiModelProperty(required = true)
     protected String city;
 
-    /* TODO: (mst) Validation? */
-    @ApiModelProperty
+    @ApiModelProperty(required = true)
     protected String postalCode;
 
     @ApiModelProperty(required = true)
@@ -49,10 +45,10 @@ public class AddressDto {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     protected String addressName;
 
-
     @ApiModelProperty
     protected String county;
 
-
+    @ApiModelProperty(required = true)
+    protected String countryAbbreviation;
 
 }

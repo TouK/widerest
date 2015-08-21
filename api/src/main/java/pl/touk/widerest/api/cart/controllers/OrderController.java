@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.broadleafcommerce.common.i18n.domain.ISOCountry;
+import org.broadleafcommerce.common.i18n.domain.ISOCountryImpl;
+import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
@@ -28,6 +31,7 @@ import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.AddressService;
+import org.broadleafcommerce.profile.core.service.CountryService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.context.annotation.Scope;
@@ -96,6 +100,9 @@ public class OrderController {
 
     @Resource(name = "blInventoryService")
     private InventoryService inventoryService;
+
+    @Resource
+    private ISOService isoService;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
@@ -575,14 +582,14 @@ public class OrderController {
             @ApiParam(value = "Description of a fulfillment address", required = true)
             @RequestBody AddressDto addressDto) throws PricingException {
 
-        /* TODO: (mst) address validation, required fields etc */
-
         Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
             throw new NotShippableException("Order with ID: " + orderId + " is empty");
         }
+
+        orderValidationService.validateAddressDto(addressDto);
 
         Address shippingAddress = addressService.create();
         shippingAddress.setFirstName(addressDto.getFirstName());
@@ -594,6 +601,7 @@ public class OrderController {
         shippingAddress.setAddressLine2(addressDto.getAddressLine2());
         shippingAddress.setAddressLine3(addressDto.getAddressLine3());
         shippingAddress.setCounty(addressDto.getCounty());
+        shippingAddress.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryAbbreviation()));
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 

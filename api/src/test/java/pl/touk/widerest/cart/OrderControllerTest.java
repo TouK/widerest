@@ -7,6 +7,8 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.dto.*;
@@ -392,6 +394,54 @@ public class OrderControllerTest extends ApiTestBase {
         } catch (HttpClientErrorException e) {
             assert(e.getStatusCode().is4xxClientError());
         }
+
+    }
+
+    @Test
+    public void shouldNotAcceptInvalidCountryNameInAddress() throws URISyntaxException {
+        // Given anonymous user with 1 item in order
+        Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
+        Integer orderId = createNewOrder(accessToken);
+        String orderUrl = ORDERS_URL+"/"+orderId;
+        addItemToOrder(10, 10, orderUrl+"/items", accessToken, restTemplate);
+
+        // When sending wrong address
+        AddressDto addressDto = new AddressDto();
+        addressDto.setFirstName("Haskell");
+        addressDto.setLastName("Curry");
+        addressDto.setAddressLine1("Semigroup Valley 12");
+        addressDto.setPostalCode("13-337");
+        addressDto.setCity("Massachusetts");
+        addressDto.setCountryAbbreviation("USA");
+
+        HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
+        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        httpJsonRequestHeaders.set("Authorization", "Bearer "+ accessToken);
+        HttpEntity<AddressDto> addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
+
+
+        // Then 400 status code should be returned
+        try {
+            restTemplate.exchange(orderUrl + "/fulfillment/address", HttpMethod.POST,
+                    addressEntity, HttpHeaders.class, serverPort);
+            fail("Address was checked and should be invalid");
+        } catch(HttpClientErrorException e) {
+            assert(e.getStatusCode().is4xxClientError());
+        }
+
+
+        // When sending address with correct country code
+        addressDto.setCountryAbbreviation("PL");
+        addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
+
+
+        // Then 2xx status should be returned
+        ResponseEntity<HttpHeaders> response = restTemplate.exchange(orderUrl + "/fulfillment/address", HttpMethod.POST,
+                addressEntity, HttpHeaders.class, serverPort);
+        assert(response.getStatusCode().is2xxSuccessful());
 
     }
 
