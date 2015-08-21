@@ -2,6 +2,7 @@ package pl.touk.widerest.catalog;
 
 import org.hamcrest.number.IsCloseTo;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -390,6 +391,7 @@ public class CatalogTest extends ApiTestBase {
 
     @Test
     @Transactional
+    @Ignore
     public void creatingAndDeletingCategoriesReferencesDoesNotAffectActualEntitiesTest() {
         CategoryDto testCategory1 = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
         ResponseEntity<?> newCategoryEntity1 = addNewTestCategory(testCategory1);

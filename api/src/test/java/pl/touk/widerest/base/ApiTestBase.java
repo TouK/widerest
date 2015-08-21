@@ -38,10 +38,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -312,11 +309,32 @@ public abstract class ApiTestBase {
     }
 
 
+    protected ResponseEntity<CategoryDto> getRemoteTestCategoryByIdEntity(long categoryId) {
+        ResponseEntity<CategoryDto> receivedCategoryEntity =
+                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
+
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        return receivedCategoryEntity;
+    }
+
+    protected CategoryDto getRemoteTestCategoryByIdDto(long categoryId) {
+        return getRemoteTestCategoryByIdEntity(categoryId).getBody();
+    }
 
 
+    protected ResponseEntity<ProductDto> getRemoteTestProductByIdEntity(long productId) {
+        ResponseEntity<ProductDto> receivedProductEntity =
+                restTemplate.getForEntity(PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
 
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
+        return receivedProductEntity;
+    }
 
+    protected ProductDto getRemoteTestProductByIdDto(long productId) {
+        return getRemoteTestProductByIdEntity(productId).getBody();
+    }
 
     protected ResponseEntity<?> addNewTestSKUToProduct(long productId, SkuDto skuDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
@@ -412,6 +430,14 @@ public abstract class ApiTestBase {
         return authorizationParams.stream()
                 .filter(x -> x.getName().equals("access_token"))
                 .collect(Collectors.toList()).get(0).getValue();
+    }
+
+    protected Date addNDaysToDate(Date date, int N) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.DATE, N);
+
+        return cal.getTime();
     }
 
 }

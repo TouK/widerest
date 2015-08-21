@@ -208,7 +208,6 @@ public class ProductController {
                         .orElse(newProduct.getProductOptionXrefs())
         );
 
-
         newProduct = catalogService.saveProduct(newProduct);
 
 
@@ -218,7 +217,20 @@ public class ProductController {
             savedSkus.addAll(newProduct.getAllSkus());
 
             for(SkuDto skuDto : productDto.getSkus()) {
+
                 Sku s = dtoConverters.skuDtoToEntity.apply(skuDto);
+
+                final Sku skuParam = s;
+                final Product p = newProduct;
+
+                if(skuDto.getSkuProductOptionValues() != null && !skuDto.getSkuProductOptionValues().isEmpty()) {
+                    s.setProductOptionValueXrefs(
+                            skuDto.getSkuProductOptionValues().stream()
+                                    .map(e -> generateXref(e, skuParam, p))
+                                    .collect(Collectors.toSet())
+                    );
+                }
+
                 s.setProduct(newProduct);
                 s = catalogService.saveSku(s);
                 savedSkus.add(s);

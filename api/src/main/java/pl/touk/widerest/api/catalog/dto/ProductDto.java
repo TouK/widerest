@@ -41,11 +41,8 @@ import java.util.Map;
 @ApiModel(value = "Product", description = "Product DTO resource representation")
 public class ProductDto extends ResourceSupport {
 
-    @JsonIgnore
-    private Long productId;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 0, value = "Name of the category this product belongs to", dataType = "java.lang.String")
+    @ApiModelProperty(position = 0, value = "Names of the categories this product belongs to", dataType = "java.lang.String")
     private String categoryName;
 
     @ApiModelProperty(position = 1, value = "Name of the product", required = true, dataType = "java.lang.String")

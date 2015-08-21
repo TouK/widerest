@@ -181,6 +181,8 @@ public class DtoConverters {
 
         dto.setName(entity.getName());
 
+        dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
+
 		/*
 		 * TODO: (mst) Do we need the entire CategoryDto here or Category name +
 		 * HATEAOS link will do the job?
@@ -189,6 +191,8 @@ public class DtoConverters {
 		 * dto.setCategory(categoryEntityToDto.apply(entity.getDefaultCategory()
 		 * )); }
 		 */
+
+        dto.setCategoryName(Optional.ofNullable(entity.getCategory()).map(Category::getName).orElse(""));
 
         // if(entity.getCategory() != null)
         // dto.setCategoryName(Optional.ofNullable(entity.getCategory().getName()).orElse(""));
@@ -222,8 +226,6 @@ public class DtoConverters {
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
 
         dto.setOptions(entity.getProductOptionXrefs().stream().map(DtoConverters.productOptionXrefToDto).collect(toList()));
-
-        dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
 
 
         dto.setSkus(entity.getAdditionalSkus().stream().map(skuEntityToDto).collect(toList()));
@@ -485,8 +487,8 @@ public class DtoConverters {
         product.setDescription(productDto.getDescription());
         product.setLongDescription(productDto.getLongDescription());
         product.setPromoMessage(productDto.getOfferMessage());
-        product.setActiveStartDate(productDto.getValidFrom());
-        product.setActiveEndDate(productDto.getValidTo());
+        product.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(product.getDefaultSku().getActiveStartDate()));
+        product.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(product.getDefaultSku().getActiveEndDate()));
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
 
