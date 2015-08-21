@@ -1064,7 +1064,7 @@ public class ProductController {
 
         /* TODO: (mst) This is stupid...*/
         if(currentSkuMediaSize == newSkuMediaXref.size()) {
-            throw new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not releted to SKU with ID: " + skuId);
+            throw new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId);
         }
 
 
@@ -1336,10 +1336,8 @@ public class ProductController {
         RatingSummary ratingSummary = ratingService.readRatingSummary(productId.toString(), RatingType.PRODUCT);
 
         if (ratingSummary == null) {
-            *//* TODO: Do we create a new one ?! *//*
         }
 
-        // TODO: Customer verification
 
         ratingSummary.getReviews().add(DtoConverters.reviewDtoToEntity.apply(reviewDto));
 
@@ -1493,7 +1491,6 @@ public class ProductController {
 
         List<CategoryProductXref> allParentCategories = new ArrayList<>(product.getAllParentCategoryXrefs());
 
-        *//*TODO (mst) Account for duplicates *//*
 
         if(!allParentCategories.contains(categoryEntity)) {
             CategoryProductXref categoryProductXref = new CategoryProductXrefImpl();

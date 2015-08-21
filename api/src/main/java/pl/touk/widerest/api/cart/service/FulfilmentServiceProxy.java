@@ -111,8 +111,6 @@ public class FulfilmentServiceProxy {
             shippableFulfillmentGroup.setAddress(address);
             order = orderService.save(order, true);
     		
-    		
-    		/* TODO: (mst) update address for Order's customer??? */
         } else {
             throw new NotShippableException();
         }

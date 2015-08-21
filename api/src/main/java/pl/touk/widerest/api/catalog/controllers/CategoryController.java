@@ -219,7 +219,6 @@ public class CategoryController {
     }
 
     /* PATCH /categories/{id} */
-    /* TODO: (mst) more "efficient" partial update */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/{categoryId}", method = RequestMethod.PATCH)
