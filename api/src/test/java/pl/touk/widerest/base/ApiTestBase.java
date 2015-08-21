@@ -132,7 +132,6 @@ public abstract class ApiTestBase {
 
     /* This is the way to access admin related REST API!
      *
-     * TODO: inject constants instead of hardcoding them
      *
      */
     protected OAuth2RestTemplate oAuth2AdminRestTemplate() {

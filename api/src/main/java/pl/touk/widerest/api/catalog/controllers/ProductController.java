@@ -173,8 +173,6 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
-
-        /* TODO: (mst) modify matching rules (currently only "by name") + refactor to separate method */
         if(hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
@@ -374,7 +372,6 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") Long productId) {
 
-        /* TODO: (mst) do we need to remove all the related SKUs manually as well? */
         //product.getAdditionalSkus().stream().forEach(catalogService::removeSku);
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
@@ -1063,11 +1060,9 @@ public class ProductController {
                 .filter(x -> x.getValue().getMedia().getId().longValue() != mediaId)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        /* TODO: (mst) This is stupid...*/
         if(currentSkuMediaSize == newSkuMediaXref.size()) {
             throw new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId);
         }
-
 
         mediaSkuEntity.getSkuMediaXref().clear();
         mediaSkuEntity.getSkuMediaXref().putAll(newSkuMediaXref);
@@ -1151,7 +1146,6 @@ public class ProductController {
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
-    /* TODO: (mst) Maybe some duplicate/required params checks? */
     /* PUT /{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")

@@ -183,7 +183,6 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
         } catch (Exception e) {
             if(e instanceof PayPalRESTException) {
-                //TODO: getName czy getMessage?
                 throw new PaymentException(((PayPalRESTException) e).getDetails().getMessage(), e);
             }
             throw new PaymentException(e);

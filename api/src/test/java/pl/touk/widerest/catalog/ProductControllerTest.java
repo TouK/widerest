@@ -76,9 +76,6 @@ public class ProductControllerTest extends ApiTestBase {
 
         ProductDto receivedProductDto = receivedProductEntity.getBody();
 
-        /* TODO: (mst) implement a reasonable ProductDto's equalTo() method instead of
-         *       doing this bs:
-         */
         //then
         assertThat(receivedProductDto.getName(), equalTo(productDto.getName()));
         assertThat(receivedProductDto.getDescription(), equalTo(productDto.getDescription()));
@@ -173,7 +170,6 @@ public class ProductControllerTest extends ApiTestBase {
 
         ProductDto receivedProductDto = receivedProductEntity.getBody();
 
-        /* TODO: (mst) maybe few more checks */
         assertThat(modifiedProductDto.getName(), equalTo(receivedProductDto.getName()));
         assertThat(modifiedProductDto.getLongDescription(), equalTo(receivedProductDto.getLongDescription()));
         assertThat(modifiedProductDto.getDescription(), equalTo(receivedProductDto.getDescription()));

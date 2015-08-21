@@ -56,6 +56,7 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
@@ -126,13 +127,11 @@ public class DtoConverters {
         } else {
             skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
 
-            /* TODO: (mst) I'm not sure about this: in case BL does not find provided currency,
-                     can we just create it or we should only support those which are already in DB
-             */
             if (skuCurrency == null) {
-                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
-                newBLCurrency.setCurrencyCode(currencyCode);
-                skuCurrency = blCurrencyService.save(newBLCurrency);
+//                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
+//                newBLCurrency.setCurrencyCode(currencyCode);
+//                skuCurrency = blCurrencyService.save(newBLCurrency);
+                throw new ResourceNotFoundException("Invalid currency code.");
             }
 
         }
@@ -189,35 +188,9 @@ public class DtoConverters {
 
         dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
 
-		/*
-		 * TODO: (mst) Do we need the entire CategoryDto here or Category name +
-		 * HATEAOS link will do the job?
-		 *
-		 * if(entity.getDefaultCategory() != null) {
-		 * dto.setCategory(categoryEntityToDto.apply(entity.getDefaultCategory()
-		 * )); }
-		 */
-
         dto.setCategoryName(Optional.ofNullable(entity.getCategory()).map(Category::getName).orElse(""));
 
-        // if(entity.getCategory() != null)
-        // dto.setCategoryName(Optional.ofNullable(entity.getCategory().getName()).orElse(""));
-
-		/*
-		 * TODO: REMOVE if(entity.getLongDescription() != null &&
-		 * !entity.getLongDescription().isEmpty()) {
-		 * dto.setLongDescription(entity.getLongDescription()); }
-		 */
-
-
-
         dto.setLongDescription(Optional.ofNullable(entity.getLongDescription()).orElse(""));
-
-		/*
-		 * TODO: REMOVE if(entity.getPromoMessage() != null &&
-		 * !entity.getPromoMessage().isEmpty()) {
-		 * dto.setOfferMessage(entity.getPromoMessage()); }
-		 */
 
         dto.setDescription(Optional.ofNullable(entity.getDescription()).orElse(""));
         dto.setOfferMessage(Optional.ofNullable(entity.getPromoMessage()).orElse(""));
@@ -291,13 +264,6 @@ public class DtoConverters {
                 }
             }
         }
-
-		/*
-		 * TODO: (mst) REMOVE because AllParentCategoryRefs() already has the
-		 * DefaultCategory if(entity.getCategory() != null) {
-		 * dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById
-		 * (entity.getCategory().getId())).withRel("category")); }
-		 */
 
 		/* Links to the product's categories */
         if (entity.getAllParentCategoryXrefs() != null && !entity.getAllParentCategoryXrefs().isEmpty()) {
