@@ -511,7 +511,6 @@ public class OrderController {
     }
 
     /* PUT /orders/{orderId}/fulfillment/selectedOption */
-    @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillment/selectedOption", method = RequestMethod.PUT)
     @ApiOperation(
@@ -530,16 +529,8 @@ public class OrderController {
             @ApiParam(value = "Fulfillment Option value", required = true)
             @RequestBody Long fulfillmentOptionId) throws PricingException {
 
-        Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
+        return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, fulfillmentOptionId);
 
-        if (order.getItemCount() <= 0) {
-            throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");
-        }
-
-        fulfillmentServiceProxy.updateFulfillmentOption(order, fulfillmentOptionId);
-
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 
@@ -559,7 +550,8 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        return fulfillmentServiceProxy.createFulfillmentDto(orderServiceProxy.getProperCart(userDetails, orderId));
+        return fulfillmentServiceProxy.createFulfillmentDto(
+                 orderServiceProxy.getProperCart(userDetails, orderId));
     }
 
 

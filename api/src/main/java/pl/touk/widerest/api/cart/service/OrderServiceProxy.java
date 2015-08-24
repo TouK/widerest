@@ -8,6 +8,7 @@ import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
+import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -25,6 +26,7 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
+import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
@@ -144,6 +146,21 @@ public class OrderServiceProxy {
 
 
         orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity<?> updateSelectedFulfillmentOption
+            (UserDetails userDetails, Long orderId, Long fulfillmentOptionId) throws PricingException {
+        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+            .orElseThrow(ResourceNotFoundException::new);
+
+        if (order.getItemCount() <= 0) {
+            throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");
+        }
+
+        fulfillmentServiceProxy.updateFulfillmentOption(order, fulfillmentOptionId);
+
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
