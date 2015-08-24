@@ -336,7 +336,7 @@ public class OrderControllerTest extends ApiTestBase {
                 restTemplate1.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
 
         // Then the other user can't access it
-        assertNull(allSecondOrders.getBody());
+        assert(new ArrayList<OrderDto>(Arrays.asList(allSecondOrders.getBody())).isEmpty());
 
 
         // When checking orders amount
@@ -388,7 +388,7 @@ public class OrderControllerTest extends ApiTestBase {
             addItemToOrder(10L, 90, orderUrl+"/items", userAccessToken, userRestTemplate);
 
         // When trying to change quantity to too big
-        httpJsonRequestHeaders.set("Authorization", "Bearer "+userAccessToken);
+        httpJsonRequestHeaders.set("Authorization", "Bearer " + userAccessToken);
         quantityEntity = new HttpEntity<>(101, httpJsonRequestHeaders);
 
         // Then user shouldn't be able to change quantity

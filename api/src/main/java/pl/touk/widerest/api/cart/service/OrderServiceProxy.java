@@ -57,16 +57,22 @@ public class OrderServiceProxy {
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
-    @PostAuthorize("hasAnyRole('PERMISSION_ALL_ADMIN_ROLES', 'ROLE_USER')")
+    @PostAuthorize("permitAll")
     @Transactional
-    public List<Order> getOrdersByCustomer(CustomerUserDetails customerUserDetails) throws CustomerNotFoundException {
+    public List<Order> getOrdersByCustomer(UserDetails userDetails) throws CustomerNotFoundException {
 
-        Customer customer = customerService.readCustomerById(customerUserDetails.getId());
-        if(customer == null) {
-            throw new CustomerNotFoundException("Cannot find customer with ID: " + customerUserDetails.getId());
+        if(userDetails instanceof AdminUserDetails) {
+            return getAllOrders();
+        } else if(userDetails instanceof CustomerUserDetails) {
+            CustomerUserDetails customerUserDetails = (CustomerUserDetails) userDetails;
+            Customer customer = customerService.readCustomerById(customerUserDetails.getId());
+            if (customer == null) {
+                throw new CustomerNotFoundException("Cannot find customer with ID: " + customerUserDetails.getId());
+            }
+            return orderService.findOrdersForCustomer(customer);
         }
 
-        return orderService.findOrdersForCustomer(customer);
+        return null;
     }
 
     @PostAuthorize("hasRole('PERMISSION_ALL_ORDER')")
