@@ -104,15 +104,6 @@ public class CustomerControllerTest extends ApiTestBase {
         userCredentials = new Pair<>(restTemplate, strapToken(FirstResponseUri));
     }
 
-    private String strapToken(URI response) throws URISyntaxException {
-        String authorizationUrl = response.toString().replaceFirst("#", "?");
-        List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
 
-        return authParams.stream()
-                .filter(x -> x.getName().equals("access_token"))
-                .findFirst()
-                .map(NameValuePair::getValue)
-                .orElse(null);
-    }
 }
 

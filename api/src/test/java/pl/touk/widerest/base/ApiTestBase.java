@@ -2,12 +2,15 @@ package pl.touk.widerest.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import javafx.util.Pair;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.broadleafcommerce.common.media.domain.MediaDto;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
@@ -28,6 +31,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.BroadleafApplicationContextInitializer;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
@@ -79,7 +85,7 @@ public abstract class ApiTestBase {
     public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";
 
     public static final String LOGIN_URL = "http://localhost:{port}/login";
-
+    public static final String ORDERS_COUNT = ORDERS_URL+"/count";
 
     public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=test&response_type=token&redirect_uri=/";
 
@@ -424,6 +430,8 @@ public abstract class ApiTestBase {
       /* --------------------------------  CLEANUP METHODS -------------------------------- */
 
 
+    /* --------------------------------  HELPER METHODS -------------------------------- */
+
     protected String getAccessTokenFromLocationUrl(String locationUrl) throws URISyntaxException {
         String accessTokenUrl = locationUrl.replace("#", "?");
         List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
@@ -440,5 +448,157 @@ public abstract class ApiTestBase {
 
         return cal.getTime();
     }
+
+    protected String strapToken(URI response) throws URISyntaxException {
+        String authorizationUrl = response.toString().replaceFirst("#", "?");
+        List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
+
+        return authParams.stream()
+                .filter(x -> x.getName().equals("access_token"))
+                .findFirst()
+                .map(NameValuePair::getValue)
+                .orElse(null);
+    }
+
+
+    /* --------------------------------  ORDER METHODS -------------------------------- */
+
+    private HttpHeaders httpRequestHeader = new HttpHeaders();
+
+    protected Integer createNewOrder(String token) {
+        ResponseEntity<HttpHeaders> anonymousOrderHeaders =
+                restTemplate.postForEntity(ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
+
+        return strapSufixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
+    }
+
+    protected Integer strapSufixId(String url) {
+        // Assuming it is */df/ab/{sufix}
+        String[] tab = StringUtils.split(url, "/");
+        return Integer.parseInt(tab[tab.length - 1]);
+    }
+
+    protected Pair generateAnonymousUser() throws URISyntaxException {
+        RestTemplate restTemplate = new RestTemplate();
+        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
+        return new Pair<RestTemplate, String>(restTemplate, strapToken(FirstResponseUri));
+    }
+
+    protected Pair generateAdminUser() throws URISyntaxException {
+        OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
+        URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
+        String accessToken = strapToken(adminUri);
+        return new Pair<OAuth2RestTemplate, String>(adminRestTemplate, accessToken);
+    }
+
+    protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(RestTemplate restTemplate, String token,
+                                                              Integer orderId, Integer orderItemId) {
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
+
+        return restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
+                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
+
+    }
+
+    protected ResponseEntity<HttpHeaders> addItemToOrder(long skuId, Integer quantity, String location, String token, RestTemplate restTemplate) {
+        OrderItemDto template = new OrderItemDto();
+        template.setQuantity(quantity);
+        template.setSkuId(skuId);
+
+
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(template, requestHeaders);
+
+        return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+    }
+
+
+
+    protected HttpEntity<?> getProperEntity(String token) {
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.add("Authorization", "Bearer " + token);
+        return new HttpEntity<>(requestHeaders);
+    }
+
+
+    protected long getRemoteTotalOrdersCountValue(String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ORDERS_COUNT,
+                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
+
+        assertNotNull(remoteCountEntity);
+
+        return remoteCountEntity.getBody().longValue();
+    }
+
+
+    protected Boolean givenOrderIdIsCancelled(String adminToken, Long orderId) {
+        HttpEntity<?> adminHttpEntity = getProperEntity(adminToken);
+        ResponseEntity<OrderDto[]> allOrders =
+                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
+
+        return new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
+                .filter(x -> x.getOrderId() == orderId)
+                .findAny()
+                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                .orElse(false);
+    }
+
+    protected Integer getRemoteItemsInOrderCount(Integer orderId, String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/count",
+                HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
+
+        return remoteCountEntity.getBody();
+    }
+
+    protected List<DiscreteOrderItemDto> getItemsFromCart(Integer orderId, String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<DiscreteOrderItemDto[]> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items",
+                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto[].class, serverPort);
+
+        return new ArrayList<>(Arrays.asList(response.getBody()));
+
+    }
+
+    protected DiscreteOrderItemDto getItemDetailsFromCart(Integer orderId, Long itemId, String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items/"+itemId,
+                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort);
+
+        return response.getBody();
+    }
+
+    protected OrderStatus getOrderStatus(Integer orderId, String token) {
+        httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpRequestHeader.set("Authorization", "Bearer " + token);
+        HttpEntity httpRequestEntity = new HttpEntity(null, httpRequestHeader);
+
+        HttpEntity<OrderStatus> response = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/status",
+                HttpMethod.GET, httpRequestEntity, OrderStatus.class, serverPort);
+
+        return response.getBody();
+
+    }
+
 
 }
