@@ -8,6 +8,7 @@ import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 
@@ -223,5 +224,40 @@ public class CatalogUtils {
         return mediaEntity;
     }
 
+    public static Product updateProductEntityFromDto(Product productEntity, ProductDto productDto) {
+        productEntity.setName(productDto.getName());
+        productEntity.setDescription(productDto.getDescription());
+        productEntity.setLongDescription(productDto.getLongDescription());
+        productEntity.setPromoMessage(productDto.getOfferMessage());
+        productEntity.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(productEntity.getDefaultSku().getActiveStartDate()));
+        productEntity.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(productEntity.getDefaultSku().getActiveEndDate()));
+        productEntity.setModel(productDto.getModel());
+        productEntity.setManufacturer(productDto.getManufacturer());
+
+       /* List<Sku> s;
+
+        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
+            s = productDto.getSkus().stream()
+                    .map(skuDtoToEntity)
+                    .collect(toList());
+
+            product.setAdditionalSkus(s);
+        }*/
+
+
+        if (productDto.getAttributes() != null) {
+
+            productEntity.setProductAttributes(
+                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+                        ProductAttribute p = new ProductAttributeImpl();
+                        p.setName(e.getKey());
+                        p.setValue(e.getValue());
+                        p.setProduct(productEntity);
+                        return p;
+                    })));
+        }
+
+        return productEntity;
+    }
 
 }

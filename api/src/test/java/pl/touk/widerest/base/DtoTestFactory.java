@@ -114,6 +114,7 @@ public class DtoTestFactory {
                 .defaultSku(null)
                 .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                 .categoryName(null)
+                .validFrom(defaultActiveStartDate)
                 .build();
 
         productCounter++;

@@ -26,6 +26,8 @@ import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
+import org.broadleafcommerce.core.catalog.service.type.ProductType;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
@@ -110,6 +112,7 @@ public class DtoConverters {
                         .map(Map.Entry::getValue)
                         .map(DtoConverters.skuMediaXrefToDto)
                         .collect(toList()))
+
                 .build();
 
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
@@ -208,6 +211,7 @@ public class DtoConverters {
 
 
         dto.setSkus(entity.getAdditionalSkus().stream().map(skuEntityToDto).collect(toList()));
+
 
 		/* TODO: (mst) Implement Possible Bundles */
 
@@ -411,11 +415,11 @@ public class DtoConverters {
         return bundleItemDto;
     };
 
-    public static Function<BundleItemDto, SkuBundleItem> bundleItemDtoToSkuBundleItem = dto -> {
+    public Function<BundleItemDto, SkuBundleItem> bundleItemDtoToSkuBundleItem = dto -> {
         SkuBundleItem skuBundleItem = new SkuBundleItemImpl();
         skuBundleItem.setQuantity(dto.getQuantity());
         skuBundleItem.setSalePrice(new Money(dto.getSalePrice()));
-
+        skuBundleItem.setSku(catalogService.findSkuById(dto.getSkuId()));
         /* TODO: (mst) setting product bundle + SKU */
         return skuBundleItem;
     };
@@ -450,42 +454,41 @@ public class DtoConverters {
         return productOptionXref;
     };
 
+    public Function<ProductBundleDto, Product> productBundleDtoToEntity = bundleDto -> {
+        //ProductBundle product = new ProductBundleImpl();
+
+        Product product = new ProductBundleImpl();
+
+        product.setDefaultSku(skuDtoToEntity.apply(bundleDto.getDefaultSku()));
+
+        product = CatalogUtils.updateProductEntityFromDto(product, bundleDto);
+
+        ((ProductBundle)product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
+
+        product.getDefaultSku().setProduct(product);
+
+        final ProductBundle p = (ProductBundle)product;
+
+        ((ProductBundle) product).setSkuBundleItems(bundleDto.getBundleItems().stream()
+                .map(bundleItemDtoToSkuBundleItem)
+                .map(e -> {
+                    e.setBundle(p);
+                    return e;
+                })
+                .collect(toList()));
+
+        return product;
+
+    };
+
+
+
     public Function<ProductDto, Product> productDtoToEntity = productDto -> {
         Product product = new ProductImpl();
 
         product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
 
-        product.setName(productDto.getName());
-        product.setDescription(productDto.getDescription());
-        product.setLongDescription(productDto.getLongDescription());
-        product.setPromoMessage(productDto.getOfferMessage());
-        product.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(product.getDefaultSku().getActiveStartDate()));
-        product.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(product.getDefaultSku().getActiveEndDate()));
-        product.setModel(productDto.getModel());
-        product.setManufacturer(productDto.getManufacturer());
-
-       /* List<Sku> s;
-
-        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
-            s = productDto.getSkus().stream()
-                    .map(skuDtoToEntity)
-                    .collect(toList());
-
-            product.setAdditionalSkus(s);
-        }*/
-
-
-        if (productDto.getAttributes() != null) {
-
-            product.setProductAttributes(
-                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
-                        ProductAttribute p = new ProductAttributeImpl();
-                        p.setName(e.getKey());
-                        p.setValue(e.getValue());
-                        p.setProduct(product);
-                        return p;
-                    })));
-        }
+        product = CatalogUtils.updateProductEntityFromDto(product, productDto);
 
         return product;
     };

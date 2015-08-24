@@ -12,6 +12,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.dto.*;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.base.ApiTestBase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
@@ -20,12 +22,15 @@ import org.junit.Test;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.widerest.base.DtoTestFactory;
+import pl.touk.widerest.base.DtoTestType;
 
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 
@@ -443,6 +448,43 @@ public class OrderControllerTest extends ApiTestBase {
         ResponseEntity<HttpHeaders> response = restTemplate.exchange(orderUrl + "/fulfillment/address", HttpMethod.POST,
                 addressEntity, HttpHeaders.class, serverPort);
         assert(response.getStatusCode().is2xxSuccessful());
+
+    }
+
+
+    @Test
+    public void creatingNewProductAndAddingItToOrderSavesAllValuesCorrectlyTest() throws URISyntaxException {
+
+        ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+        testProductDto.setSkus(Arrays.asList(additionalSkuDto));
+        testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
+
+        ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
+        assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromEntity(newProductResponseEntity);
+
+
+        ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+        ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+        long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+
+
+        Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
+
+        Integer orderId = createNewOrder(accessToken);
+
+        // When I add 3 different items to order
+        ResponseEntity<HttpHeaders> itemAddResponse =
+                addItemToOrder(skuId, 2, ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
+
+        assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+
+
 
     }
 

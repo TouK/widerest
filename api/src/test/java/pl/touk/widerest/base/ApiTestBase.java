@@ -80,12 +80,14 @@ public abstract class ApiTestBase {
 
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";
+    public static final String ORDER_BY_ID_URL = ORDERS_URL + "{orderId}";
+    public static final String ORDERS_COUNT = ORDERS_URL+"/count";
+    public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
 
     /* Customer */
     public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";
 
     public static final String LOGIN_URL = "http://localhost:{port}/login";
-    public static final String ORDERS_COUNT = ORDERS_URL+"/count";
 
     public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=test&response_type=token&redirect_uri=/";
 

@@ -98,7 +98,7 @@ public class ProductController {
 
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/bundles", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new bundle",
@@ -114,25 +114,18 @@ public class ProductController {
             @ApiParam(value = "Description of a new bundle", required = true)
                 @RequestBody ProductBundleDto productBundleDto) {
 
-        Product newProduct = dtoConverters.productDtoToEntity.apply(productBundleDto);
 
-        ProductBundle newProductBundle = (ProductBundle)newProduct;
-
-        newProductBundle.setSkuBundleItems(
-            productBundleDto.getBundleItems().stream()
-                .map(DtoConverters.bundleItemDtoToSkuBundleItem)
-                .collect(toList()));
+        Product newProduct = dtoConverters.productBundleDtoToEntity.apply(productBundleDto);
 
 
-
-        newProductBundle = (ProductBundle)catalogService.saveProduct(newProductBundle);
+        newProduct = catalogService.saveProduct(newProduct);
 
 
         HttpHeaders responseHeader = new HttpHeaders();
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(newProductBundle.getId())
+                .buildAndExpand(newProduct.getId())
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
