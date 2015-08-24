@@ -420,7 +420,6 @@ public class DtoConverters {
         skuBundleItem.setQuantity(dto.getQuantity());
         skuBundleItem.setSalePrice(new Money(dto.getSalePrice()));
         skuBundleItem.setSku(catalogService.findSkuById(dto.getSkuId()));
-        /* TODO: (mst) setting product bundle + SKU */
         return skuBundleItem;
     };
 
@@ -453,34 +452,6 @@ public class DtoConverters {
         productOptionXref.setProductOption(productOption);
         return productOptionXref;
     };
-
-    public Function<ProductBundleDto, Product> productBundleDtoToEntity = bundleDto -> {
-        //ProductBundle product = new ProductBundleImpl();
-
-        Product product = new ProductBundleImpl();
-
-        product.setDefaultSku(skuDtoToEntity.apply(bundleDto.getDefaultSku()));
-
-        product = CatalogUtils.updateProductEntityFromDto(product, bundleDto);
-
-        ((ProductBundle)product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
-
-        product.getDefaultSku().setProduct(product);
-
-        final ProductBundle p = (ProductBundle)product;
-
-        ((ProductBundle) product).setSkuBundleItems(bundleDto.getBundleItems().stream()
-                .map(bundleItemDtoToSkuBundleItem)
-                .map(e -> {
-                    e.setBundle(p);
-                    return e;
-                })
-                .collect(toList()));
-
-        return product;
-
-    };
-
 
 
     public Function<ProductDto, Product> productDtoToEntity = productDto -> {

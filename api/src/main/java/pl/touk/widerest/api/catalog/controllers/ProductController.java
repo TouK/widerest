@@ -13,6 +13,7 @@ import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
@@ -98,7 +99,7 @@ public class ProductController {
 
 
     @Transactional
-    //@PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/bundles", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new bundle",
@@ -115,17 +116,45 @@ public class ProductController {
                 @RequestBody ProductBundleDto productBundleDto) {
 
 
-        Product newProduct = dtoConverters.productBundleDtoToEntity.apply(productBundleDto);
+        if(hasDuplicates(productBundleDto.getName())) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
+        Product product = new ProductBundleImpl();
+
+        product.setDefaultSku(dtoConverters.skuDtoToEntity.apply(productBundleDto.getDefaultSku()));
+
+        product = CatalogUtils.updateProductEntityFromDto(product, productBundleDto);
+
+        ((ProductBundle)product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
+
+        product.getDefaultSku().setProduct(product);
+
+        final ProductBundle p = (ProductBundle)product;
+
+        ((ProductBundle) product).setSkuBundleItems(productBundleDto.getBundleItems().stream()
+                .filter(x -> catalogService.findSkuById(x.getSkuId()) != null)
+                .map(dtoConverters.bundleItemDtoToSkuBundleItem)
+                .map(e -> {
+                    e.setBundle(p);
+                    return e;
+                })
+                .collect(toList()));
 
 
-        newProduct = catalogService.saveProduct(newProduct);
+        if(((ProductBundle) product).getSkuBundleItems().size() != productBundleDto.getBundleItems().size()) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
+
+        product = catalogService.saveProduct(product);
 
 
         HttpHeaders responseHeader = new HttpHeaders();
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(newProduct.getId())
+                .buildAndExpand(product.getId())
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
