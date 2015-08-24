@@ -2,6 +2,7 @@ package pl.touk.widerest.api.cart.controllers;
 
 import io.swagger.annotations.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -123,20 +124,12 @@ public class OrderController {
             @ApiParam(value = "Status to be used to filter orders")
             @RequestParam(value = "status", required = false) String status) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            CustomerUserDetails customerUserDetails = (CustomerUserDetails) userDetails;
-            return orderServiceProxy.getOrdersByCustomer(customerUserDetails).stream()
+        return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
+                .orElse(Collections.<Order>emptyList())
+                    .stream()
                     .map(DtoConverters.orderEntityToDto)
                     .filter(x -> status == null || x.getStatus().equals(status))
                     .collect(Collectors.toList());
-        } else if (userDetails instanceof AdminUserDetails) {
-            return orderServiceProxy.getAllOrders().stream()
-                    .map(DtoConverters.orderEntityToDto)
-                    .collect(Collectors.toList());
-        }
-
-        // Shouldn't go there, but in case it was unauthorized return null
-        return null;
     }
 
     /* GET /orders/{orderId} */
@@ -216,11 +209,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId) {
 
         //orderService.cancelOrder(orders.get(0));
-        if (userDetails instanceof CustomerUserDetails) {
-            orderService.deleteOrder(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId));
-        } else if (userDetails instanceof AdminUserDetails) {
-            orderService.deleteOrder(orderService.findOrderById(orderId));
-        }
+        orderService.deleteOrder(orderServiceProxy.getProperCart(userDetails, orderId));
     }
 
 
@@ -322,19 +311,10 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
-                    .map(DtoConverters.discreteOrderItemEntityToDto)
-                    .collect(Collectors.toList());
+        return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
+                .map(DtoConverters.discreteOrderItemEntityToDto)
+                .collect(Collectors.toList());
 
-        } else if (userDetails instanceof AdminUserDetails) {
-            return Optional.ofNullable(orderService.findOrderById(orderId)).orElseThrow(ResourceNotFoundException::new)
-                    .getDiscreteOrderItems().stream()
-                    .map(DtoConverters.discreteOrderItemEntityToDto)
-                    .collect(Collectors.toList());
-        }
-
-        return null;
     }
 
     /* GET /orders/{orderId}/items/count */
@@ -350,18 +330,9 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .getItemCount();
-
-        } else if (userDetails instanceof AdminUserDetails) {
-            return Optional.ofNullable(orderService.findOrderById(orderId))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .getItemCount();
-
-        }
-        return null;
+        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new)
+                .getItemCount();
     }
 
     @Transactional
@@ -374,17 +345,9 @@ public class OrderController {
     public Integer getOrdersCount(
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer((CustomerUserDetails) userDetails))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .size();
-        } else if (userDetails instanceof AdminUserDetails) {
-            return Optional.ofNullable(orderServiceProxy.getAllOrders())
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .size();
-        }
-
-        return null;
+        return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
+            .orElseThrow(ResourceNotFoundException::new)
+            .size();
     }
 
     /* GET /orders/{orderId}/status */
@@ -404,17 +367,10 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            return Optional.ofNullable(orderServiceProxy.getOrderForCustomerById((CustomerUserDetails) userDetails, orderId))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .getStatus();
-        } else if (userDetails instanceof AdminUserDetails) {
-            return Optional.ofNullable(orderService.findOrderById(orderId))
-                    .orElseThrow(ResourceNotFoundException::new)
-                    .getStatus();
-        }
+        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new)
+                .getStatus();
 
-        return null;
     }
 
     /* DELETE /orders/{orderId}/items/{itemId} */
