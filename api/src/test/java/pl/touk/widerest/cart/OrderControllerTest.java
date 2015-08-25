@@ -458,6 +458,8 @@ public class OrderControllerTest extends ApiTestBase {
         ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
+        additionalSkuDto.setAvailability(null);
+
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
 
@@ -479,10 +481,13 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When I add 3 different items to order
         ResponseEntity<HttpHeaders> itemAddResponse =
-                addItemToOrder(skuId, 2, ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
+                addItemToOrder(skuId, 2, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
 
         assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
 
+        long addedItemId = getIdFromEntity(itemAddResponse);
+
+        DiscreteOrderItemDto discreteOrderItemDto = getItemDetailsFromCart(orderId, addedItemId, accessToken);
 
 
 
