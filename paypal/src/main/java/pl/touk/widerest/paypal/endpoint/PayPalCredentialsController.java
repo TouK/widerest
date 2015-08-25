@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import pl.touk.widerest.paypal.exception.CredentialNotSetException;
 import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
 
 import javax.annotation.Resource;
@@ -46,7 +47,7 @@ public class PayPalCredentialsController {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
-                .orElseThrow(() -> new ResourceNotFoundException("Property not set"));
+                .orElseThrow(() -> new CredentialNotSetException("Property not set"));
     }
 
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
@@ -63,7 +64,7 @@ public class PayPalCredentialsController {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET))
                 .map(SystemProperty::getValue)
-                .orElseThrow(() -> new ResourceNotFoundException("Property not set"));
+                .orElseThrow(() -> new CredentialNotSetException("Property not set"));
     }
 
     @Transactional
