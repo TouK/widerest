@@ -318,15 +318,15 @@ public class OrderControllerTest extends ApiTestBase {
                 restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class, serverPort);
 
         // Then it should succeed
-        assertNotNull(anonymousOrderHeaders);
+        assert(anonymousOrderHeaders.getStatusCode().is2xxSuccessful());
 
         // When user added order
-        URI orderLocation = anonymousOrderHeaders.getHeaders().getLocation();
+        String orderLocation = anonymousOrderHeaders.getHeaders().getLocation().toASCIIString();
         ResponseEntity<OrderDto[]> allOrders =
                 adminRestTemplate.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
 
         OrderDto goodOne = new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
-                .filter(x -> (ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + x.getOrderId()).equals(orderLocation.toString()))
+                .filter(x -> x.getLink("self").toString().contains(orderLocation))
                 .findAny()
                 .orElse(null);
 
@@ -350,7 +350,7 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         // When admin deletes the user's cart
-        adminRestTemplate.delete(ORDERS_URL + "/" + goodOne.getOrderId(), serverPort);
+        adminRestTemplate.delete(orderLocation);
 
         // Then it should exist anymore
         assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
