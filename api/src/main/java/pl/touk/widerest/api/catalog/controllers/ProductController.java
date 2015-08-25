@@ -229,9 +229,9 @@ public class ProductController {
 
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
-        //newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
-        newProduct.getDefaultSku().setInventoryType(InventoryType.getInstance(productDto.getDefaultSku().getAvailability()));
+        //newProduct.getDefaultSku().setInventoryType(InventoryType.getInstance(productDto.getDefaultSku().getAvailability()));
 
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
