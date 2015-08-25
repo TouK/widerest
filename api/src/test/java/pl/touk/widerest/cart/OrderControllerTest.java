@@ -10,6 +10,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
@@ -458,7 +459,6 @@ public class OrderControllerTest extends ApiTestBase {
         ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        additionalSkuDto.setAvailability(null);
 
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
@@ -479,7 +479,6 @@ public class OrderControllerTest extends ApiTestBase {
 
         Integer orderId = createNewOrder(accessToken);
 
-        // When I add 3 different items to order
         ResponseEntity<HttpHeaders> itemAddResponse =
                 addItemToOrder(skuId, 2, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
 
@@ -487,8 +486,58 @@ public class OrderControllerTest extends ApiTestBase {
 
         long addedItemId = getIdFromEntity(itemAddResponse);
 
-        DiscreteOrderItemDto discreteOrderItemDto = getItemDetailsFromCart(orderId, addedItemId, accessToken);
+        getItemDetailsFromCart(orderId, addedItemId, accessToken);
+    }
 
+    @Test
+    public void addingSkusWithNotEnoughQuantityAvailableThrowsAnExceptionTest() throws URISyntaxException {
+
+
+        final int TEST_QUANTITY = 3;
+
+        ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+
+
+        additionalSkuDto.setQuantityAvailable(TEST_QUANTITY);
+        additionalSkuDto.setAvailability("CHECK_QUANTITY");
+
+        testProductDto.setSkus(Arrays.asList(additionalSkuDto));
+        testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
+
+        ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
+        assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        long productId = getIdFromEntity(newProductResponseEntity);
+
+
+        ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+        ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+        long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+
+
+        Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        RestTemplate restTemplate = firstUser.getKey();
+        String accessToken = firstUser.getValue();
+
+        Integer orderId = createNewOrder(accessToken);
+
+        try {
+            addItemToOrder(skuId, TEST_QUANTITY + 2, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
+            fail();
+        } catch(HttpStatusCodeException httpStatusCodeException) {
+            assertTrue(httpStatusCodeException.getStatusCode().is5xxServerError());
+        }
+
+        // this should add correctly
+        final ResponseEntity<HttpHeaders> itemAddResponse = addItemToOrder(skuId, TEST_QUANTITY, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
+
+        assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        long addedItemId = getIdFromEntity(itemAddResponse);
+
+        getItemDetailsFromCart(orderId, addedItemId, accessToken);
 
 
     }
