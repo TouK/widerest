@@ -86,6 +86,11 @@ public abstract class ApiTestBase {
     public static final String ORDERS_COUNT = ORDERS_URL+"/count";
     public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
 
+    /* PayPal */
+    public static final String PAYPAL_CREDENTIALS_URL = "http://localhost:{port}/paypal";
+    public static final String PAYPAL_CREDENTIALS_TOKEN_URL = PAYPAL_CREDENTIALS_URL+"/id";
+    public static final String PAYPAL_CREDENTIALS_SECRET_URL = PAYPAL_CREDENTIALS_URL+"/secret";
+
     /* Customer */
     public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";
 
