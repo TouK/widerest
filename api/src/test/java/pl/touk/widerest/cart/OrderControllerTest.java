@@ -458,6 +458,8 @@ public class OrderControllerTest extends ApiTestBase {
         ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
+        additionalSkuDto.setAvailability(null);
+
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
 

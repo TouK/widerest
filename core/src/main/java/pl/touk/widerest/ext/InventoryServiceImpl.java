@@ -23,7 +23,9 @@ public class InventoryServiceImpl extends org.broadleafcommerce.core.inventory.s
         }
 
         Integer quantityAvailable = retrieveQuantityAvailable(sku, context);
-        return quantityAvailable != null && quantity <= quantityAvailable;
+
+        return quantityAvailable == null || quantity <= quantityAvailable;
+        //return quantityAvailable != null && quantity <= quantityAvailable;
     }
 
     @Override
