@@ -18,39 +18,50 @@ import org.springframework.hateoas.ResourceSupport;
 @ApiModel(value = "Address", description = "Address DTO resource representation")
 public class AddressDto extends ResourceSupport {
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 0, value = "First name of the customer", required = true,
+        dataType = "java.lang.String")
     private String firstName;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 1, value = "Last name of the customer", required = true,
+            dataType = "java.lang.String")
     private String lastName;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 2, value = "City", required = true,
+            dataType = "java.lang.String")
     protected String city;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 3, value = "Postal Code", required = true,
+            dataType = "java.lang.String")
     protected String postalCode;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 4, value = "First line of customer's address", required = true,
+            dataType = "java.lang.String")
     protected String addressLine1;
 
-    @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty(position = 5, value = "Second line of customer's address", required = true,
+            dataType = "java.lang.String")
     protected String addressLine2;
 
-    @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty(position = 6, value = "Third line of customer's address", required = true,
+            dataType = "java.lang.String")
     protected String addressLine3;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 7, value = "Company name", required = true,
+            dataType = "java.lang.String")
     protected String companyName;
 
-    @ApiModelProperty
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty(position = 8, value = "Name of the address", required = true,
+            dataType = "java.lang.String")
     protected String addressName;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 9, value = "County", required = true,
+            dataType = "java.lang.String")
     protected String county;
 
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(position = 10, value = "Country abbreviation", required = true,
+            dataType = "java.lang.String")
     protected String countryAbbreviation;
 }

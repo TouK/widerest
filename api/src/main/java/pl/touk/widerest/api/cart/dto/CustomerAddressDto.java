@@ -10,8 +10,12 @@ import lombok.experimental.Builder;
  */
 @Builder
 @Data
-@ApiModel("CustomerAddress")
+@ApiModel(value = "Customer Address", description = "Customer Address DTO resource description")
 public class CustomerAddressDto {
+
+    @ApiModelProperty(position = 0, value = "Name of the address", required = true, dataType = "java.lang.String")
     private String addressName;
+
+    @ApiModelProperty(position = 1, value = "Address", required = true, dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
     private AddressDto addressDto;
 }
