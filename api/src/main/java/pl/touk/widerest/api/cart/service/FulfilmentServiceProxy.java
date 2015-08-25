@@ -30,11 +30,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.controllers.CustomerController;
+import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.UnknownFulfillmentOptionException;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Service("wdfulfilmentService")
 public class FulfilmentServiceProxy {

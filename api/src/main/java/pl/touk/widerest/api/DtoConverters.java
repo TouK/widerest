@@ -79,9 +79,32 @@ public class DtoConverters {
         return input.getValue();
     };
 
-    private static Function<org.broadleafcommerce.core.catalog.domain.ProductOptionValue, String> getProductOptionValueName = input -> {
+    private static Function<ProductOptionValue, String> getProductOptionValueName = input -> {
         return input.getAttributeValue();
     };
+
+    /******************************** Currency ********************************/
+
+    public Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
+        BroadleafCurrency skuCurrency = null;
+
+        if(currencyCode == null || currencyCode.isEmpty()) {
+            skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
+        } else {
+            skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
+
+            if (skuCurrency == null) {
+//                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
+//                newBLCurrency.setCurrencyCode(currencyCode);
+//                skuCurrency = blCurrencyService.save(newBLCurrency);
+                throw new ResourceNotFoundException("Invalid currency code.");
+            }
+
+        }
+        return skuCurrency;
+    };
+
+    /******************************** Currency ********************************/
 
     /******************************** SKU ********************************/
 
@@ -121,28 +144,6 @@ public class DtoConverters {
     };
 
 
-
-    public Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
-        BroadleafCurrency skuCurrency = null;
-
-        if(currencyCode == null || currencyCode.isEmpty()) {
-            skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
-        } else {
-            skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
-
-            if (skuCurrency == null) {
-//                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
-//                newBLCurrency.setCurrencyCode(currencyCode);
-//                skuCurrency = blCurrencyService.save(newBLCurrency);
-                throw new ResourceNotFoundException("Invalid currency code.");
-            }
-
-        }
-        return skuCurrency;
-    };
-
-
-
     public Function<SkuDto, Sku> skuDtoToEntity = skuDto -> {
         Sku skuEntity = new SkuImpl();
 
@@ -150,6 +151,8 @@ public class DtoConverters {
 
         return CatalogUtils.updateSkuEntityFromDto(skuEntity, skuDto);
     };
+
+    /******************************** SKU ********************************/
 
     public ProductOption getProductOptionByNameForProduct(String productOptionName, Product product) {
         ProductOption productOption = null;
@@ -165,6 +168,8 @@ public class DtoConverters {
         return productOption;
     }
 
+
+
     public ProductOptionValue getProductOptionValueByNameForProduct(ProductOption productOption,
                                                               String productOptionValue) {
         return productOption.getAllowedValues().stream()
@@ -175,7 +180,7 @@ public class DtoConverters {
 
 
 
-
+    /******************************** Product ********************************/
 
     public Function<Product, ProductDto> productEntityToDto = entity -> {
 
@@ -280,6 +285,20 @@ public class DtoConverters {
         return dto;
     };
 
+    public Function<ProductDto, Product> productDtoToEntity = productDto -> {
+        Product product = new ProductImpl();
+
+        product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
+
+        product = CatalogUtils.updateProductEntityFromDto(product, productDto);
+
+        return product;
+    };
+
+    /******************************** Product ********************************/
+
+    /******************************** Product Option ********************************/
+
     public static Function <ProductOption, ProductOptionDto> productOptionEntityToDto = entity -> {
         ProductOptionDto productOptionDto = ProductOptionDto.builder()
                 .name(entity.getAttributeName())
@@ -306,6 +325,9 @@ public class DtoConverters {
         return productOption;
     };
 
+    /******************************** Product Option ********************************/
+
+    /******************************** Product Option Value ********************************/
 
     public static Function<ProductOptionValue, ProductOptionValueDto> productOptionValueEntityToDto = entity -> {
         ProductOptionValueDto productOptionValueDto = ProductOptionValueDto.builder()
@@ -335,6 +357,8 @@ public class DtoConverters {
         return skuProductOptionValueDto;
     };
 
+    /******************************** Product Option Value ********************************/
+
     /******************************** CATEGORY ********************************/
 
     public static Function<Category, CategoryDto> categoryEntityToDto = entity -> {
@@ -363,6 +387,8 @@ public class DtoConverters {
     };
 
     /******************************** CATEGORY ********************************/
+
+    /******************************** Sku Media  ********************************/
 
     public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
 
@@ -394,7 +420,7 @@ public class DtoConverters {
         return skuMediaXref;
     };
 
-    /******************************** PRODUCT ********************************/
+    /******************************** Sku Media  ********************************/
 
     /******************************** SKU BUNDLE ITEMS ********************************/
 
@@ -425,6 +451,8 @@ public class DtoConverters {
 
     /******************************** SKU BUNDLE ITEMS ********************************/
 
+    /******************************** Product Option Xref ********************************/
+
     public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
         org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
 
@@ -453,18 +481,7 @@ public class DtoConverters {
         return productOptionXref;
     };
 
-
-    public Function<ProductDto, Product> productDtoToEntity = productDto -> {
-        Product product = new ProductImpl();
-
-        product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
-
-        product = CatalogUtils.updateProductEntityFromDto(product, productDto);
-
-        return product;
-    };
-
-    /******************************** PRODUCT ********************************/
+   /******************************** Product Option Xref ********************************/
 
     /******************************** CUSTOMER ********************************/
     public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
@@ -552,7 +569,7 @@ public class DtoConverters {
     /******************************** CUSTOMERADDRESS ********************************/
 
     public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
-        CustomerAddressDto customerAddressDto = CustomerAddressDto.builder().id(entity.getId())
+        CustomerAddressDto customerAddressDto = CustomerAddressDto.builder()
                 .addressName(entity.getAddressName())
                 .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress())).build();
 
@@ -562,7 +579,6 @@ public class DtoConverters {
     public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
         CustomerAddress customerAddress = new CustomerAddressImpl();
 
-        customerAddress.setId(dto.getId());
         customerAddress.setAddress(this.addressDtoToEntity.apply(dto.getAddressDto()));
         customerAddress.setAddressName(dto.getAddressName());
 
@@ -683,7 +699,7 @@ public class DtoConverters {
     public static Function<ReviewDto, ReviewDetail> reviewDtoToEntity = dto -> {
         ReviewDetail reviewDetailEntity = new ReviewDetailImpl();
 
-		/*
+		/* (mat)
 		 * We cannot set number of counts and status from here, so just update
 		 * the rewiev text
 		 */
@@ -712,11 +728,4 @@ public class DtoConverters {
         return ratingDetailEntity;
     };
     /******************************** RATING ********************************/
-
-    /******************************** FULFILLMENTS ********************************/
-
-
-
-
-
 }

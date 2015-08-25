@@ -12,10 +12,6 @@ import lombok.experimental.Builder;
 @Data
 @ApiModel("CustomerAddress")
 public class CustomerAddressDto {
-
-    private Long id;
-
     private String addressName;
-
     private AddressDto addressDto;
 }

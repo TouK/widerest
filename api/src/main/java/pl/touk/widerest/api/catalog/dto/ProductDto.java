@@ -72,11 +72,6 @@ public class ProductDto extends ResourceSupport {
     @ApiModelProperty(position = 7, value = "List of all additional SKUs for the product", dataType = "java.util.List")
     private List<SkuDto> skus;
 
-    /* TODO: Implement Possbile Blundles */
-    //@JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    //@ApiModelProperty
-    //private List<Long> possibleBundles;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 8, value = "Date from which the product becomes active/valid", dataType = "java.util.Date")
     private Date validFrom;
@@ -96,4 +91,8 @@ public class ProductDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "Manufacturer of the product", dataType = "java.lang.String")
     private String manufacturer;
+
+//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+//    @ApiModelProperty(position = 13, value = "Possible bundles for the product", dataType = "java.util.List")
+//    private List<Long> possibleBundles;
 }
