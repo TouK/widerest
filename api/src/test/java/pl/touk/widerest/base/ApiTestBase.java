@@ -77,6 +77,8 @@ public abstract class ApiTestBase {
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
     public static final String MEDIAS_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media";
     public static final String MEDIA_BY_ID_URL = MEDIAS_URL + "/{mediaId}";
+    public static final String BUNDLES_URL = PRODUCTS_URL + "/bundles";
+    public static final String BUNDLE_BU_ID_URL = BUNDLES_URL + "/{bundleId}";
 
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";

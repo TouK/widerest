@@ -89,7 +89,7 @@ public class CategoryController {
     	/* (mst) Providing that both Description() and LongDescription() can be null, which...is OK, this one
     	 *       should do the job "better" IMO
     	 */
-        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
 
@@ -98,7 +98,7 @@ public class CategoryController {
         }
 
 
-        Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
+        final Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
 
         HttpHeaders responseHeader = new HttpHeaders();
 
@@ -200,7 +200,7 @@ public class CategoryController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
 
@@ -240,7 +240,7 @@ public class CategoryController {
         /* (mst) Here...we don't need to have Name set BUT in case we do, we also check for duplicates! */
         if(categoryDto.getName() != null) {
 
-            long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+            final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
                     .count();
 
@@ -276,7 +276,7 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
                 @PathVariable(value = "categoryId") Long categoryId) {
 
-        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
@@ -395,16 +395,16 @@ public class CategoryController {
             @ApiParam(value = "ID of a product belonging to the specified category", required = true)
                 @PathVariable(value = "productId") Long productId) {
 
-        Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
-        Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
+        final Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
+        final CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
         productToAddXref.setProduct(productToAdd);
         productToAddXref.setCategory(categoryEntity);
 

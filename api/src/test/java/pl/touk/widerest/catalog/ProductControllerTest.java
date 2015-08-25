@@ -3,6 +3,7 @@ package pl.touk.widerest.catalog;
 import org.apache.commons.collections.CollectionUtils;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
@@ -370,7 +371,6 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(addedSkuMediaEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long skuMediaId = getIdFromLocationUrl(addedSkuMediaEntity.getHeaders().getLocation().toString());
 
-        System.out.println("just added: " + skuMediaId);
 
         SkuMediaXref skuMediaXref = catalogService.findSkuById(skuId).getSkuMediaXref().get("alt1");
 
@@ -609,6 +609,117 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
 
+
+
+    @Test
+    public void creatingProductBundleSavesPotentialSavingsProperlyTest() {
+
+        ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        ProductDto testProductDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> responseEntityProduct1 = addNewTestProduct(testProductDto1);
+        ResponseEntity<?> responseEntityProduct2 = addNewTestProduct(testProductDto2);
+
+        long productId1 = getIdFromEntity(responseEntityProduct1);
+        long productId2 = getIdFromEntity(responseEntityProduct2);
+
+        ProductDto remoteTestProductByIdDto1 = getRemoteTestProductByIdDto(productId1);
+        ProductDto remoteTestProductByIdDto2 = getRemoteTestProductByIdDto(productId2);
+
+        long defaultSkuId1 = getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
+        long defaultSkuId2 = getIdFromLocationUrl(remoteTestProductByIdDto2.getLink("default-sku").getHref());
+
+
+        ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
+
+        final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
+                .quantity(2)
+                .salePrice(new BigDecimal("3.99"))
+                .skuId(defaultSkuId1)
+                .build();
+
+        final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
+                .quantity(1)
+                .salePrice(new BigDecimal("2.99"))
+                .skuId(defaultSkuId2)
+                .build();
+
+
+        testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
+
+        ResponseEntity<?> objectResponseEntity = oAuth2AdminRestTemplate().postForEntity(BUNDLES_URL, testBundle, null, serverPort);
+
+        assertThat(objectResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        final long testBundleId = getIdFromEntity(objectResponseEntity);
+
+
+        ResponseEntity<ProductBundleDto> receivedBundleEntity =
+                restTemplate.getForEntity(BUNDLE_BU_ID_URL, ProductBundleDto.class, serverPort, testBundleId);
+
+        assertThat(receivedBundleEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+
+
+        final ProductBundleDto receivedBundleDto = receivedBundleEntity.getBody();
+
+
+        final BigDecimal totalNormalPriceForSku1 = remoteTestProductByIdDto1.getDefaultSku().getRetailPrice()
+                .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(0).getQuantity()));
+
+        final BigDecimal totalNormalPriceForSku2 = remoteTestProductByIdDto2.getDefaultSku().getRetailPrice()
+                .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(1).getQuantity()));
+
+        final BigDecimal totalNormalPriceForBundle = totalNormalPriceForSku1.add(totalNormalPriceForSku2);
+
+
+        final BigDecimal potentialSavings = totalNormalPriceForBundle.subtract(receivedBundleDto.getBundleRetailPrice());
+
+        assertThat(potentialSavings, equalTo(receivedBundleDto.getPotentialSavings()));
+
+    }
+
+
+    @Test
+    public void creatingABundleFromNonExistingSkusThrowsExceptionTest() {
+
+        final long NON_EXISTING_SKU_ID = 9999999;
+
+        ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+        ResponseEntity<?> responseEntityProduct1 = addNewTestProduct(testProductDto1);
+
+        long productId1 = getIdFromEntity(responseEntityProduct1);
+
+        ProductDto remoteTestProductByIdDto1 = getRemoteTestProductByIdDto(productId1);
+
+        long defaultSkuId1 = getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
+
+        ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
+
+        final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
+                .quantity(2)
+                .salePrice(new BigDecimal("3.99"))
+                .skuId(defaultSkuId1)
+                .build();
+
+        final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
+                .quantity(1)
+                .salePrice(new BigDecimal("2.99"))
+                .skuId(NON_EXISTING_SKU_ID)
+                .build();
+
+
+        testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
+
+        try {
+            oAuth2AdminRestTemplate().postForEntity(BUNDLES_URL, testBundle, null, serverPort);
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+        }
+
+    }
 
 
 

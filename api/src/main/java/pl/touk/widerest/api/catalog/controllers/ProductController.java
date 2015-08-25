@@ -98,6 +98,34 @@ public class ProductController {
     }
 
 
+
+    /* GET /products/bundles/{bundleId} */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a single bundle details",
+            notes = "Gets details of a single bundle specified by its ID",
+            response = ProductBundleDto.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful retrieval of bundle details", response = ProductBundleDto.class),
+            @ApiResponse(code = 404, message = "The specified bundle does not exist")
+    })
+    public ProductDto readOneBundleById(
+            @ApiParam(value = "ID of a specific bundle", required = true)
+                @PathVariable(value = "bundleId") Long bundleId) {
+
+        return Optional.ofNullable(catalogService.findProductById(bundleId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .filter(e -> e instanceof ProductBundle)
+                .map(dtoConverters.productEntityToDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
+    }
+
+
+
+
+
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/bundles", method = RequestMethod.POST)

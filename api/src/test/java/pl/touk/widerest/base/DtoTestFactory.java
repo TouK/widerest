@@ -35,6 +35,7 @@ public class DtoTestFactory {
     public static final String TEST_DEFAULT_SKU_DESC = "DefaultTestProductDescription";
     public static final String TEST_ADDITIONAL_SKU_DESC = "TestAdditionalSKUDescription";
     public static final String TEST_ADDITIONAL_SKU_NAME = "TestAdditionalSKUName";
+    public static final String TEST_BUNDLE_DEFAULT_NAME = "TestBundleName";
 
     static {
         Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -174,6 +175,44 @@ public class DtoTestFactory {
                 return null;
         }
     }
+
+    public static ProductBundleDto getTestBundle(DtoTestType dtoTestType) {
+        switch(dtoTestType) {
+            case NEXT:
+                return nextTestProductBundle();
+            default:
+                return null;
+        }
+    }
+
+
+    public static ProductBundleDto nextTestProductBundle() {
+
+
+        ProductDto productBundleDto = new ProductBundleDto();
+
+
+        productBundleDto.setName(TEST_BUNDLE_DEFAULT_NAME + productCounter);
+        productBundleDto.setDescription("DefaultTestBundleDescription" + productCounter);
+        productBundleDto.setLongDescription("DefaultTestBundleLongDescription" + productCounter);
+        productBundleDto.setManufacturer("Test Bundle Manufacturer" + productCounter);
+        productBundleDto.setModel("Test Bundle Model" + productCounter);
+        productBundleDto.setOfferMessage("Test Bundle Offer Message" + productCounter);
+        productBundleDto.setDefaultSku(nextTestDefaultSku());
+        productBundleDto.setOptions(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))));
+        productBundleDto.setValidFrom(defaultActiveStartDate);
+
+        ((ProductBundleDto)productBundleDto).setBundleSalePrice(new BigDecimal("19.99"));
+        ((ProductBundleDto)productBundleDto).setBundleRetailPrice(new BigDecimal("29.99"));
+
+
+
+        productCounter++;
+
+        return (ProductBundleDto)productBundleDto;
+    }
+
+
 
 
     public static ProductDto getTestProductWithoutDefaultSKU() {
