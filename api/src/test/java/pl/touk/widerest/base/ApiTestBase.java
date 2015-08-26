@@ -2,8 +2,8 @@ package pl.touk.widerest.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import javafx.util.Pair;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.broadleafcommerce.common.media.domain.MediaDto;
@@ -490,14 +490,15 @@ public abstract class ApiTestBase {
     protected Pair generateAnonymousUser() throws URISyntaxException {
         RestTemplate restTemplate = new RestTemplate();
         URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
-        return new Pair<RestTemplate, String>(restTemplate, strapToken(FirstResponseUri));
+        return Pair.of(restTemplate, strapToken(FirstResponseUri));
     }
 
     protected Pair generateAdminUser() throws URISyntaxException {
         OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
         URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
         String accessToken = strapToken(adminUri);
-        return new Pair<OAuth2RestTemplate, String>(adminRestTemplate, accessToken);
+        return Pair.of(adminRestTemplate, accessToken);
+
     }
 
     protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(RestTemplate restTemplate, String token,

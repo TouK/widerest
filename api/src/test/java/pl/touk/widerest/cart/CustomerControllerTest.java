@@ -1,6 +1,6 @@
 package pl.touk.widerest.cart;
 
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.junit.runner.RunWith;
@@ -101,7 +101,7 @@ public class CustomerControllerTest extends ApiTestBase {
     private void givenAnonymousUser() throws URISyntaxException {
         RestTemplate restTemplate = new RestTemplate();
         URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
-        userCredentials = new Pair<>(restTemplate, strapToken(FirstResponseUri));
+        userCredentials = Pair.of(restTemplate, strapToken(FirstResponseUri));
     }
 
 

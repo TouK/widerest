@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
@@ -452,7 +452,7 @@ public class CategoryController {
                         .filter(x -> x.getProduct().getId().longValue() == productId)
                         .findAny()
                         .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
-                    return new Pair<>(e,xref);
+                    return Pair.of(e, xref);
                 })
                 .map(e -> {
                     e.getKey().getAllProductXrefs().remove(e.getValue());
