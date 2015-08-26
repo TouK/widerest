@@ -8,7 +8,7 @@
         <version>1.0</version>
     </parent>
     <artifactId>widerest-api</artifactId>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <description>Web Module For Broadleaf Commerce Based ECommerce Site</description>
 
     <properties>
