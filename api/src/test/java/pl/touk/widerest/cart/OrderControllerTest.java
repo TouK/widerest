@@ -1,6 +1,6 @@
 package pl.touk.widerest.cart;
 
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.payment.dto.AddressDTO;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Before;
