@@ -96,7 +96,7 @@ public class DtoConverters {
 
     public Function<Sku, SkuDto> skuEntityToDto = entity -> {
 
-        SkuDto dto = SkuDto.builder()
+        final SkuDto dto = SkuDto.builder()
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
@@ -137,6 +137,8 @@ public class DtoConverters {
                 .withRel("availability"));
 
         dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(entity.getProduct().getId())).withRel("count")));
+
+        dto.add((linkTo(methodOn(ProductController.class).getSkuByIdQuantity(entity.getProduct().getId(), entity.getId())).withRel("quantity")));
 
         return dto;
     };
@@ -273,6 +275,8 @@ public class DtoConverters {
             }
         }
 
+        dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(entity.getId())).withRel("attributes"));
+
         return dto;
     };
 
@@ -281,9 +285,7 @@ public class DtoConverters {
 
         product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
 
-        product = CatalogUtils.updateProductEntityFromDto(product, productDto);
-
-        return product;
+        return CatalogUtils.updateProductEntityFromDto(product, productDto);
     };
 
     /******************************** Product ********************************/
@@ -403,6 +405,9 @@ public class DtoConverters {
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
                 xref.getSku().getId(),
                 entity.getId())).withSelfRel());
+
+        skuMediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
+                xref.getSku().getId())).withRel("sku"));
 
         return skuMediaDto;
     };
@@ -528,7 +533,7 @@ public class DtoConverters {
     /******************************** ADDRESS ********************************/
 
     public static Function<Address, AddressDto> addressEntityToDto = entity -> {
-        AddressDto addressDto = AddressDto.builder()
+        final AddressDto addressDto = AddressDto.builder()
                 .addressLine1(entity.getAddressLine1())
                 .addressLine2(entity.getAddressLine2())
                 .addressLine3(entity.getAddressLine3())
@@ -611,17 +616,23 @@ public class DtoConverters {
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
 
+        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
+
         /* link to items placed in an order */
         orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, entity.getId())).withRel("items"));
 
+        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, entity.getId())).withRel("items-count"));
+
         /* link to fulfillment */
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, entity.getId())).withRel("fulfillment"));
+
+        orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, entity.getId())).withRel("status"));
 
         return orderDto;
     };
 
     public Function<OrderDto, Order> orderDtoToEntity = dto -> {
-        Order orderEntity = new OrderImpl();
+        final Order orderEntity = new OrderImpl();
 
         orderEntity.setId(dto.getOrderId());
         orderEntity.setOrderNumber(dto.getOrderNumber());
@@ -683,13 +694,13 @@ public class DtoConverters {
 
     /******************************** DISCRETEORDERITEM ********************************/
     public static Function<DiscreteOrderItem, DiscreteOrderItemDto> discreteOrderItemEntityToDto = entity -> {
-        Money errCode = new Money(BigDecimal.valueOf(-1337));
-        Sku sku = entity.getSku();
+        final Money errCode = new Money(BigDecimal.valueOf(-1337));
+        final Sku sku = entity.getSku();
 
-        long productId = sku.getProduct().getId();
+        final long productId = sku.getProduct().getId();
 
-        DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
-                .itemId(entity.getId())
+        final DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
+                //.itemId(entity.getId())
                 .salePrice(entity.getSalePrice())
                 .retailPrice(entity.getRetailPrice())
                 .quantity(entity.getQuantity())

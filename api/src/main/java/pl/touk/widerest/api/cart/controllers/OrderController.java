@@ -133,6 +133,7 @@ public class OrderController {
     }
 
     /* GET /orders/{orderId} */
+    @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(
@@ -326,14 +327,16 @@ public class OrderController {
             value = "Count all items in the order",
             notes = "Gets a number of all items placed already in the specified order",
             response = Integer.class)
-    public Integer getItemsCountByOrderId(
+    public ResponseEntity<Integer> getItemsCountByOrderId(
             @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+        final int itemsInOrderCount = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new)
                 .getItemCount();
+
+        return new ResponseEntity<>(itemsInOrderCount, HttpStatus.OK);
     }
 
     @Transactional
@@ -343,12 +346,14 @@ public class OrderController {
             value = "Count all orders",
             notes = "Get a number of all active orders",
             response = Integer.class)
-    public Integer getOrdersCount(
+    public ResponseEntity<Integer> getOrdersCount(
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
+        final int ordersCount = Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
             .orElseThrow(ResourceNotFoundException::new)
             .size();
+
+        return new ResponseEntity<>(ordersCount, HttpStatus.OK);
     }
 
     /* GET /orders/{orderId}/status */

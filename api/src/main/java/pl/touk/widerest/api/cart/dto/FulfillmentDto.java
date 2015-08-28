@@ -21,7 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Fulfillment", description = "Fulfillment DTO resource representation")
-public class FulfillmentDto {
+public class FulfillmentDto extends ResourceSupport {
 
     @ApiModelProperty(position = 0, value = "Price of the whole fulfillment", required = true,
             dataType = "java.math.BigDecimal")

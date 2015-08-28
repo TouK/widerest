@@ -18,20 +18,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 @Data
 @Builder
-@ApiModel
 @NoArgsConstructor
 @AllArgsConstructor
+@ApiModel(value = "Order Item", description = "Order Item DTO resource description")
 public class OrderItemDto {
 
     @JsonIgnore
     private long itemId;
 
-    @ApiModelProperty(required = true)
-    private int quantity = 1;
+    @ApiModelProperty(position = 0, value = "Quantity of an item to be added into the order", required = true, dataType = "java.lang.Integer")
+    private Integer quantity = 1;
 
-    @ApiModelProperty//(required = true)
+    @ApiModelProperty(position = 1, value = "ID of a SKU to be added into the order", required = true, dataType = "java.lang.Long")
     private Long skuId;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 2, value = "ID of a bundle to be added into the order", dataType = "java.lang.Long")
     private Long bundleProductId;
 }

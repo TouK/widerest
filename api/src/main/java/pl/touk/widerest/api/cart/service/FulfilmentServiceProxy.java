@@ -166,6 +166,9 @@ public class FulfilmentServiceProxy {
         }
 
 
+        fulfillmentDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, order.getId())).withSelfRel());
+
+        fulfillmentDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilmentAddress(null, order.getId())).withRel("fulfillment-address"));
 
         return fulfillmentDto;
     }

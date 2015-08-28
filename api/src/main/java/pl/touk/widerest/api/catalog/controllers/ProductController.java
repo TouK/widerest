@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+import javax.xml.ws.Response;
 
 import org.apache.el.stream.Stream;
 import org.broadleafcommerce.common.currency.dao.BroadleafCurrencyDao;
@@ -833,20 +834,23 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of SKU's quantity"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public Integer getSkuByIdQuantity(
+    public ResponseEntity<Integer> getSkuByIdQuantity(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId) {
+                @PathVariable(value = "skuId") Long skuId) {
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
+
+        final int skuQuantity = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
-                .getQuantityAvailable();
+                    .filter(x -> x.getId().longValue() == skuId)
+                    .findAny()
+                    .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
+                    .getQuantityAvailable();
+
+        return new ResponseEntity<>(skuQuantity, HttpStatus.OK);
     }
 
     /* PUT /products/{productId}/skus/{skuId}/quantity */
