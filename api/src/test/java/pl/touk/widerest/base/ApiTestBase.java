@@ -79,6 +79,8 @@ public abstract class ApiTestBase {
     public static final String MEDIA_BY_ID_URL = MEDIAS_URL + "/{mediaId}";
     public static final String BUNDLES_URL = PRODUCTS_URL + "/bundles";
     public static final String BUNDLE_BU_ID_URL = BUNDLES_URL + "/{bundleId}";
+    public static final String PRODUCT_BY_ID_ATTRIBUTES_URL = PRODUCT_BY_ID_URL + "/attributes";
+    public static final String PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL = PRODUCT_BY_ID_ATTRIBUTES_URL + "/{attributeName}";
 
     /* Orders */
     public static final String ORDERS_URL = "http://localhost:{port}/orders";

@@ -134,6 +134,16 @@ public class DtoConverters {
 
         dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
                 .withSelfRel());
+
+        dto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getProduct().getId()))
+                .withRel("product"));
+
+        dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(entity.getProduct().getId(), entity.getId()))
+                .withRel("media"));
+
+        dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(entity.getProduct().getId(), entity.getId()))
+                .withRel("availability"));
+
         return dto;
     };
 
@@ -149,20 +159,13 @@ public class DtoConverters {
     /******************************** SKU ********************************/
 
     public ProductOption getProductOptionByNameForProduct(String productOptionName, Product product) {
-        ProductOption productOption = null;
-
-        if(product.getProductOptionXrefs() != null) {
-            productOption = product.getProductOptionXrefs().stream()
+        return Optional.ofNullable(product.getProductOptionXrefs())
+                .orElse(Collections.emptyList()).stream()
                     .map(ProductOptionXref::getProductOption)
                     .filter(x -> x.getAttributeName().equals(productOptionName))
                     .findAny()
                     .orElse(null);
-        }
-
-        return productOption;
     }
-
-
 
     public ProductOptionValue getProductOptionValueByNameForProduct(ProductOption productOption,
                                                                     String productOptionValue) {

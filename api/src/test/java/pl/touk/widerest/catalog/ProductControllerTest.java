@@ -724,6 +724,78 @@ public class ProductControllerTest extends ApiTestBase {
 
 
 
+    /* Product Attributes Tests */
+
+    @Test
+    public void addingSameAttributeWithAnotherValueUpdatesPreviousValueTest() {
+        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> productResponseEntity = addNewTestProduct(productDto);
+        final long productId = getIdFromEntity(productResponseEntity);
+
+
+        final ProductAttributeDto productAttributeDto1 = ProductAttributeDto.builder()
+                .attributeName("Range")
+                .attributeValue("Long")
+                .build();
+
+        final ProductAttributeDto productAttributeDto2 = ProductAttributeDto.builder()
+                .attributeName("Range")
+                .attributeValue("Short")
+                .build();
+
+
+        final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
+
+        assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
+
+        final ResponseEntity<?> attributeDtoEntity2 = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
+
+        assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
+
+
+        Map<String, String> receivedAttributes = restTemplate.getForObject(PRODUCT_BY_ID_ATTRIBUTES_URL, Map.class, serverPort, productId);
+
+        assertThat(receivedAttributes.size(), equalTo(1));
+        assertThat(receivedAttributes.get("Range"), equalTo("Short"));
+
+
+    }
+
+    @Test
+    public void addingAttributeAndRemovingItWorksAsExpectedTest() {
+        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> productResponseEntity = addNewTestProduct(productDto);
+        final long productId = getIdFromEntity(productResponseEntity);
+
+
+        final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()
+                .attributeName("Range")
+                .attributeValue("Long")
+                .build();
+
+        final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
+                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
+
+        assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
+
+        oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+
+        try {
+            oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+            fail();
+        } catch(HttpClientErrorException httpClientErrorException) {
+            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+        }
+
+        Map<String, String> receivedAttributes = restTemplate.getForObject(PRODUCT_BY_ID_ATTRIBUTES_URL, Map.class, serverPort, productId);
+
+        assertThat(receivedAttributes.size(), equalTo(0));
+
+    }
+
+
 
     /* -----------------------------END OF TESTS----------------------------- */
     private void cleanupProductTests() {
