@@ -53,9 +53,9 @@ public class CategoryController {
     })
     public List<CategoryDto> readAllCategories(
             @ApiParam(value = "Amount of categories to be returned")
-                @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "limit", required = false) Integer limit,
             @ApiParam(value = "Offset which to start returning categories from")
-                @RequestParam(value = "offset", required = false) Integer offset) {
+            @RequestParam(value = "offset", required = false) Integer offset) {
 
         return catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -79,7 +79,7 @@ public class CategoryController {
     })
     public ResponseEntity<?> addOneCategory(
             @ApiParam(value = "Description of a new category", required = true)
-                @RequestBody CategoryDto categoryDto) {
+            @RequestBody CategoryDto categoryDto) {
 
     	/* (mst) CategoryDto has to have at least a Name! */
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
@@ -139,7 +139,7 @@ public class CategoryController {
     })
     public CategoryDto readOneCategoryById(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") Long categoryId) {
 
         return Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -162,7 +162,7 @@ public class CategoryController {
     })
     public ResponseEntity<?> removeOneCategoryById(
             @ApiParam(value = "ID of a specific category")
-                @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -191,9 +191,9 @@ public class CategoryController {
     })
     public ResponseEntity<?> updateOneCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId,
+            @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "(Full) Description of an updated category", required = true)
-                @RequestBody CategoryDto categoryDto) {
+            @RequestBody CategoryDto categoryDto) {
 
     	/* (mst) CategoryDto has to have at least a Name! */
         if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
@@ -233,9 +233,9 @@ public class CategoryController {
     })
     public ResponseEntity<?> partialUpdateOneCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId,
+            @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "(Partial) Description of an updated category", required = true)
-                @RequestBody CategoryDto categoryDto) {
+            @RequestBody CategoryDto categoryDto) {
         
         /* (mst) Here...we don't need to have Name set BUT in case we do, we also check for duplicates! */
         if(categoryDto.getName() != null) {
@@ -274,7 +274,7 @@ public class CategoryController {
     })
     public String getCategoryByIdAvailability(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId) {
+            @PathVariable(value = "categoryId") Long categoryId) {
 
         final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -298,9 +298,9 @@ public class CategoryController {
     })
     public ResponseEntity<?> updateCategoryByIdAvailability(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId,
+            @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "Inventory type: ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
-                @RequestBody String availability) {
+            @RequestBody String availability) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -334,7 +334,7 @@ public class CategoryController {
     })
     public List<ProductDto> readProductsFromCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") Long categoryId) {
 
         return getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
@@ -357,9 +357,9 @@ public class CategoryController {
     })
     public ProductDto readOneProductFromCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value="categoryId") Long categoryId,
+            @PathVariable(value="categoryId") Long categoryId,
             @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-                @PathVariable(value = "productId") Long productId) {
+            @PathVariable(value = "productId") Long productId) {
 
         return this.getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
@@ -391,9 +391,9 @@ public class CategoryController {
     })
     public ResponseEntity<?> insertOneProductIntoCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value="categoryId") Long categoryId,
+            @PathVariable(value="categoryId") Long categoryId,
             @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-                @PathVariable(value = "productId") Long productId) {
+            @PathVariable(value = "productId") Long productId) {
 
         final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -432,9 +432,9 @@ public class CategoryController {
     })
     public ResponseEntity<?> removeOneProductFromCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value="categoryId") Long categoryId,
+            @PathVariable(value="categoryId") Long categoryId,
             @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-                @PathVariable(value = "productId") Long productId) {
+            @PathVariable(value = "productId") Long productId) {
     	
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
 
@@ -449,9 +449,9 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
                     CategoryProductXref xref = e.getAllProductXrefs().stream()
-                        .filter(x -> x.getProduct().getId().longValue() == productId)
-                        .findAny()
-                        .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
+                            .filter(x -> x.getProduct().getId().longValue() == productId)
+                            .findAny()
+                            .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
                     return Pair.of(e, xref);
                 })
                 .map(e -> {
@@ -479,7 +479,7 @@ public class CategoryController {
     })
     public Long getAllProductsInCategoryCount(
             @ApiParam(value = "ID of a specific category", required = true)
-                @PathVariable(value = "categoryId") Long categoryId) {
+            @PathVariable(value = "categoryId") Long categoryId) {
         return getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .count();
@@ -493,8 +493,8 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"))
                 .getAllProductXrefs().stream()
-                    .map(CategoryProductXref::getProduct)
-                    .collect(Collectors.toList());
+                .map(CategoryProductXref::getProduct)
+                .collect(Collectors.toList());
     }
 
 }

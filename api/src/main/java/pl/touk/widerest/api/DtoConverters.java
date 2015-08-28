@@ -26,17 +26,11 @@ import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
-import org.broadleafcommerce.core.catalog.service.type.ProductType;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
-import org.broadleafcommerce.core.rating.domain.RatingDetail;
-import org.broadleafcommerce.core.rating.domain.RatingDetailImpl;
-import org.broadleafcommerce.core.rating.domain.ReviewDetail;
-import org.broadleafcommerce.core.rating.domain.ReviewDetailImpl;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
@@ -171,7 +165,7 @@ public class DtoConverters {
 
 
     public ProductOptionValue getProductOptionValueByNameForProduct(ProductOption productOption,
-                                                              String productOptionValue) {
+                                                                    String productOptionValue) {
         return productOption.getAllowedValues().stream()
                 .filter(x -> x.getAttributeValue().equals(productOptionValue))
                 .findAny()
@@ -315,12 +309,12 @@ public class DtoConverters {
         ProductOption productOption = new ProductOptionImpl();
         productOption.setAttributeName(dto.getName());
         productOption.setAllowedValues(dto.getAllowedValues().stream()
-                            .map(e -> {
-                                ProductOptionValue p = new ProductOptionValueImpl();
-                                p.setAttributeValue(e);
-                                return p;
-                            })
-                            .collect(toList()));
+                .map(e -> {
+                    ProductOptionValue p = new ProductOptionValueImpl();
+                    p.setAttributeValue(e);
+                    return p;
+                })
+                .collect(toList()));
 
         return productOption;
     };
@@ -481,7 +475,7 @@ public class DtoConverters {
         return productOptionXref;
     };
 
-   /******************************** Product Option Xref ********************************/
+    /******************************** Product Option Xref ********************************/
 
     /******************************** CUSTOMER ********************************/
     public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
@@ -687,45 +681,4 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** DISCRETEORDERITEM ********************************/
-
-    /******************************** REVIEW ********************************/
-    public static Function<ReviewDetail, ReviewDto> reviewEntityToDto = entity -> {
-        ReviewDto reviewDto = ReviewDto.builder().reviewText(entity.getReviewText()).helpfulCount(entity.helpfulCount())
-                .notHelpfulCount(entity.notHelpfulCount()).statusType(entity.getStatus().getType()).build();
-
-        return reviewDto;
-    };
-
-    public static Function<ReviewDto, ReviewDetail> reviewDtoToEntity = dto -> {
-        ReviewDetail reviewDetailEntity = new ReviewDetailImpl();
-
-		/* (mat)
-		 * We cannot set number of counts and status from here, so just update
-		 * the rewiev text
-		 */
-        reviewDetailEntity.setReviewText(dto.getReviewText());
-
-        return reviewDetailEntity;
-    };
-    /******************************** REVIEW ********************************/
-
-    /******************************** RATING ********************************/
-    public static Function<RatingDetail, RatingDto> ratingEntityToDto = entity -> {
-        RatingDto ratingDto = RatingDto.builder().rating(entity.getRating())
-                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
-                .submissionDate(entity.getRatingSubmittedDate()).build();
-
-        return ratingDto;
-    };
-
-    public Function<RatingDto, RatingDetail> ratingDtoToEntity = dto -> {
-        RatingDetail ratingDetailEntity = new RatingDetailImpl();
-
-        ratingDetailEntity.setRating(dto.getRating());
-        ratingDetailEntity.setCustomer(this.customerDtoToEntity.apply(dto.getCustomer()));
-        ratingDetailEntity.setRatingSubmittedDate(dto.getSubmissionDate());
-
-        return ratingDetailEntity;
-    };
-    /******************************** RATING ********************************/
 }

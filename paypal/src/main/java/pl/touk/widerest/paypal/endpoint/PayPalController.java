@@ -112,7 +112,7 @@ public class PayPalController {
         }
 
         if(fulfillmentGroupService.getFirstShippableFulfillmentGroup(order).getFulfillmentOption()
-            == null) {
+                == null) {
             throw new FulfillmentOptionNotSetException("");
         }
 
@@ -126,11 +126,11 @@ public class PayPalController {
         // Assuming the order has items in one currency, just get one and get currency
         if(order.getCurrency() == null) {
             order.setCurrency(
-                Optional.ofNullable(
-                    Optional.ofNullable(order.getDiscreteOrderItems().get(0))
-                            .orElseThrow(() -> new ResourceNotFoundException(""))
-                            .getSku().getCurrency()
-                ).orElse(order.getLocale().getDefaultCurrency())
+                    Optional.ofNullable(
+                            Optional.ofNullable(order.getDiscreteOrderItems().get(0))
+                                    .orElseThrow(() -> new ResourceNotFoundException(""))
+                                    .getSku().getCurrency()
+                    ).orElse(order.getLocale().getDefaultCurrency())
             );
         }
 
@@ -309,5 +309,5 @@ public class PayPalController {
     private static boolean archivedOrderFilter(Order order) {
         return !order.getStatus().equals(OrderStatus.SUBMITTED);
     }
-    
+
 }

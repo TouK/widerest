@@ -268,12 +268,12 @@ public class CatalogTest extends ApiTestBase {
         long currentSkusForProductCount = getRemoteTotalSkusForProductCount(testProductId);
 
         for(int i = 0; i < TEST_SKUS_COUNT; i++) {
-                oAuth2AdminRestTemplate().postForEntity(
-                        PRODUCT_BY_ID_SKUS,
-                        DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT),
-                        null,
-                        serverPort,
-                        testProductId);
+            oAuth2AdminRestTemplate().postForEntity(
+                    PRODUCT_BY_ID_SKUS,
+                    DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT),
+                    null,
+                    serverPort,
+                    testProductId);
         }
 
         assertThat(getRemoteTotalSkusForProductCount(testProductId), equalTo(currentSkusForProductCount + TEST_SKUS_COUNT));
