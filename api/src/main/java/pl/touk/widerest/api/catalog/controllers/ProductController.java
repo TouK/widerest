@@ -806,15 +806,18 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of SKU count"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public Long getAllSkusCount(
+    public ResponseEntity<Long> getSkusCountByProductId(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId) {
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
+
+        final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .count();
+
+        return new ResponseEntity<>(skusCount, HttpStatus.OK);
     }
 
     /* GET /products/{productId}/skus/{skuId}/quantity */

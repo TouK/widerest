@@ -17,17 +17,16 @@ import java.util.function.Function;
 /**
  * Created by mst on 06.07.15.
  */
-@ApiModel
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ApiModel(value = "Product Option", description = "Product Option DTO resource representation")
 public class ProductOptionDto {
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 0, value = "Name of an option", required = true, dataType = "java.lang.String")
     private String name;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 1, value = "List of all allowed values for this option", required = true, dataType = "java.util.List")
     private List<String> allowedValues;
-
 }

@@ -14,10 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
-import org.broadleafcommerce.common.i18n.domain.ISOCountry;
-import org.broadleafcommerce.common.i18n.domain.ISOCountryImpl;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
@@ -42,12 +39,7 @@ import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
 import pl.touk.widerest.api.cart.controllers.OrderController;
-import pl.touk.widerest.api.cart.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
-import pl.touk.widerest.api.cart.dto.CustomerDto;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
+import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
@@ -143,6 +135,8 @@ public class DtoConverters {
 
         dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(entity.getProduct().getId(), entity.getId()))
                 .withRel("availability"));
+
+        dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(entity.getProduct().getId())).withRel("count")));
 
         return dto;
     };
@@ -346,7 +340,7 @@ public class DtoConverters {
 
     public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity -> {
 
-        SkuProductOptionValueDto skuProductOptionValueDto = SkuProductOptionValueDto.builder()
+        final SkuProductOptionValueDto skuProductOptionValueDto = SkuProductOptionValueDto.builder()
                 .attributeName(entity.getProductOption().getAttributeName())
                 .attributeValue(entity.getAttributeValue())
                 .build();
@@ -372,7 +366,14 @@ public class DtoConverters {
                 .build();
 
         dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
+
         dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
+
+        dto.add(linkTo(methodOn(CategoryController.class).getCategoryByIdAvailability(entity.getId())).withRel("availability"));
+
+        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount()).withRel("count"));
+
+
 
         return dto;
     };
@@ -422,13 +423,13 @@ public class DtoConverters {
     /******************************** SKU BUNDLE ITEMS ********************************/
 
     public static Function<SkuBundleItem, BundleItemDto> skuBundleItemToBundleItemDto = entity -> {
-        BundleItemDto bundleItemDto = BundleItemDto.builder()
+        final BundleItemDto bundleItemDto = BundleItemDto.builder()
                 .skuId(entity.getSku().getId())
                 .quantity(entity.getQuantity())
                 .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
                 .build();
 
-        Product associatedProduct = entity.getSku().getProduct();
+        final Product associatedProduct = entity.getSku().getProduct();
 
         bundleItemDto.add(linkTo(methodOn(ProductController.class).getSkuById(
                 associatedProduct.getId(),
@@ -483,7 +484,7 @@ public class DtoConverters {
     /******************************** CUSTOMER ********************************/
     public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
 
-        CustomerDto customerDto = CustomerDto.builder()
+        final CustomerDto customerDto = CustomerDto.builder()
                 .customerId(entity.getId())
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
@@ -506,7 +507,7 @@ public class DtoConverters {
 
     public Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
 
-        Customer customerEntity = new CustomerImpl();
+        final Customer customerEntity = new CustomerImpl();
 
         customerEntity.setId(dto.getCustomerId());
         customerEntity.setFirstName(dto.getFirstName());
@@ -544,7 +545,7 @@ public class DtoConverters {
     };
 
     public Function<AddressDto, Address> addressDtoToEntity = dto -> {
-        Address addressEntity = new AddressImpl();
+        final Address addressEntity = new AddressImpl();
 
         addressEntity.setAddressLine1(dto.getAddressLine1());
         addressEntity.setAddressLine2(dto.getAddressLine2());
@@ -566,15 +567,16 @@ public class DtoConverters {
     /******************************** CUSTOMERADDRESS ********************************/
 
     public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
-        CustomerAddressDto customerAddressDto = CustomerAddressDto.builder()
+        final CustomerAddressDto customerAddressDto = CustomerAddressDto.builder()
                 .addressName(entity.getAddressName())
-                .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress())).build();
+                .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress()))
+                .build();
 
         return customerAddressDto;
     };
 
     public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
-        CustomerAddress customerAddress = new CustomerAddressImpl();
+        final CustomerAddress customerAddress = new CustomerAddressImpl();
 
         customerAddress.setAddress(this.addressDtoToEntity.apply(dto.getAddressDto()));
         customerAddress.setAddressName(dto.getAddressName());
@@ -586,7 +588,7 @@ public class DtoConverters {
 
     /******************************** ORDER ********************************/
     public static Function<Order, OrderDto> orderEntityToDto = entity -> {
-        OrderDto orderDto = OrderDto.builder()
+        final OrderDto orderDto = OrderDto.builder()
                 .orderId(entity.getId())
                 .orderNumber(entity.getOrderNumber())
                 .status(entity.getStatus().getType())
@@ -600,12 +602,12 @@ public class DtoConverters {
                 .fulfillment(Optional.ofNullable(CartUtils.getFulfilmentOption(entity))
                         .map(FulfillmentOption::getLongDescription)
                         .orElse(null))
+                .cartAttributes(Optional.ofNullable(entity.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                        .map(Map.Entry::getValue)
+                        .map(DtoConverters.orderAttributeEntityToDto)
+                        .collect(toList()))
                 .build();
-		/*
-		 * orderDto.add(linkTo(methodOn(OrderController.class).(entity.getId()))
-		 * .withRel()); orderDto.add(linkTo(methodOn(OrderController.class).
-		 * getAllItemsInOrder(entity.getId())).withRel("items"));
-		 */
+
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
 
@@ -629,6 +631,26 @@ public class DtoConverters {
 
         return orderEntity;
     };
+
+
+    public static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity -> {
+        final CartAttributeDto cartAttributeDto = CartAttributeDto.builder()
+                .name(entity.getName())
+                .value(entity.getValue())
+                .build();
+
+        return cartAttributeDto;
+    };
+
+    public static Function<CartAttributeDto, OrderAttribute> orderAttributeDtoToEntity = dto -> {
+
+        final OrderAttribute order = new OrderAttributeImpl();
+        order.setName(dto.getName());
+        order.setValue(dto.getValue());
+        return order;
+    };
+
+
     /******************************** ORDER ********************************/
 
     /******************************** PAYMENTINFO ********************************/
@@ -684,4 +706,8 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** DISCRETEORDERITEM ********************************/
+
+
+
+
 }

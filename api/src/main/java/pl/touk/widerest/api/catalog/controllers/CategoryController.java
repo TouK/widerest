@@ -119,10 +119,13 @@ public class CategoryController {
             notes = "Gets a number of all categories available in the catalog",
             response = Long.class
     )
-    public Long getAllCategoriesCount() {
-        return catalogService.findAllCategories().stream()
+    public ResponseEntity<Long> getAllCategoriesCount() {
+
+        final long allCategoriesCount = catalogService.findAllCategories().stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .count();
+
+        return new ResponseEntity<>(allCategoriesCount, HttpStatus.OK);
     }
 
     /* GET /categories/{id} */
@@ -272,7 +275,7 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of category's products availability"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
-    public String getCategoryByIdAvailability(
+    public ResponseEntity<String> getCategoryByIdAvailability(
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value = "categoryId") Long categoryId) {
 
@@ -280,7 +283,11 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        return Optional.ofNullable(category.getInventoryType()).map(InventoryType::getType).orElse(CatalogUtils.EMPTY_STRING);
+        final String categoryAvailability = Optional.ofNullable(category.getInventoryType())
+                .map(InventoryType::getType)
+                .orElse(CatalogUtils.EMPTY_STRING);
+
+        return new ResponseEntity<>(categoryAvailability, HttpStatus.OK);
     }
 
     /* PUT /{categoryId}/availability */

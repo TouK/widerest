@@ -14,12 +14,12 @@ import lombok.experimental.Builder;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel
+@ApiModel(value = "Product Attribute", description = "Product Attribute DTO resource representation")
 public class ProductAttributeDto {
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 0, value = "Name of the attribute", required = true, dataType = "java.lang.String")
     private String attributeName;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 1, value = "Value of the attribute", required = true, dataType = "java.lang.String")
     private String attributeValue;
 }
