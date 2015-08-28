@@ -27,7 +27,6 @@ import java.util.Map;
 public class DiscreteOrderItemDto extends ResourceSupport {
 
     /* TODO: (mst) ID should probably be removed, I kept it because there were few tests that use it */
-    @JsonIgnore
     @ApiModelProperty
     private long itemId;
 

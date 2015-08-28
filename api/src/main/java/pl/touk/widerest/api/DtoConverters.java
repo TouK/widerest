@@ -700,7 +700,7 @@ public class DtoConverters {
         final long productId = sku.getProduct().getId();
 
         final DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
-                //.itemId(entity.getId())
+                .itemId(entity.getId())
                 .salePrice(entity.getSalePrice())
                 .retailPrice(entity.getRetailPrice())
                 .quantity(entity.getQuantity())
