@@ -39,7 +39,7 @@ public class SwaggerConfig {
 
     private SecurityScheme securityScheme() {
         AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
-        LoginEndpoint loginEndpoint = new LoginEndpoint("http://localhost:8080/oauth/authorize");
+        LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
         GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
         return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
     }
