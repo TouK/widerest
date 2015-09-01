@@ -2,24 +2,20 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:jee="http://www.springframework.org/schema/jee"
        xmlns:aop="http://www.springframework.org/schema/aop"
        xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:context="http://www.springframework.org/schema/context"
        xmlns:p="http://www.springframework.org/schema/p"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/jee
-        http://www.springframework.org/schema/jee/spring-jee-4.1.xsd
-        http://www.springframework.org/schema/beans
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
-        http://www.springframework.org/schema/context
-        http://www.springframework.org/schema/context/spring-context-4.1.xsd
+
+
         http://www.springframework.org/schema/tx
         http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
         http://www.springframework.org/schema/aop
         http://www.springframework.org/schema/aop/spring-aop-4.1.xsd">
 
 
+    <aop:config />
 
     <!-- Shared properties between admin and site go here -->
     <bean id="blMergedDataSources" class="org.springframework.beans.factory.config.MapFactoryBean">
@@ -118,9 +114,9 @@
     <!-- application footprint, it will default the search service to use the database implementation, which  -->
     <!-- is slower and less full-featured. Broadleaf suggests maintaining this solr implementation in the vast -->
     <!-- majority of cases. -->
-    <bean id="solrEmbedded" class="java.lang.String">
+    <!--bean id="solrEmbedded" class="java.lang.String">
         <constructor-arg value="solrhome"/>
-    </bean>
+    </bean-->
 
     <!--A simple quartz jobs for enabling cart and customer purge functionality. Uncomment the following quartz configurations-->
     <!--to activate this functionality (Also, uncomment the 'purgeCartTrigger' and 'purgeCustomerTrigger' configured under SchedulerFactoryBean.-->
@@ -204,7 +200,7 @@
     <!--     <bean id="solrAdminServer" class="org.apache.solr.client.solrj.impl.HttpSolrServer"> -->
     <!--         <constructor-arg value="${solr.url.admin}"/> -->
     <!--     </bean> -->
-    <bean id="blSearchService" class="org.broadleafcommerce.core.search.service.solr.SolrSearchServiceImpl">
+    <!--bean id="blSearchService" class="org.broadleafcommerce.core.search.service.solr.SolrSearchServiceImpl">
         <constructor-arg name="solrServer" ref="${solr.source.primary}" />
         <constructor-arg name="reindexServer" ref="${solr.source.reindex}" />
         <constructor-arg name="adminServer" ref="${solr.source.admin}" />
@@ -217,11 +213,11 @@
         <property name="jobDetail" ref="rebuildIndexJobDetail" />
         <property name="startDelay" value="${solr.index.start.delay}" />
         <property name="repeatInterval" value="${solr.index.repeat.interval}" />
-    </bean>
+    </bean-->
     <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
         <property name="triggers">
             <list>
-                <ref bean="rebuildIndexTrigger" />
+                <!--ref bean="rebuildIndexTrigger" /-->
                 <!--<ref bean="purgeCartTrigger" />-->
                 <!--<ref bean="purgeCustomerTrigger" />-->
             </list>

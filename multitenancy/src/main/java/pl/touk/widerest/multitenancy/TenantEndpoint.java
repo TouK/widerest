@@ -4,10 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.cfg.NamingStrategy;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy;
+import org.springframework.orm.jpa.EntityManagerFactoryAccessor;
+import org.springframework.orm.jpa.EntityManagerFactoryUtils;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -20,25 +22,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
 @RequestMapping("/tenant")
 @Slf4j
-public class TenantEndpoint {
+public class TenantEndpoint extends EntityManagerFactoryAccessor {
 
-    // It should have create schema permission
+    // It should have the create schema permission
     @Resource
     private DataSource privilegedDataSource;
-
-    @Autowired
-    private EntityManager em;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -46,21 +46,37 @@ public class TenantEndpoint {
     @Resource
     private MacSigner signerVerifier;
 
+    @Autowired
+    @Override
+    public void setEntityManagerFactory(EntityManagerFactory emf) {
+        super.setEntityManagerFactory(emf);
+    }
+
     @RequestMapping(method = RequestMethod.POST)
     public String create() throws SQLException {
-        String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
-        createSchema(tenantIdentifier);
-        return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
+        EntityManager em = createEntityManager();
+        try {
+            String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
+            createSchema(em, tenantIdentifier);
+            return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
+        } finally {
+            EntityManagerFactoryUtils.closeEntityManager(em);
+        }
     }
 
     @RequestMapping(method = RequestMethod.GET)
     public String read() throws SQLException {
-        String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
-        checkSchema(tenantIdentifier);
-        return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
+        EntityManager em = createEntityManager();
+        try {
+            String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
+            checkSchema(tenantIdentifier);
+            return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
+        } finally {
+            EntityManagerFactoryUtils.closeEntityManager(em);
+        }
     }
 
-    private void createSchema(String tenantIdentifier) throws SQLException {
+    private void createSchema(EntityManager em, String tenantIdentifier) throws SQLException {
         Connection connection = privilegedDataSource.getConnection();
         try {
             log.info("Creating database schema for tenant {}", tenantIdentifier);
@@ -72,7 +88,15 @@ public class TenantEndpoint {
             configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create");
             configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
             configuration.setProperty(AvailableSettings.DEFAULT_SCHEMA, tenantIdentifier);
-            configuration.setNamingStrategy(new SpringNamingStrategy());
+            Optional.ofNullable(em.getEntityManagerFactory().getProperties().get("hibernate.ejb.naming_strategy"))
+                    .map(String.class::cast)
+                    .ifPresent(namingStrategy -> {
+                        try {
+                            configuration.setNamingStrategy((NamingStrategy) Class.forName(namingStrategy).newInstance());
+                        } catch (Exception e) {
+                            log.error("Could not instantiate naming strategy");
+                        }
+                    });
 
             Metamodel metamodel = em.getMetamodel();
             Set<EntityType<?>> entities = metamodel.getEntities();

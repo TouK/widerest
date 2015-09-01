@@ -7,7 +7,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -15,8 +15,9 @@ import org.springframework.transaction.annotation.TransactionManagementConfigure
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import pl.touk.widerest.paypal.gateway.PayPalGatewayService;
-import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
+
+import javax.annotation.Resource;
+import javax.persistence.EntityManagerFactory;
 
 @Configuration
 @EnableAutoConfiguration(exclude = { HibernateJpaAutoConfiguration.class })
@@ -37,6 +38,15 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
         PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = new PropertySourcesPlaceholderConfigurer();
         propertySourcesPlaceholderConfigurer.setIgnoreUnresolvablePlaceholders(true);
         return propertySourcesPlaceholderConfigurer;
+    }
+
+    @Resource(name = "entityManagerFactory")
+    private EntityManagerFactory entityManagerFactory;
+
+    @Primary
+    @Bean
+    public EntityManagerFactory primaryEntityManagerFactory() {
+        return entityManagerFactory;
     }
 //
 //    @Bean

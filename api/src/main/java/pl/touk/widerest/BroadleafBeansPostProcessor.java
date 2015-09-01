@@ -16,6 +16,9 @@ public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         registerAliases(beanFactory);
         removeWebFilters((DefaultListableBeanFactory) beanFactory);
+
+        //TODO: must be substituted with something for all tenants
+        ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blSequenceGeneratorCorruptionDetection");
     }
 
     private void registerAliases(ConfigurableListableBeanFactory beanFactory) {
