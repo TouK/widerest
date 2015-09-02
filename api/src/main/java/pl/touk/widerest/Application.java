@@ -1,5 +1,8 @@
 package pl.touk.widerest;
 
+import org.broadleafcommerce.openadmin.server.security.domain.AdminUser;
+import org.broadleafcommerce.openadmin.server.security.domain.AdminUserImpl;
+import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.TransactionManagementConfigure
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import pl.touk.widerest.multitenancy.TenantAdminService;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManagerFactory;
@@ -48,11 +52,18 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     public EntityManagerFactory primaryEntityManagerFactory() {
         return entityManagerFactory;
     }
-//
-//    @Bean
-//    public static PayPalPaymentGatewayType gt() {
-//        return new PayPalPaymentGatewayType();
-//    }
+
+    @Bean
+    public TenantAdminService tenantAdminService(AdminSecurityService adminSecurityService) {
+        return (email, password) -> {
+            AdminUser adminUser = new AdminUserImpl();
+            adminUser.setLogin("admin");
+            adminUser.setName("admin");
+            adminUser.setEmail(email);
+            adminUser.setPassword(password);
+            adminSecurityService.saveAdminUser(adminUser);
+        };
+    }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {

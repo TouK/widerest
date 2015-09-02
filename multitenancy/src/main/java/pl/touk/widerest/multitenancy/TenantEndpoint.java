@@ -1,5 +1,9 @@
 package pl.touk.widerest.multitenancy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
@@ -16,6 +20,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +30,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
+import javax.validation.Valid;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -34,6 +41,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/tenant")
 @Slf4j
+@Api(value = "tenants", description = "Tenants registration endpoint")
 public class TenantEndpoint extends EntityManagerFactoryAccessor {
 
     // It should have the create schema permission
@@ -46,6 +54,12 @@ public class TenantEndpoint extends EntityManagerFactoryAccessor {
     @Resource
     private MacSigner signerVerifier;
 
+    @Resource
+    private ObjectMapper objectMapper;
+
+    @Autowired(required = false)
+    private TenantAdminService tenantAdminService;
+
     @Autowired
     @Override
     public void setEntityManagerFactory(EntityManagerFactory emf) {
@@ -53,27 +67,30 @@ public class TenantEndpoint extends EntityManagerFactoryAccessor {
     }
 
     @RequestMapping(method = RequestMethod.POST)
-    public String create() throws SQLException {
+    public String create(@ApiParam @RequestBody @Valid TenantRequest tenantRequest, HttpServletRequest request) throws SQLException, JsonProcessingException {
         EntityManager em = createEntityManager();
         try {
             String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
+            Tenant tenant = Tenant.builder().id(tenantIdentifier).subscriptionType("free").build();
+            request.setAttribute(CurrentTenantIdentifierResolverImpl.TENANT_ATTRIBUTE, tenant);
             createSchema(em, tenantIdentifier);
-            return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
+            createAdminUser(tenantRequest.getAdminEmail(), tenantRequest.getAdminPassword());
+            return JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
         } finally {
             EntityManagerFactoryUtils.closeEntityManager(em);
         }
     }
 
+    private void createAdminUser(String adminEmail, String adminPassword) {
+        Optional.ofNullable(tenantAdminService).ifPresent(s -> s.createAdminUser(adminEmail, adminPassword));
+    }
+
     @RequestMapping(method = RequestMethod.GET)
-    public String read() throws SQLException {
-        EntityManager em = createEntityManager();
-        try {
-            String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
-            checkSchema(tenantIdentifier);
-            return JwtHelper.encode(tenantIdentifier, signerVerifier).getEncoded();
-        } finally {
-            EntityManagerFactoryUtils.closeEntityManager(em);
-        }
+    public String read(HttpServletRequest request) throws SQLException, JsonProcessingException {
+        Tenant tenant = (Tenant) request.getAttribute(CurrentTenantIdentifierResolverImpl.TENANT_ATTRIBUTE);
+        String tenantIdentifier = tenant.getId();
+        checkSchema(tenantIdentifier);
+        return JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
     }
 
     private void createSchema(EntityManager em, String tenantIdentifier) throws SQLException {

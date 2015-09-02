@@ -1,6 +1,8 @@
 package pl.touk.widerest.multitenancy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.jwt.Jwt;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.stereotype.Component;
@@ -22,12 +24,16 @@ public class TenantHeaderRequestFilter extends OncePerRequestFilter {
     @Resource
     private MacSigner signerVerifier;
 
+    @Resource
+    private ObjectMapper objectMapper;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String tenantToken = request.getHeader(TENANT_TOKEN_HEADER);
         if (tenantToken != null) {
-            JwtHelper.decodeAndVerify(tenantToken, signerVerifier);
-            request.setAttribute(CurrentTenantIdentifierResolverImpl.TENANT_TOKEN_ATTRIBUTE, tenantToken);
+            Jwt jwt = JwtHelper.decodeAndVerify(tenantToken, signerVerifier);
+            Tenant tenant = objectMapper.readValue(jwt.getClaims(), Tenant.class);
+            request.setAttribute(CurrentTenantIdentifierResolverImpl.TENANT_ATTRIBUTE, tenant);
         }
         filterChain.doFilter(request, response);
     }

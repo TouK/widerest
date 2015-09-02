@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.ApiKey;
 import springfox.documentation.service.AuthorizationScope;
 import springfox.documentation.service.GrantType;
 import springfox.documentation.service.ImplicitGrant;
@@ -18,8 +19,6 @@ import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
-
-import java.util.List;
 
 import static com.google.common.base.Predicates.or;
 import static springfox.documentation.builders.PathSelectors.regex;
@@ -34,10 +33,14 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .select().paths(paths()).build()
                 .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.newArrayList(securityScheme()));
+                .securitySchemes(Lists.newArrayList(oAuthScheme(), apiKeyScheme()));
     }
 
-    private SecurityScheme securityScheme() {
+    private SecurityScheme apiKeyScheme() {
+        return new ApiKey("api_key", "Tenant-Token", "header");
+    }
+
+    private SecurityScheme oAuthScheme() {
         AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
         LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
         GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
@@ -46,18 +49,13 @@ public class SwaggerConfig {
 
     private SecurityContext securityContext() {
         return SecurityContext.builder()
-                .securityReferences(defaultAuth())
+                .securityReferences(
+                        Lists.newArrayList(
+                                new SecurityReference("oauth", new AuthorizationScope[]{new AuthorizationScope("test", "test")}),
+                                new SecurityReference("api_key", new AuthorizationScope[0])
+                        )                )
                 .forPaths(PathSelectors.regex("/.*"))
                 .build();
-    }
-
-    List<SecurityReference> defaultAuth() {
-        AuthorizationScope authorizationScope
-                = new AuthorizationScope("test", "test");
-        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
-        authorizationScopes[0] = authorizationScope;
-        return Lists.newArrayList(
-                new SecurityReference("oauth", authorizationScopes));
     }
 
     private Predicate<String> paths() {
@@ -70,7 +68,7 @@ public class SwaggerConfig {
                 "test",
                 "test-app-realm",
                 "test-app",
-                "apiKey");
+                "api-key");
     }
 
     private ApiInfo apiInfo() {

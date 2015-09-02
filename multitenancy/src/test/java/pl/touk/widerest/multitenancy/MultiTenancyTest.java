@@ -1,9 +1,12 @@
 package pl.touk.widerest.multitenancy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
@@ -20,6 +23,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -42,13 +46,19 @@ public class MultiTenancyTest {
     @Resource
     protected MacSigner signerVerifier;
 
+    @Resource
+    protected ObjectMapper objectMapper;
+
+    @Autowired
+    private TenantAdminService tenantAdminService;
+
     TestRestTemplate restTemplate = new TestRestTemplate();
 
     @Test
-    public void shouldCreateTenantWhenNoTenantTokenHeader() throws SQLException {
+    public void shouldCreateTenantWhenNoTenantTokenHeader() throws SQLException, IOException {
 
         // when new tenant requested
-        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", "", String.class, serverPort);
+        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
 
         // then valid tenant token returned
         String tenantId = verifyTokenAndConvertToTenantId(tenantToken);
@@ -60,13 +70,14 @@ public class MultiTenancyTest {
         } finally {
             connection.close();
         }
+        Mockito.verify(tenantAdminService, Mockito.times(1)).createAdminUser(Mockito.eq("test@test.xx"), Mockito.eq("test"));
     }
 
     @Test
     public void shouldReadValidTokenForExistingTenant() {
 
         // given existing tenant
-        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", "", String.class, serverPort);
+        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
 
         // when tenant requested
         HttpHeaders headers = new HttpHeaders();
@@ -130,8 +141,8 @@ public class MultiTenancyTest {
     public void shouldCreateSampleEntityForTenant() throws SQLException {
 
         // given two tenants
-        String tenantToken1 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", "", String.class, serverPort);
-        String tenantToken2 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", "", String.class, serverPort);
+        String tenantToken1 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        String tenantToken2 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
 
         // when new sample entity requested for the first tenant
         HttpHeaders headers = new HttpHeaders();
@@ -156,8 +167,8 @@ public class MultiTenancyTest {
 
 
 
-    private String verifyTokenAndConvertToTenantId(String tenantToken) {
-        return JwtHelper.decodeAndVerify(tenantToken, signerVerifier).getClaims();
+    private String verifyTokenAndConvertToTenantId(String tenantToken) throws IOException {
+        return objectMapper.readValue(JwtHelper.decodeAndVerify(tenantToken, signerVerifier).getClaims(), Tenant.class).getId();
     }
 
     private String createInvalidToken() {
