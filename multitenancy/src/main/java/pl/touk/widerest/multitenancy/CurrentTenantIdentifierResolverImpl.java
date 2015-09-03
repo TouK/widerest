@@ -19,7 +19,7 @@ public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentif
                 .map(attributes -> attributes.getAttribute(TENANT_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST))
                 .map(Tenant.class::cast)
                 .map(Tenant::getId)
-                .orElse(RandomStringUtils.randomAlphabetic(16))
+                .orElse("")
         ;
     }
 

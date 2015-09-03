@@ -1,6 +1,7 @@
 package pl.touk.widerest.multitenancy;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.service.UnknownUnwrapTypeException;
 import org.hibernate.service.config.spi.ConfigurationService;
 import org.hibernate.service.jdbc.connections.spi.ConnectionProvider;
@@ -36,9 +37,9 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
     @Override
     public Connection getConnection(String tenantIdentifier) throws SQLException {
         Connection connection = dataSource.getConnection();
-        Statement statement = connection.createStatement();
-        statement.execute("SET SCHEMA " + tenantIdentifier);
-        statement.close();
+        if (StringUtils.isNotEmpty(tenantIdentifier)) {
+            connection.setSchema(tenantIdentifier);
+        }
         return connection;
     }
 

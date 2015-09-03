@@ -5,13 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.cfg.DefaultNamingStrategy;
+import org.hibernate.cfg.EJB3NamingStrategy;
+import org.hibernate.cfg.ImprovedNamingStrategy;
 import org.hibernate.cfg.NamingStrategy;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy;
 import org.springframework.orm.jpa.EntityManagerFactoryAccessor;
 import org.springframework.orm.jpa.EntityManagerFactoryUtils;
 import org.springframework.security.jwt.JwtHelper;
@@ -20,6 +25,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -71,6 +77,9 @@ public class TenantEndpoint extends EntityManagerFactoryAccessor {
         EntityManager em = createEntityManager();
         try {
             String tenantIdentifier = em.unwrap(Session.class).getTenantIdentifier();
+            if (StringUtils.isEmpty(tenantIdentifier)) {
+                tenantIdentifier = RandomStringUtils.randomAlphabetic(16).toUpperCase();
+            }
             Tenant tenant = Tenant.builder().id(tenantIdentifier).subscriptionType("free").build();
             request.setAttribute(CurrentTenantIdentifierResolverImpl.TENANT_ATTRIBUTE, tenant);
             createSchema(em, tenantIdentifier);
@@ -98,13 +107,14 @@ public class TenantEndpoint extends EntityManagerFactoryAccessor {
         try {
             log.info("Creating database schema for tenant {}", tenantIdentifier);
             connection.createStatement().execute("CREATE SCHEMA " + tenantIdentifier);
-            connection.createStatement().execute("SET SCHEMA " + tenantIdentifier);
+            connection.setSchema(tenantIdentifier);
 
             Configuration configuration = new Configuration();
             configuration.setProperty(AvailableSettings.DIALECT, em.unwrap(SessionImpl.class).getSessionFactory().getDialect().toString());
             configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create");
             configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
             configuration.setProperty(AvailableSettings.DEFAULT_SCHEMA, tenantIdentifier);
+            configuration.setNamingStrategy(new EJB3NamingStrategy());
             Optional.ofNullable(em.getEntityManagerFactory().getProperties().get("hibernate.ejb.naming_strategy"))
                     .map(String.class::cast)
                     .ifPresent(namingStrategy -> {

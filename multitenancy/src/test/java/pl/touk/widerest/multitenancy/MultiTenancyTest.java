@@ -3,6 +3,7 @@ package pl.touk.widerest.multitenancy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -165,7 +166,22 @@ public class MultiTenancyTest {
 
     }
 
+    @Ignore("TODO")
+    @Test
+    public void shouldCreateSampleEntityInDefaultSchemaWhenNoTenantTokenGiven() throws SQLException {
 
+        // when new sample entity requested without any tenant token
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<Object> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/samples", HttpMethod.POST, new HttpEntity<Object>("{ \"value\" : \"value1\" }", headers), Object.class, serverPort);
+        URI sampleEntityLocation = responseEntity.getHeaders().getLocation();
+
+        // then the sample entity is created
+        Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
+        responseEntity = restTemplate.exchange(sampleEntityLocation, HttpMethod.GET, new HttpEntity<Object>(headers), Object.class);
+        Assert.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+    }
 
     private String verifyTokenAndConvertToTenantId(String tenantToken) throws IOException {
         return objectMapper.readValue(JwtHelper.decodeAndVerify(tenantToken, signerVerifier).getClaims(), Tenant.class).getId();
