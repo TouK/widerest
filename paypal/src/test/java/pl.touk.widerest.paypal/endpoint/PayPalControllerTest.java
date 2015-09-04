@@ -1,20 +1,13 @@
 package pl.touk.widerest.paypal.endpoint;
 
-import com.paypal.base.rest.APIContext;
-import com.paypal.base.rest.HttpMethod;
-import com.paypal.base.rest.OAuthTokenCredential;
-import com.paypal.base.rest.PayPalRESTException;
-import org.apache.commons.httpclient.HttpStatus;
 import org.broadleafcommerce.common.cache.StatisticsService;
 import org.broadleafcommerce.common.cache.StatisticsServiceImpl;
 import org.broadleafcommerce.common.config.dao.ModuleConfigurationDao;
 import org.broadleafcommerce.common.config.dao.ModuleConfigurationDaoImpl;
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDaoImpl;
-import org.broadleafcommerce.common.config.domain.ModuleConfiguration;
 import org.broadleafcommerce.common.config.service.ModuleConfigurationService;
 import org.broadleafcommerce.common.config.service.ModuleConfigurationServiceImpl;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.broadleafcommerce.common.i18n.dao.ISODao;
 import org.broadleafcommerce.common.i18n.dao.ISODaoImpl;
@@ -32,7 +25,6 @@ import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
 import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
-import org.broadleafcommerce.core.order.service.FulfillmentGroupServiceImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
@@ -49,7 +41,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.config.ListFactoryBean;
 import org.springframework.boot.test.IntegrationTest;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -57,24 +48,15 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.paypal.gateway.PayPalGatewayConfigurationService;
-import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
-import pl.touk.widerest.paypal.gateway.PayPalSession;
-import pl.touk.widerest.paypal.gateway.PayPalSessionImpl;
-import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
+import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
-import java.net.URI;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -85,7 +67,7 @@ public class PayPalControllerTest {
     @Before
     public void setUpUserDetails() {
         userDetails =
-                new CustomerUserDetails(Long.valueOf(1337), "anonymous", "lolcatz", Collections.EMPTY_LIST);
+                new CustomerUserDetails(1337L, "anonymous", "lolcatz", Collections.EMPTY_LIST);
     }
 
     // Given user with mocked order
@@ -94,7 +76,7 @@ public class PayPalControllerTest {
     @Test
     public void shouldUserBeRedirectedToPayPal() throws PaymentException {
 
-        whenInPayPal.userSendsPaymentRequest(userDetails, Long.valueOf(1));
+        whenInPayPal.userSendsPaymentRequest(userDetails, 1L);
 
         assert(
             thenInPayPal.userIsRedirectedToPayPal(whenInPayPal.paymentRequestResponse)
@@ -105,7 +87,7 @@ public class PayPalControllerTest {
     @Test
     public void shouldUserReceiveNothing() throws PaymentException, CheckoutException {
 
-        whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, Long.valueOf(1));
+        whenInPayPal.userEntersReturnPageWithNoArgs(userDetails, 1L);
 
         assert(
             thenInPayPal.userDoesntGetRedirected(whenInPayPal.returnRequestResponse)
@@ -143,7 +125,9 @@ public class PayPalControllerTest {
         }
 
         public Boolean userDoesntGetRedirected(ResponseEntity response) {
-            return !response.getStatusCode().is3xxRedirection();
+            // Currently, due to Swagger limitations, the redirect url is returned in headers
+            // with status code 202
+            return !response.getStatusCode().is2xxSuccessful();
         }
     }
 
@@ -170,14 +154,14 @@ public class PayPalControllerTest {
             OrderService orderServiceMock = mock(OrderService.class);
             Order preparedOrder = new OrderImpl();
             Customer customer = new CustomerImpl();
-            customer.setId(Long.valueOf(1337));
+            customer.setId(1337L);
             preparedOrder.setCustomer(customer);
-            preparedOrder.setId(Long.valueOf(1));
+            preparedOrder.setId(1L);
 
             OrderItem orderItem = new OrderItemImpl();
             orderItem.setName("Kanapka");
             orderItem.setPrice(new Money(6.0));
-            orderItem.setId(Long.valueOf(1));
+            orderItem.setId(1L);
             orderItem.setQuantity(4);
             orderItem.setOrder(preparedOrder);
             preparedOrder.addOrderItem(orderItem);
@@ -195,7 +179,7 @@ public class PayPalControllerTest {
             preparedCustomer.setId(1337L);
             preparedOrder.setCustomer(preparedCustomer);
 
-            when(orderServiceMock.findOrderById(Long.valueOf(1))).thenReturn(preparedOrder);
+            when(orderServiceMock.findOrderById(1L)).thenReturn(preparedOrder);
             return orderServiceMock;
         }
 
@@ -290,8 +274,8 @@ public class PayPalControllerTest {
         }
 
         @Bean(name = "wdSystemProperties")
-        public SystemProperitesServiceProxy systemProperitesServiceProxy() {
-            return mock(SystemProperitesServiceProxy.class);
+        public SystemPropertiesServiceProxy systemProperitesServiceProxy() {
+            return mock(SystemPropertiesServiceProxy.class);
         }
 
         @Bean(name = "blStatisticsService")

@@ -88,7 +88,7 @@ public class PayPalController {
             notes = "Initiates for one chosen order",
             response = ResponseEntity.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 303, message = "Redirects to PayPal checkout website"),
+            @ApiResponse(code = 202, message = "Redirects to PayPal checkout website"),
             @ApiResponse(code = 403, message = "Access denied to given order")
             // and throws
     })
@@ -144,7 +144,7 @@ public class PayPalController {
                         .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
                         .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
                         .additionalField(PayPalRequestDto.SHIPPING_COST, order.getTotalFulfillmentCharges())
-                        .orderDescription("TODO");
+                        .orderDescription("Order number: "+order.getId());
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
@@ -158,7 +158,7 @@ public class PayPalController {
             HttpHeaders responseHeader = new HttpHeaders();
 
             responseHeader.setLocation(URI.create(redirectURI));
-            return new ResponseEntity<>(responseHeader, HttpStatus.SEE_OTHER);
+            return new ResponseEntity<>(responseHeader, HttpStatus.ACCEPTED);
         } catch (PaymentException e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }

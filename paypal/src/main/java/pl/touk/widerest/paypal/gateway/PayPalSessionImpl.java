@@ -1,18 +1,11 @@
 package pl.touk.widerest.paypal.gateway;
 
-import com.paypal.api.openidconnect.CreateFromAuthorizationCodeParameters;
-import com.paypal.api.openidconnect.CreateFromRefreshTokenParameters;
-import com.paypal.api.openidconnect.Tokeninfo;
-import com.paypal.base.exception.OAuthException;
-import com.paypal.base.exception.PayPalException;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
+import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -28,7 +21,7 @@ public class PayPalSessionImpl implements PayPalSession {
     private Map<String, String> sdkConfig;
 
     @Resource(name = "wdSystemProperties")
-    private SystemProperitesServiceProxy spServiceProxy;
+    private SystemPropertiesServiceProxy spServiceProxy;
 
     // Should be replaced so that it uses refresh token instead
 
@@ -39,11 +32,11 @@ public class PayPalSessionImpl implements PayPalSession {
     private String secret;// = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
     private void setCredentialsFromSysPropertiesOrSetSandbox() {
-        clientId = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.CLIENT_ID))
+        clientId = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
                 .orElse("EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM");
 
-        secret = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(spServiceProxy.SECRET))
+        secret = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
                 .orElse("EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM");
 
@@ -52,7 +45,7 @@ public class PayPalSessionImpl implements PayPalSession {
     public void initConnection() throws PayPalRESTException {
         // If exception is thrown then the app shouldnt start
 
-        sdkConfig = new HashMap<String, String>();
+        sdkConfig = new HashMap<>();
         sdkConfig.put("mode", "sandbox");
 
         setCredentialsFromSysPropertiesOrSetSandbox();

@@ -156,7 +156,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
         PayPalResponseDto response = null;
         try {
             //throw new NotImplementedException("Should call Payment.get()");
-            //TODO:
+            //TODO: is this available in REST api?
             response = new PayPalResponseDto();
             response.setAccessToken(paymentRequest.getAccessToken());
 

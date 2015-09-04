@@ -4,7 +4,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import pl.touk.widerest.paypal.exception.CredentialNotSetException;
-import pl.touk.widerest.paypal.service.SystemProperitesServiceProxy;
+import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
 
 import javax.annotation.Resource;
 import java.util.Optional;
@@ -30,7 +29,7 @@ import java.util.Optional;
 public class PayPalCredentialsController {
 
     @Resource(name = "wdSystemProperties")
-    private SystemProperitesServiceProxy spServiceProxy;
+    private SystemPropertiesServiceProxy spServiceProxy;
 
 
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
@@ -45,7 +44,7 @@ public class PayPalCredentialsController {
     })
     public String getPayPalClientId(@AuthenticationPrincipal UserDetails userDetails) {
 
-        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID))
+        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
                 .orElseThrow(() -> new CredentialNotSetException("Property not set"));
     }
@@ -62,7 +61,7 @@ public class PayPalCredentialsController {
     })
     public String getPayPalSecret(@AuthenticationPrincipal UserDetails userDetails) {
 
-        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET))
+        return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.SECRET))
                 .map(SystemProperty::getValue)
                 .orElseThrow(() -> new CredentialNotSetException("Property not set"));
     }
@@ -83,9 +82,9 @@ public class PayPalCredentialsController {
             @RequestBody String clientId
     ) {
 
-        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.CLIENT_ID, clientId);
+        spServiceProxy.setOrUpdatePropertyByName(SystemPropertiesServiceProxy.CLIENT_ID, clientId);
 
-        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.CLIENT_ID).getValue().equals(clientId))
+        if(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID).getValue().equals(clientId))
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -107,9 +106,9 @@ public class PayPalCredentialsController {
             @RequestBody String secret
     ) {
 
-        spServiceProxy.setOrUpdatePropertyByName(SystemProperitesServiceProxy.SECRET, secret);
+        spServiceProxy.setOrUpdatePropertyByName(SystemPropertiesServiceProxy.SECRET, secret);
 
-        if(spServiceProxy.getSystemPropertyByName(SystemProperitesServiceProxy.SECRET).getValue().equals(secret))
+        if(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.SECRET).getValue().equals(secret))
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
