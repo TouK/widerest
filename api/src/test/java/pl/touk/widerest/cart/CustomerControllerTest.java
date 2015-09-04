@@ -1,11 +1,17 @@
 package pl.touk.widerest.cart;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -13,14 +19,10 @@ import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.base.ApiTestBase;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.junit.Test;
 
 import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -39,9 +41,9 @@ public class CustomerControllerTest extends ApiTestBase {
         givenAnonymousUser();
 
         // Given unique username, password and unique email
-        String username = "haskellCurry";
+        String username = RandomStringUtils.random(32, "haskellCurry");
         String password = "uncurry";
-        String email = "haskell@curry.org";
+        String email = RandomStringUtils.random(32, "haskellCurry") + "@curry.org";
 
         customerBehaviour.whenUserTriesToRegister(username, password, email);
 

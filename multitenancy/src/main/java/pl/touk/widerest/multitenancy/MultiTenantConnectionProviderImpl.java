@@ -12,7 +12,6 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
 
 @Slf4j
@@ -24,18 +23,19 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
 
     @Override
     public Connection getAnyConnection() throws SQLException {
-        ConnectionProvider service = serviceRegistry.getService(ConnectionProvider.class);
+        log.debug("Getting any connection");
         return dataSource.getConnection();
     }
 
     @Override
     public void releaseAnyConnection(Connection connection) throws SQLException {
+        log.debug("Releasing any connection");
         connection.close();
-
     }
 
     @Override
     public Connection getConnection(String tenantIdentifier) throws SQLException {
+        log.debug("Getting connection for tenant: {}", tenantIdentifier);
         Connection connection = dataSource.getConnection();
         if (StringUtils.isNotEmpty(tenantIdentifier)) {
             connection.setSchema(tenantIdentifier);
@@ -45,6 +45,7 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
 
     @Override
     public void releaseConnection(String tenantIdentifier, Connection connection) throws SQLException {
+        log.debug("Releasing {} connection", tenantIdentifier);
         connection.close();
     }
 

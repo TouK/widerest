@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
-import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 public class MultiTenancyConfig {
+
+    public static final String TENANT_REQUEST_ATTRIBUTE = MultiTenancyConfig.class.getPackage().getName() + ".Tenant";
+    public static final String DEFAULT_TENANT_IDENTIFIER ="default";
 
     @Value("${mulititenacy.tokenSecret:secret}")
     private String tenantTokenSecret;

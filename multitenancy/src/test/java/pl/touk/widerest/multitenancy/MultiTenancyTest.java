@@ -3,7 +3,6 @@ package pl.touk.widerest.multitenancy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -21,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import pl.touk.widerest.multitenancy.sample.SampleApplication;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.function.Consumer;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -51,7 +52,7 @@ public class MultiTenancyTest {
     protected ObjectMapper objectMapper;
 
     @Autowired
-    private TenantAdminService tenantAdminService;
+    private Consumer<TenantRequest> setTenantDetails;
 
     TestRestTemplate restTemplate = new TestRestTemplate();
 
@@ -59,7 +60,8 @@ public class MultiTenancyTest {
     public void shouldCreateTenantWhenNoTenantTokenHeader() throws SQLException, IOException {
 
         // when new tenant requested
-        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        TenantRequest tenantDetails = TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build();
+        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", tenantDetails, String.class, serverPort);
 
         // then valid tenant token returned
         String tenantId = verifyTokenAndConvertToTenantId(tenantToken);
@@ -67,11 +69,11 @@ public class MultiTenancyTest {
         // then database schema created
         Connection connection = dataSource.getConnection();
         try {
-            connection.createStatement().execute("SET SCHEMA " + tenantId + "");
+            connection.setSchema(tenantId);
         } finally {
             connection.close();
         }
-        Mockito.verify(tenantAdminService, Mockito.times(1)).createAdminUser(Mockito.eq("test@test.xx"), Mockito.eq("test"));
+        Mockito.verify(setTenantDetails, Mockito.times(1)).accept(Mockito.eq(tenantDetails));
     }
 
     @Test
@@ -96,8 +98,7 @@ public class MultiTenancyTest {
         ResponseEntity<String> responseEntity = restTemplate.getForEntity("http://localhost:{serverPort}/tenant", String.class, serverPort);
 
         // then responded with error
-        // TODO: change to a client error (4xx)
-        Assert.assertTrue(responseEntity.getStatusCode().is5xxServerError());
+        Assert.assertTrue(responseEntity.getStatusCode().is4xxClientError());
     }
 
     @Test
@@ -109,6 +110,7 @@ public class MultiTenancyTest {
 
         // then responded with error
         // TODO: change to a client error (4xx)
+        // https://github.com/spring-projects/spring-boot/issues/3057
         Assert.assertTrue(responseEntity.getStatusCode().is5xxServerError());
     }
 
@@ -123,6 +125,7 @@ public class MultiTenancyTest {
 
         // then responded with error
         // TODO: change to a client error (4xx)
+        // https://github.com/spring-projects/spring-boot/issues/3057
         Assert.assertTrue(responseEntity.getStatusCode().is5xxServerError());
 
         // then no database schema created
@@ -166,7 +169,6 @@ public class MultiTenancyTest {
 
     }
 
-    @Ignore("TODO")
     @Test
     public void shouldCreateSampleEntityInDefaultSchemaWhenNoTenantTokenGiven() throws SQLException {
 

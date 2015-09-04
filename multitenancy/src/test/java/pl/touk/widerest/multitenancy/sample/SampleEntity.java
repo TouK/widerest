@@ -1,4 +1,4 @@
-package pl.touk.widerest.multitenancy.sampledomain;
+package pl.touk.widerest.multitenancy.sample;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

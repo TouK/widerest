@@ -1,8 +1,8 @@
 package pl.touk.widerest;
 
 import org.broadleafcommerce.openadmin.server.security.domain.AdminUser;
-import org.broadleafcommerce.openadmin.server.security.domain.AdminUserImpl;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -18,10 +18,12 @@ import org.springframework.transaction.annotation.TransactionManagementConfigure
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import pl.touk.widerest.multitenancy.TenantAdminService;
+import pl.touk.widerest.multitenancy.TenantRequest;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import java.util.function.Consumer;
 
 @Configuration
 @EnableAutoConfiguration(exclude = { HibernateJpaAutoConfiguration.class })
@@ -54,13 +56,12 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     }
 
     @Bean
-    public TenantAdminService tenantAdminService(AdminSecurityService adminSecurityService) {
-        return (email, password) -> {
-            AdminUser adminUser = new AdminUserImpl();
-            adminUser.setLogin("admin");
-            adminUser.setName("admin");
-            adminUser.setEmail(email);
-            adminUser.setPassword(password);
+    public Consumer<TenantRequest> setTenantDetails(AdminSecurityService adminSecurityService, EntityManager em) {
+        return tenantRequest -> {
+            AdminUser adminUser = adminSecurityService.readAdminUserByUserName("admin");
+            adminUser.setEmail(tenantRequest.getAdminEmail());
+            adminUser.setPassword(tenantRequest.getAdminPassword());
+            Session session = em.unwrap(Session.class);
             adminSecurityService.saveAdminUser(adminUser);
         };
     }

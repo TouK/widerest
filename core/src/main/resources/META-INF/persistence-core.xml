@@ -15,7 +15,6 @@
             <property name="hibernate.multiTenancy" value="SCHEMA"/>
             <property name="hibernate.multi_tenant_connection_provider" value="pl.touk.widerest.multitenancy.MultiTenantConnectionProviderImpl"/>
             <property name="hibernate.hbm2ddl.auto" value="none"/>
-            <property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.EJB3NamingStrategy"/>
         </properties>
     </persistence-unit>
     
@@ -27,7 +26,6 @@
             <property name="hibernate.multiTenancy" value="SCHEMA"/>
             <property name="hibernate.multi_tenant_connection_provider" value="pl.touk.widerest.multitenancy.MultiTenantConnectionProviderImpl"/>
             <property name="hibernate.hbm2ddl.auto" value="none"/>
-            <property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.EJB3NamingStrategy"/>
         </properties>
     </persistence-unit>
 
@@ -39,7 +37,6 @@
             <property name="hibernate.multiTenancy" value="SCHEMA"/>
             <property name="hibernate.multi_tenant_connection_provider" value="pl.touk.widerest.multitenancy.MultiTenantConnectionProviderImpl"/>
             <property name="hibernate.hbm2ddl.auto" value="none"/>
-            <property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.EJB3NamingStrategy"/>
         </properties>
     </persistence-unit>
 
