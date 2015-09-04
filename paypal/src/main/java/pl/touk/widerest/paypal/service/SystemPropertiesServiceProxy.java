@@ -8,7 +8,7 @@ import javax.annotation.Resource;
 import java.util.Optional;
 
 @Service("wdSystemProperties")
-public class SystemProperitesServiceProxy {
+public class SystemPropertiesServiceProxy {
 
     @Resource(name = "blSystemPropertiesDao")
     protected SystemPropertiesDao systemPropertiesDao;
