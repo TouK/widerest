@@ -6,8 +6,9 @@ import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.PortBinding;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.jdbc.datasource.DelegatingDataSource;
 import org.springframework.util.CollectionUtils;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.net.ServerSocket;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,8 @@ import java.util.UUID;
 @Slf4j
 public class DockerizedDataSource extends DelegatingDataSource {
 
-    @Autowired
+    @Getter
+    @Setter
     protected DockerClient docker;
 
     protected String containerId;
@@ -50,12 +53,13 @@ public class DockerizedDataSource extends DelegatingDataSource {
         docker.startContainer(this.containerId, hostConfig);
         setTargetDataSource(DataSourceBuilder.create().username("postgres").url("jdbc:postgresql://localhost:" + randomPort + "/").build());
 
-        while (true) {
+        int tries = 10;
+        while (tries-- > 0) {
             try (Connection connection = getTargetDataSource().getConnection()) {
                 return;
-            } catch (Exception e) {
-                log.info("Waiting for the container start up...");
-                Thread.sleep(5000);
+            } catch (SQLException e) {
+                log.info("Waiting for the container to start up...");
+                Thread.sleep(1000);
             }
         }
 

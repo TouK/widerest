@@ -1,17 +1,13 @@
 package pl.touk.widerest;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import org.broadleafcommerce.openadmin.server.security.domain.AdminUser;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -60,41 +56,13 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
         return entityManagerFactory;
     }
 
-
-    protected static class DockerizedDataSourceConfiguration {
-
-        @Autowired
-        private DataSourceProperties properties;
-
-        @Bean
-        @ConfigurationProperties(prefix = DataSourceProperties.PREFIX)
-        public DataSource dataSource() {
-            try {
-                DataSourceBuilder factory = DataSourceBuilder
-                        .create(this.properties.getClassLoader())
-                        .driverClassName(this.properties.getDriverClassName())
-                        .url(this.properties.getUrl())
-                        .username(this.properties.getUsername())
-                        .password(this.properties.getPassword());
-                return factory.build();
-            } catch (Exception ex) {
-                return new DockerizedDataSource();
-            }
-        }
-
-        @Bean
-        public DockerClient dockerClient() throws DockerException, InterruptedException {
-            DefaultDockerClient docker = new DefaultDockerClient("unix:///var/run/docker.sock");
-            String ping = docker.ping();
-            return docker;
-        }
-
+    @Bean
+    @ConditionalOnProperty(prefix = "spring.datasource", name = "url", havingValue = "false", matchIfMissing = true)
+    public DataSource dataSource() {
+        DockerizedDataSource dockerizedDataSource = new DockerizedDataSource();
+        dockerizedDataSource.setDocker(new DefaultDockerClient("unix:///var/run/docker.sock"));
+        return dockerizedDataSource;
     }
-
-
-
-
-
 
     @Bean
     public Consumer<TenantRequest> setTenantDetails(AdminSecurityService adminSecurityService) {
