@@ -26,7 +26,7 @@
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>0.2.3</version>
+                <version>0.3.3</version>
                 <configuration>
                     <imageName>${docker.image.prefix}/widerest:api</imageName>
                     <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
@@ -37,6 +37,7 @@
                             <include>${project.build.finalName}.jar</include>
                         </resource>
                     </resources>
+                    <serverId>docker-hub</serverId>
                 </configuration>
                 <executions>
                     <execution>
