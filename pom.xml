@@ -286,6 +286,5 @@
         <module>api</module>
         <module>paypal</module>
         <module>multitenancy</module>
-        <module>docker</module>
     </modules>
 </project>
