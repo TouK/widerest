@@ -1,21 +1,14 @@
 package pl.touk.widerest.api.cart.controllers;
 
-import io.swagger.annotations.*;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
-import org.broadleafcommerce.common.i18n.domain.ISOCountry;
-import org.broadleafcommerce.common.i18n.domain.ISOCountryImpl;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
-import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -24,18 +17,13 @@ import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
-import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
-import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
-import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.AddressService;
-import org.broadleafcommerce.profile.core.service.CountryService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
-import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +38,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
@@ -58,14 +45,18 @@ import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
-import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
-import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderValidationService;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import springfox.documentation.annotations.ApiIgnore;
+
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/orders")
@@ -120,7 +111,7 @@ public class OrderController {
             @ApiResponse(code = 200, message = "Successful retrieval of orders list")
     })
     public List<OrderDto> getOrders(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "Status to be used to filter orders")
             @RequestParam(value = "status", required = false) String status) {
 
@@ -145,7 +136,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public OrderDto getOrderById(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
@@ -166,7 +157,7 @@ public class OrderController {
             @ApiResponse(code = 201, message = "A new order entry successfully created")
     })
     public ResponseEntity<?> createNewOrder(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
         Customer currentCustomer = Optional.ofNullable(customerService.readCustomerById(customerUserDetails.getId()))
                 .orElseThrow(() -> new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId()));
@@ -205,7 +196,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public void deleteOrderForCustomer(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
@@ -229,7 +220,7 @@ public class OrderController {
 
     })
     public ResponseEntity<?> addProductToOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Description of a new order item", required = true)
@@ -309,7 +300,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public List<DiscreteOrderItemDto> getAllItemsInOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
@@ -328,7 +319,7 @@ public class OrderController {
             notes = "Gets a number of all items placed already in the specified order",
             response = Integer.class)
     public ResponseEntity<Integer> getItemsCountByOrderId(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
@@ -347,7 +338,7 @@ public class OrderController {
             notes = "Get a number of all active orders",
             response = Integer.class)
     public ResponseEntity<Integer> getOrdersCount(
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
         final int ordersCount = Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
             .orElseThrow(ResourceNotFoundException::new)
@@ -369,7 +360,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public OrderStatus getOrderStatusById(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
@@ -392,7 +383,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public void removeItemFromOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "ID of a specific item in the order", required = true)
@@ -428,7 +419,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order or item does not exist")
     })
     public DiscreteOrderItemDto getOneItemFromOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "ID of a specific item in the order", required = true)
@@ -457,7 +448,7 @@ public class OrderController {
             @ApiResponse(code = 409, message = "Wrong quantity value")
     })
     public ResponseEntity<?> updateItemQuantityInOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "ID of a specific item in the order", required = true)
@@ -485,7 +476,7 @@ public class OrderController {
             @ApiResponse(code = 409, message = "The cart is empty or selected Fulfillment Option value does not exist")
     })
     public ResponseEntity<?> updateSelectedFulfillmentOption(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Fulfillment Option value", required = true)
@@ -508,7 +499,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public FulfillmentDto getOrderFulfilment(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
@@ -530,7 +521,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public ResponseEntity<?> setOrderFulfilmentAddress(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Description of a fulfillment address", required = true)
@@ -578,7 +569,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public AddressDto getOrderFulfilmentAddress(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
@@ -593,7 +584,7 @@ public class OrderController {
     @RequestMapping(value = "/{id}/payments", method = RequestMethod.GET)
     @ApiOperation(value = "Get a list of available payments for an order", response = List.class)
     public List<OrderPaymentDto> getPaymentsByOrderId(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "id") Long orderId) {
 
         Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());

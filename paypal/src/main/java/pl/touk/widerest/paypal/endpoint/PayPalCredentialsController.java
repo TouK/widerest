@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import pl.touk.widerest.paypal.exception.CredentialNotSetException;
 import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class PayPalCredentialsController {
             @ApiResponse(code = 200, message = "Client ID successfully received"),
             @ApiResponse(code = 500, message = "Client ID hasn't been set yet")
     })
-    public String getPayPalClientId(@AuthenticationPrincipal UserDetails userDetails) {
+    public String getPayPalClientId(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
                 .map(SystemProperty::getValue)
@@ -59,7 +60,7 @@ public class PayPalCredentialsController {
             @ApiResponse(code = 200, message = "Client secret successfully received"),
             @ApiResponse(code = 500, message = "Client secret hasn't been set yet")
     })
-    public String getPayPalSecret(@AuthenticationPrincipal UserDetails userDetails) {
+    public String getPayPalSecret(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
         return Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.SECRET))
                 .map(SystemProperty::getValue)
@@ -78,7 +79,7 @@ public class PayPalCredentialsController {
             @ApiResponse(code = 500, message = "Client ID cannot be set")
     })
     public ResponseEntity<?> setClientId(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody String clientId
     ) {
 
@@ -102,7 +103,7 @@ public class PayPalCredentialsController {
             @ApiResponse(code = 500, message = "Client secret cannot be set")
     })
     public ResponseEntity<?> setSecret(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody String secret
     ) {
 

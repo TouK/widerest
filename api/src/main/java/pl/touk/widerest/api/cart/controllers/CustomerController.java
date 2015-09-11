@@ -14,12 +14,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -64,7 +69,7 @@ public class CustomerController {
             responseContainer = "List"
     )
     public List<CustomerDto> readAllCustomers(
-            @AuthenticationPrincipal UserDetails userDetails
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails
     ) {
         if(userDetails instanceof AdminUserDetails) {
             return customerServiceProxy.getAllCustomers().stream()
@@ -84,7 +89,7 @@ public class CustomerController {
     @Transactional
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public void registerCustomer(
-            @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @RequestParam String username,
             @RequestParam String password,
             @RequestParam String passwordConfirm,

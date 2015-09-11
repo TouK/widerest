@@ -1,6 +1,5 @@
 package pl.touk.widerest.paypal.endpoint;
 
-import com.paypal.base.rest.PayPalRESTException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -8,7 +7,12 @@ import io.swagger.annotations.ApiResponses;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
-import org.broadleafcommerce.common.payment.service.*;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayCheckoutService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayTransactionConfirmationService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayWebResponseService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
@@ -30,12 +34,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.paypal.exception.FulfillmentOptionNotSetException;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 import pl.touk.widerest.paypal.gateway.PayPalRequestDto;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -94,7 +102,7 @@ public class PayPalController {
     })
     public ResponseEntity initiate(
             HttpServletRequest request,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) throws PaymentException {
 
         if(userDetails instanceof AdminUserDetails) {
@@ -176,7 +184,7 @@ public class PayPalController {
     })
     public ResponseEntity handleReturn(
             HttpServletRequest request,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) throws PaymentException, CheckoutException {
 
 
@@ -258,7 +266,7 @@ public class PayPalController {
     })
     public ResponseEntity handleCancel(
             HttpServletRequest request,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable(value = "id") Long orderId) {
 
         // Redirects to main page
