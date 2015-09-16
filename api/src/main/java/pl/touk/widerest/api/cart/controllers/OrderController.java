@@ -108,7 +108,7 @@ public class OrderController {
             response = OrderDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of orders list")
+            @ApiResponse(code = 200, message = "Successful retrieval of orders list", responseContainer = "List")
     })
     public List<OrderDto> getOrders(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
@@ -126,7 +126,7 @@ public class OrderController {
     /* GET /orders/{orderId} */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get an order by ID",
             notes = "Gets details of a single order, specified by its ID",
@@ -296,7 +296,7 @@ public class OrderController {
             response = DiscreteOrderItemDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful retrieval of all items in a given category"),
+            @ApiResponse(code = 201, message = "Successful retrieval of all items in a given category", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
     public List<DiscreteOrderItemDto> getAllItemsInOrder(
@@ -409,7 +409,7 @@ public class OrderController {
     /* GET /orders/items/{itemId} */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get details of an item",
             notes = "Gets a description of a specified item in a given order",
@@ -454,10 +454,14 @@ public class OrderController {
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId,
             @ApiParam(value = "Quantity value", required = true)
-            @RequestBody Integer quantity) {
+            @RequestBody String quantity) {
+
+
+        final int intQuantity = Integer.parseInt(quantity);
+
 
        try {
-           return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
+           return orderServiceProxy.updateItemQuantityInOrder(intQuantity,userDetails,orderId,itemId);
        } catch(Exception e) {
            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
        }
@@ -480,9 +484,11 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Fulfillment Option value", required = true)
-            @RequestBody Long fulfillmentOptionId) throws PricingException {
+            @RequestBody String fulfillmentOptionId) throws PricingException {
 
-        return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, fulfillmentOptionId);
+        Long longFulfillmentOption = Long.parseLong(fulfillmentOptionId);
+
+        return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, longFulfillmentOption);
 
     }
 

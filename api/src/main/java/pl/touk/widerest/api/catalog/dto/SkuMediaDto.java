@@ -34,7 +34,7 @@ public class SkuMediaDto extends ResourceSupport {
     @ApiModelProperty(position = 3, value = "Tags describing the media", dataType = "java.lang.String")
     private String tags;
 
-    @ApiModelProperty(position = 4, value = "Key of the media", required = true, dataType = "java.lang.String",
-            allowableValues = "[primary, alt1, alt2, alt3, alt4, alt5, alt6, alt7, alt8, alt9]")
+    @ApiModelProperty(position = 4, value = "Key of the media", required = true, dataType = "java.lang.String")/*,
+            allowableValues = "[\"primary\", \"alt1\", \"alt2\", \"alt3\", \"alt4\", \"alt5\", \"alt6\", \"alt7\", \"alt8\", \"alt9\"]")*/
     private String key;
 }

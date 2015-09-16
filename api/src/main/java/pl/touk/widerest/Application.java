@@ -9,10 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.*;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -36,6 +33,7 @@ import java.util.function.Consumer;
 @EnableAutoConfiguration(exclude = { HibernateJpaAutoConfiguration.class })
 @ComponentScan("pl.touk.widerest")
 @EnableTransactionManagement
+//@ImportResource("classpath:/applicationContext-oauth.xml")
 public class Application extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
 
     @Autowired

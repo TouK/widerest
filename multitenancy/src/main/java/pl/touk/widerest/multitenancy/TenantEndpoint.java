@@ -1,5 +1,7 @@
 package pl.touk.widerest.multitenancy;
 
+import com.auth0.Auth0User;
+import com.auth0.spring.security.auth0.Auth0UserDetails;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
@@ -7,8 +9,10 @@ import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
+import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -19,6 +23,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -36,8 +41,13 @@ public class TenantEndpoint {
     @Resource
     private MultiTenancyService multiTenancyService;
 
+    @Resource
+    private AuthService authService;
+
     @RequestMapping(method = RequestMethod.POST)
-    public String create(@ApiParam @RequestBody @Valid TenantRequest tenantRequest, HttpServletRequest request) {
+    public String create(@ApiParam @RequestBody @Valid TenantRequest tenantRequest,
+                         @AuthenticationPrincipal UserDetails userDetails,
+                         HttpServletRequest request) {
 
         if (request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE) != null) {
              throw new TenantTokenNotAllowed();
@@ -48,7 +58,16 @@ public class TenantEndpoint {
         request.setAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE, tenant);
         try {
             multiTenancyService.createTenantSchema(tenantIdentifier, Optional.of(tenantRequest));
-            return JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
+            final String jwtToken = JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
+
+
+            final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
+            final String clientId = subParam.substring(subParam.indexOf("|") + 1);
+
+            authService.addUserTenantToken(jwtToken, clientId);
+
+
+            return jwtToken;
         } catch (JsonProcessingException e) {
             throw new TenantCreationError(e);
         } catch (SQLException e) {
@@ -57,7 +76,7 @@ public class TenantEndpoint {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    public String read(HttpServletRequest request) {
+    public String read(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
         Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
         if (tenant == null) {
@@ -69,6 +88,21 @@ public class TenantEndpoint {
         } catch (JsonProcessingException e) {
             throw new TenantCreationError(e);
         }
+    }
+
+    @RequestMapping(value = "testRead", method = RequestMethod.GET)
+    public List<String> testRead(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+
+//        Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
+//        if (tenant == null) {
+//            throw new TenantTokenMissing();
+//        }
+
+        final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
+        final String clientId = subParam.substring(subParam.indexOf("|") + 1);
+
+        return authService.getUserTenantTokens(clientId);
+
     }
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)

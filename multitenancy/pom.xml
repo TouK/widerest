@@ -57,6 +57,11 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>auth0-servlet</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

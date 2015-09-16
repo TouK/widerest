@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toMap;
 
 
 @RestController
-@RequestMapping("/catalog/products")
+@RequestMapping(value = "/catalog/products", produces = "application/json")
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
 
@@ -63,7 +63,7 @@ public class ProductController {
             response = ProductDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class)
+            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List")
     })
     public List<ProductDto> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
@@ -88,7 +88,7 @@ public class ProductController {
             response = ProductBundleDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductBundleDto.class)
+            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductBundleDto.class, responseContainer = "List")
     })
     public List<ProductDto> getAllBundlesProducts() {
         return catalogService.findAllProducts().stream()
@@ -102,7 +102,7 @@ public class ProductController {
     /* GET /products/bundles/{bundleId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get a single bundle details",
             notes = "Gets details of a single bundle specified by its ID",
@@ -317,7 +317,7 @@ public class ProductController {
     /* GET /products/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get a single product details",
             notes = "Gets details of a single product specified by its ID",
@@ -542,14 +542,14 @@ public class ProductController {
     /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get product's categories",
             notes = "Gets a list of all categories belonging to a specified product",
             response = CategoryDto.class,
             responseContainer = "List")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
+            @ApiResponse(code = 200, message = "Successful retrieval of product's categories", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public List<CategoryDto> readCategoriesByProduct(
@@ -605,7 +605,7 @@ public class ProductController {
             response = SkuDto.class,
             responseContainer = "List")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs"),
+            @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
     public List<SkuDto> readSkusByProduct(
@@ -699,7 +699,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get a single SKU details",
             notes = "Gets details of a single SKU, specified by its ID",
@@ -728,7 +728,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/default */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get default SKU details",
             notes = "Gets details of a default SKU belonging to a specified product",
@@ -872,9 +872,11 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "Quantity of a specific SKU")
-            @RequestBody Integer quantity) {
+            @RequestBody String quantity) {
 
          /* TODO: (mst) Inventory Service??? */
+
+        final int intQuantity = Integer.parseInt(quantity);
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -883,7 +885,7 @@ public class ProductController {
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
                 .map(e -> {
-                    e.setQuantityAvailable(quantity);
+                    e.setQuantityAvailable(intQuantity);
                     return e;
                 })
                 .map(catalogService::saveSku)
@@ -1117,7 +1119,7 @@ public class ProductController {
             responseContainer = "List"
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of media details"),
+            @ApiResponse(code = 200, message = "Successful retrieval of media details", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
     public List<SkuMediaDto> getMediaBySkuId(
@@ -1143,7 +1145,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get a single media details",
             notes = "Gets details of a particular media belonging to a specified SKU",

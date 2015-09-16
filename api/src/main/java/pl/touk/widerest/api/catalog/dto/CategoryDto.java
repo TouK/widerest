@@ -37,7 +37,7 @@ public class CategoryDto extends ResourceSupport {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false,
-            dataType = "java.lang.String", allowableValues = "[ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY]")
+            dataType = "java.lang.String", allowableValues = "ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY]")
     private String productsAvailability;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)

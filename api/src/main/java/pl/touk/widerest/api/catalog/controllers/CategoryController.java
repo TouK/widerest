@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
+import javax.ws.rs.Produces;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.catalog.domain.*;
@@ -16,6 +17,7 @@ import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +31,7 @@ import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 @RestController
-@RequestMapping("/catalog/categories")
+@RequestMapping(value = "/catalog/categories", produces = "application/json")
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 
@@ -49,7 +51,7 @@ public class CategoryController {
             response = CategoryDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class)
+            @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class, responseContainer = "List")
     })
     public List<CategoryDto> readAllCategories(
             @ApiParam(value = "Amount of categories to be returned")
@@ -99,15 +101,23 @@ public class CategoryController {
 
 
         final Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+//
+//        HttpHeaders responseHeader = new HttpHeaders();
+//
+//        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+//                .path("/{id}")
+//                .buildAndExpand(createdCategoryEntity.getId())
+//                .toUri());
+//
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdCategoryEntity.getId())
-                .toUri());
+                .toUri()).build();//contentType(MediaType.APPLICATION_JSON).body("");
 
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+
+                //.body("");
+
+       //return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
     /* GET /categories/count */
@@ -131,7 +141,7 @@ public class CategoryController {
     /* GET /categories/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{categoryId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{categoryId}", method = RequestMethod.GET, produces = "application/json")
     @ApiOperation(
             value = "Get a single category details",
             notes = "Gets details of a single category specified by its ID",
@@ -269,10 +279,10 @@ public class CategoryController {
     @ApiOperation(
             value = "Get category's products availability",
             notes = "Gets an availability of all the products in this category",
-            response = Void.class
+            response = String.class
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability"),
+            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability", response = String.class),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
     public ResponseEntity<String> getCategoryByIdAvailability(
@@ -336,7 +346,7 @@ public class CategoryController {
             responseContainer = "List"
     )
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful retrieval of all products in a given category"),
+            @ApiResponse(code = 200, message = "Successful retrieval of all products in a given category", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified category does not exist")
     })
     public List<ProductDto> readProductsFromCategory(
