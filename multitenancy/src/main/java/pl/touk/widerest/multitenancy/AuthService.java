@@ -2,14 +2,12 @@ package pl.touk.widerest.multitenancy;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.multitenancy.dto.AuthUser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,28 +27,60 @@ public class AuthService {
     private final RestTemplate restTemplate = new RestTemplate();
 
 
-    public void addUserTenantToken(String tenantToken, String userId) {
+    public void addUserTenantToken(String tenantToken, String userId, String token) {
 
-        final ResponseEntity<AuthUser> responseEntity = restTemplate.getForEntity("http://" + appDomain + USER_BY_ID_ENDPOINT,
-                AuthUser.class, userId);
+        final List<String> currentTenantTokens = getUserTenantTokens(userId, token);
 
-        final AuthUser authUser = responseEntity.getBody();
+        final List<String> updatedTenantTokens = new ArrayList<>();
+        updatedTenantTokens.addAll(currentTenantTokens);
 
-        authUser.getTokens().add(tenantToken);
+        updatedTenantTokens.add(tenantToken);
+
+        final UserTenantsMetadataDto userTenantsMetadataDto = new UserTenantsMetadataDto();
+        userTenantsMetadataDto.setTenants(updatedTenantTokens);
+
+        final AuthUserDto updatedTenantTokensDto = AuthUserDto.builder()
+                .userTenantsMetadataDto(userTenantsMetadataDto)
+                .build();
 
         final RestTemplate patchRestTemplate = new RestTemplate();
         patchRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        final HttpEntity<AuthUser> requestEntity = new HttpEntity<>(authUser);
 
-        patchRestTemplate.exchange("http://" + appDomain + USER_BY_ID_ENDPOINT, HttpMethod.PATCH, requestEntity, Void.class,  userId);
+        final HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", token);
+        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        final HttpEntity<AuthUserDto> requestEntity = new HttpEntity<>(updatedTenantTokensDto, requestHeaders);
+
+        patchRestTemplate.exchange(
+                "https://" + appDomain + USER_BY_ID_ENDPOINT,
+                HttpMethod.PATCH,
+                requestEntity,
+                Void.class,
+                userId);
 
     }
 
-    public List<String> getUserTenantTokens(String userId) {
+    public List<String> getUserTenantTokens(String userId, String token) {
 
-        final ResponseEntity<AuthUser> responseEntity = restTemplate.getForEntity("http://" + appDomain + USER_BY_ID_ENDPOINT,
-                AuthUser.class, userId);
+        final HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", token);
+        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        final HttpEntity httpRequestEntity = new HttpEntity(requestHeaders);
 
-        return responseEntity.getBody().getTokens();
+        final ResponseEntity<AuthUserDto> responseEntity = restTemplate.exchange(
+                "https://" + appDomain + USER_BY_ID_ENDPOINT,
+                HttpMethod.GET,
+                httpRequestEntity,
+                AuthUserDto.class, userId);
+
+        final AuthUserDto authUserDto = responseEntity.getBody();
+
+        if(authUserDto.getUserTenantsMetadataDto() != null && authUserDto.getUserTenantsMetadataDto().getTenants() != null) {
+            return authUserDto.getUserTenantsMetadataDto().getTenants();
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.auth0.Auth0User;
 import com.auth0.spring.security.auth0.Auth0UserDetails;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -60,12 +62,10 @@ public class TenantEndpoint {
             multiTenancyService.createTenantSchema(tenantIdentifier, Optional.of(tenantRequest));
             final String jwtToken = JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
 
-
             final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
-            final String clientId = subParam.substring(subParam.indexOf("|") + 1);
+            final String token = request.getHeader("Authorization");
 
-            authService.addUserTenantToken(jwtToken, clientId);
-
+            authService.addUserTenantToken(jwtToken, subParam, token);
 
             return jwtToken;
         } catch (JsonProcessingException e) {
@@ -93,15 +93,9 @@ public class TenantEndpoint {
     @RequestMapping(value = "testRead", method = RequestMethod.GET)
     public List<String> testRead(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
-//        Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
-//        if (tenant == null) {
-//            throw new TenantTokenMissing();
-//        }
-
         final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
-        final String clientId = subParam.substring(subParam.indexOf("|") + 1);
-
-        return authService.getUserTenantTokens(clientId);
+        final String token = request.getHeader("Authorization");
+        return authService.getUserTenantTokens(subParam, token);
 
     }
 
