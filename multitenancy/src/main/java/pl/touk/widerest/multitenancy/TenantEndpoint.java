@@ -1,6 +1,6 @@
 package pl.touk.widerest.multitenancy;
 
-import com.auth0.Auth0User;
+
 import com.auth0.spring.security.auth0.Auth0UserDetails;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,7 +75,7 @@ public class TenantEndpoint {
         }
     }
 
-    @RequestMapping(method = RequestMethod.GET)
+    @RequestMapping(value = "oldGet", method = RequestMethod.GET)
     public String read(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
         Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
@@ -90,7 +90,7 @@ public class TenantEndpoint {
         }
     }
 
-    @RequestMapping(value = "testRead", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.GET)
     public List<String> testRead(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
 
         final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
