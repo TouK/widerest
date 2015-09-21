@@ -1,26 +1,25 @@
 package pl.touk.widerest.multitenancy;
 
 
-import com.auth0.spring.security.auth0.Auth0UserDetails;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.collect.Lists;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.annotations.ApiIgnore;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -43,12 +42,12 @@ public class TenantEndpoint {
     @Resource
     private MultiTenancyService multiTenancyService;
 
-    @Resource
-    private AuthService authService;
+    @Autowired(required = false)
+    private TenantTokenStore tenantTokenStore;
 
     @RequestMapping(method = RequestMethod.POST)
     public String create(@ApiParam @RequestBody @Valid TenantRequest tenantRequest,
-                         @AuthenticationPrincipal UserDetails userDetails,
+                         @ApiIgnore Authentication authentication,
                          HttpServletRequest request) {
 
         if (request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE) != null) {
@@ -62,10 +61,9 @@ public class TenantEndpoint {
             multiTenancyService.createTenantSchema(tenantIdentifier, Optional.of(tenantRequest));
             final String jwtToken = JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
 
-            final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
-            final String token = request.getHeader("Authorization");
-
-            authService.addUserTenantToken(jwtToken, subParam, token);
+            if (tenantTokenStore != null) {
+                tenantTokenStore.addTenantToken(jwtToken, authentication);
+            }
 
             return jwtToken;
         } catch (JsonProcessingException e) {
@@ -75,28 +73,27 @@ public class TenantEndpoint {
         }
     }
 
-    @RequestMapping(value = "oldGet", method = RequestMethod.GET)
-    public String read(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
-
-        Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
-        if (tenant == null) {
-            throw new TenantTokenMissing();
-        }
-
-        try {
-            return JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
-        } catch (JsonProcessingException e) {
-            throw new TenantCreationError(e);
-        }
-    }
-
     @RequestMapping(method = RequestMethod.GET)
-    public List<String> testRead(HttpServletRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+    public List<String> testRead(
+            @ApiIgnore Authentication authentication,
+            HttpServletRequest request
+    ) {
+        if (tenantTokenStore != null) {
+            return tenantTokenStore.getTenantTokens(authentication);
+        } else {
+            Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
+            if (tenant == null) {
+                throw new TenantTokenMissing();
+            }
 
-        final String subParam = (String)((Auth0UserDetails) userDetails).getAuth0Attribute("sub");
-        final String token = request.getHeader("Authorization");
-        return authService.getUserTenantTokens(subParam, token);
-
+            try {
+                return Lists.newArrayList(
+                        JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded()
+                );
+            } catch (JsonProcessingException e) {
+                throw new TenantCreationError(e);
+            }
+        }
     }
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)

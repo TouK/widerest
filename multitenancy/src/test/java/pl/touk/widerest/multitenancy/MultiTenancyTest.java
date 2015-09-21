@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.function.Consumer;
 
 
@@ -85,10 +86,10 @@ public class MultiTenancyTest {
         // when tenant requested
         HttpHeaders headers = new HttpHeaders();
         headers.add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken);
-        ResponseEntity<String> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/tenant", HttpMethod.GET, new HttpEntity<Object>(headers), String.class, serverPort);
+        ResponseEntity<List> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/tenant", HttpMethod.GET, new HttpEntity<Object>(headers), List.class, serverPort);
 
         // then tokens equal
-        Assert.assertEquals(tenantToken, responseEntity.getBody());
+        Assert.assertEquals(tenantToken, responseEntity.getBody().get(0));
 
     }
 

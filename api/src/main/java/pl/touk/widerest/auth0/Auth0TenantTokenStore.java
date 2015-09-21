@@ -1,11 +1,19 @@
-package pl.touk.widerest.multitenancy;
+package pl.touk.widerest.auth0;
 
+import com.auth0.spring.security.auth0.Auth0JWTToken;
+import com.auth0.spring.security.auth0.Auth0UserDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.widerest.multitenancy.TenantTokenStore;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,7 +24,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class AuthService {
+public class Auth0TenantTokenStore implements TenantTokenStore {
 
     @Value("${auth0.domain}")
     private String appDomain;
@@ -27,9 +35,10 @@ public class AuthService {
     private final RestTemplate restTemplate = new RestTemplate();
 
 
-    public void addUserTenantToken(String tenantToken, String userId, String token) {
+    @Override
+    public void addTenantToken(String tenantToken, Authentication authentication) {
 
-        final List<String> currentTenantTokens = getUserTenantTokens(userId, token);
+        final List<String> currentTenantTokens = getTenantTokens(authentication);
 
         final List<String> updatedTenantTokens = new ArrayList<>();
         updatedTenantTokens.addAll(currentTenantTokens);
@@ -39,7 +48,7 @@ public class AuthService {
         final UserTenantsMetadataDto userTenantsMetadataDto = new UserTenantsMetadataDto();
         userTenantsMetadataDto.setTenants(updatedTenantTokens);
 
-        final AuthUserDto updatedTenantTokensDto = AuthUserDto.builder()
+        final Auth0UserDto updatedTenantTokensDto = Auth0UserDto.builder()
                 .userTenantsMetadataDto(userTenantsMetadataDto)
                 .build();
 
@@ -48,37 +57,41 @@ public class AuthService {
 
         final HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        requestHeaders.set("Authorization", token);
+        requestHeaders.set("Authorization", "Bearer " + ((Auth0JWTToken) authentication).getJwt());
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        final HttpEntity<AuthUserDto> requestEntity = new HttpEntity<>(updatedTenantTokensDto, requestHeaders);
+        final HttpEntity<Auth0UserDto> requestEntity = new HttpEntity<>(updatedTenantTokensDto, requestHeaders);
 
         patchRestTemplate.exchange(
                 "https://" + appDomain + USER_BY_ID_ENDPOINT,
                 HttpMethod.PATCH,
                 requestEntity,
                 Void.class,
-                userId);
+                (String) ((Auth0UserDetails) authentication.getPrincipal()).getAuth0Attribute("sub")
+        );
 
     }
 
-    public List<String> getUserTenantTokens(String userId, String token) {
+    @Override
+    public List<String> getTenantTokens(Authentication authentication) {
 
         final HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        requestHeaders.set("Authorization", token);
+        requestHeaders.set("Authorization", "Bearer " + ((Auth0JWTToken)authentication).getJwt());
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         final HttpEntity httpRequestEntity = new HttpEntity(requestHeaders);
 
-        final ResponseEntity<AuthUserDto> responseEntity = restTemplate.exchange(
+        final ResponseEntity<Auth0UserDto> responseEntity = restTemplate.exchange(
                 "https://" + appDomain + USER_BY_ID_ENDPOINT,
                 HttpMethod.GET,
                 httpRequestEntity,
-                AuthUserDto.class, userId);
+                Auth0UserDto.class,
+                (String) ((Auth0UserDetails) authentication.getPrincipal()).getAuth0Attribute("sub")
+        );
 
-        final AuthUserDto authUserDto = responseEntity.getBody();
+        final Auth0UserDto auth0UserDto = responseEntity.getBody();
 
-        if(authUserDto.getUserTenantsMetadataDto() != null && authUserDto.getUserTenantsMetadataDto().getTenants() != null) {
-            return authUserDto.getUserTenantsMetadataDto().getTenants();
+        if(auth0UserDto.getUserTenantsMetadataDto() != null && auth0UserDto.getUserTenantsMetadataDto().getTenants() != null) {
+            return auth0UserDto.getUserTenantsMetadataDto().getTenants();
         } else {
             return Collections.emptyList();
         }

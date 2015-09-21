@@ -1,4 +1,4 @@
-package pl.touk.widerest.multitenancy;
+package pl.touk.widerest.auth0;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 import lombok.AllArgsConstructor;
@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 /**
