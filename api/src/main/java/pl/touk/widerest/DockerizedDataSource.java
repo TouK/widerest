@@ -46,7 +46,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
             randomPort = socket.getLocalPort();
         }
 
-        final Map<String, List<PortBinding>> portBindings = new HashMap<String, List<PortBinding>>();
+        final Map<String, List<PortBinding>> portBindings = new HashMap<>();
         portBindings.put("5432/tcp", Lists.newArrayList(PortBinding.of("", randomPort)));
         final HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
 
@@ -68,7 +68,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
     @PreDestroy
     public void destroyContainer() throws Exception {
         docker.stopContainer(containerId, 10);
-        docker.removeContainer(containerId);
+        docker.removeContainer(containerId, true);
     }
 
 
