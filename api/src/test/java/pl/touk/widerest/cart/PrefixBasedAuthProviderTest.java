@@ -2,8 +2,8 @@ package pl.touk.widerest.cart;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
-import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -17,7 +17,7 @@ public class PrefixBasedAuthProviderTest {
 
     @Test
     public void passingProperDataParsesCorrectlyTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site/admin");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("site/admin");
         assertThat(resultsPair.getLeft(), equalTo("site"));
         assertThat(resultsPair.getRight(), equalTo("admin"));
     }
@@ -25,44 +25,44 @@ public class PrefixBasedAuthProviderTest {
 
     @Test(expected = BadCredentialsException.class)
     public void emptyInputStringCausesExceptionTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("");
     }
 
     @Test(expected = BadCredentialsException.class)
      public void nullInputStringCasesExceptionTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString(null);
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString(null);
      }
 
     @Test(expected = BadCredentialsException.class)
     public void passingTooManyStringsCausesExceptionTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site/admin/site");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("site/admin/site");
     }
 
     @Test(expected = BadCredentialsException.class)
     public void passingTooManyStringsCausesException2Test() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("admin//site/a//dmin/s/ite");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("admin//site/a//dmin/s/ite");
     }
 
     @Test(expected = BadCredentialsException.class)
     public void passingSingleStringCausesExceptionTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("site");
     }
 
     @Test(expected = BadCredentialsException.class)
     public void passingSingleStringFollowedBySlashCausesExceptionTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site/");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("site/");
     }
 
     @Test
     public void leadingSlashFollowedByProperDataParsesCorrectlyTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("/site/admin");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("/site/admin");
         assertThat(resultsPair.getLeft(), equalTo("site"));
         assertThat(resultsPair.getRight(), equalTo("admin"));
     }
 
     @Test
     public void properDataFollowedWithASlashParsesCorrectlyTest() {
-        resultsPair = PrefixBasedAuthenticationProvider.getAuthDataFromString("site/admin/");
+        resultsPair = PrefixBasedAuthenticationManager.getAuthDataFromString("site/admin/");
         assertThat(resultsPair.getLeft(), equalTo("site"));
         assertThat(resultsPair.getRight(), equalTo("admin"));
     }

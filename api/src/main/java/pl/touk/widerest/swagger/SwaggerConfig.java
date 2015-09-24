@@ -2,8 +2,10 @@ package pl.touk.widerest.swagger;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.ApiKey;
@@ -32,6 +34,8 @@ public class SwaggerConfig {
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo())
                 .select().paths(paths()).build()
+                .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
+                .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .securityContexts(Lists.newArrayList(securityContext()))
                 .securitySchemes(Lists.newArrayList(oAuthScheme(), apiKeyScheme()));
     }

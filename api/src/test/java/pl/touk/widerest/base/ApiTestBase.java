@@ -2,11 +2,11 @@ package pl.touk.widerest.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.broadleafcommerce.common.media.domain.MediaDto;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -20,13 +20,17 @@ import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
 import org.springframework.hateoas.core.DelegatingRelProvider;
 import org.springframework.hateoas.hal.Jackson2HalModule;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
@@ -39,12 +43,15 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
-import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -53,7 +60,7 @@ import static org.junit.Assert.assertThat;
 
 @SpringApplicationConfiguration(classes = Application.class, initializers = BroadleafApplicationContextInitializer.class)
 @WebIntegrationTest({
-        "server.port:0"
+        "server.port:0", "auth0.domain:false"
 })
 public abstract class ApiTestBase {
 
@@ -90,7 +97,7 @@ public abstract class ApiTestBase {
 
     /* PayPal */
     public static final String PAYPAL_CREDENTIALS_URL = "http://localhost:{port}/paypal";
-    public static final String PAYPAL_CREDENTIALS_TOKEN_URL = PAYPAL_CREDENTIALS_URL+"/id";
+    public static final String PAYPAL_CREDENTIALS_ID_URL = PAYPAL_CREDENTIALS_URL+"/id";
     public static final String PAYPAL_CREDENTIALS_SECRET_URL = PAYPAL_CREDENTIALS_URL+"/secret";
 
     /* Customer */
@@ -103,7 +110,7 @@ public abstract class ApiTestBase {
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
 
-    protected RestTemplate restTemplate = new RestTemplate();
+    protected RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
     /* HATEOAS Rest Template */
     private List<HttpMessageConverter<?>> httpMessageConverters = new ArrayList<>();
     private RestTemplate hateoasRestTemplate;
@@ -166,7 +173,9 @@ public abstract class ApiTestBase {
             resourceDetails.setUsername("backoffice/admin");
             resourceDetails.setPassword("admin");
 
-            return new OAuth2RestTemplate(resourceDetails);
+        OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
+        oAuth2RestTemplate.setMessageConverters(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+        return oAuth2RestTemplate;
     }
 
     protected RestTemplate hateoasRestTemplate() {

@@ -1,36 +1,48 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import io.swagger.annotations.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-import javax.xml.ws.Response;
-
-import org.apache.el.stream.Stream;
-import org.broadleafcommerce.common.currency.dao.BroadleafCurrencyDao;
-import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
-import org.broadleafcommerce.common.media.domain.Media;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
-import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
+import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -872,11 +884,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "Quantity of a specific SKU")
-            @RequestBody String quantity) {
-
+            @RequestBody int quantity)
+    {
          /* TODO: (mst) Inventory Service??? */
-
-        final int intQuantity = Integer.parseInt(quantity);
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -885,7 +895,7 @@ public class ProductController {
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
                 .map(e -> {
-                    e.setQuantityAvailable(intQuantity);
+                    e.setQuantityAvailable(quantity);
                     return e;
                 })
                 .map(catalogService::saveSku)

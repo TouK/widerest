@@ -454,17 +454,13 @@ public class OrderController {
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId,
             @ApiParam(value = "Quantity value", required = true)
-            @RequestBody String quantity) {
-
-
-        final int intQuantity = Integer.parseInt(quantity);
-
-
-       try {
-           return orderServiceProxy.updateItemQuantityInOrder(intQuantity,userDetails,orderId,itemId);
-       } catch(Exception e) {
-           return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-       }
+            @RequestBody int quantity)
+    {
+        try {
+            return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
+        } catch(Exception e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     /* PUT /orders/{orderId}/fulfillment/selectedOption */
@@ -484,12 +480,9 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Fulfillment Option value", required = true)
-            @RequestBody String fulfillmentOptionId) throws PricingException {
-
-        Long longFulfillmentOption = Long.parseLong(fulfillmentOptionId);
-
-        return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, longFulfillmentOption);
-
+            @RequestBody long fulfillmentOptionId) throws PricingException
+    {
+        return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, fulfillmentOptionId);
     }
 
 

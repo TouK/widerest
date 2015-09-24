@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenCo
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.AnonymousUserInterceptor;
+import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
 
 import javax.annotation.Resource;
 
@@ -38,7 +39,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore())
                 .tokenEnhancer(jwtTokenEnhancer())
-                .authenticationManager(authenticationManager);
+                .authenticationManager(new PrefixBasedAuthenticationManager(authenticationManager))
+        ;
     }
 
     @Override

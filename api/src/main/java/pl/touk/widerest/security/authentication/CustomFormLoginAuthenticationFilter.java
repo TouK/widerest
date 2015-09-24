@@ -15,6 +15,15 @@ public class CustomFormLoginAuthenticationFilter extends UsernamePasswordAuthent
 
     private String usertypeParameter = SPRING_SECURITY_FORM_USERTYPE_KEY;
 
+//    public CustomFormLoginAuthenticationFilter() {
+//        setAuthenticationDetailsSource(new WebAuthenticationDetailsSource() {
+//            @Override
+//            public WebAuthenticationDetails buildDetails(HttpServletRequest context) {
+//                return super.buildDetails(context);
+//            }
+//        });
+//    }
+//
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         if (!request.getMethod().equals("POST")) {

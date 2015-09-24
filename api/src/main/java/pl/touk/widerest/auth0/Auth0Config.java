@@ -3,15 +3,18 @@ package pl.touk.widerest.auth0;
 import com.auth0.spring.security.auth0.Auth0AuthenticationProvider;
 import com.auth0.spring.security.auth0.Auth0JWTToken;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
 
+@ConditionalOnProperty("auth0.domain")
 @Configuration
 @ComponentScan("com.auth0")
 public class Auth0Config extends ResourceServerConfigurerAdapter {
@@ -24,6 +27,11 @@ public class Auth0Config extends ResourceServerConfigurerAdapter {
 
     @Value("${auth0.securedRoute:/tenant/**}")
     public String securedRoot;
+
+    @Bean
+    public Auth0TenantTokenStore auth0TenantTokenStore() {
+        return new Auth0TenantTokenStore();
+    }
 
     @Bean
     public Auth0AuthenticationProvider auth0AuthenticationProvider() {
@@ -52,5 +60,11 @@ public class Auth0Config extends ResourceServerConfigurerAdapter {
         ;
     }
 
-
+    @Override
+    public void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+                .antMatchers(securedRoot)
+                .authenticated();
+    }
 }

@@ -1,29 +1,18 @@
-package pl.touk.widerest.paypal.endpoint;
+package pl.touk.widerest.paypal;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.*;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.base.ApiTestBase;
 
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -32,54 +21,43 @@ public class PayPalCredentialsTest extends ApiTestBase {
 
     @Test
     public void shouldSetCredentialsBeSameWithReturned() throws URISyntaxException {
-        // Given admin user
-        Pair<OAuth2RestTemplate, String> admin = generateAdminUser();
-        OAuth2RestTemplate restTemplate = admin.getKey();
-        String accessToken = restTemplate.getAccessToken().getValue();
-        HttpEntity entity = getHttpJsonRequestEntity();
 
-        // When getting token id and secret
-        // Then status code should be 5xx
+        RestTemplate restTemplate = oAuth2AdminRestTemplate();
+
+        // Given not yet set PayPal credentials
+        // When trying to get them
+        // Then status code should be 404
         try {
-            restTemplate.exchange(PAYPAL_CREDENTIALS_TOKEN_URL, HttpMethod.GET,
-                    entity, String.class, serverPort);
+            restTemplate.getForObject(PAYPAL_CREDENTIALS_ID_URL, String.class, serverPort);
             fail("Error code should be returned");
         } catch(HttpStatusCodeException e) {
-            assert(e.getStatusCode().is5xxServerError());
+            assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
         }
 
         try {
-            restTemplate.exchange(PAYPAL_CREDENTIALS_SECRET_URL, HttpMethod.GET,
-                    entity, String.class, serverPort);
+            restTemplate.getForObject(PAYPAL_CREDENTIALS_SECRET_URL, String.class, serverPort);
             fail("Error code should be returned");
         } catch(HttpStatusCodeException e) {
-            assert(e.getStatusCode().is5xxServerError());
+            assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
         }
 
         // When setting token id and secret
-        String tokenId = "sdfsar3456df";
-        String secret = "6dgadgnsd8f";
+        String paypalClientId = "sdfsar3456df";
+        String paypalSecret = "6dgadgnsd8f";
 
-        HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        requestHeaders.set("Authorization", "Bearer " + accessToken);
-        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        restTemplate.postForEntity(PAYPAL_CREDENTIALS_ID_URL,
+                paypalClientId, String.class, serverPort);
 
-        entity = new HttpEntity(tokenId, requestHeaders);
-        restTemplate.exchange(PAYPAL_CREDENTIALS_TOKEN_URL, HttpMethod.POST,
-                entity, String.class, serverPort);
+        restTemplate.postForEntity(PAYPAL_CREDENTIALS_SECRET_URL,
+                paypalSecret, String.class, serverPort);
 
-        entity = new HttpEntity(secret, requestHeaders);
-        restTemplate.exchange(PAYPAL_CREDENTIALS_SECRET_URL, HttpMethod.POST,
-                entity, String.class, serverPort);
 
         // When getting credentials
+        String storedPaypalClientId = restTemplate.getForObject(PAYPAL_CREDENTIALS_ID_URL, String.class, serverPort);
+        String storedPaypalSecret = restTemplate.getForObject(PAYPAL_CREDENTIALS_SECRET_URL, String.class, serverPort);
+
         // Then the same credentials should be returned
-        assert(restTemplate.exchange(PAYPAL_CREDENTIALS_TOKEN_URL, HttpMethod.GET,
-                getHttpJsonRequestEntity(), String.class, serverPort).getBody()
-                .equals(tokenId));
-        assert(restTemplate.exchange(PAYPAL_CREDENTIALS_SECRET_URL, HttpMethod.GET,
-                getHttpJsonRequestEntity(), String.class, serverPort).getBody()
-                .equals(secret));
+        assertEquals(paypalClientId, storedPaypalClientId);
+        assertEquals(paypalSecret, storedPaypalSecret);
     }
 }

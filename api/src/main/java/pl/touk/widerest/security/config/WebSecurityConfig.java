@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.CustomAuthenticationProvider;
 import pl.touk.widerest.security.authentication.CustomFormLoginConfigurer;
-import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationProvider;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 
 @Configuration
@@ -50,19 +49,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return provider;
     }
 
-    @Bean
-    public AuthenticationProvider prefixBasedAuthenticationProvider() {
-        PrefixBasedAuthenticationProvider provider = new PrefixBasedAuthenticationProvider();
-        provider.addProvider("site", siteAuthenticationProvider());
-        provider.addProvider("backoffice", backofficeAuthenticationProvider());
-        return provider;
-    }
+//    @Bean
+//    public AuthenticationProvider prefixBasedAuthenticationProvider() {
+//        PrefixBasedAuthenticationProvider provider = new PrefixBasedAuthenticationProvider();
+//
+//        provider.addProvider("site",
+//                siteAuthenticationProvider(),
+//                (username, credentials) -> new SiteAuthenticationToken(username, credentials)
+//        );
+//        provider.addProvider("backoffice",
+//                backofficeAuthenticationProvider(),
+//                (username, credentials) -> new BackofficeAuthenticationToken(username, credentials)
+//        );
+//        return provider;
+//    }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
                 .authenticationProvider(backofficeAuthenticationProvider())
                 .authenticationProvider(siteAuthenticationProvider())
-                .authenticationProvider(prefixBasedAuthenticationProvider())
+                //.authenticationProvider(prefixBasedAuthenticationProvider())
         ;
     }
 

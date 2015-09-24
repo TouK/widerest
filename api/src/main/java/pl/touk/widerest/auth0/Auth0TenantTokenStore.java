@@ -11,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.multitenancy.TenantTokenStore;
 
@@ -23,7 +22,6 @@ import java.util.List;
  * Created by mst on 16.09.15.
  */
 @Slf4j
-@Service
 public class Auth0TenantTokenStore implements TenantTokenStore {
 
     @Value("${auth0.domain}")
