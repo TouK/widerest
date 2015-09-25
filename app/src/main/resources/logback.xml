@@ -3,7 +3,7 @@
 
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
-    <logger name="pl.touk" level="DEBUG"/>
+    <logger name="pl.touk" level="INFO"/>
 
     <root level="WARN" />
 
