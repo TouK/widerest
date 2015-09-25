@@ -214,5 +214,6 @@
         <module>api</module>
         <module>paypal</module>
         <module>multitenancy</module>
+        <module>app</module>
     </modules>
 </project>

@@ -1,11 +1,21 @@
 package pl.touk.widerest.base;
 
-import org.broadleafcommerce.common.media.domain.MediaDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

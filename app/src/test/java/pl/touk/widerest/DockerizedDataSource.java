@@ -37,7 +37,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
         ContainerConfig containerConfig = ContainerConfig.builder().image("postgres:9.4").build();
         ContainerCreation containerCreation = docker.createContainer(containerConfig, "widerest-db-"+ UUID.randomUUID());
         if (!CollectionUtils.isEmpty(containerCreation.getWarnings())) {
-            containerCreation.getWarnings().forEach(log::warn);
+            containerCreation.getWarnings().forEach(DockerizedDataSource.log::warn);
         }
         this.containerId = containerCreation.id();
 
@@ -58,7 +58,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
             try (Connection connection = getTargetDataSource().getConnection()) {
                 return;
             } catch (SQLException e) {
-                log.info("Waiting for the container to start up...");
+                DockerizedDataSource.log.info("Waiting for the container to start up...");
                 Thread.sleep(1000);
             }
         }
