@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cd api/scripts/
+cd app/scripts/
 ./run-database-development.sh
