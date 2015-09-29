@@ -49,7 +49,7 @@ databaseChangeLog:
                 path: /sql/load_sitemap_data.sql
             - sqlFile:
                 path: /sql/load_desa_auctions.sql
-    - changeset:
+    - changeSet:
         id: 001-cleanup
         author: trombka
         changes:
