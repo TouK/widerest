@@ -23,15 +23,33 @@ import org.broadleafcommerce.common.persistence.EntityConfiguration;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.checkout.service.CheckoutService;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
-import org.broadleafcommerce.core.order.domain.*;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroupImpl;
+import org.broadleafcommerce.core.order.domain.FulfillmentOption;
+import org.broadleafcommerce.core.order.domain.FulfillmentOptionImpl;
+import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderImpl;
+import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.domain.OrderItemImpl;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.dao.OrderPaymentDao;
 import org.broadleafcommerce.core.payment.dao.OrderPaymentDaoImpl;
-import org.broadleafcommerce.core.payment.service.*;
-import org.broadleafcommerce.profile.core.dao.*;
+import org.broadleafcommerce.core.payment.service.DefaultPaymentGatewayCheckoutService;
+import org.broadleafcommerce.core.payment.service.OrderPaymentService;
+import org.broadleafcommerce.core.payment.service.OrderPaymentServiceImpl;
+import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
+import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOServiceImpl;
+import org.broadleafcommerce.profile.core.dao.AddressDao;
+import org.broadleafcommerce.profile.core.dao.AddressDaoImpl;
+import org.broadleafcommerce.profile.core.dao.CountryDao;
+import org.broadleafcommerce.profile.core.dao.CountryDaoImpl;
+import org.broadleafcommerce.profile.core.dao.PhoneDao;
+import org.broadleafcommerce.profile.core.dao.PhoneDaoImpl;
+import org.broadleafcommerce.profile.core.dao.StateDao;
+import org.broadleafcommerce.profile.core.dao.StateDaoImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.*;
@@ -58,7 +76,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = PayPalControllerTest.TestConfiguration.class)

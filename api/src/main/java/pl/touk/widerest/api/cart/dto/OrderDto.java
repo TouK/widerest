@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
 
-
 import java.math.BigDecimal;
 import java.util.List;
 

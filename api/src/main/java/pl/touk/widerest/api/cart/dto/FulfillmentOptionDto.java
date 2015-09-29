@@ -7,9 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.ResourceSupport;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**

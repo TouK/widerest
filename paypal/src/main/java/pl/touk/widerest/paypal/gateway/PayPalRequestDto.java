@@ -3,12 +3,10 @@ package pl.touk.widerest.paypal.gateway;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import lombok.Getter;
-import org.broadleafcommerce.common.payment.PaymentTransactionType;
 import org.broadleafcommerce.common.payment.dto.LineItemDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 
 import javax.annotation.Nullable;
-import java.net.URI;
 import java.util.List;
 
 public class PayPalRequestDto {
