@@ -1,0 +1,52 @@
+databaseChangeLog:
+#    - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+    - changeSet:
+        id: initial
+        author: trombka
+        changes:
+            - createTable:
+                tableName: test
+                columns:
+                    - column:
+                        name: id
+                        type: int
+                        autoIncrement: true
+                        constraints:
+                            primaryKey: true
+                            nullable: true
+            - sql:
+                sql: SET search_path TO "${database.defaultSchemaName}"
+            - sqlFile:
+                path: /sql/initial_schema.sql
+            - sqlFile:
+                path: /config/bc/sql/load_admin_permissions.sql
+            - sqlFile:
+                path: /config/bc/sql/load_admin_roles.sql
+            - sqlFile:
+                path: /config/bc/sql/load_admin_menu.sql
+            - sqlFile:
+                path: /sql/load_admin_users.sql
+            - sqlFile:
+                path: /sql/load_code_tables.sql
+            - sqlFile:
+                path: /sql/load_i18n_countries.sql
+            - sqlFile:
+                path: /sql/load_table_sequences.sql
+            - sqlFile:
+                path: /sql/load_content_structure.sql
+            - sqlFile:
+                path: /sql/load_catalog_data.sql
+            - sqlFile:
+                path: /sql/load_content_data.sql
+            - sqlFile:
+                path: /sql/load_content_structure_i18n.sql
+            - sqlFile:
+                path: /sql/load_content_data_i18n.sql
+            - sqlFile:
+                path: /sql/load_catalog_i18n_data_FR.sql
+            - sqlFile:
+                path: /sql/load_catalog_i18n_data_ES.sql
+            - sqlFile:
+                path: /sql/load_sitemap_data.sql
+            - sqlFile:
+                path: /sql/load_desa_auctions.sql

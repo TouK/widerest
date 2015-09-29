@@ -3,6 +3,7 @@ package pl.touk.widerest.multitenancy.sample;
 import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import pl.touk.widerest.multitenancy.MultiTenancyService;
@@ -10,7 +11,7 @@ import pl.touk.widerest.multitenancy.TenantRequest;
 
 import java.util.function.Consumer;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = LiquibaseAutoConfiguration.class)
 @ComponentScan(basePackageClasses = MultiTenancyService.class)
 public class SampleApplication {
 

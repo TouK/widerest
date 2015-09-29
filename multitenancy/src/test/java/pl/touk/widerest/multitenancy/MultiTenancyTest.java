@@ -70,7 +70,7 @@ public class MultiTenancyTest {
         // then database schema created
         Connection connection = dataSource.getConnection();
         try {
-            connection.setSchema(tenantId);
+            connection.setSchema(MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantId);
         } finally {
             connection.close();
         }
@@ -132,9 +132,9 @@ public class MultiTenancyTest {
         // then no database schema created
         Connection connection = dataSource.getConnection();
         try {
-            connection.createStatement().execute("SET SCHEMA INVALID");
+            connection.setSchema(MultiTenancyConfig.TENANT_SCHEMA_PREFIX + "INVALID");
         } catch (SQLException ex) {
-            Assert.assertEquals("invalid schema name: INVALID", ex.getMessage());
+            Assert.assertEquals("invalid schema name: " + MultiTenancyConfig.TENANT_SCHEMA_PREFIX + "INVALID", ex.getMessage());
 
         }finally {
             connection.close();
