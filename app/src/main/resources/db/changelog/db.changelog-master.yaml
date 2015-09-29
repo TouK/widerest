@@ -1,5 +1,4 @@
 databaseChangeLog:
-#    - objectQuotingStrategy: QUOTE_ALL_OBJECTS
     - changeSet:
         id: initial
         author: trombka
@@ -50,3 +49,9 @@ databaseChangeLog:
                 path: /sql/load_sitemap_data.sql
             - sqlFile:
                 path: /sql/load_desa_auctions.sql
+    - changeset:
+        id: 001-cleanup
+        author: trombka
+        changes:
+            - dropTable:
+                tableName: test
