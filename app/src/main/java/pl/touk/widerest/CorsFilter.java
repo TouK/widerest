@@ -1,5 +1,6 @@
 package pl.touk.widerest;
 
+import com.spotify.docker.client.shaded.javax.ws.rs.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,6 +48,18 @@ public class CorsFilter extends OncePerRequestFilter {
         httpServletResponse.setHeader("Access-Control-Allow-Credentials", "true");
         httpServletResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         httpServletResponse.setHeader("Access-Control-Max-Age", "1209600");
+
+        /* (mst) This is a part of CORS preflight request. There won't
+                 be any Authorization headers, therefore to skip Auth0
+                 authorization here (which would always return 401) we'll
+                 just return a HTTP response with an OK status for each
+                 OPTIONS request.
+         */
+        if(httpServletRequest.getMethod().equals(HttpMethod.OPTIONS)) {
+            httpServletResponse.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
+
 
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
