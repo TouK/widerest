@@ -3,14 +3,17 @@ package pl.touk.widerest.paypal.gateway;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.OAuthTokenCredential;
 import com.paypal.base.rest.PayPalRESTException;
+import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.stereotype.Component;
-import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class PayPalSessionImpl implements PayPalSession {
@@ -20,8 +23,16 @@ public class PayPalSessionImpl implements PayPalSession {
 
     private Map<String, String> sdkConfig;
 
-    @Resource(name = "wdSystemProperties")
-    private SystemPropertiesServiceProxy spServiceProxy;
+    @Resource(name = "blSystemPropertiesDao")
+    protected SystemPropertiesDao systemPropertiesDao;
+
+    @Resource
+    protected Set<String> availableSystemPropertyNames;
+
+    @PostConstruct
+    public void init() {
+        Collections.addAll(availableSystemPropertyNames, CLIENT_ID, SECRET);
+    }
 
     // Should be replaced so that it uses refresh token instead
 
@@ -32,11 +43,11 @@ public class PayPalSessionImpl implements PayPalSession {
     private String secret;// = "EL1tVxAjhT7cJimnz5-Nsx9k2reTKSVfErNQF-CmrwJgxRtylkGTKlU4RvrX";
 
     private void setCredentialsFromSysPropertiesOrSetSandbox() {
-        clientId = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
+        clientId = Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(CLIENT_ID))
                 .map(SystemProperty::getValue)
                 .orElse("EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM");
 
-        secret = Optional.ofNullable(spServiceProxy.getSystemPropertyByName(SystemPropertiesServiceProxy.CLIENT_ID))
+        secret = Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(SECRET))
                 .map(SystemProperty::getValue)
                 .orElse("EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM");
 

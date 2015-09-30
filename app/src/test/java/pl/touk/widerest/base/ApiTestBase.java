@@ -43,6 +43,7 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import javax.annotation.Resource;
 import java.net.URI;
@@ -96,9 +97,9 @@ public abstract class ApiTestBase {
     public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
 
     /* PayPal */
-    public static final String PAYPAL_CREDENTIALS_URL = "http://localhost:{port}/paypal";
-    public static final String PAYPAL_CREDENTIALS_ID_URL = PAYPAL_CREDENTIALS_URL+"/id";
-    public static final String PAYPAL_CREDENTIALS_SECRET_URL = PAYPAL_CREDENTIALS_URL+"/secret";
+    public static final String SYSTEM_PROPERTIES_URL = "http://localhost:{port}/properties";
+    public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
+    public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
 
     /* Customer */
     public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";

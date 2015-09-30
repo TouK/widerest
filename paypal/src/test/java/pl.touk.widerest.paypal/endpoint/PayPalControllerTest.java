@@ -70,11 +70,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.paypal.gateway.PayPalGatewayConfigurationService;
-import pl.touk.widerest.paypal.service.SystemPropertiesServiceProxy;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.mock;
@@ -293,10 +294,10 @@ public class PayPalControllerTest {
             //return new Mockito().mock(PaymentGatewayConfigurationService.class);
         }
 
-        @Bean(name = "wdSystemProperties")
-        public SystemPropertiesServiceProxy systemProperitesServiceProxy() {
-            return mock(SystemPropertiesServiceProxy.class);
-        }
+//        @Bean(name = "wdSystemProperties")
+//        public SystemPropertiesServiceProxy systemProperitesServiceProxy() {
+//            return mock(SystemPropertiesServiceProxy.class);
+//        }
 
         @Bean(name = "blStatisticsService")
         public StatisticsService statisticsService() {
@@ -390,6 +391,11 @@ public class PayPalControllerTest {
         @Bean(name="blPhoneDao")
         public PhoneDao phoneDao() {
             return new PhoneDaoImpl();
+        }
+
+        @Bean
+        public Set<String> availableSystemPropertyNames() {
+            return new HashSet<>();
         }
 
 //        @Bean(name = "wdPayPalSession")
