@@ -1,18 +1,5 @@
 package pl.touk.widerest.api;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
-
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.i18n.service.ISOService;
@@ -24,7 +11,12 @@ import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.broadleafcommerce.core.order.domain.*;
+import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
+import org.broadleafcommerce.core.order.domain.FulfillmentOption;
+import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderAttribute;
+import org.broadleafcommerce.core.order.domain.OrderAttributeImpl;
+import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
@@ -34,17 +26,45 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
 import pl.touk.widerest.api.cart.controllers.OrderController;
-import pl.touk.widerest.api.cart.dto.*;
+import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.dto.CartAttributeDto;
+import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
+import pl.touk.widerest.api.cart.dto.CustomerDto;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.dto.BundleItemDto;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+
+import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Service("wdDtoConverters")
 public class DtoConverters {

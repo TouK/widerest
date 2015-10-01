@@ -1,7 +1,11 @@
 package pl.touk.widerest.api.cart.controllers;
 
 
-import io.swagger.annotations.*;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -21,7 +25,6 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import springfox.documentation.annotations.ApiIgnore;
 

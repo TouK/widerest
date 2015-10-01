@@ -6,6 +6,7 @@ import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityServ
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -33,7 +34,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 @Configuration
-@EnableAutoConfiguration(exclude = { HibernateJpaAutoConfiguration.class })
+@EnableAutoConfiguration(exclude = { HibernateJpaAutoConfiguration.class, LiquibaseAutoConfiguration.class })
 @ComponentScan("pl.touk.widerest")
 @EnableTransactionManagement
 public class Application extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {

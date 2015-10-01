@@ -13,13 +13,13 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 @Slf4j
 public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionProvider, ServiceRegistryAwareService {
 
     private DataSource dataSource;
-
-    private ServiceRegistryImplementor serviceRegistry;
 
     @Override
     public Connection getAnyConnection() throws SQLException {
@@ -37,9 +37,13 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
     public Connection getConnection(String tenantIdentifier) throws SQLException {
         log.debug("Getting connection for tenant: {}", tenantIdentifier);
         Connection connection = dataSource.getConnection();
-        if (StringUtils.isNotEmpty(tenantIdentifier)) {
-            connection.setSchema(tenantIdentifier);
-        }
+        connection.setSchema(
+                Optional.ofNullable(tenantIdentifier)
+                        .filter(StringUtils::isNotEmpty)
+                        .filter(Predicate.isEqual(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER).negate())
+                        .map(MultiTenancyConfig.TENANT_SCHEMA_PREFIX::concat)
+                        .orElse(null)
+        );
         return connection;
     }
 
@@ -77,11 +81,8 @@ public class MultiTenantConnectionProviderImpl implements MultiTenantConnectionP
 
     @Override
     public void injectServices(ServiceRegistryImplementor serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
         Map lSettings = serviceRegistry.getService(ConfigurationService.class).getSettings();
         DataSource localDs = (DataSource) lSettings.get("hibernate.connection.datasource");
         dataSource = localDs;
-
-        ConnectionProvider connectionProvider = serviceRegistry.getService(ConnectionProvider.class);
     }
 }

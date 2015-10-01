@@ -23,7 +23,6 @@ import springfox.documentation.annotations.ApiIgnore;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,9 +65,8 @@ public class TenantEndpoint {
             }
 
             return jwtToken;
-        } catch (JsonProcessingException e) {
-            throw new TenantCreationError(e);
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            log.error("Tenant creation error", e);
             throw new TenantCreationError(e);
         }
     }

@@ -204,7 +204,11 @@
                 <version>2.7.7</version>
             </dependency>
 
-
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>3.4.1</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>

@@ -4,16 +4,15 @@ package pl.touk.widerest.api.cart.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.List;
-import java.util.Locale;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
+
+import java.util.List;
+import java.util.Locale;
 
 
 @Data
