@@ -11,24 +11,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import java.util.Optional;
 import java.util.Set;
 
-@Controller
-@ResponseBody
-@RequestMapping(value = "/properties")
-@Api(value = "properties", description = "System properties endpoint")
-public class PropertiesController {
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
+@RestController
+@RequestMapping(value = "/settings")
+@Api(value = "settings", description = "System properties endpoint")
+public class SettingsController {
 
     @Resource(name = "blSystemPropertiesDao")
     protected SystemPropertiesDao systemPropertiesDao;
@@ -36,8 +37,28 @@ public class PropertiesController {
     @Resource
     protected Set<String> availableSystemPropertyNames;
 
+
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
-    @RequestMapping(value = "{key}", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get system setting value for a given key",
+            notes = "",
+            response = String.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Value successfully returned"),
+            @ApiResponse(code = 204, message = "Value for the key hasn't been set yet"),
+            @ApiResponse(code = 404, message = "There is no system property for the key")
+    })
+    public SettingsDto listAll() {
+        SettingsDto dto = SettingsDto.builder().build();
+        availableSystemPropertyNames.forEach(name -> {
+                dto.add(linkTo(methodOn(getClass()).getValue(name, null)).withRel("properties"));
+        });
+        return dto;
+    }
+
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
+    @RequestMapping(value = "/{key}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get system setting value for a given key",
             notes = "",
@@ -67,7 +88,7 @@ public class PropertiesController {
 
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
-    @RequestMapping(value = "{key}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Set client id used in PayPal",
             notes = "",

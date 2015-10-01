@@ -97,7 +97,7 @@ public abstract class ApiTestBase {
     public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
 
     /* PayPal */
-    public static final String SYSTEM_PROPERTIES_URL = "http://localhost:{port}/properties";
+    public static final String SYSTEM_PROPERTIES_URL = "http://localhost:{port}/settings";
     public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
     public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
 
