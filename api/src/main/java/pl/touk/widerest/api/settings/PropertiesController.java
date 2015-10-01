@@ -36,7 +36,7 @@ public class PropertiesController {
     @Resource
     protected Set<String> availableSystemPropertyNames;
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "{key}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get system setting value for a given key",
@@ -66,7 +66,7 @@ public class PropertiesController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Set client id used in PayPal",
