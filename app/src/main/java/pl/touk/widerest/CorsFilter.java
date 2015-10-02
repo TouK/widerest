@@ -1,6 +1,5 @@
 package pl.touk.widerest;
 
-import com.spotify.docker.client.shaded.javax.ws.rs.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -9,6 +8,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.HttpMethod;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Enumeration;
@@ -55,7 +55,7 @@ public class CorsFilter extends OncePerRequestFilter {
                  just return a HTTP response with an OK status for each
                  OPTIONS request.
          */
-        if(httpServletRequest.getMethod().equals(HttpMethod.OPTIONS)) {
+        if(HttpMethod.OPTIONS.equals(httpServletRequest.getMethod())) {
             httpServletResponse.setStatus(HttpServletResponse.SC_OK);
             return;
         }
