@@ -51,7 +51,8 @@ public class DockerizedDataSource extends DelegatingDataSource {
         final HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
 
         docker.startContainer(this.containerId, hostConfig);
-        setTargetDataSource(DataSourceBuilder.create().username("postgres").url("jdbc:postgresql://localhost:" + randomPort + "/").build());
+        String dockerIpAddress = docker.inspectContainer(this.containerId).networkSettings().ipAddress();
+        setTargetDataSource(DataSourceBuilder.create().username("postgres").url("jdbc:postgresql://" + dockerIpAddress + ":5432/").build());
 
         int tries = 10;
         while (tries-- > 0) {
