@@ -7,7 +7,6 @@ import org.broadleafcommerce.common.payment.dto.LineItemDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 
 import javax.annotation.Nullable;
-import java.net.URI;
 import java.util.List;
 
 public class PayPalRequestDto {
@@ -15,7 +14,7 @@ public class PayPalRequestDto {
     @Getter
     private PaymentRequestDTO wrapped;
 
-    private String paymentId;
+    public final static String SHIPPING_COST = "SHIPCOST";
 
     PayPalRequestDto(PaymentRequestDTO wrapped) {
         this.wrapped = wrapped;
@@ -31,7 +30,7 @@ public class PayPalRequestDto {
     }
 
     public void setAccessToken(String accessToken) {
-        wrapped.additionalField(PayPalMessageConstants.ACCESS_TOKEN, accessToken);
+        wrapped = wrapped.additionalField(PayPalMessageConstants.ACCESS_TOKEN, accessToken);
     }
 
     public String getAccessToken() {
@@ -40,6 +39,14 @@ public class PayPalRequestDto {
 
     public String getPayerId() {
         return String.valueOf(wrapped.getAdditionalFields().get(PayPalMessageConstants.PAYER_ID));
+    }
+
+    public void setOrderId(String id) {
+        wrapped.orderId(id);
+    }
+
+    public void setPayerId(String id) {
+        wrapped = wrapped.additionalField(PayPalMessageConstants.PAYER_ID, id);
     }
 
     public String getOrderCurrencyCode() {
@@ -54,6 +61,14 @@ public class PayPalRequestDto {
         return wrapped.getOrderSubtotal();
     }
 
+    public String getTaxTotal() {
+        return wrapped.getTaxTotal();
+    }
+
+    public void setTaxTotal(String taxTotal) {
+        wrapped.taxTotal(taxTotal);
+    }
+
     public String getReturnUri() {
         return wrapped.getAdditionalFields().get(PayPalMessageConstants.RETURN_URL).toString();
     }
@@ -63,11 +78,19 @@ public class PayPalRequestDto {
     }
 
     public void setPaymentId(String id) {
-        paymentId = id;
+        wrapped = wrapped.additionalField(PayPalMessageConstants.PAYMENT_ID, id);
     }
 
     public String getPaymentId() {
-        return paymentId;
+        return wrapped.getAdditionalFields().get(PayPalMessageConstants.PAYMENT_ID).toString();
+    }
+
+    public void setShippingTotal(String cost) {
+        wrapped = wrapped.additionalField(SHIPPING_COST, cost);
+    }
+
+    public String getShippingTotal() {
+        return wrapped.getAdditionalFields().get(SHIPPING_COST).toString();
     }
 
     public Object getOrderId() {

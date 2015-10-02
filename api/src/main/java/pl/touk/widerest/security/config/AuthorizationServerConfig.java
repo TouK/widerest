@@ -4,8 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
@@ -18,13 +16,12 @@ import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenCo
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.AnonymousUserInterceptor;
-import pl.touk.widerest.security.authentication.UserAuthenticationConverterImpl;
+import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
 
 import javax.annotation.Resource;
 
 @Configuration
 @EnableAuthorizationServer
-@EnableGlobalAuthentication
 public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Resource
@@ -36,18 +33,14 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Resource
     private AnonymousUserInterceptor anonymousUserInterceptor;
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) {
-        auth.parentAuthenticationManager(authenticationManager);
-    }
-
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints
                 .addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore())
                 .tokenEnhancer(jwtTokenEnhancer())
-                .authenticationManager(authenticationManager);
+                .authenticationManager(new PrefixBasedAuthenticationManager(authenticationManager))
+        ;
     }
 
     @Override

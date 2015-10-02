@@ -1,11 +1,9 @@
 package pl.touk.widerest.security.authentication;
 
-import org.springframework.core.GenericTypeResolver;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.transaction.annotation.Transactional;
 
 public class CustomAuthenticationProvider<T extends UsernamePasswordAuthenticationToken> extends DaoAuthenticationProvider {

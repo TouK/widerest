@@ -1,52 +1,33 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.common.money.Money;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-
-import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * Created by mst on 07.07.15.
  */
 @Data
 @Builder
-@ApiModel
 @NoArgsConstructor
 @AllArgsConstructor
+@ApiModel(value = "Order Item", description = "Order Item DTO resource description")
 public class OrderItemDto {
-    @ApiModelProperty
+
+    @JsonIgnore
     private long itemId;
 
-    @ApiModelProperty(required = true)
-    private Integer quantity;
+    @ApiModelProperty(position = 0, value = "Quantity of an item to be added into the order", required = true, dataType = "java.lang.Integer")
+    private Integer quantity = 1;
 
-    private String productName;
+    @ApiModelProperty(position = 1, value = "ID of a SKU to be added into the order", required = true, dataType = "java.lang.Long")
+    private Long skuId;
 
-    private ProductOptionDto options;
-
-    private BigDecimal price;
-
-    private Map attributes;
-
-    private long productId;
-
-    @ApiModelProperty(required = true)
-    private long skuId;
-
-    private String description;
-
-    protected Money salePrice;
-
-    protected Money retailPrice;
-
-    // TODO: Bundles and all that other bs
-
+    @ApiModelProperty(position = 2, value = "ID of a bundle to be added into the order", dataType = "java.lang.Long")
+    private Long bundleProductId;
 }

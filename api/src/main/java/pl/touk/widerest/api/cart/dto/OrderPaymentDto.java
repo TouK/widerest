@@ -14,25 +14,24 @@ import org.broadleafcommerce.common.money.Money;
  */
 @Data
 @Builder
-@ApiModel
+@ApiModel(value = "Order Payment", description = "Order Payment DTO resource description")
 public class OrderPaymentDto {
 
     @JsonIgnore
     private Long orderId;
 
+    @ApiModelProperty(position = 0, value = "ID of this payment", required = true, dataType = "java.lang.Long")
     private Long paymentId;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 1, value = "Customer's billing address", required = true, dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
     protected AddressDto billingAddress;
 
-    /* TODO: Currency - Money */
-    @ApiModelProperty
+    @ApiModelProperty(position = 2, value = "Total price for this order", required = true, dataType = "org.broadleafcommerce.common.money.Money")
     protected Money amount;
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 3, value = "Reference number of this number", required = true, dataType = "java.lang.String")
     protected String referenceNumber;
-    @ApiModelProperty
+
+    @ApiModelProperty(position = 4, value = "Type of payment", dataType = "java.lang.String")
     protected String type;
-
-
 }

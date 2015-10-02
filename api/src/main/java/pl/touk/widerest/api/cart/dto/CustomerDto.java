@@ -4,56 +4,64 @@ package pl.touk.widerest.api.cart.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.profile.core.domain.Address;
+import org.springframework.hateoas.ResourceSupport;
 
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Created by mst on 07.07.15.
- */
+
 @Data
 @Builder
-@ApiModel
-public class CustomerDto {
-    private Long id;
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
+@ApiModel(value = "Customer", description = "Customer DTO resource description")
+public class CustomerDto extends ResourceSupport {
 
-    @ApiModelProperty
+    @JsonIgnore
+    private Long customerId;
+
+    @ApiModelProperty(position = 0, value = "Customer's username", required = true, dataType = "java.lang.String")
     private String username;
-    @ApiModelProperty
+
+    @JsonIgnore
+    @ApiModelProperty(position = 1, value = "Customer's password hash", dataType = "java.lang.String")
+    private String passwordHash;
+
+    @ApiModelProperty(position = 2, value = "Customer's first name", required = true, dataType = "java.lang.String")
     private String firstName;
-    @ApiModelProperty
+
+    @ApiModelProperty(position = 3, value = "Customer's last name", required = true, dataType = "java.lang.String")
     private String lastName;
 
-    /* ChallengeQuestion type ? */
-    private String challengeQuestion;
+    /* TODO: (mst) Validation? */
+    @ApiModelProperty(position = 4, value = "Customer's e-mail address", required = true, dataType = "java.lang.String")
+    private String email;
 
-    /* ignotr ? */
-    private String challengeAnswer;
-
-    private Boolean passwordChangeRequired = false;
-
-    @ApiModelProperty
+    @ApiModelProperty(position = 5, value = "Customer's locale", dataType = "java.util.Locale")
     private Locale locale;
 
-
+    @JsonIgnore
     @ApiModelProperty
     private Boolean registered = false;
-    @ApiModelProperty
-    private Boolean deactivaed = false;
-    @ApiModelProperty
-    private Boolean receiveEmail = false;
 
+    @JsonIgnore
+    @ApiModelProperty
+    private Boolean deactivated = false;
+    
     /* customer attributes */
 
-    @ApiModelProperty
+    @ApiModelProperty(position = 6, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
     private AddressDto correspondenceAddress;
-    @ApiModelProperty
+
+    @ApiModelProperty(position = 7, value = "Customer's residence address", dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
     private AddressDto residenceAddress;
 
     private List<CustomerAddressDto> addresses;
-
 
 }

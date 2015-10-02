@@ -3,47 +3,37 @@ package pl.touk.widerest.api.cart.controllers;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
-import org.broadleafcommerce.core.order.service.OrderService;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
-import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
-import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.provider.token.TokenStore;
-import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
-import pl.touk.widerest.api.catalog.DtoConverters;
+import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Created by mst on 07.07.15.
- */
 @RestController
 @RequestMapping(value = "/customers")
 @Api(value = "customers", description = "Customer management endpoint")
@@ -52,27 +42,27 @@ public class CustomerController {
     @Resource(name="blCustomerService")
     private CustomerService customerService;
 
-    @Resource(name="blOrderService")
-    private OrderService orderService;
-
-    @PersistenceContext(unitName = "blPU")
-    protected EntityManager em;
+    @Resource(name = "wdCustomerService")
+    private CustomerServiceProxy customerServiceProxy;
 
 
     @Transactional
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
-    public ResponseEntity<CustomerDto> readOneCustomer(@PathVariable(value = "id") Long customerId) {
+    public ResponseEntity<CustomerDto> readOneCustomer(
+            @ApiParam(value = "ID of a customer")
+                @PathVariable(value = "id") Long customerId) {
 
         CustomerDto customer = Optional.ofNullable(customerService.readCustomerById(customerId))
-                           .map(DtoConverters.customerEntityToDto)
-                            .orElseThrow(CustomerNotFoundException::new);
+                .map(DtoConverters.customerEntityToDto)
+                .orElseThrow(CustomerNotFoundException::new);
+
         return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 
     @Transactional
-    //@PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
@@ -80,33 +70,61 @@ public class CustomerController {
             response = CustomerDto.class,
             responseContainer = "List"
     )
-    public List<CustomerDto> readAllCustomers() {
-        return getAllCustomers().stream().map(DtoConverters.customerEntityToDto).collect(Collectors.toList());
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of customers list", response = CustomerDto.class, responseContainer = "List")
+    })
+    public List<CustomerDto> readAllCustomers(
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        if(userDetails instanceof AdminUserDetails) {
+            return customerServiceProxy.getAllCustomers().stream()
+                    .map(DtoConverters.customerEntityToDto)
+                    .collect(Collectors.toList());
+        } else if(userDetails instanceof CustomerUserDetails) {
+            List<CustomerDto> list = new ArrayList<>();
+            list.add(DtoConverters.customerEntityToDto.apply(
+                    customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId())
+            ));
+            return list;
+        }
+
+        return null;
     }
 
+    @Transactional
+    @RequestMapping(value = "/register", method = RequestMethod.POST)
+    public void registerCustomer(
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @RequestParam String username,
+            @RequestParam String password,
+            @RequestParam String passwordConfirm,
+            @RequestParam String email
+    )  {
+        // Assuming user already has token
 
-    @PostAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
-    private List<Customer> getAllCustomers() {
-        CriteriaBuilder builder = this.em.getCriteriaBuilder();
-        CriteriaQuery criteria = builder.createQuery(Customer.class);
-        Root customer = criteria.from(CustomerImpl.class);
-        criteria = criteria.select(customer);
-        TypedQuery query = this.em.createQuery(criteria);
-        query.setHint("org.hibernate.cacheable", Boolean.valueOf(true));
-        query.setHint("org.hibernate.cacheRegion", "query.Order");
-        return query.getResultList();
-    }
+        Optional.ofNullable(customerUserDetails.getId())
+                .map(customerService::readCustomerById)
+                .map(Customer::isRegistered)
+                .map(e -> e ? null: e)
+                .orElseThrow(() -> new ResourceNotFoundException("User already registered"));
 
+        Optional.of(username)
+                .map(customerService::readCustomerByUsername)
+                .ifPresent(e -> {
+                    throw new ResourceNotFoundException("Username already taken, please try with other");
+                });
 
-    private void mergeUsers(
-            @AuthenticationPrincipal CustomerUserDetails anonymousUser,
-            @AuthenticationPrincipal CustomerUserDetails loggedInUser) {
+        Optional.of(email)
+                .map(customerService::readCustomerByEmail)
+                .ifPresent(e -> {
+                    throw new ResourceNotFoundException("Email address already taken, please try with other");
+                });
 
-        TokenStore tokenStore = null;
+        Customer customer = customerService.readCustomerById(customerUserDetails.getId());
+        customer.setUsername(username);
+        customer.setEmailAddress(email);
 
-        UserAuthenticationConverter userAuthenticationConverter;
-
-        Collection<OAuth2AccessToken> anonToken = tokenStore.findTokensByClientId(anonymousUser.getId().toString());
+        customerService.registerCustomer(customer, password, passwordConfirm);
 
     }
 
