@@ -1,13 +1,13 @@
 package pl.touk.widerest;
 
 import com.google.common.collect.Lists;
+import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.PortBinding;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.jdbc.datasource.DelegatingDataSource;
@@ -21,19 +21,26 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
 public class DockerizedDataSource extends DelegatingDataSource {
 
     @Getter
-    @Setter
     protected DockerClient docker;
 
     protected String containerId;
 
     @PostConstruct
     public void createContainer() throws Exception {
+
+        DefaultDockerClient.Builder builder = DefaultDockerClient.fromEnv();
+
+        String dockerHost = Optional.ofNullable(builder.uri().getHost()).orElse("localhost");
+
+        docker = builder.build();
+
         ContainerConfig containerConfig = ContainerConfig.builder().image("postgres:9.4").build();
         ContainerCreation containerCreation = docker.createContainer(containerConfig, "widerest-db-"+ UUID.randomUUID());
         if (!CollectionUtils.isEmpty(containerCreation.getWarnings())) {
@@ -51,8 +58,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
         final HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
 
         docker.startContainer(this.containerId, hostConfig);
-        String dockerIpAddress = docker.inspectContainer(this.containerId).networkSettings().ipAddress();
-        setTargetDataSource(DataSourceBuilder.create().username("postgres").url("jdbc:postgresql://" + dockerIpAddress + ":5432/").build());
+        setTargetDataSource(DataSourceBuilder.create().username("postgres").url("jdbc:postgresql://" + dockerHost + ":" + randomPort + "/").build());
 
         int tries = 10;
         while (tries-- > 0) {
