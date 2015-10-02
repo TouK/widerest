@@ -1,6 +1,7 @@
 package pl.touk.widerest;
 
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerCertificateException;
 import org.broadleafcommerce.openadmin.server.security.domain.AdminUser;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,9 +66,9 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
 
     @Bean
     @ConditionalOnProperty(prefix = "spring.datasource", name = "url", havingValue = "false", matchIfMissing = true)
-    public DataSource dataSource() {
+    public DataSource dataSource() throws DockerCertificateException {
         DockerizedDataSource dockerizedDataSource = new DockerizedDataSource();
-        dockerizedDataSource.setDocker(new DefaultDockerClient("unix:///var/run/docker.sock"));
+        dockerizedDataSource.setDocker(DefaultDockerClient.fromEnv().build());
         return dockerizedDataSource;
     }
 
