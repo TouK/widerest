@@ -287,12 +287,17 @@ public class DtoConverters {
             }
         }
 
+        final ProductDto productDto = dto;
+
 		/* Links to the product's categories */
         if (entity.getAllParentCategoryXrefs() != null && !entity.getAllParentCategoryXrefs().isEmpty()) {
-            for (CategoryProductXref parentCategoryXrefs : entity.getAllParentCategoryXrefs()) {
-                dto.add(linkTo(methodOn(CategoryController.class)
-                        .readOneCategoryById(parentCategoryXrefs.getCategory().getId())).withRel("category"));
-            }
+            entity.getAllParentCategoryXrefs().stream()
+                    .map(CategoryProductXref::getCategory)
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .forEach(x -> {
+                        productDto.add(linkTo(methodOn(CategoryController.class)
+                                .readOneCategoryById(x.getId())).withRel("category"));
+                    });
         }
 
         dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(entity.getId())).withRel("attributes"));
