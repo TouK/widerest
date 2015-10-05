@@ -130,6 +130,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
     private void waitForDatabaseStart() throws IOException, InterruptedException {
 
         while (true) {
+            Thread.sleep(1000);
             Socket s = new Socket(dockerHost, databasePort);
             s.setKeepAlive(true);
             s.setSoTimeout(1000);
@@ -141,7 +142,6 @@ public class DockerizedDataSource extends DelegatingDataSource {
                 break;
             } catch (SocketException ex) {
                 log.info("Waiting for the container to start up...");
-                Thread.sleep(1000);
             } catch (SocketTimeoutException ex) {
                 break;
             }
