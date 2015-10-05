@@ -230,15 +230,14 @@ public class OrderController {
 
         boolean isBundleBeingAdded = false;
 
-        if (orderItemDto.getSkuId() != null && orderItemDto.getBundleProductId() != null) {
+        if (orderItemDto.getSkuId() != null && orderItemDto.getBundleProductId() != null || orderItemDto.getQuantity() <= 0) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
         Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
+                            .orElseThrow(ResourceNotFoundException::new);
 
-        OrderItemRequestDTO req = new OrderItemRequestDTO();
-
+        final OrderItemRequestDTO req = new OrderItemRequestDTO();
         req.setQuantity(orderItemDto.getQuantity());
 
         if (orderItemDto.getSkuId() != null) {
@@ -249,7 +248,7 @@ public class OrderController {
 
             long bundleProductId = orderItemDto.getBundleProductId();
 
-            Product bundleProduct = Optional.ofNullable(catalogService.findProductById(bundleProductId))
+            final Product bundleProduct = Optional.ofNullable(catalogService.findProductById(bundleProductId))
                     .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + bundleProductId + " does not exist"));
 
             if (!(bundleProduct instanceof ProductBundle)) {
@@ -457,6 +456,10 @@ public class OrderController {
             @ApiParam(value = "Quantity value", required = true)
             @RequestBody int quantity)
     {
+        if(quantity <= 0) {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+
         try {
             return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
         } catch(Exception e) {
