@@ -105,7 +105,7 @@ public class CatalogUtils {
         return categoryEntity;
     }
 
-    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) throws DtoValidationException {
+    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
 
         skuEntity.setName(skuDto.getName());
         skuEntity.setDescription(skuDto.getDescription());
@@ -159,7 +159,7 @@ public class CatalogUtils {
         return skuEntity;
     }
 
-    public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) throws DtoValidationException {
+    public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
 
         if (skuDto.getName() != null) {
             skuEntity.setName(skuDto.getName());
