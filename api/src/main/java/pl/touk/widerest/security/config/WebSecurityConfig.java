@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.CustomAuthenticationProvider;
@@ -33,19 +34,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private AdminUserDetailsServiceImpl backofficeUserDetailsService;
 
     @Autowired
-    private UserDetailsServiceImpl siteUserDetailsService;
+    private PasswordEncoder blAdminPasswordEncoder;
 
     @Bean
     public AuthenticationProvider backofficeAuthenticationProvider() {
         DaoAuthenticationProvider provider = new CustomAuthenticationProvider<>(BackofficeAuthenticationToken.class);
         provider.setUserDetailsService(backofficeUserDetailsService);
+        provider.setPasswordEncoder(blAdminPasswordEncoder);
         return provider;
     }
+
+    @Autowired
+    private UserDetailsServiceImpl siteUserDetailsService;
+
+    @Autowired
+    private PasswordEncoder blPasswordEncoder;
 
     @Bean
     public AuthenticationProvider siteAuthenticationProvider() {
         DaoAuthenticationProvider provider = new CustomAuthenticationProvider<>(SiteAuthenticationToken.class);
         provider.setUserDetailsService(siteUserDetailsService);
+        provider.setPasswordEncoder(blPasswordEncoder);
         return provider;
     }
 
