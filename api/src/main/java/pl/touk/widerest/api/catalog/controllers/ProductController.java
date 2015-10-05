@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
@@ -33,6 +34,7 @@ import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
@@ -154,8 +156,11 @@ public class ProductController {
 
 
         if (hasDuplicates(productBundleDto.getName())) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            throw new DtoValidationException("Provided bundle already exists");
+//            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
+
+        CatalogUtils.validateSkuPrices(productBundleDto.getDefaultSku());
 
         Product product = new ProductBundleImpl();
 
@@ -230,8 +235,10 @@ public class ProductController {
         }
 
         if (hasDuplicates(productDto.getName())) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            throw new DtoValidationException("Provided bundle already exists");
         }
+
+        CatalogUtils.validateSkuPrices(productDto.getDefaultSku());
 
         Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
 
@@ -274,6 +281,13 @@ public class ProductController {
             savedSkus.addAll(newProduct.getAllSkus());
 
             for (SkuDto skuDto : productDto.getSkus()) {
+
+                try {
+                    CatalogUtils.validateSkuPrices(skuDto);
+                } catch(DtoValidationException ex) {
+                    /* (mst) Since this is not a default SKU, we'll just skip it */
+                    continue;
+                }
 
                 Sku s = dtoConverters.skuDtoToEntity.apply(skuDto);
 
@@ -372,14 +386,15 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        if (!productDto.getName().equals(productDto.getDefaultSku().getName())) {
-            productDto.getDefaultSku().setName(productDto.getName());
-        }
-
         if (hasDuplicates(productDto.getName())) {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
+        CatalogUtils.validateSkuPrices(productDto.getDefaultSku());
+
+        if (!productDto.getName().equals(productDto.getDefaultSku().getName())) {
+            productDto.getDefaultSku().setName(productDto.getName());
+        }
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -659,6 +674,8 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
+        CatalogUtils.validateSkuPrices(skuDto);
+
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
@@ -772,13 +789,16 @@ public class ProductController {
     )
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Successful replace of default SKU details"),
-            @ApiResponse(code = 404, message = "The specified Product does not exist")
+            @ApiResponse(code = 404, message = "The specified Product does not exist"),
+            @ApiResponse(code = 409, message = "Sku validation error")
     })
     public ResponseEntity<?> changeDefaultSkuByProductId(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId,
             @ApiParam(value = "Description of a new default SKU", required = true)
             @RequestBody SkuDto defaultSkuDto) {
+
+        CatalogUtils.validateSkuPrices(defaultSkuDto);
 
         Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -1055,6 +1075,8 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
+        CatalogUtils.validateSkuPrices(skuDto);
+
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -1084,7 +1106,8 @@ public class ProductController {
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
-            @ApiResponse(code = 404, message = "The specified product or SKU does not exist")
+            @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
+            @ApiResponse(code = 409, message = "Sku valdation error")
     })
     public ResponseEntity<?> partialUpdateOneSkuByProductId(
             @ApiParam(value = "ID of a specific product", required = true)
@@ -1093,6 +1116,8 @@ public class ProductController {
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "(Partial) Description of an updated SKU", required = true)
             @RequestBody SkuDto skuDto) {
+
+        CatalogUtils.validateSkuPrices(skuDto);
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)

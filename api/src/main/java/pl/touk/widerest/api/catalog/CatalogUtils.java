@@ -10,6 +10,7 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 
 import java.util.Collections;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class CatalogUtils {
         return categoryEntity;
     }
 
-    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
+    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) throws DtoValidationException {
 
         skuEntity.setName(skuDto.getName());
         skuEntity.setDescription(skuDto.getDescription());
@@ -158,7 +159,7 @@ public class CatalogUtils {
         return skuEntity;
     }
 
-    public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
+    public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) throws DtoValidationException {
 
         if (skuDto.getName() != null) {
             skuEntity.setName(skuDto.getName());
@@ -257,6 +258,13 @@ public class CatalogUtils {
         }
 
         return productEntity;
+    }
+
+    public static void validateSkuPrices(final SkuDto skuDtoToValidate) throws DtoValidationException {
+        if((skuDtoToValidate.getSalePrice() != null && skuDtoToValidate.getSalePrice().longValue() < 0) ||
+                (skuDtoToValidate.getRetailPrice() != null && skuDtoToValidate.getRetailPrice().longValue() < 0)) {
+            throw new DtoValidationException("Sku's prices cannot be negative");
+        }
     }
 
 }
