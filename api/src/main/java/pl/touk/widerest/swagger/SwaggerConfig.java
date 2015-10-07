@@ -79,7 +79,7 @@ public class SwaggerConfig {
         ApiInfo apiInfo = new ApiInfo(
                 "Widerest",
                 "RESTful API for Broadleaf Commerce - an open source eCommerce platform based on the Spring Framework",
-                "0.0.1",
+                String.valueOf(getClass().getPackage().getImplementationVersion()),
                 "Widerest terms of service",
                 "info@touk.pl",
                 "Widerest Licence",

@@ -14,6 +14,7 @@
     <version>1.0</version>
     <packaging>pom</packaging>
     <name>widerest</name>
+    <organization><name>TouK</name><url>http://touk.pl</url></organization>
 
     <properties>
         <blc.version>4.0.0-RC1</blc.version>
@@ -208,6 +209,11 @@
                 <groupId>org.liquibase</groupId>
                 <artifactId>liquibase-core</artifactId>
                 <version>3.4.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mattbertolini</groupId>
+                <artifactId>liquibase-slf4j</artifactId>
+                <version>1.2.1</version>
             </dependency>
 
         </dependencies>
