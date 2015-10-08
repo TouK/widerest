@@ -67,6 +67,7 @@ public class SettingsController {
     })
     public Resources listAll() {
 
+
         return new Resources(
                 availableSystemPropertyNames.stream()
                         .map(name ->
@@ -129,8 +130,10 @@ public class SettingsController {
     public ResponseEntity setValue(
             @ApiParam @PathVariable("key") String key,
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody @ApiParam String value
+            @ApiParam @RequestBody String value
     ) {
+
+        System.out.println("Setting value: " + value);
 
         return Optional.of(key)
                 .filter(availableSystemPropertyNames::contains)

@@ -111,6 +111,11 @@ public abstract class ApiTestBase {
 
     public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&response_type=token&redirect_uri=/";
 
+
+    public static final String SETTINGS_URL = "http://localhost:{port}/settings";
+    public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
+
+
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
 

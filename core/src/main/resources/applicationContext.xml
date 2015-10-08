@@ -251,6 +251,16 @@
         </property>
     </bean>
 
+    <bean id="blCheckoutWorkflow" class="org.broadleafcommerce.core.workflow.SequenceProcessor">
+        <property name="activities">
+            <list>
+                <bean class="pl.touk.widerest.api.cart.OrderCompletedActivity">
+                    <property name="order" value="99999" />
+                </bean>
+            </list>
+        </property>
+    </bean>
+
 
 
     <tx:annotation-driven transaction-manager="blTransactionManager"/>
