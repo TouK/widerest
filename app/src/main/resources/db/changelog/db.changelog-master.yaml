@@ -47,8 +47,8 @@ databaseChangeLog:
                 path: /sql/load_catalog_i18n_data_ES.sql
             - sqlFile:
                 path: /sql/load_sitemap_data.sql
-            - sqlFile:
-                path: /sql/load_desa_auctions.sql
+#            - sqlFile:
+#                path: /sql/load_desa_auctions.sql.vm
     - changeSet:
         id: 001-cleanup
         author: trombka

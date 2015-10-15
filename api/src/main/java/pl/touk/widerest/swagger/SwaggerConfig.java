@@ -63,7 +63,9 @@ public class SwaggerConfig {
     }
 
     private Predicate<String> paths() {
-        return or(regex("/catalog/.*"), regex("/orders.*"), regex("/customers.*"), regex("/paypal.*"), regex("/tenant.*"), regex("/settings.*"));
+        return or(regex("/catalog/.*"), regex("/orders.*"), regex("/customers.*"),
+                regex("/paypal.*"), regex("/tenant.*"), regex("/settings.*"),
+                regex("/manager.*"));
     }
 
     @Bean
