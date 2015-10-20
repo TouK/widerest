@@ -133,16 +133,18 @@ public class DockerizedDataSource extends DelegatingDataSource {
             Thread.sleep(1000);
             Socket s = new Socket(dockerHost, databasePort);
             s.setKeepAlive(true);
-            s.setSoTimeout(1000);
+            s.setSoTimeout(3000);
             s.sendUrgentData(1);
             InputStream is = s.getInputStream();
             boolean connected = s.isConnected();
             try {
-                is.read();
-                break;
+                int read = is.read();
+                log.info("read: {}", read);
+//                break;
             } catch (SocketException ex) {
                 log.info("Waiting for the container to start up...");
             } catch (SocketTimeoutException ex) {
+//                log.info("Waiting for the container to start up...");
                 break;
             }
         }

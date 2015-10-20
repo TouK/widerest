@@ -26,6 +26,7 @@ import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -35,7 +36,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = "/customers")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/customers")
 @Api(value = "customers", description = "Customer management endpoint")
 public class CustomerController {
 
@@ -44,7 +45,6 @@ public class CustomerController {
 
     @Resource(name = "wdCustomerService")
     private CustomerServiceProxy customerServiceProxy;
-
 
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")

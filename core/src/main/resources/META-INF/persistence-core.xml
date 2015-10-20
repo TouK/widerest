@@ -17,7 +17,7 @@
             <property name="hibernate.hbm2ddl.auto" value="none"/>
         </properties>
     </persistence-unit>
-    
+
     <persistence-unit name="blSecurePU" transaction-type="RESOURCE_LOCAL">
         <non-jta-data-source>jdbc/webSecure</non-jta-data-source>
         <exclude-unlisted-classes/>

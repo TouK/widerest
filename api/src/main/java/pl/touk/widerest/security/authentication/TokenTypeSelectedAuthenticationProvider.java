@@ -6,11 +6,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.annotation.Transactional;
 
-public class CustomAuthenticationProvider<T extends UsernamePasswordAuthenticationToken> extends DaoAuthenticationProvider {
+public class TokenTypeSelectedAuthenticationProvider<T extends UsernamePasswordAuthenticationToken> extends DaoAuthenticationProvider {
 
     private Class<T> supportedTokenType;
 
-    public CustomAuthenticationProvider(Class<T> type) {
+    public TokenTypeSelectedAuthenticationProvider(Class<T> type) {
         this.supportedTokenType = type;
     }
 

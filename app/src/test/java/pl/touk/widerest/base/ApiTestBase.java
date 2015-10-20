@@ -43,6 +43,7 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import javax.annotation.Resource;
@@ -65,8 +66,10 @@ import static org.junit.Assert.assertThat;
 })
 public abstract class ApiTestBase {
 
+    public static final String API_BASE_URL = "http://localhost:{port}/v1";
+
     /* Categories */
-    public static final String CATEGORIES_URL = "http://localhost:{port}/catalog/categories";
+    public static final String CATEGORIES_URL = API_BASE_URL + "/categories";
     public static final String CATEGORY_BY_ID_URL = CATEGORIES_URL + "/{categoryId}";
     public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
@@ -75,7 +78,7 @@ public abstract class ApiTestBase {
     public static final String CATEGORY_AVAILABILITY_BY_ID_URL = CATEGORY_BY_ID_URL + "/availability";
 
     /* Products */
-    public static final String PRODUCTS_URL = "http://localhost:{port}/catalog/products";
+    public static final String PRODUCTS_URL = API_BASE_URL + "/products";
     public static final String PRODUCT_BY_ID_URL = PRODUCTS_URL + "/{productId}";
     public static final String PRODUCTS_COUNT_URL = PRODUCTS_URL + "/count";
     public static final String PRODUCT_BY_ID_SKUS = PRODUCTS_URL + "/{productId}/skus";
@@ -91,22 +94,22 @@ public abstract class ApiTestBase {
     public static final String PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL = PRODUCT_BY_ID_ATTRIBUTES_URL + "/{attributeName}";
 
     /* Orders */
-    public static final String ORDERS_URL = "http://localhost:{port}/orders";
+    public static final String ORDERS_URL = API_BASE_URL + "/orders";
     public static final String ORDER_BY_ID_URL = ORDERS_URL + "{orderId}";
     public static final String ORDERS_COUNT = ORDERS_URL+"/count";
     public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
 
     /* PayPal */
-    public static final String SYSTEM_PROPERTIES_URL = "http://localhost:{port}/settings";
+    public static final String SYSTEM_PROPERTIES_URL = API_BASE_URL + "/settings";
     public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
     public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
 
     /* Customer */
-    public static final String CUSTOMERS_URL = "http://localhost:{port}/customers";
+    public static final String CUSTOMERS_URL = API_BASE_URL + "/customers";
 
     public static final String LOGIN_URL = "http://localhost:{port}/login";
 
-    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=test&response_type=token&redirect_uri=/";
+    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&response_type=token&redirect_uri=/";
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
@@ -168,7 +171,7 @@ public abstract class ApiTestBase {
             ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
             resourceDetails.setGrantType("password");
             resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-            resourceDetails.setClientId("test");
+            resourceDetails.setClientId(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER);
             resourceDetails.setScope(scopes);
 
             resourceDetails.setUsername("backoffice/admin");

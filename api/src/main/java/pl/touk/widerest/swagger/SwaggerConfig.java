@@ -7,15 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.ApiKey;
-import springfox.documentation.service.AuthorizationScope;
-import springfox.documentation.service.GrantType;
-import springfox.documentation.service.ImplicitGrant;
-import springfox.documentation.service.LoginEndpoint;
-import springfox.documentation.service.OAuth;
-import springfox.documentation.service.SecurityReference;
-import springfox.documentation.service.SecurityScheme;
+import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -37,17 +29,23 @@ public class SwaggerConfig {
                 .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.newArrayList(oAuthScheme(), apiKeyScheme()));
+                .securitySchemes(Lists.newArrayList(oAuthPasswordScheme(), apiKeyScheme()));
     }
 
     private SecurityScheme apiKeyScheme() {
         return new ApiKey("api_key", "Tenant-Token", "header");
     }
 
-    private SecurityScheme oAuthScheme() {
+    private SecurityScheme oAuthImplicitScheme() {
         AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
         LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
         GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
+        return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
+    }
+
+    private SecurityScheme oAuthPasswordScheme() {
+        AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
+        GrantType grantType = new ResourceOwnerPasswordCredentialsGrant("/oauth/token");
         return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
     }
 
@@ -63,16 +61,18 @@ public class SwaggerConfig {
     }
 
     private Predicate<String> paths() {
-        return or(regex("/catalog/.*"), regex("/orders.*"), regex("/customers.*"), regex("/paypal.*"), regex("/tenant.*"), regex("/settings.*"));
+        return or(regex("/v1/.*"));
     }
 
     @Bean
     public SecurityConfiguration security() {
         return new SecurityConfiguration(
                 "test",
+                "secret",
                 "test-app-realm",
                 "test-app",
-                "api-key");
+                "api-key",
+                " ");
     }
 
     private ApiInfo apiInfo() {

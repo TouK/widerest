@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -47,6 +49,7 @@ public class TenantEndpoint {
                          HttpServletRequest request) {
 
         String tenantIdentifier = identifierTool.generateIdentifier();
+        RequestContextHolder.getRequestAttributes().setAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, tenantIdentifier, RequestAttributes.SCOPE_REQUEST);
         try {
             multiTenancyService.createTenantSchema(tenantIdentifier, Optional.of(tenantRequest));
 

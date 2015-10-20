@@ -6,15 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import javax.annotation.Resource;
 import java.util.Optional;
 
 @Slf4j
 @Service
 public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentifierResolver {
-
-    @Resource
-    MultiTenancyService multiTenancyService;
 
     @Override
     public String resolveCurrentTenantIdentifier() {

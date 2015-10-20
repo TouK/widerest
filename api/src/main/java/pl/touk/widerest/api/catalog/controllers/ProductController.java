@@ -34,6 +34,7 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ import static java.util.stream.Collectors.toMap;
 
 
 @RestController
-@RequestMapping(value = "/catalog/products", produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = "application/json")
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
 

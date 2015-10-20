@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Connection;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public class LiquibaseMultiTenancyService extends MultiTenancyService implements
     private ResourceLoader resourceLoader;
 
     @Override
+    @Transactional
     public void createTenantSchema(String tenantIdentifier, Optional<TenantRequest> tenantDetails) throws Exception {
         Connection connection = privilegedDataSource.getConnection();
         try {

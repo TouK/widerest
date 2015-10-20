@@ -11,7 +11,7 @@ import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.AnonymousUserInterceptor;
-import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
+import pl.touk.widerest.security.authentication.ValidIdClientDetailsService;
 
 import javax.annotation.Resource;
 
@@ -40,14 +40,13 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore)
                 .tokenEnhancer(tokenEnhancer)
-                .authenticationManager(new PrefixBasedAuthenticationManager(authenticationManager))
+                .authenticationManager(authenticationManager)
         ;
     }
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory()
-                .withClient("test").authorizedGrantTypes("password", "implicit", "authorization_code").scopes("site","backoffice").autoApprove(true);
+        clients.withClientDetails(new ValidIdClientDetailsService());
     }
 
     @Override
