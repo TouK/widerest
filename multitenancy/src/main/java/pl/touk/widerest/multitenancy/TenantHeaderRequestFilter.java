@@ -11,6 +11,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -26,7 +28,10 @@ public class TenantHeaderRequestFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String tenantIdentifier = request.getHeader(TENANT_TOKEN_HEADER);
+        StringBuffer requestURL = request.getRequestURL();
+        String tenantIdentifier =
+                Optional.ofNullable(request.getHeader(TENANT_TOKEN_HEADER))
+                        .orElse(URI.create(requestURL.toString()).getHost().replaceAll("\\..*", ""));
         if (tenantIdentifier != null) {
             try {
                 identifierTool.verifyIdentifier(tenantIdentifier);
