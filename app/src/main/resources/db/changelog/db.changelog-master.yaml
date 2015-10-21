@@ -3,6 +3,16 @@ databaseChangeLog:
         id: initial
         author: trombka
         changes:
+            - createTable:
+                tableName: test
+                columns:
+                    - column:
+                        name: id
+                        type: int
+                        autoIncrement: true
+                        constraints:
+                            primaryKey: true
+                            nullable: true
             - sql:
                 sql: SET search_path TO "${database.defaultSchemaName}"
             - sqlFile:

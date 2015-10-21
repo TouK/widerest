@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+
 import org.broadleafcommerce.common.security.util.PasswordChange;
 import org.broadleafcommerce.common.service.GenericResponse;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
@@ -13,13 +14,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import java.util.Optional;
 
 @RestController
-@RequestMapping(value = "/manager/admin", produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/manager/admin", produces = "application/json")
 public class ManagerEndpoint {
 
     @Resource(name="blAdminSecurityService")
