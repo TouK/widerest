@@ -6,30 +6,30 @@ import org.springframework.security.web.authentication.ui.DefaultLoginPageGenera
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-public final class CustomFormLoginConfigurer<H extends HttpSecurityBuilder<H>> extends AbstractAuthenticationFilterConfigurer<H,CustomFormLoginConfigurer<H>,CustomFormLoginAuthenticationFilter> {
+public final class UsertypeFormLoginConfigurer<H extends HttpSecurityBuilder<H>> extends AbstractAuthenticationFilterConfigurer<H,UsertypeFormLoginConfigurer<H>,UsertypeFormLoginAuthenticationFilter> {
 
-    public CustomFormLoginConfigurer() {
-        super(new CustomFormLoginAuthenticationFilter(),null);
+    public UsertypeFormLoginConfigurer() {
+        super(new UsertypeFormLoginAuthenticationFilter(),null);
         usernameParameter("username");
         usertypeParameter("usertype");
         passwordParameter("password");
     }
 
-    public CustomFormLoginConfigurer<H> loginPage(String loginPage) {
+    public UsertypeFormLoginConfigurer<H> loginPage(String loginPage) {
         return super.loginPage(loginPage);
     }
 
-    public CustomFormLoginConfigurer<H> usernameParameter(String usernameParameter) {
+    public UsertypeFormLoginConfigurer<H> usernameParameter(String usernameParameter) {
         getAuthenticationFilter().setUsernameParameter(usernameParameter);
         return this;
     }
 
-    public CustomFormLoginConfigurer<H> usertypeParameter(String usertypeParameter) {
+    public UsertypeFormLoginConfigurer<H> usertypeParameter(String usertypeParameter) {
         getAuthenticationFilter().setUsertypeParameter(usertypeParameter);
         return this;
     }
 
-    public CustomFormLoginConfigurer<H> passwordParameter(String passwordParameter) {
+    public UsertypeFormLoginConfigurer<H> passwordParameter(String passwordParameter) {
         getAuthenticationFilter().setPasswordParameter(passwordParameter);
         return this;
     }

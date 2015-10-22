@@ -58,7 +58,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.config.ListFactoryBean;
-import org.springframework.boot.test.IntegrationTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -161,11 +160,6 @@ public class PayPalControllerTest {
     private CustomerUserDetails userDetails;
 
     @Configuration
-    @IntegrationTest(
-            {
-                    "paypal.clientId:EBWKjlELKMYqRNQ6sYvFo64FtaRLRR5BdHEESmha49TM",
-                    "paypal.secret:EO422dn3gQLgDbuwqTjzrFgFtaRLRR5BdHEESmha49TM",
-            })
     @PropertySource("classpath:test.properties")
     @ComponentScan({"pl.touk.widerest.paypal"})
     public static class TestConfiguration {

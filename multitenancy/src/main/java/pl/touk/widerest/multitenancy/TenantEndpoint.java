@@ -1,23 +1,22 @@
 package pl.touk.widerest.multitenancy;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.jwt.JwtHelper;
-import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -33,7 +32,7 @@ import java.util.Optional;
 public class TenantEndpoint {
 
     @Resource
-    private MacSigner signerVerifier;
+    private IdentifierTool identifierTool;
 
     @Resource
     private ObjectMapper objectMapper;
@@ -49,27 +48,24 @@ public class TenantEndpoint {
                          @ApiIgnore Authentication authentication,
                          HttpServletRequest request) {
 
-        if (request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE) != null) {
-             throw new TenantTokenNotAllowed();
-        }
-
-        String tenantIdentifier = RandomStringUtils.randomAlphabetic(16).toLowerCase();
-        Tenant tenant = Tenant.builder().id(tenantIdentifier).subscriptionType("free").build();
-        request.setAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE, tenant);
+        String tenantIdentifier = identifierTool.generateIdentifier();
+        RequestContextHolder.getRequestAttributes().setAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, tenantIdentifier, RequestAttributes.SCOPE_REQUEST);
         try {
             multiTenancyService.createTenantSchema(tenantIdentifier, Optional.of(tenantRequest));
-            final String jwtToken = JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded();
 
             if (tenantTokenStore != null) {
-                tenantTokenStore.addTenantToken(jwtToken, authentication);
+                tenantTokenStore.addTenantToken(tenantIdentifier, authentication);
             }
 
-            return jwtToken;
+            return tenantIdentifier;
         } catch (Exception e) {
             log.error("Tenant creation error", e);
             throw new TenantCreationError(e);
         }
     }
+
+    @Resource
+    private CurrentTenantIdentifierResolver currentTenantIdentifierResolver;
 
     @RequestMapping(method = RequestMethod.GET)
     public List<String> testRead(
@@ -79,22 +75,13 @@ public class TenantEndpoint {
         if (tenantTokenStore != null) {
             return tenantTokenStore.getTenantTokens(authentication);
         } else {
-            Tenant tenant = (Tenant) request.getAttribute(MultiTenancyConfig.TENANT_REQUEST_ATTRIBUTE);
-            if (tenant == null) {
-                throw new TenantTokenMissing();
-            }
-
-            try {
-                return Lists.newArrayList(
-                        JwtHelper.encode(objectMapper.writeValueAsString(tenant), signerVerifier).getEncoded()
-                );
-            } catch (JsonProcessingException e) {
-                throw new TenantCreationError(e);
-            }
+            String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
+            identifierTool.verifyIdentifier(tenantIdentifier);
+            return Lists.newArrayList(tenantIdentifier);
         }
     }
 
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
     static class TenantTokenMissing extends RuntimeException {}
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)

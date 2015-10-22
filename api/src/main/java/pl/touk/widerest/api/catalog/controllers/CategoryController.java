@@ -29,6 +29,7 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -36,7 +37,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = "/catalog/categories", produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/categories", produces = "application/json")
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 

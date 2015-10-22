@@ -21,24 +21,28 @@ public class PrefixBasedAuthenticationManager implements AuthenticationManager {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         return authenticationManager.authenticate(
-                Optional.of(authentication.getPrincipal())
-                        .filter(String.class::isInstance)
-                        .map(String.class::cast)
-                        .map(PrefixBasedAuthenticationManager::getAuthDataFromString)
-                        .map(authDetails -> {
-                            String usertype = authDetails.getLeft();
-                            String username = authDetails.getRight();
-                            Object password = authentication.getCredentials();
-                            switch (usertype) {
-                                case "backoffice":
-                                    return new BackofficeAuthenticationToken(username, password);
-                                case "site":
-                                    return new SiteAuthenticationToken(username, password);
-                                default:
-                                    return authentication;
-                            }
-                        }).orElse(authentication)
+                convertAuthentication(authentication)
         );
+    }
+
+    public static Authentication convertAuthentication(Authentication authentication) {
+        return Optional.of(authentication.getPrincipal())
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(PrefixBasedAuthenticationManager::getAuthDataFromString)
+                .map(authDetails -> {
+                    String usertype = authDetails.getLeft();
+                    String username = authDetails.getRight();
+                    Object password = authentication.getCredentials();
+                    switch (usertype) {
+                        case "backoffice":
+                            return new BackofficeAuthenticationToken(username, password);
+                        case "site":
+                            return new SiteAuthenticationToken(username, password);
+                        default:
+                            return authentication;
+                    }
+                }).orElse(authentication);
     }
 
     public static Pair<String, String> getAuthDataFromString(String authenticationString) throws AuthenticationException {

@@ -4,6 +4,9 @@ import com.google.common.collect.Lists;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
 import liquibase.servicelocator.ServiceLocator;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
+import org.hibernate.service.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -12,6 +15,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClas
 import org.springframework.boot.autoconfigure.data.jpa.EntityManagerFactoryDependsOnPostProcessor;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.liquibase.CommonsLoggingLiquibaseLogger;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +23,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.util.Assert;
 
@@ -29,12 +36,13 @@ import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @Slf4j
 public class MultiTenancyConfig {
 
-    public static final String TENANT_REQUEST_ATTRIBUTE = MultiTenancyConfig.class.getPackage().getName() + ".Tenant";
+    public static final String TENANT_IDENTIFIER_REQUEST_ATTRIBUTE = MultiTenancyConfig.class.getPackage().getName() + ".Tenant";
     public static final String DEFAULT_TENANT_IDENTIFIER ="DEFAULT";
     public static final String TENANT_SCHEMA_PREFIX = "TENANT";
 
@@ -136,6 +144,28 @@ public class MultiTenancyConfig {
             super("liquibase");
         }
 
+    }
+
+    @Bean
+    public JpaVendorAdapter jpaVendorAdapter(
+            JpaProperties jpaProperties,
+            CurrentTenantIdentifierResolver tenantIdentifierResolver,
+            MultiTenantConnectionProvider multiTenantConnectionProvider)
+    {
+        AbstractJpaVendorAdapter adapter = new HibernateJpaVendorAdapter() {
+            @Override
+            public Map<String, Object> getJpaPropertyMap() {
+                Map<String, Object> jpaPropertyMap = super.getJpaPropertyMap();
+                jpaPropertyMap.put(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER, tenantIdentifierResolver);
+                jpaPropertyMap.put(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
+                return jpaPropertyMap;
+            }
+        };
+        adapter.setShowSql(jpaProperties.isShowSql());
+        adapter.setDatabase(jpaProperties.getDatabase());
+        adapter.setDatabasePlatform(jpaProperties.getDatabasePlatform());
+        adapter.setGenerateDdl(jpaProperties.isGenerateDdl());
+        return adapter;
     }
 
 }

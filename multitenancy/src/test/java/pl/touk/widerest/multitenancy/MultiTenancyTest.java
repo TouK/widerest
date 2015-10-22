@@ -11,16 +11,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.jwt.JwtHelper;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.multitenancy.sample.SampleApplication;
+import pl.touk.widerest.multitenancy.sample.SampleEntity;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 
@@ -55,22 +57,27 @@ public class MultiTenancyTest {
     @Autowired
     private Consumer<TenantRequest> setTenantDetails;
 
-    TestRestTemplate restTemplate = new TestRestTemplate();
+    @Resource
+    private IdentifierTool identifierTool;
+
+    TestRestTemplate noTenantRestTemplate = new TestRestTemplate();
 
     @Test
-    public void shouldCreateTenantWhenNoTenantTokenHeader() throws SQLException, IOException {
+    public void shouldCreateTenantWithoutTenantIdentifier() throws SQLException, IOException {
+
+        Mockito.reset(setTenantDetails);
 
         // when new tenant requested
         TenantRequest tenantDetails = TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build();
-        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", tenantDetails, String.class, serverPort);
+        String tenantIdentifier = noTenantRestTemplate.postForObject("http://localhost:{serverPort}/tenant", tenantDetails, String.class, serverPort);
 
         // then valid tenant token returned
-        String tenantId = verifyTokenAndConvertToTenantId(tenantToken);
+        verifyTenantIdentifier(tenantIdentifier);
 
         // then database schema created
         Connection connection = dataSource.getConnection();
         try {
-            connection.setSchema(MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantId);
+            connection.setSchema(MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantIdentifier);
         } finally {
             connection.close();
         }
@@ -78,56 +85,51 @@ public class MultiTenancyTest {
     }
 
     @Test
-    public void shouldReadValidTokenForExistingTenant() {
+    public void shouldReadTenantWithValidTenantIdentifier() {
 
         // given existing tenant
-        String tenantToken = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        String tenantIdentifier = noTenantRestTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        TestRestTemplate tenantRestTemplate = createTenantRestTemplate(tenantIdentifier);
 
         // when tenant requested
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken);
-        ResponseEntity<List> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/tenant", HttpMethod.GET, new HttpEntity<Object>(headers), List.class, serverPort);
+        ResponseEntity<List> responseEntity = tenantRestTemplate.getForEntity("http://localhost:{serverPort}/tenant", List.class, serverPort);
 
         // then tokens equal
-        Assert.assertEquals(tenantToken, responseEntity.getBody().get(0));
+        Assert.assertEquals(tenantIdentifier, responseEntity.getBody().get(0));
 
     }
 
     @Test
-    public void shouldFailReadingTenantWhenNoTokenGiven() {
-        // when tenant requested without token header
+    public void shouldReturnDefaultTenantWhithoutTenantIdentifier() {
+        // when tenant requested without tenant identifier
+        ResponseEntity<List> responseEntity = noTenantRestTemplate.getForEntity("http://localhost:{serverPort}/tenant", List.class, serverPort);
+
+        // then responded with error
+        Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
+        Assert.assertTrue(responseEntity.getBody().contains(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER));
+    }
+
+    @Test
+    public void shouldFailReadingTenantWithInvalidTenantIdentifier() {
+
+        // when tenant requested with invalid identifier
+        TestRestTemplate restTemplate = createTenantRestTemplate(UUID.randomUUID().toString());
         ResponseEntity<String> responseEntity = restTemplate.getForEntity("http://localhost:{serverPort}/tenant", String.class, serverPort);
 
         // then responded with error
+        Assert.assertTrue(responseEntity.getStatusCode().toString(), responseEntity.getStatusCode().is4xxClientError());
+    }
+
+    @Test
+    public void shouldFailCreatingTenantWithInvalidIdentifer() throws SQLException {
+
+        // when new tenant requested with invalid identifier
+        TestRestTemplate restTemplate = createTenantRestTemplate("INVALID");
+        TenantRequest tenantDetails = TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build();
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity("http://localhost:{serverPort}/tenant", tenantDetails, String.class, serverPort);
+
+        // then responded with error
         Assert.assertTrue(responseEntity.getStatusCode().is4xxClientError());
-    }
-
-    @Test
-    public void shouldFailReadingTenantWithInvalidToken() {
-        // when tenant requested without token header
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, createInvalidToken());
-        ResponseEntity<String> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/tenant", HttpMethod.GET, new HttpEntity<Object>(headers), String.class, serverPort);
-
-        // then responded with error
-        // TODO: change to a client error (4xx)
-        // https://github.com/spring-projects/spring-boot/issues/3057
-        Assert.assertTrue(responseEntity.getStatusCode().is5xxServerError());
-    }
-
-    @Test
-    public void shouldFailCreatingTenantWithInvalidToken() throws SQLException {
-        String tenantToken = createInvalidTokenForTenantId("INVALID");
-
-        // when tenant requested without token header
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken);
-        ResponseEntity<String> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/tenant", HttpMethod.GET, new HttpEntity<Object>(headers), String.class, serverPort);
-
-        // then responded with error
-        // TODO: change to a client error (4xx)
-        // https://github.com/spring-projects/spring-boot/issues/3057
-        Assert.assertTrue(responseEntity.getStatusCode().is5xxServerError());
 
         // then no database schema created
         Connection connection = dataSource.getConnection();
@@ -146,24 +148,24 @@ public class MultiTenancyTest {
     public void shouldCreateSampleEntityForTenant() throws SQLException {
 
         // given two tenants
-        String tenantToken1 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
-        String tenantToken2 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        String tenantIdentifier1 = noTenantRestTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        TestRestTemplate tenant1RestTemplate = createTenantRestTemplate(tenantIdentifier1);
+        String tenantIdentifier2 = noTenantRestTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        TestRestTemplate tenant2RestTemplate = createTenantRestTemplate(tenantIdentifier2);
+
+        ResponseEntity<Object> responseEntity;
 
         // when new sample entity requested for the first tenant
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken1);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        ResponseEntity<Object> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/samples", HttpMethod.POST, new HttpEntity<Object>("{ \"value\" : \"value1\" }", headers), Object.class, serverPort);
+        responseEntity = tenant1RestTemplate.postForEntity("http://localhost:{serverPort}/samples", SampleEntity.builder().value("value1").build(), Object.class, serverPort);
         URI sampleEntityLocation = responseEntity.getHeaders().getLocation();
 
         // then the sample entity is created
         Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
-        responseEntity = restTemplate.exchange(sampleEntityLocation, HttpMethod.GET, new HttpEntity<Object>(headers), Object.class);
+        responseEntity = tenant1RestTemplate.getForEntity(sampleEntityLocation, Object.class);
         Assert.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
         // when the same location read for the second tenant
-        headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken2);
-        responseEntity = restTemplate.exchange(sampleEntityLocation, HttpMethod.GET, new HttpEntity<Object>(headers), Object.class);
+        responseEntity = tenant2RestTemplate.getForEntity(sampleEntityLocation, Object.class);
 
         // then no sample entity found
         Assert.assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
@@ -174,28 +176,39 @@ public class MultiTenancyTest {
     public void shouldCreateSampleEntityInDefaultSchemaWhenNoTenantTokenGiven() throws SQLException {
 
         // when new sample entity requested without any tenant token
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        ResponseEntity<Object> responseEntity = restTemplate.exchange("http://localhost:{serverPort}/samples", HttpMethod.POST, new HttpEntity<Object>("{ \"value\" : \"value1\" }", headers), Object.class, serverPort);
+        ResponseEntity<Object> responseEntity = noTenantRestTemplate.postForEntity("http://localhost:{serverPort}/samples", SampleEntity.builder().value("value1").build(), Object.class, serverPort);
         URI sampleEntityLocation = responseEntity.getHeaders().getLocation();
 
         // then the sample entity is created
         Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
-        responseEntity = restTemplate.exchange(sampleEntityLocation, HttpMethod.GET, new HttpEntity<Object>(headers), Object.class);
+        responseEntity = noTenantRestTemplate.getForEntity(sampleEntityLocation, Object.class);
         Assert.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
     }
 
-    private String verifyTokenAndConvertToTenantId(String tenantToken) throws IOException {
-        return objectMapper.readValue(JwtHelper.decodeAndVerify(tenantToken, signerVerifier).getClaims(), Tenant.class).getId();
+    private void verifyTenantIdentifier(String tenantToken) throws IOException {
+        identifierTool.verifyIdentifier(tenantToken);
     }
 
-    private String createInvalidToken() {
-        return createInvalidTokenForTenantId("TEST");
+    private TestRestTemplate createTenantRestTemplate(String tenantIdentifier) {
+        TestRestTemplate restTemplate = new TestRestTemplate();
+        restTemplate.setInterceptors(Arrays.asList(new TenantHeaderInterceptor(tenantIdentifier)));
+        return restTemplate;
     }
 
-    private String createInvalidTokenForTenantId(String tenantId) {
-        return JwtHelper.encode(tenantId, new MacSigner("invalid_secret")).getEncoded();
+    private static class TenantHeaderInterceptor implements ClientHttpRequestInterceptor {
+
+        private String tenantIdentifier;
+
+        public TenantHeaderInterceptor(String tenantIdentifier) {
+            this.tenantIdentifier = tenantIdentifier;
+        }
+
+        @Override
+        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+            request.getHeaders().add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantIdentifier);
+            return execution.execute(request, body);
+        }
     }
 
 }

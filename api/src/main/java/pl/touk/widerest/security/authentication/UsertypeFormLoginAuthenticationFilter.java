@@ -9,13 +9,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class CustomFormLoginAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class UsertypeFormLoginAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     public static final String SPRING_SECURITY_FORM_USERTYPE_KEY = "j_usertype";
 
     private String usertypeParameter = SPRING_SECURITY_FORM_USERTYPE_KEY;
 
-//    public CustomFormLoginAuthenticationFilter() {
+    //    public CustomFormLoginAuthenticationFilter() {
 //        setAuthenticationDetailsSource(new WebAuthenticationDetailsSource() {
 //            @Override
 //            public WebAuthenticationDetails buildDetails(HttpServletRequest context) {
@@ -49,17 +49,7 @@ public class CustomFormLoginAuthenticationFilter extends UsernamePasswordAuthent
         username = username.trim();
         usertype = usertype.trim();
 
-        UsernamePasswordAuthenticationToken authRequest;
-        switch (usertype) {
-            case "backoffice" :
-                authRequest = new BackofficeAuthenticationToken(username, password);
-                break;
-            case "site" :
-                authRequest = new SiteAuthenticationToken(username, password);
-                break;
-            default:
-                authRequest = new UsernamePasswordAuthenticationToken(username, password);
-        }
+        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(usertype + "/" + username, password);
 
         // Allow subclasses to set the "details" property
         setDetails(request, authRequest);

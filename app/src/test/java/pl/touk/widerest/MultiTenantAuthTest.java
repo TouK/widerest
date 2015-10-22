@@ -1,7 +1,7 @@
 package pl.touk.widerest;
 
-import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -12,7 +12,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.http.AccessTokenRequiredException;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.AccessTokenProvider;
 import org.springframework.security.oauth2.client.token.AccessTokenProviderChain;
@@ -24,13 +23,13 @@ import org.springframework.security.oauth2.client.token.grant.code.Authorization
 import org.springframework.security.oauth2.client.token.grant.implicit.ImplicitAccessTokenProvider;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
+import org.springframework.security.oauth2.common.exceptions.UserDeniedAuthorizationException;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.MultiValueMap;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.multitenancy.TenantHeaderRequestFilter;
 import pl.touk.widerest.multitenancy.TenantRequest;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,35 +45,33 @@ public class MultiTenantAuthTest extends ApiTestBase {
     @Test
     public void shouldNotMixAuthorizationsBetweenTenants() {
 
-        // given two tenants
-        String tenantToken1 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
-        String tenantToken2 = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword("test").adminEmail("test@test.xx").build(), String.class, serverPort);
+        String tenant1Password = "password1";
+        String tenant2Password = "password2";
 
+        // given two tenants
+        String tenant1Identifier = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword(tenant1Password).adminEmail("admin@tenant1.com").build(), String.class, serverPort);
+        String tenant2Identifier = restTemplate.postForObject("http://localhost:{serverPort}/tenant", TenantRequest.builder().adminPassword(tenant2Password).adminEmail("admin@tenant2.com").build(), String.class, serverPort);
 
         // when authorization made for the first tenant
-        List<String> scopes = new ArrayList<>();
-        scopes.add("site");
-        scopes.add("backoffice");
-
         ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
         resourceDetails.setGrantType("password");
         resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-        resourceDetails.setClientId("test");
-        resourceDetails.setScope(scopes);
-
+        resourceDetails.setClientId(tenant1Identifier);
+        resourceDetails.setClientSecret("");
+        resourceDetails.setScope(Arrays.asList("site", "backoffice"));
         resourceDetails.setUsername("backoffice/admin");
-        resourceDetails.setPassword("test");
+        resourceDetails.setPassword(tenant1Password);
 
-        OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
+        OAuth2RestTemplate tenant1RestTemplate = new OAuth2RestTemplate(resourceDetails);
 
         DefaultRequestEnhancer requestEnhancer = new DefaultRequestEnhancer() {
             @Override
             public void enhance(AccessTokenRequest request, OAuth2ProtectedResourceDetails resource, MultiValueMap<String, String> form, HttpHeaders headers) {
-                headers.put(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, Lists.newArrayList(tenantToken1));
+                headers.put(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, Arrays.asList(tenant1Identifier));
                 super.enhance(request, resource, form, headers);
             }
         };
-        oAuth2RestTemplate.setAccessTokenProvider(
+        tenant1RestTemplate.setAccessTokenProvider(
                 new AccessTokenProviderChain(
                         Arrays.<AccessTokenProvider>asList(
                                 new AuthorizationCodeAccessTokenProvider(), new ImplicitAccessTokenProvider(),
@@ -86,14 +83,22 @@ public class MultiTenantAuthTest extends ApiTestBase {
                                 .collect(Collectors.toList())
                 ));
 
+        ResponseEntity<List> responseEntity;
+        HttpHeaders headers = new HttpHeaders();
 
-        // then client error thrown
-        thrown.expect(AccessTokenRequiredException.class);
+        // when the first tenant's resource called
+        headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant1Identifier);
+        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+
+        // then it is ok
+        Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
+
+        // but it will not be ok
+        thrown.expect(UserDeniedAuthorizationException.class);
 
         // when the second tenant's resource called
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenantToken2);
-        ResponseEntity<List> responseEntity = oAuth2RestTemplate.exchange("http://localhost:{serverPort}/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+        headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant2Identifier);
+        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
 
     }
 
