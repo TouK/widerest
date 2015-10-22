@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping(ResourceServerConfig.API_PATH + "/tenant")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/tenant")
 @Slf4j
 @Api(value = "tenants", description = "Tenants registration endpoint")
 public class TenantEndpoint {

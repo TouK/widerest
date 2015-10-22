@@ -17,3 +17,4 @@ combined/data/
 combined/solrhome
 *.error
 local-dev
+auth_endpoint

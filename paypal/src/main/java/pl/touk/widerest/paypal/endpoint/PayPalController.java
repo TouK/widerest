@@ -54,7 +54,7 @@ import java.util.Optional;
 
 @Controller
 @ResponseBody
-@RequestMapping(ResourceServerConfig.API_PATH + "/orders/{id}/paypal")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/orders/{id}/paypal")
 @Api(value = "paypal", description = "PayPal payment endpoint")
 public class PayPalController {
 
