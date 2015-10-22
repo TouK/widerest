@@ -121,6 +121,7 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**").addResourceLocations("classpath:/css/");
+        registry.addResourceHandler("/cmsstatic/img/**").addResourceLocations("classpath:/cms/static/img/");
     }
 
     @Component
