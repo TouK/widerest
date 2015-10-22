@@ -116,11 +116,6 @@ public abstract class ApiTestBase {
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
 
 
-
-    public static final String SETTINGS_URL = "http://localhost:{port}/settings";
-    public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
-
-
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
 
