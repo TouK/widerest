@@ -81,7 +81,7 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     @Bean
     Consumer<String> clientIdValidator(CurrentTenantIdentifierResolver currentTenantIdentifierResolver) {
         return clientId -> {
-            if (!currentTenantIdentifierResolver.resolveCurrentTenantIdentifier().equals(clientId))
+            if (!clientId.startsWith(currentTenantIdentifierResolver.resolveCurrentTenantIdentifier()))
                 throw new NoSuchClientException("No client with requested id: " + clientId);
         };
     }

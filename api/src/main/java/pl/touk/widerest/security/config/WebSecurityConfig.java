@@ -13,7 +13,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
@@ -75,22 +75,22 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return super.authenticationManagerBean();
     }
 
-    @Autowired(required = false)
-    private SecurityContextRepository  securityContextRepository;
-
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .securityContext()
-                    .securityContextRepository(securityContextRepository)
-                    .and()
                 .authorizeRequests()
                     .anyRequest().permitAll()
                     .and()
-                .formLogin().disable().apply(new UsertypeFormLoginConfigurer<HttpSecurity>()).loginPage("/login").permitAll().and()
+                .formLogin().disable().apply(new UsertypeFormLoginConfigurer<HttpSecurity>())
+                    .loginPage("/login")
+                    .permitAll()
+                    .and()
                 .logout().permitAll().and()
                 .anonymous().and()
                 .httpBasic().and()
+                .exceptionHandling().authenticationEntryPoint(new BasicAuthenticationEntryPoint() {{
+            setRealmName("widerest");
+        }}).and()
                 .csrf().disable()
         ;
     }

@@ -109,7 +109,7 @@ public abstract class ApiTestBase {
 
     public static final String LOGIN_URL = "http://localhost:{port}/login";
 
-    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&response_type=token&redirect_uri=/";
+    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&scope=customer&response_type=token&redirect_uri=/";
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
@@ -164,18 +164,14 @@ public abstract class ApiTestBase {
      */
     protected OAuth2RestTemplate oAuth2AdminRestTemplate() {
 
-            List<String> scopes = new ArrayList<>();
-            scopes.add("site");
-            scopes.add("backoffice");
+        ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
+        resourceDetails.setGrantType("password");
+        resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
+        resourceDetails.setClientId(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER);
+        resourceDetails.setScope(Arrays.asList("staff"));
 
-            ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
-            resourceDetails.setGrantType("password");
-            resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-            resourceDetails.setClientId(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER);
-            resourceDetails.setScope(scopes);
-
-            resourceDetails.setUsername("backoffice/admin");
-            resourceDetails.setPassword("admin");
+        resourceDetails.setUsername("backoffice/admin");
+        resourceDetails.setPassword("admin");
 
         OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
         oAuth2RestTemplate.setMessageConverters(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
