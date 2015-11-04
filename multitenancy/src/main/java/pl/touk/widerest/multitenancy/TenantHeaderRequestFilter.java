@@ -36,11 +36,11 @@ public class TenantHeaderRequestFilter extends OncePerRequestFilter {
             try {
                 identifierTool.verifyIdentifier(tenantIdentifier);
                 if (!MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier) && !multiTenancyService.checkIfTenantSchemaExists(tenantIdentifier)) {
-                    response.sendError(HttpStatus.NOT_FOUND.value(), "Invalid Tenant");
+                    response.sendError(HttpStatus.NOT_FOUND.value(), "Invalid Tenant: " + tenantIdentifier);
                     return;
                 }
             } catch (Exception ex) {
-                response.sendError(HttpStatus.NOT_FOUND.value(), "Invalid Tenant");
+                response.sendError(HttpStatus.NOT_FOUND.value(), "Invalid Tenant: " + tenantIdentifier);
                 return;
             }
             request.setAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, tenantIdentifier);
