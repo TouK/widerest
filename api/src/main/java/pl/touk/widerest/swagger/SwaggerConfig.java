@@ -6,13 +6,26 @@ import com.google.common.collect.Sets;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.service.*;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.ApiKey;
+import springfox.documentation.service.AuthorizationScope;
+import springfox.documentation.service.GrantType;
+import springfox.documentation.service.ImplicitGrant;
+import springfox.documentation.service.LoginEndpoint;
+import springfox.documentation.service.OAuth;
+import springfox.documentation.service.SecurityReference;
+import springfox.documentation.service.SecurityScheme;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Predicates.or;
 import static springfox.documentation.builders.PathSelectors.regex;
@@ -29,7 +42,7 @@ public class SwaggerConfig {
                 .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.newArrayList(oAuthPasswordScheme(), apiKeyScheme()));
+                .securitySchemes(Lists.newArrayList(oAuthImplicitScheme(), apiKeyScheme()));
     }
 
     private SecurityScheme apiKeyScheme() {
@@ -37,17 +50,20 @@ public class SwaggerConfig {
     }
 
     private SecurityScheme oAuthImplicitScheme() {
-        AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
+        List<AuthorizationScope> authorizationScopes =
+                Arrays.asList(Scope.values()).stream()
+                        .map(scope -> new AuthorizationScope(scope.toString(), scope.toString()))
+                        .collect(Collectors.toList());
         LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
         GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
-        return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
+        return new OAuth("oauth", authorizationScopes, Lists.newArrayList(grantType));
     }
 
-    private SecurityScheme oAuthPasswordScheme() {
-        AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
-        GrantType grantType = new ResourceOwnerPasswordCredentialsGrant("/oauth/token");
-        return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
-    }
+//    private SecurityScheme oAuthPasswordScheme() {
+//        AuthorizationScope authorizationScope = new AuthorizationScope("test", "test");
+//        GrantType grantType = new ResourceOwnerPasswordCredentialsGrant("/oauth/token");
+//        return new OAuth("oauth", Lists.newArrayList(authorizationScope), Lists.newArrayList(grantType));
+//    }
 
     private SecurityContext securityContext() {
         return SecurityContext.builder()
@@ -67,12 +83,13 @@ public class SwaggerConfig {
     @Bean
     public SecurityConfiguration security() {
         return new SecurityConfiguration(
-                "test",
+                "default",
                 "secret",
                 "test-app-realm",
                 "test-app",
-                "api-key",
-                " ");
+                "TEST",
+                " "
+        );
     }
 
     private ApiInfo apiInfo() {
