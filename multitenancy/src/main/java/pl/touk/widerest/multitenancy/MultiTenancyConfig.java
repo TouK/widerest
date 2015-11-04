@@ -43,7 +43,7 @@ import java.util.Map;
 public class MultiTenancyConfig {
 
     public static final String TENANT_IDENTIFIER_REQUEST_ATTRIBUTE = MultiTenancyConfig.class.getPackage().getName() + ".Tenant";
-    public static final String DEFAULT_TENANT_IDENTIFIER ="DEFAULT";
+    public static final String DEFAULT_TENANT_IDENTIFIER = "default";
     public static final String TENANT_SCHEMA_PREFIX = "TENANT";
 
     @Value("${mulititenacy.tokenSecret:secret}")

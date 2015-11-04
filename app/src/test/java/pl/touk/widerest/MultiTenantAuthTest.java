@@ -58,7 +58,7 @@ public class MultiTenantAuthTest extends ApiTestBase {
         resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
         resourceDetails.setClientId(tenant1Identifier);
         resourceDetails.setClientSecret("");
-        resourceDetails.setScope(Arrays.asList("site", "backoffice"));
+        resourceDetails.setScope(Arrays.asList("staff"));
         resourceDetails.setUsername("backoffice/admin");
         resourceDetails.setPassword(tenant1Password);
 

@@ -11,6 +11,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 
 @Component
 @Slf4j
@@ -26,7 +27,11 @@ public class TenantHeaderRequestFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String host = URI.create(request.getRequestURL().toString()).getHost();
         String tenantIdentifier = request.getHeader(TENANT_TOKEN_HEADER);
+        if (tenantIdentifier == null && !"localhost".equals(host) && !host.startsWith("127.")) {
+            tenantIdentifier = host.replaceAll("\\..*", "");
+        }
         if (tenantIdentifier != null) {
             try {
                 identifierTool.verifyIdentifier(tenantIdentifier);
