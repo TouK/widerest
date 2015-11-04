@@ -398,9 +398,11 @@ public class DtoConverters {
 
         dto.add(linkTo(methodOn(CategoryController.class).getCategoryByIdAvailability(entity.getId())).withRel("availability"));
 
-        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount()).withRel("count"));
+        dto.add(linkTo(methodOn(CategoryController.class).getAllProductsInCategoryCount(entity.getId())).withRel("products-count"));
 
+        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount()).withRel("categories-count"));
 
+        dto.add(linkTo(methodOn(CategoryController.class).getSubcategoriesByCategoryId(entity.getId())).withRel("subcategories"));
 
         return dto;
     };
