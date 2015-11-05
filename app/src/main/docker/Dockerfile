@@ -1,6 +1,6 @@
 FROM java:8-jre
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 ADD spring-instrument-4.1.7.RELEASE.jar /usr/share/java/
 ADD widerest-app-1.0.jar /usr/share/java/
