@@ -40,7 +40,7 @@ public class TestController {
     }
 
     @RequestMapping("/admin")
-    @PreAuthorize("isFullyAythenticated()")
+    @PreAuthorize("isFullyAuthenticated()")
     public String admin() {
         return "OK";
     }

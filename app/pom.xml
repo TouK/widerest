@@ -120,14 +120,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>spring-security-auth0</artifactId>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>net.sourceforge.htmlunit</groupId>
-            <artifactId>htmlunit</artifactId>
-            <version>2.14</version>
+            <groupId>com.auth0</groupId>
+            <artifactId>spring-security-auth0</artifactId>
         </dependency>
 
     </dependencies>
