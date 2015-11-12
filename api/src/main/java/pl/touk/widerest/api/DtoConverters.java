@@ -531,7 +531,7 @@ public class DtoConverters {
                 .email(entity.getEmailAddress())
                 .build();
 
-        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(entity.getId())).withSelfRel());
+        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(null, entity.getId().toString())).withSelfRel());
 
 
         return customerDto;

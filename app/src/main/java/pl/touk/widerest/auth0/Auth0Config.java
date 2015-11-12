@@ -1,23 +1,34 @@
 package pl.touk.widerest.auth0;
 
+import com.auth0.spring.security.auth0.Auth0AuthenticationEntryPoint;
 import com.auth0.spring.security.auth0.Auth0AuthenticationProvider;
-import com.auth0.spring.security.auth0.Auth0JWTToken;
+import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
-import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import pl.touk.widerest.multitenancy.MultiTenancyConfig;
+import springfox.documentation.service.Documentation;
+import springfox.documentation.spring.web.DocumentationCache;
+import springfox.documentation.swagger.web.SecurityConfiguration;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @ConditionalOnProperty("auth0.domain")
 @Configuration
 @ComponentScan("com.auth0")
-public class Auth0Config extends ResourceServerConfigurerAdapter {
+@Order(99)
+public class Auth0Config extends WebSecurityConfigurerAdapter {
 
     @Value("${auth0.clientSecret}")
     public String clientSecret;
@@ -25,7 +36,7 @@ public class Auth0Config extends ResourceServerConfigurerAdapter {
     @Value("${auth0.clientId}")
     public String clientId;
 
-    @Value("${auth0.securedRoute:/tenant/**}")
+    @Value("${auth0.securedRoute:/tenant}")
     public String securedRoot;
 
     @Bean
@@ -42,29 +53,77 @@ public class Auth0Config extends ResourceServerConfigurerAdapter {
         return provider;
     }
 
+
     @Override
-    public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
-        resources
-                .authenticationManager(new OAuth2AuthenticationManager() {
-                    @Override
-                    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-                        try {
-                            return auth0AuthenticationProvider().authenticate(
-                                    new Auth0JWTToken((String) authentication.getPrincipal())
-                            );
-                        } catch (AuthenticationException ex) {
-                            return super.authenticate(authentication);
-                        }
-                    }
-                })
-        ;
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(auth0AuthenticationProvider());
     }
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
+        Auth0AuthenticationEntryPoint authenticationEntryPoint = new Auth0AuthenticationEntryPoint();
+        Auth0AuthenticationFilter authenticationFilter = new Auth0AuthenticationFilter();
+        authenticationFilter.setAuthenticationManager(authenticationManager());
+        authenticationFilter.setEntryPoint(authenticationEntryPoint);
+
         http
-            .authorizeRequests()
+            .addFilterAfter(authenticationFilter, SecurityContextPersistenceFilter.class)
+            .exceptionHandling()
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .and()
+            .requestMatchers()
                 .antMatchers(securedRoot)
-                .authenticated();
+                .and()
+            .authorizeRequests()
+                .anyRequest()
+                .authenticated()
+                .and()
+            .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        ;
+
     }
+
+    private @Autowired
+    CurrentTenantIdentifierResolver currentTenantIdentifierResolver;
+
+    @Bean
+    public SecurityConfiguration security() {
+        return new SecurityConfiguration(
+                null,
+                "secret",
+                "test-app-realm",
+                "test-app",
+                "TEST",
+                " "
+        ) {
+            @Override
+            public String getClientId() {
+                String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
+                if (MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier)) {
+                    tenantIdentifier = clientId;
+                }
+                return tenantIdentifier;
+            }
+        };
+    }
+
+    @Primary
+    @Bean
+    public DocumentationCache resourceGroupCacheOverride() {
+        return new DocumentationCache() {
+
+            @Override
+            public Map<String, Documentation> all() {
+                String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
+                Map<String, Documentation> all = super.all().entrySet().stream()
+                        .filter(entry ->
+                                        "api".equals(entry.getKey()) != /*XOR*/ MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier)
+                        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                return all;
+            }
+        };
+    }
+
+
 }

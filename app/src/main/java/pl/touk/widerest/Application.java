@@ -116,6 +116,7 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/login").setViewName("login");
         registry.addViewController("/oauth/confirm_access").setViewName("authorize");
+        registry.addRedirectViewController("/", "/swagger-ui.html");
     }
 
     @Override

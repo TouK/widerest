@@ -62,7 +62,7 @@ import static org.junit.Assert.assertThat;
 
 @SpringApplicationConfiguration(classes = Application.class, initializers = BroadleafApplicationContextInitializer.class)
 @WebIntegrationTest({
-        "server.port:0", "auth0.domain:false"
+        "server.port:0", "auth0.domain:false", "management.port:0"
 })
 public abstract class ApiTestBase {
 

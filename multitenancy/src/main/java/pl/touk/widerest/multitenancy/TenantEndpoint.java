@@ -17,14 +17,18 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
+
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/tenant")
@@ -58,7 +62,14 @@ public class TenantEndpoint {
                 tenantTokenStore.addTenantToken(tenantIdentifier, authentication);
             }
 
-            return tenantIdentifier;
+            if ("localhost".equals(request.getServerName())) {
+                return tenantIdentifier;
+            } else {
+                return Optional.of(tenantIdentifier)
+                        .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + request.getServerName()).build())
+                        .map(UriComponents::toUriString)
+                        .get();
+            }
         } catch (Exception e) {
             log.error("Tenant creation error", e);
             throw new TenantCreationError(e);
@@ -69,16 +80,26 @@ public class TenantEndpoint {
     private CurrentTenantIdentifierResolver currentTenantIdentifierResolver;
 
     @RequestMapping(method = RequestMethod.GET)
-    public List<String> testRead(
+    public Collection<String> readAll(
             @ApiIgnore Authentication authentication,
             HttpServletRequest request
     ) {
+        Collection<String> tenantIdentifiers;
         if (tenantTokenStore != null) {
-            return tenantTokenStore.getTenantTokens(authentication);
+            tenantIdentifiers = tenantTokenStore.getTenantTokens(authentication);
+
         } else {
             String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
             identifierTool.verifyIdentifier(tenantIdentifier);
-            return Lists.newArrayList(tenantIdentifier);
+            tenantIdentifiers = Lists.newArrayList(tenantIdentifier);
+        }
+        if ("localhost".equals(request.getServerName())) {
+            return tenantIdentifiers;
+        } else {
+            return tenantIdentifiers.stream()
+                    .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + request.getServerName()).build())
+                    .map(UriComponents::toUriString)
+                    .collect(Collectors.toList());
         }
     }
 

@@ -11,31 +11,26 @@ var scopeSeparator;
 function handleLogin() {
   var scopes = [];
 
-  var auths = window.swaggerUi.api.authSchemes || window.swaggerUi.api.securityDefinitions,
-      passwordFlow = false;
-
+  var auths = window.swaggerUi.api.authSchemes || window.swaggerUi.api.securityDefinitions;
   if(auths) {
     var key;
     var defs = auths;
     for(key in defs) {
       var auth = defs[key];
       if(auth.type === 'oauth2') {
-        passwordFlow = auth.flow === 'password';
-
+        oauth2KeyName = key;
         if (auth.scopes) {
-          oauth2KeyName = key;
           var scope;
-
-          if(Array.isArray(auth.scopes)) {
+          if (Array.isArray(auth.scopes)) {
             // 1.2 support
             var i;
-            for(i = 0; i < auth.scopes.length; i++) {
+            for (i = 0; i < auth.scopes.length; i++) {
               scopes.push(auth.scopes[i]);
             }
           }
           else {
             // 2.0 support
-            for(scope in auth.scopes) {
+            for (scope in auth.scopes) {
               scopes.push({scope: scope, description: auth.scopes[scope]});
             }
           }
@@ -49,32 +44,22 @@ function handleLogin() {
     appName = window.swaggerUi.api.info.title;
   }
 
-  $('.api-popup-dialog').remove();
-
-  popupDialog = ['<div class="api-popup-dialog">'];
-
-  if (passwordFlow === true) {
-    popupDialog = popupDialog.concat([
-      '<div class="api-popup-title">Password Auth</div>',
-      '<p><label>Username: </label> <input type="text" id="username"> ',
-      '<label>Password: </label> <input type="password" id="password"></p>'
-    ]);
-  }
-
-  popupDialog = $(popupDialog.concat([
-        '<div class="api-popup-title">Select OAuth2.0 Scopes</div>',
-        '<div class="api-popup-content">',
-          '<p>Scopes are used to grant an application different levels of access to data on behalf of the end user. Each API may declare one or more scopes.',
-            '<a href="#">Learn how to use</a>',
-          '</p>',
-          '<p><strong>' + appName + '</strong> API requires the following scopes. Select which ones you want to grant to Swagger UI.</p>',
-          '<ul class="api-popup-scopes">',
-          '</ul>',
-          '<p class="error-msg"></p>',
-          '<div class="api-popup-actions"><button class="api-popup-authbtn api-button green" type="button">Authorize</button><button class="api-popup-cancel api-button gray" type="button">Cancel</button></div>',
-        '</div>',
-        '</div>']).join(''));
-
+  $('.api-popup-dialog').remove(); 
+  popupDialog = $(
+    [
+      '<div class="api-popup-dialog">',
+      '<div class="api-popup-title">Select OAuth2.0 Scopes</div>',
+      '<div class="api-popup-content">',
+        '<p>Scopes are used to grant an application different levels of access to data on behalf of the end user. Each API may declare one or more scopes.',
+          '<a href="#">Learn how to use</a>',
+        '</p>',
+        '<p><strong>' + appName + '</strong> API requires the following scopes. Select which ones you want to grant to Swagger UI.</p>',
+        '<ul class="api-popup-scopes">',
+        '</ul>',
+        '<p class="error-msg"></p>',
+        '<div class="api-popup-actions"><button class="api-popup-authbtn api-button green" type="button">Authorize</button><button class="api-popup-cancel api-button gray" type="button">Cancel</button></div>',
+      '</div>',
+      '</div>'].join(''));
   $(document.body).append(popupDialog);
 
   popup = popupDialog.find('ul.api-popup-scopes').empty();
@@ -115,31 +100,21 @@ function handleLogin() {
     popupDialog.hide();
 
     var authSchemes = window.swaggerUi.api.authSchemes;
-
     var host = window.location;
     var pathname = location.pathname.substring(0, location.pathname.lastIndexOf("/"));
     var defaultRedirectUrl = host.protocol + '//' + host.host + pathname + '/o2c.html';
     var redirectUrl = window.oAuthRedirectUrl || defaultRedirectUrl;
     var url = null;
-    var passwordFlowDetails = null;
 
     for (var key in authSchemes) {
       if (authSchemes.hasOwnProperty(key)) {
         var flow = authSchemes[key].flow;
 
-        if (authSchemes[key].type === 'oauth2' && flow) {
+        if(authSchemes[key].type === 'oauth2' && flow && (flow === 'implicit' || flow === 'accessCode')) {
           var dets = authSchemes[key];
+          url = dets.authorizationUrl + '?response_type=' + (flow === 'implicit' ? 'token' : 'code');
           window.swaggerUi.tokenName = dets.tokenName || 'access_token';
-
-          if (flow === 'password') {
-            passwordFlowDetails = dets;
-            window.swaggerUi.tokenUrl = dets.tokenUrl;
-
-          } else if (['implicit', 'accessCode'].indexOf(flow) !== -1) {
-
-            url = dets.authorizationUrl + '?response_type=' + (flow === 'implicit' ? 'token' : 'code');
-            window.swaggerUi.tokenUrl = (flow === 'accessCode' ? dets.tokenUrl : null);
-          }
+          window.swaggerUi.tokenUrl = (flow === 'accessCode' ? dets.tokenUrl : null);
         }
         else if(authSchemes[key].grantTypes) {
           // 1.2 support
@@ -171,25 +146,20 @@ function handleLogin() {
         scopes.push(scope);
     }
 
-    if (passwordFlowDetails !== null) {
-      handlePasswordFlow(passwordFlowDetails);
+    // Implicit auth recommends a state parameter.
+    var state = Math.random ();
 
-    } else {
-      // Implicit auth recommends a state parameter.
-      var state = Math.random ();
+    window.enabledScopes=scopes;
 
-      window.enabledScopes=scopes;
+    redirect_uri = redirectUrl;
 
-      redirect_uri = redirectUrl;
+    url += '&redirect_uri=' + encodeURIComponent(redirectUrl);
+    url += '&realm=' + encodeURIComponent(realm);
+    url += '&client_id=' + encodeURIComponent(clientId);
+    if (scopes.length > 0) url += '&scope=' + encodeURIComponent(scopes.join(scopeSeparator));
+    url += '&state=' + encodeURIComponent(state);
 
-      url += '&redirect_uri=' + encodeURIComponent(redirectUrl);
-      url += '&realm=' + encodeURIComponent(realm);
-      url += '&client_id=' + encodeURIComponent(clientId);
-      url += '&scope=' + encodeURIComponent(scopes.join(scopeSeparator));
-      url += '&state=' + encodeURIComponent(state);
-
-      window.open(url);
-    }
+    window.open(url);
   });
 
   popupMask.show();
@@ -197,27 +167,6 @@ function handleLogin() {
   return;
 }
 
-function handlePasswordFlow(auth) {
-  var authParams = {
-    grant_type: 'password',
-    client_id: encodeURIComponent(clientId),
-    username: $('#username').val(),
-    password: encodeURIComponent($('#password').val()),
-    client_secret: encodeURIComponent(clientSecret)
-  };
-
-  $.ajax({
-    url: auth.tokenUrl,
-    type: 'post',
-    data: authParams,
-    success: function (data) {
-      onOAuthComplete(data);
-    },
-    error: function(data) {
-      onOAuthComplete("");
-    }
-  });
-}
 
 function handleLogout() {
   for(key in window.swaggerUi.api.clientAuthorizations.authz){

@@ -5,7 +5,9 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+
 import org.broadleafcommerce.common.security.util.PasswordChange;
+
 import org.broadleafcommerce.common.service.GenericResponse;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.http.HttpStatus;
@@ -115,7 +117,5 @@ public class ManagerEndpoint {
 
     @ResponseStatus(value = HttpStatus.CONFLICT)
     static class PasswordMatchingException extends RuntimeException {}
-
-
 
 }

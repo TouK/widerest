@@ -14,11 +14,14 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.authentication.TokenTypeSelectedAuthenticationProvider;
 import pl.touk.widerest.security.authentication.UsertypeFormLoginConfigurer;
+
+import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebMvcSecurity
@@ -86,12 +89,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                     .permitAll()
                     .and()
                 .logout().permitAll().and()
-                //.anonymous().and()
-                .httpBasic().and()
-                .exceptionHandling().authenticationEntryPoint(new BasicAuthenticationEntryPoint() {{
-            setRealmName("widerest");
-        }}).and()
+                .anonymous().and()
                 .csrf().disable()
+                .exceptionHandling()
+                    .defaultAuthenticationEntryPointFor(
+                            (request, response, authException) ->
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage()),
+                            new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest")
+                    )
         ;
     }
 

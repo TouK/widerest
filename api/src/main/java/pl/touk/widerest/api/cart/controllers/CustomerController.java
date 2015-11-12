@@ -47,14 +47,24 @@ public class CustomerController {
     private CustomerServiceProxy customerServiceProxy;
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me'")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
     public ResponseEntity<CustomerDto> readOneCustomer(
-            @ApiParam(value = "ID of a customer")
-                @PathVariable(value = "id") Long customerId) {
-
-        CustomerDto customer = Optional.ofNullable(customerService.readCustomerById(customerId))
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
+    ) {
+        CustomerDto customer = Optional.ofNullable(customerId)
+                .map(id -> {
+                    try {
+                        return ("me".equals(customerId) && userDetails instanceof CustomerUserDetails) ?
+                                ((CustomerUserDetails) userDetails).getId()
+                                : Long.parseLong(customerId);
+                    } catch (NumberFormatException ex) {
+                        return null;
+                    }
+                })
+                .map(customerService::readCustomerById)
                 .map(DtoConverters.customerEntityToDto)
                 .orElseThrow(CustomerNotFoundException::new);
 
@@ -62,7 +72,7 @@ public class CustomerController {
     }
 
     @Transactional
-    @PreAuthorize("permitAll")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
@@ -128,4 +138,12 @@ public class CustomerController {
 
     }
 
+    @Transactional
+    @RequestMapping(value = "{id}/merge", method = RequestMethod.PUT)
+    public void mergeWith(
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            String mergedCustomerAccessToken
+    ) {
+
+    }
 }
