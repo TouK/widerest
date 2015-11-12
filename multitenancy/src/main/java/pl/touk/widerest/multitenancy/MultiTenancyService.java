@@ -21,7 +21,7 @@ public abstract class MultiTenancyService extends EntityManagerFactoryAccessor {
 
     public boolean checkIfTenantSchemaExists(String tenantIdentifier) {
         try {
-            return privilegedDataSource.getConnection().getMetaData().getSchemas(null, MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantIdentifier).next();
+            return MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier) || privilegedDataSource.getConnection().getMetaData().getSchemas(null, MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantIdentifier).next();
         } catch (SQLException e) {
             return false;
         }
