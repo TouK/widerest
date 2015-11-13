@@ -23,6 +23,7 @@ import springfox.documentation.annotations.ApiIgnore;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -64,8 +65,9 @@ public class TenantEndpoint {
             if ("localhost".equals(request.getServerName())) {
                 return tenantIdentifier;
             } else {
+                final String domain = getDomain(request);
                 return Optional.of(tenantIdentifier)
-                        .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + request.getServerName()).build())
+                        .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + domain).build())
                         .map(UriComponents::toUriString)
                         .get();
             }
@@ -95,14 +97,21 @@ public class TenantEndpoint {
 
         tenantIdentifiers = tenantIdentifiers.filter(multiTenancyService::checkIfTenantSchemaExists);
 
+        final String domain = getDomain(request);
+
         if (!"localhost".equals(request.getServerName())) {
             tenantIdentifiers = tenantIdentifiers
-                    .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + request.getServerName()).build())
+                    .map(i -> ServletUriComponentsBuilder.fromContextPath(request).host(i + "." + domain).build())
                     .map(UriComponents::toUriString);
         }
 
         List<String> tenantIdentifiersList = tenantIdentifiers.collect(Collectors.toList());
         return tenantIdentifiersList;
+    }
+
+    private String getDomain(HttpServletRequest request) {
+        String[] domainParts = request.getServerName().split("\\.");
+        return String.join(".", Arrays.copyOfRange(domainParts, domainParts.length > 2 ? 1 : 0, domainParts.length));
     }
 
     @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
