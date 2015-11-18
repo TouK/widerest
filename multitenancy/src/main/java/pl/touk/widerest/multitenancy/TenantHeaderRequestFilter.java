@@ -31,7 +31,7 @@ public class TenantHeaderRequestFilter extends OncePerRequestFilter {
         String tenantIdentifier = request.getHeader(TENANT_TOKEN_HEADER);
         if (tenantIdentifier == null && !"localhost".equals(host)) {
             String[] domainParts = host.split("\\.");
-            tenantIdentifier = domainParts.length < 3 || Arrays.asList("127","www").contains(domainParts[0])  ? null : domainParts[0];
+            tenantIdentifier = domainParts.length < 3 || Arrays.asList("127","www","rest").contains(domainParts[0])  ? null : domainParts[0];
         }
         if (tenantIdentifier != null) {
             try {

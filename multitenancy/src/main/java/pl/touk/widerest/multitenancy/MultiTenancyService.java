@@ -5,6 +5,7 @@ import org.springframework.orm.jpa.EntityManagerFactoryAccessor;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -21,9 +22,14 @@ public abstract class MultiTenancyService extends EntityManagerFactoryAccessor {
 
     public boolean checkIfTenantSchemaExists(String tenantIdentifier) {
         try {
-            return privilegedDataSource.getConnection().getMetaData().getSchemas(null, MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantIdentifier).next();
+            if (MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier))
+                return true;
+            try (Connection connection = privilegedDataSource.getConnection()) {
+                return connection.getMetaData().getSchemas(null, MultiTenancyConfig.TENANT_SCHEMA_PREFIX + tenantIdentifier).next();
+            }
         } catch (SQLException e) {
             return false;
         }
     }
+
 }
