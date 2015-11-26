@@ -161,6 +161,63 @@ public class CategoryController {
         }
     }
 
+    /* DELETE /{categoryId}/subcategories */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Remove a link to an existing subcategory from its parent category",
+            notes = "Removes an existing link to a specified subcategory from its parent category",
+            response = ResponseEntity.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new subcategory has been successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided (missing category link)"),
+            @ApiResponse(code = 404, message = "The specified category does not exist"),
+            @ApiResponse(code = 409, message = "Category is already a subcategory of a specified category")
+    })
+    public ResponseEntity<?> removeSubcategoryFromParent(
+            @ApiParam(value = "ID of a specific category", required = true)
+            @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "Link to the subcategory")
+            @RequestParam(value = "href", required = true) String href) {
+
+        if(href == null || href.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        long hrefCategoryId;
+
+        try {
+            hrefCategoryId = CatalogUtils.getCategoryIdFromUrl(href);
+        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if(hrefCategoryId == categoryId) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .map(e -> {
+                    CategoryXref parentChildCategoryXref = e.getChildCategoryXrefs().stream()
+                            .filter(x -> x.getSubCategory().getId().longValue() == hrefCategoryId)
+                            .findAny()
+                            .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
+
+                    return Pair.of(e, parentChildCategoryXref);
+                })
+                .map(e -> {
+                    e.getKey().getAllChildCategoryXrefs().remove(e.getValue());
+                    return e.getKey();
+                })
+                .map(catalogService::saveCategory)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        return ResponseEntity.noContent().build();
+    }
+
 
 
     /* GET /categories */
