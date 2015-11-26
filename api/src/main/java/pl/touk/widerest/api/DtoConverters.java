@@ -411,6 +411,18 @@ public class DtoConverters {
 
         dto.add(subcategoriesLinks);
 
+        final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
+                .orElse(Collections.emptyList()).stream()
+                .map(CategoryXref::getCategory)
+                .map(x -> {
+                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories");
+                })
+                .collect(toList());
+
+        dto.add(parentCategoriesLinks);
+
+
+
         return dto;
     };
 
