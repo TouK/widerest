@@ -137,7 +137,7 @@ public class CategoryController {
         }
 
         if(hrefCategoryId == categoryId) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         final Category hrefCategory = Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
@@ -155,7 +155,7 @@ public class CategoryController {
         if(!parentCategory.getAllChildCategoryXrefs().contains(parentChildCategoryXref)) {
             parentCategory.getAllChildCategoryXrefs().add(parentChildCategoryXref);
             catalogService.saveCategory(parentCategory);
-            return new ResponseEntity<>(HttpStatus.CREATED);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } else {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
@@ -171,10 +171,9 @@ public class CategoryController {
             response = ResponseEntity.class
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new subcategory has been successfully created"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided (missing category link)"),
-            @ApiResponse(code = 404, message = "The specified category does not exist"),
-            @ApiResponse(code = 409, message = "Category is already a subcategory of a specified category")
+            @ApiResponse(code = 204, message = "Specified subcategory has been successfully removed from its parent category"),
+            @ApiResponse(code = 404, message = "The specified category does not exist or is not a proper subcategory"),
+            @ApiResponse(code = 409, message = "Subcategory and its parent cannot point to the same category")
     })
     public ResponseEntity<?> removeSubcategoryFromParent(
             @ApiParam(value = "ID of a specific category", required = true)
@@ -195,7 +194,7 @@ public class CategoryController {
         }
 
         if(hrefCategoryId == categoryId) {
-            return ResponseEntity.badRequest().build();
+            ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
