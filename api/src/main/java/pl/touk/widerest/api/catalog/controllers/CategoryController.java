@@ -76,7 +76,7 @@ public class CategoryController {
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.GET)
     @ApiOperation(
-            value = "List all subcategories categories",
+            value = "List all subcategories of a specified parent category",
             notes = "Gets a list of all available subcategories of a given category in the catalog",
             response = CategoryDto.class,
             responseContainer = "List"
@@ -108,7 +108,7 @@ public class CategoryController {
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.POST)
     @ApiOperation(
-            value = "Link an existing category to its new parent",
+            value = "Link an existing category to its new parent category",
             notes = "Adds an existing category to another category as its subcategory",
             response = ResponseEntity.class
     )
@@ -219,26 +219,26 @@ public class CategoryController {
 
 
 
-    /* GET /categories */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/parent-categories", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "List all parent categories",
-            notes = "Gets a list of all parent categories in the catalog",
-            response = CategoryDto.class,
-            responseContainer = "List")
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of parent categories list", response = CategoryDto.class, responseContainer = "List")
-    })
-    public List<CategoryDto> readAllParentCategories() {
-
-        return catalogService.findAllParentCategories().stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                //.filter(category -> category.getAllParentCategoryXrefs().size() == 0)
-                .map(DtoConverters.categoryEntityToDto)
-                .collect(Collectors.toList());
-    }
+//    /* GET /categories */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/parent-categories", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "List all parent categories",
+//            notes = "Gets a list of all parent categories in the catalog",
+//            response = CategoryDto.class,
+//            responseContainer = "List")
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of parent categories list", response = CategoryDto.class, responseContainer = "List")
+//    })
+//    public List<CategoryDto> readAllParentCategories() {
+//
+//        return catalogService.findAllParentCategories().stream()
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                //.filter(category -> category.getAllParentCategoryXrefs().size() == 0)
+//                .map(DtoConverters.categoryEntityToDto)
+//                .collect(Collectors.toList());
+//    }
 
     /* POST /categories */
     @Transactional
