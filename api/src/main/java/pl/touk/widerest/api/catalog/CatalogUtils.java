@@ -12,6 +12,8 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -266,5 +268,23 @@ public class CatalogUtils {
             throw new DtoValidationException("Sku's prices cannot be negative");
         }
     }
+
+
+    public static long getCategoryIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
+        final URL categoryPathURL = new URL(categoryPathUrl);
+
+        final String categoryPath = categoryPathURL.getPath();
+
+        final int lastSlashIndex = categoryPath.lastIndexOf('/');
+
+        if(lastSlashIndex < 0 || (lastSlashIndex + 1) >= categoryPath.length()) {
+            throw new DtoValidationException();
+        }
+
+        return Long.parseLong(categoryPath.substring(lastSlashIndex + 1));
+    }
+
+
+
 
 }

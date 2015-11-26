@@ -133,8 +133,6 @@ public class SettingsController {
             @ApiParam @RequestBody String value
     ) {
 
-        System.out.println("Setting value: " + value);
-
         return Optional.of(key)
                 .filter(availableSystemPropertyNames::contains)
                 .map(name -> {

@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH + "/tenant")
+@RequestMapping("/tenant")
 @Slf4j
 @Api(value = "tenants", description = "Tenants registration endpoint")
 public class TenantEndpoint {

@@ -7,12 +7,10 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.tuple.Pair;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,10 +26,12 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
+import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,6 +71,98 @@ public class CategoryController {
                 .collect(Collectors.toList());
     }
 
+    /* GET /{categoryId}/subcategories */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all subcategories categories",
+            notes = "Gets a list of all available subcategories of a given category in the catalog",
+            response = CategoryDto.class,
+            responseContainer = "List"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability", response = String.class),
+            @ApiResponse(code = 404, message = "The specified category does not exist")
+    })
+    public List<CategoryDto> getSubcategoriesByCategoryId(
+            @ApiParam(value = "ID of a specific category", required = true)
+            @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "Amount of subcategories to be returned")
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @ApiParam(value = "Offset which to start returning subcategories from")
+            @RequestParam(value = "offset", required = false) Integer offset) {
+
+        final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        return catalogService.findActiveSubCategoriesByCategory(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .map(DtoConverters.categoryEntityToDto)
+                .collect(Collectors.toList());
+    }
+
+    /* POST /{categoryId}/subcategories */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Link an existing category to its new parent",
+            notes = "Adds an existing category to another category as its subcategory",
+            response = ResponseEntity.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new subcategory has been successfully created"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided (missing category link)"),
+            @ApiResponse(code = 404, message = "The specified category does not exist"),
+            @ApiResponse(code = 409, message = "Category is already a subcategory of a specified category")
+    })
+    public ResponseEntity<?> addSubcategoryToParent(
+            @ApiParam(value = "ID of a specific category", required = true)
+            @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(value = "Link to the subcategory")
+            @RequestParam(value = "href", required = true) String href) {
+
+        if(href == null || href.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        long hrefCategoryId;
+
+        try {
+            hrefCategoryId = CatalogUtils.getCategoryIdFromUrl(href);
+        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if(hrefCategoryId == categoryId) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        final Category hrefCategory = Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist"));
+
+        final Category parentCategory = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+        final CategoryXref parentChildCategoryXref = new CategoryXrefImpl();
+        parentChildCategoryXref.setCategory(parentCategory);
+        parentChildCategoryXref.setSubCategory(hrefCategory);
+
+        if(!parentCategory.getAllChildCategoryXrefs().contains(parentChildCategoryXref)) {
+            parentCategory.getAllChildCategoryXrefs().add(parentChildCategoryXref);
+            catalogService.saveCategory(parentCategory);
+            return new ResponseEntity<>(HttpStatus.CREATED);
+        } else {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+    }
+
+
+
     /* GET /categories */
     @Transactional
     @PreAuthorize("permitAll")
@@ -87,6 +179,7 @@ public class CategoryController {
 
         return catalogService.findAllParentCategories().stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
+                //.filter(category -> category.getAllParentCategoryXrefs().size() == 0)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
     }
@@ -286,34 +379,6 @@ public class CategoryController {
     }
 
 
-    /* GET /{categoryId}/subcategories */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "List all subcategories categories",
-            notes = "Gets a list of all available subcategories of a given category in the catalog",
-            response = CategoryDto.class,
-            responseContainer = "List"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of category's products availability", response = String.class),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
-    })
-    public List<CategoryDto> getSubcategoriesByCategoryId(
-            @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value = "categoryId") Long categoryId) {
-
-        final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-
-        return catalogService.findAllSubCategories(category).stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .map(DtoConverters.categoryEntityToDto)
-                .collect(Collectors.toList());
-    }
-
     /* GET /{categoryId}/availability */
     @Transactional
     @PreAuthorize("permitAll")
@@ -402,31 +467,32 @@ public class CategoryController {
     }
 
 
+    /* (mst) TO BE REMOVED!!! */
     /* GET /categories/{id}/products/{productId} */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Get details of a product from a category",
-            notes = "Gets details of a specific product in a given category",
-            response = ProductDto.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
-            @ApiResponse(code = 404, message = "The specified category does not exist")
-    })
-    public ProductDto readOneProductFromCategory(
-            @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value="categoryId") Long categoryId,
-            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-            @PathVariable(value = "productId") Long productId) {
-
-        return this.getProductsFromCategoryId(categoryId).stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId().longValue() == productId)
-                .findAny()
-                .map(dtoConverters.productEntityToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
-    }
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get details of a product from a category",
+//            notes = "Gets details of a specific product in a given category",
+//            response = ProductDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
+//            @ApiResponse(code = 404, message = "The specified category does not exist")
+//    })
+//    public ProductDto readOneProductFromCategory(
+//            @ApiParam(value = "ID of a specific category", required = true)
+//            @PathVariable(value="categoryId") Long categoryId,
+//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//        return this.getProductsFromCategoryId(categoryId).stream()
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(x -> x.getId().longValue() == productId)
+//                .findAny()
+//                .map(dtoConverters.productEntityToDto)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
+//    }
 
 
 

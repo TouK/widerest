@@ -26,6 +26,8 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
+import org.springframework.hateoas.EntityLinks;
+import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
@@ -53,10 +55,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -402,7 +401,15 @@ public class DtoConverters {
 
         dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount()).withRel("categories-count"));
 
-        dto.add(linkTo(methodOn(CategoryController.class).getSubcategoriesByCategoryId(entity.getId())).withRel("subcategories"));
+        final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
+                .orElse(Collections.emptyList()).stream()
+                .map(CategoryXref::getSubCategory)
+                .map(x -> {
+                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories");
+                })
+                .collect(toList());
+
+        dto.add(subcategoriesLinks);
 
         return dto;
     };

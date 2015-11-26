@@ -5,17 +5,17 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-
 import org.broadleafcommerce.common.security.util.PasswordChange;
-
 import org.broadleafcommerce.common.service.GenericResponse;
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -30,7 +30,7 @@ public class ManagerEndpoint {
     private AdminSecurityService adminSecurityService;
 
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
+    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(method = RequestMethod.POST, consumes = "text/plain")
     @ApiOperation(
             value = "Change admin password",
