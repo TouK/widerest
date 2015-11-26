@@ -32,8 +32,7 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -60,13 +59,26 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class, responseContainer = "List")
     })
     public List<CategoryDto> readAllCategories(
+            @ApiParam(value = "Level in the categories hierarchy tree")
+            @RequestParam(value = "depth", required = false) Integer depth,
             @ApiParam(value = "Amount of categories to be returned")
             @RequestParam(value = "limit", required = false) Integer limit,
             @ApiParam(value = "Offset which to start returning categories from")
             @RequestParam(value = "offset", required = false) Integer offset) {
 
-        return catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
+        if(depth == null || depth < 0) {
+            return catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .map(DtoConverters.categoryEntityToDto)
+                    .collect(Collectors.toList());
+        }
+
+        final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
+                .collect(Collectors.toList());
+
+        return getCategoriesAtLevel(globalParentCategories, depth).stream()
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
     }
@@ -679,6 +691,57 @@ public class CategoryController {
                 .getAllProductXrefs().stream()
                 .map(CategoryProductXref::getProduct)
                 .collect(Collectors.toList());
+    }
+
+    public static List<Category> getCategoriesAtLevel(final List<Category> parentCategories, final int level) {
+
+        if(level < 0 || parentCategories.size() <= 0) {
+            return Collections.emptyList();
+        }
+
+        if(level == 0) {
+            return parentCategories;
+        }
+
+        final List<Category> levelCategories = new ArrayList<>();
+
+        /* (mst) BFS-type search. We maintain two queues though
+                 to be able to break easily if we reach the
+                 required level.
+         */
+
+        Queue<Category> activeCategories = new LinkedList<>();
+        Queue<Category> inactiveCategories = new LinkedList<>();
+        int currentDepth;
+
+        for(Category rootCategory : parentCategories) {
+
+            activeCategories.clear();
+            inactiveCategories.clear();
+            currentDepth = 0;
+
+            activeCategories.add(rootCategory);
+
+            while(!activeCategories.isEmpty()) {
+                final Category c = activeCategories.remove();
+
+                for(CategoryXref children : c.getAllChildCategoryXrefs()) {
+                    inactiveCategories.add(children.getSubCategory());
+                }
+
+                currentDepth++;
+
+                if(currentDepth >= level) {
+                    levelCategories.addAll(inactiveCategories);
+                } else {
+                    Queue<Category> tmpCategoriesQueue = activeCategories;
+                    activeCategories = inactiveCategories;
+                    inactiveCategories = tmpCategoriesQueue;
+                }
+            }
+        }
+
+        return levelCategories;
     }
 
 }

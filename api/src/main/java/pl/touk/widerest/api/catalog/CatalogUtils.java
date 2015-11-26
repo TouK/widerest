@@ -15,6 +15,7 @@ import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -283,8 +284,4 @@ public class CatalogUtils {
 
         return Long.parseLong(categoryPath.substring(lastSlashIndex + 1));
     }
-
-
-
-
 }
