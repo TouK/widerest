@@ -705,7 +705,7 @@ public class CategoryController {
 
         final List<Category> levelCategories = new ArrayList<>();
 
-        /* (mst) BFS-type search. We maintain two queues though
+        /* (mst) BFS-type search. We maintain two queues though,
                  to be able to break easily if we reach the
                  required level.
          */
@@ -716,28 +716,30 @@ public class CategoryController {
 
         for(Category rootCategory : parentCategories) {
 
-            activeCategories.clear();
-            inactiveCategories.clear();
             currentDepth = 0;
 
             activeCategories.add(rootCategory);
 
             while(!activeCategories.isEmpty()) {
-                final Category c = activeCategories.remove();
+                while(!activeCategories.isEmpty()) {
+                    final Category c = activeCategories.remove();
 
-                for(CategoryXref children : c.getAllChildCategoryXrefs()) {
-                    inactiveCategories.add(children.getSubCategory());
+                    for (CategoryXref children : c.getAllChildCategoryXrefs()) {
+                        inactiveCategories.add(children.getSubCategory());
+                    }
                 }
 
                 currentDepth++;
 
                 if(currentDepth >= level) {
                     levelCategories.addAll(inactiveCategories);
+                    activeCategories.clear();
                 } else {
-                    Queue<Category> tmpCategoriesQueue = activeCategories;
-                    activeCategories = inactiveCategories;
-                    inactiveCategories = tmpCategoriesQueue;
+                    activeCategories.clear();
+                    activeCategories.addAll(inactiveCategories);
                 }
+
+                inactiveCategories.clear();
             }
         }
 
