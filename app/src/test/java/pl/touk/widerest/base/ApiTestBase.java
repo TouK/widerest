@@ -74,6 +74,7 @@ public abstract class ApiTestBase {
     public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
     public static final String PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "/{productId}";
+    public static final String ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "?href=";
     public static final String PRODUCTS_IN_CATEGORY_COUNT_URL = PRODUCTS_IN_CATEGORY_URL + "/count";
     public static final String CATEGORY_AVAILABILITY_BY_ID_URL = CATEGORY_BY_ID_URL + "/availability";
     public static final String SUBCATEGORY_IN_CATEGORY_BY_ID_URL = CATEGORY_BY_ID_URL + "/subcategories";

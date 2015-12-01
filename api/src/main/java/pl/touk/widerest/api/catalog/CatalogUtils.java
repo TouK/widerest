@@ -271,7 +271,7 @@ public class CatalogUtils {
     }
 
 
-    public static long getCategoryIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
+    public static long getIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
         final URL categoryPathURL = new URL(categoryPathUrl);
 
         final String categoryPath = categoryPathURL.getPath();

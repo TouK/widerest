@@ -1241,7 +1241,7 @@ public class ProductController {
             @ApiParam(value = "ID of a specific media", required = true)
             @PathVariable(value = "mediaId") Long mediaId) {
 
-        Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
+        final Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
