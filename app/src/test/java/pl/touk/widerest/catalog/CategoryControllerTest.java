@@ -568,6 +568,85 @@ public class CategoryControllerTest extends ApiTestBase {
 
     }
 
+    @Test
+    public void removingASubcategoryContainingOtherSubcategoriesShouldNotRemoveThemTest() {
+
+        /* (mst) This test operates on a category tree that looks like this:
+
+                            A
+                          /
+                   P - S
+                          \
+                           B
+         */
+
+        /* (mst) Builds the category tree */
+        final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long rootSubcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long childSubcategory1Id = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long childSubcategory2Id = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+
+        oAuth2AdminRestTemplate().postForEntity(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, rootCategoryId, serverPort, rootSubcategoryId);
+
+        oAuth2AdminRestTemplate().postForEntity(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, rootSubcategoryId, serverPort, childSubcategory1Id);
+
+        oAuth2AdminRestTemplate().postForEntity(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, rootSubcategoryId, serverPort, childSubcategory2Id);
+
+        final ResponseEntity<CategoryDto[]> receivedChildSubcategoriesEntities =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, rootSubcategoryId);
+
+        assertThat(receivedChildSubcategoriesEntities.getBody().length, equalTo(2));
+
+        final ResponseEntity<CategoryDto[]> receivedRootSubcategoriesEntities =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, rootCategoryId);
+
+        assertThat(receivedRootSubcategoriesEntities.getBody().length, equalTo(1));
+
+        /* Test the effects of removing the S Node (Category) */
+        oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
+                serverPort, rootCategoryId, serverPort, rootSubcategoryId);
+
+        final ResponseEntity<CategoryDto[]> receivedChildSubcategoriesEntities1 =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, rootSubcategoryId);
+
+        assertThat(receivedChildSubcategoriesEntities1.getBody().length, equalTo(2));
+
+        final ResponseEntity<CategoryDto[]> receivedRootSubcategoriesEntities1 =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, rootCategoryId);
+
+        assertThat(receivedRootSubcategoriesEntities1.getBody().length, equalTo(0));
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenAddingTheSameSubcategoryTwiceTest() {
+        final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long subcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+
+        final ResponseEntity<Object> addSubcategoryResponseEntity = oAuth2AdminRestTemplate().postForEntity(
+                ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, rootCategoryId, serverPort, subcategoryId);
+
+        assertThat(addSubcategoryResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        try {
+            oAuth2AdminRestTemplate().postForEntity(
+                    ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                    serverPort, rootCategoryId, serverPort, subcategoryId);
+            fail();
+        } catch (HttpClientErrorException httpClientErrorException) {
+            // then
+            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+
+            final ResponseEntity<CategoryDto[]> receivedRootSubcategoriesEntities =
+                    restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, rootCategoryId);
+
+            assertThat(receivedRootSubcategoriesEntities.getBody().length, equalTo(1));
+        }
+    }
+
 
     /* ----------------------------- SUBCATEGORIES TESTS ----------------------------- */
 

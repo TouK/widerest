@@ -212,21 +212,7 @@ public class CategoryController {
             ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
-//        Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist"));
-//
-//        final Category parentCategory = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-//
-//        final CategoryXref categoryXref = Optional.ofNullable(parentCategory.getAllChildCategoryXrefs()).orElse(Collections.emptyList()).stream()
-//                .filter(x -> Optional.ofNullable(x.getSubCategory()).map(Category::getId).orElse(-1L) == hrefCategoryId)
-//                .findAny()
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
-//
-//        parentCategory.getAllChildCategoryXrefs().remove(categoryXref);
-//        catalogService.saveCategory(parentCategory);
+
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -243,27 +229,6 @@ public class CategoryController {
                     return catalogService.saveCategory(e.getKey());
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-
-
-//        Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .map(e -> {
-//                    CategoryXref parentChildCategoryXref = Optional.ofNullable(e.getChildCategoryXrefs())
-//                            .orElse(Collections.emptyList()).stream()
-//                            .filter(x -> Optional.ofNullable(x.getSubCategory())
-//                                    .map(Category::getId)
-//                                    .orElse(-1L) == hrefCategoryId)
-//                            .findAny()
-//                            .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
-//
-//                    return Pair.of(e, parentChildCategoryXref);
-//                })
-//                .map(e -> {
-//                    e.getKey().getAllChildCategoryXrefs().remove(e.getValue());
-//                    return e.getKey();
-//                })
-//                .map(catalogService::saveCategory)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         return ResponseEntity.noContent().build();
     }
