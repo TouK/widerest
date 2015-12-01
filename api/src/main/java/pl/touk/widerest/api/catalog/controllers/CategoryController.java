@@ -488,9 +488,6 @@ public class CategoryController {
         return ResponseEntity.ok().build();
     }
 
-
-
-
     /* GET /categories/{id}/products */
     @Transactional
     @PreAuthorize("permitAll")
@@ -514,83 +511,6 @@ public class CategoryController {
                 .map(dtoConverters.productEntityToDto)
                 .collect(Collectors.toList());
     }
-
-
-    /* (mst) TO BE REMOVED!!! */
-    /* GET /categories/{id}/products/{productId} */
-//    @Transactional
-//    @PreAuthorize("permitAll")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Get details of a product from a category",
-//            notes = "Gets details of a specific product in a given category",
-//            response = ProductDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
-//            @ApiResponse(code = 404, message = "The specified category does not exist")
-//    })
-//    public ProductDto readOneProductFromCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//        return this.getProductsFromCategoryId(categoryId).stream()
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .filter(x -> x.getId().longValue() == productId)
-//                .findAny()
-//                .map(dtoConverters.productEntityToDto)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
-//    }
-
-
-    /* (mst) TO BE REMOVED!!! */
-    /* PUT /categories/{id}/products/{productId} */
-    /* (mst) This endpoint inserts only a reference to the product (so it has to exist)
-     *            into Category's product list. In case the product does not exist, use
-     *            ProductController's POST methods first
-     */
-//    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.PUT)
-//    @ApiOperation(
-//            value = "Insert existing product into category",
-//            notes = "Inserts existing product into category. It actually only updates few references therefore" +
-//                    " to insert a completely new product refer to ProductControllers' POST methods first",
-//            response = Void.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 201, message = "Product successfully inserted into specified category"),
-//            @ApiResponse(code = 404, message = "The specified category or product does not exist"),
-//            @ApiResponse(code = 409, message = "Category already contains the specified product")
-//    })
-//    public ResponseEntity<?> insertOneProductIntoCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//        final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-//
-//        /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
-//        final Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-//
-//        final CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
-//        productToAddXref.setProduct(productToAdd);
-//        productToAddXref.setCategory(categoryEntity);
-//
-//        if(!categoryEntity.getAllProductXrefs().contains(productToAddXref)) {
-//            categoryEntity.getAllProductXrefs().add(productToAddXref);
-//            catalogService.saveCategory(categoryEntity);
-//            /* TODO: (mst) add URI */
-//            return new ResponseEntity<>(HttpStatus.CREATED);
-//        } else {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-//        }
-//    }
 
     /* PATCH /categories/{id}/products/{productId} */
     /* (mst) This endpoint inserts only a reference to the product (so it has to exist)
@@ -651,55 +571,6 @@ public class CategoryController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
-
-//    /* DELETE /categories/{categoryId}/products/{productId} */
-//    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
-//    @ApiOperation(
-//            value = "Remove a product from a category",
-//            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes its " +
-//                    "references to the specified category",
-//            response = Void.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 204, message = "Specified product successfully removed from a category"),
-//            @ApiResponse(code = 400, message = "Not enough data has been provided (missing product link)"),
-//            @ApiResponse(code = 404, message = "The specified category does not exist")
-//    })
-//    public ResponseEntity<?> removeOneProductFromCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//    	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
-//        getProductsFromCategoryId(categoryId).stream()
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .filter(x -> x.getId().longValue() == productId)
-//                .findAny()
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
-//
-//
-//        Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .map(e -> {
-//                    CategoryProductXref xref = e.getAllProductXrefs().stream()
-//                            .filter(x -> x.getProduct().getId().longValue() == productId)
-//                            .findAny()
-//                            .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
-//                    return Pair.of(e, xref);
-//                })
-//                .map(e -> {
-//                    e.getKey().getAllProductXrefs().remove(e.getValue());
-//                    return e.getKey();
-//                })
-//                .map(catalogService::saveCategory)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-//
-//
-//        return ResponseEntity.noContent().build();
-//
-//    }
 
     /* DELETE /categories/{categoryId}/products/{productId} */
     @Transactional
@@ -852,3 +723,130 @@ public class CategoryController {
     }
 
 }
+
+
+   /* (mst) TO BE REMOVED!!! */
+    /* GET /categories/{id}/products/{productId} */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get details of a product from a category",
+//            notes = "Gets details of a specific product in a given category",
+//            response = ProductDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
+//            @ApiResponse(code = 404, message = "The specified category does not exist")
+//    })
+//    public ProductDto readOneProductFromCategory(
+//            @ApiParam(value = "ID of a specific category", required = true)
+//            @PathVariable(value="categoryId") Long categoryId,
+//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//        return this.getProductsFromCategoryId(categoryId).stream()
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(x -> x.getId().longValue() == productId)
+//                .findAny()
+//                .map(dtoConverters.productEntityToDto)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
+//    }
+
+
+    /* (mst) TO BE REMOVED!!! */
+    /* PUT /categories/{id}/products/{productId} */
+    /* (mst) This endpoint inserts only a reference to the product (so it has to exist)
+     *            into Category's product list. In case the product does not exist, use
+     *            ProductController's POST methods first
+     */
+//    @Transactional
+//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.PUT)
+//    @ApiOperation(
+//            value = "Insert existing product into category",
+//            notes = "Inserts existing product into category. It actually only updates few references therefore" +
+//                    " to insert a completely new product refer to ProductControllers' POST methods first",
+//            response = Void.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 201, message = "Product successfully inserted into specified category"),
+//            @ApiResponse(code = 404, message = "The specified category or product does not exist"),
+//            @ApiResponse(code = 409, message = "Category already contains the specified product")
+//    })
+//    public ResponseEntity<?> insertOneProductIntoCategory(
+//            @ApiParam(value = "ID of a specific category", required = true)
+//            @PathVariable(value="categoryId") Long categoryId,
+//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//        final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+//
+//        /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
+//        final Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+//
+//        final CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
+//        productToAddXref.setProduct(productToAdd);
+//        productToAddXref.setCategory(categoryEntity);
+//
+//        if(!categoryEntity.getAllProductXrefs().contains(productToAddXref)) {
+//            categoryEntity.getAllProductXrefs().add(productToAddXref);
+//            catalogService.saveCategory(categoryEntity);
+//            /* TODO: (mst) add URI */
+//            return new ResponseEntity<>(HttpStatus.CREATED);
+//        } else {
+//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+//        }
+//    }
+
+     /* (mst) TO BE REMOVED!!! */
+//    /* DELETE /categories/{categoryId}/products/{productId} */
+//    @Transactional
+//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
+//    @ApiOperation(
+//            value = "Remove a product from a category",
+//            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes its " +
+//                    "references to the specified category",
+//            response = Void.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 204, message = "Specified product successfully removed from a category"),
+//            @ApiResponse(code = 400, message = "Not enough data has been provided (missing product link)"),
+//            @ApiResponse(code = 404, message = "The specified category does not exist")
+//    })
+//    public ResponseEntity<?> removeOneProductFromCategory(
+//            @ApiParam(value = "ID of a specific category", required = true)
+//            @PathVariable(value="categoryId") Long categoryId,
+//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//    	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
+//        getProductsFromCategoryId(categoryId).stream()
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(x -> x.getId().longValue() == productId)
+//                .findAny()
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
+//
+//
+//        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .map(e -> {
+//                    CategoryProductXref xref = e.getAllProductXrefs().stream()
+//                            .filter(x -> x.getProduct().getId().longValue() == productId)
+//                            .findAny()
+//                            .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
+//                    return Pair.of(e, xref);
+//                })
+//                .map(e -> {
+//                    e.getKey().getAllProductXrefs().remove(e.getValue());
+//                    return e.getKey();
+//                })
+//                .map(catalogService::saveCategory)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+//
+//
+//        return ResponseEntity.noContent().build();
+//
+//    }
