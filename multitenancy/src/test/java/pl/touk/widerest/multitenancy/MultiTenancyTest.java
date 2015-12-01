@@ -1,6 +1,5 @@
 package pl.touk.widerest.multitenancy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.multitenancy.sample.SampleApplication;
 import pl.touk.widerest.multitenancy.sample.SampleEntity;
@@ -47,12 +45,6 @@ public class MultiTenancyTest {
 
     @Resource
     protected DataSource dataSource;
-
-    @Resource
-    protected MacSigner signerVerifier;
-
-    @Resource
-    protected ObjectMapper objectMapper;
 
     @Autowired
     private Consumer<TenantRequest> setTenantDetails;

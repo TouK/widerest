@@ -1,10 +1,7 @@
 package pl.touk.widerest.multitenancy;
 
-import org.springframework.stereotype.Service;
-
 import java.util.UUID;
 
-@Service
 public class IdentifierTool {
 
     public String generateIdentifier() {

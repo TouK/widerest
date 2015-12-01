@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiResponses;
 
 import org.broadleafcommerce.common.security.util.PasswordChange;
 import org.broadleafcommerce.common.service.GenericResponse;
+
 import org.broadleafcommerce.openadmin.server.security.service.AdminSecurityService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class ManagerEndpoint {
     private AdminSecurityService adminSecurityService;
 
 
-    //@PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(method = RequestMethod.POST, consumes = "text/plain")
     @ApiOperation(
             value = "Change admin password",
@@ -68,6 +69,7 @@ public class ManagerEndpoint {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('PERMISSION_ALL_ADMIN_USER')")
     @RequestMapping(value = "/{admin}", method = RequestMethod.POST, consumes = "application/json")
     @ApiOperation(
             value = "Change password of a specified admin user",

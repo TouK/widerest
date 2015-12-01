@@ -1,6 +1,5 @@
 package pl.touk.widerest.security.jwt;
 
-import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -8,8 +7,9 @@ import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConv
 import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 @Component
 public class WiderestAccessTokenConverter extends DefaultAccessTokenConverter {
@@ -19,8 +19,8 @@ public class WiderestAccessTokenConverter extends DefaultAccessTokenConverter {
     public static final String DELIMITER = "/";
 
 
-    @Resource
-    private CurrentTenantIdentifierResolver currentTenantIdentifierResolver;
+    @Autowired(required = false)
+    private Supplier<String> issuerSupplier;
 
     @Autowired
     @Override
@@ -31,7 +31,12 @@ public class WiderestAccessTokenConverter extends DefaultAccessTokenConverter {
     @Override
     public Map<String, ?> convertAccessToken(OAuth2AccessToken token, OAuth2Authentication authentication) {
         Map response = super.convertAccessToken(token, authentication);
-        response.put(ISS, WIDEREST_ISS + DELIMITER + currentTenantIdentifierResolver.resolveCurrentTenantIdentifier());
+        response.put(
+                ISS,
+                Optional.ofNullable(issuerSupplier)
+                        .map(Supplier::get)
+                        .orElse(WIDEREST_ISS)
+        );
         return response;
     }
 

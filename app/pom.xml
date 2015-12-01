@@ -64,9 +64,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-multitenancy</artifactId>
-            <version>${project.version}</version>
+            <groupId>pl.touk</groupId>
+            <artifactId>spring-boot-multitenancy</artifactId>
         </dependency>
         <dependency>
             <groupId>pl.touk.widerest</groupId>

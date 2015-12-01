@@ -6,16 +6,18 @@ import com.google.common.collect.Sets;
 import io.swagger.models.auth.OAuth2Definition;
 import io.swagger.models.auth.SecuritySchemeDefinition;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import liquibase.integration.spring.SpringLiquibase;
 import liquibase.servicelocator.ServiceLocator;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.hibernate.service.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.data.jpa.EntityManagerFactoryDependsOnPostProcessor;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
@@ -34,7 +36,6 @@ import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
-import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.util.Assert;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -71,12 +72,15 @@ public class MultiTenancyConfig {
     public static final String DEFAULT_TENANT_IDENTIFIER = "default";
     public static final String TENANT_SCHEMA_PREFIX = "TENANT";
 
-    @Value("${mulititenacy.tokenSecret:secret}")
-    private String tenantTokenSecret;
-
     @Bean
-    public MacSigner macSigner() {
-        return new MacSigner(tenantTokenSecret);
+    public SpringLiquibase springLiquibase() {
+        return null;
+    }
+
+    @ConditionalOnMissingBean(IdentifierTool.class)
+    @Bean
+    public IdentifierTool identifierTool() {
+        return new IdentifierTool();
     }
 
     @Configuration
@@ -181,6 +185,7 @@ public class MultiTenancyConfig {
             @Override
             public Map<String, Object> getJpaPropertyMap() {
                 Map<String, Object> jpaPropertyMap = super.getJpaPropertyMap();
+                jpaPropertyMap.put(AvailableSettings.MULTI_TENANT, MultiTenancyStrategy.SCHEMA);
                 jpaPropertyMap.put(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER, tenantIdentifierResolver);
                 jpaPropertyMap.put(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
                 return jpaPropertyMap;
@@ -193,61 +198,66 @@ public class MultiTenancyConfig {
         return adapter;
     }
 
-    public static final String TENANT_REFERENCE = "tenantImplicit";
+    @Configuration
+    @ConditionalOnClass(Docket.class)
+    public static class SpringFoxConfiguration {
 
-    @Autowired(required = false)
-    private ApiInfo apiInfo;
+        public static final String TENANT_REFERENCE = "tenantImplicit";
 
-    @Bean
-    public Docket tenantDocket() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("tenant")
-                .apiInfo(apiInfo)
-                .select().paths(regex("/tenant")).build()
-                .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
-                .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
-                .securityContexts(Lists.newArrayList(tenantSecurityContext()))
-                .securitySchemes(Lists.newArrayList(tenantImplicitScheme()));
-    }
+        @Autowired(required = false)
+        private ApiInfo apiInfo;
 
-    private SecurityScheme tenantImplicitScheme() {
-        List<AuthorizationScope> authorizationScopes = Arrays.asList();//new AuthorizationScope("openid", "openid"));
-        LoginEndpoint loginEndpoint = new LoginEndpoint("https://touk-io.eu.auth0.com/authorize");
-        GrantType grantType = new ImplicitGrant(loginEndpoint, "id_token");
-        return new OAuth(TENANT_REFERENCE, authorizationScopes, Lists.newArrayList(grantType));
-    }
+        @Bean
+        public Docket tenantDocket() {
+            return new Docket(DocumentationType.SWAGGER_2)
+                    .groupName("tenant")
+                    .apiInfo(apiInfo)
+                    .select().paths(regex("/tenant")).build()
+                    .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
+                    .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
+                    .securityContexts(Lists.newArrayList(tenantSecurityContext()))
+                    .securitySchemes(Lists.newArrayList(tenantImplicitScheme()));
+        }
 
-    private SecurityContext tenantSecurityContext() {
-        return SecurityContext.builder()
-                .securityReferences(
-                        Lists.newArrayList(
-                                new SecurityReference(TENANT_REFERENCE, new AuthorizationScope[0])
-                        )
-                )
-                .forPaths(PathSelectors.regex("/.*"))
-                .build();
-    }
+        private SecurityScheme tenantImplicitScheme() {
+            List<AuthorizationScope> authorizationScopes = Arrays.asList();
+            LoginEndpoint loginEndpoint = new LoginEndpoint("https://touk-io.eu.auth0.com/authorize");
+            GrantType grantType = new ImplicitGrant(loginEndpoint, "id_token");
+            return new OAuth(TENANT_REFERENCE, authorizationScopes, Lists.newArrayList(grantType));
+        }
 
-    @Bean
-    @Primary
-    SecurityMapper securityMapperWorkaround() {
-        return new SecurityMapperImpl() {
-            @Override
-            public Map<String, SecuritySchemeDefinition> toSecuritySchemeDefinitions(ResourceListing from) {
-                Map<String, SecuritySchemeDefinition> def = super.toSecuritySchemeDefinitions(from);
-                SecuritySchemeDefinition old = def.get(TENANT_REFERENCE);
-                if (old != null) {
-                    OAuth2Definition updated = new OAuth2Definition() {
-                        public String tokenName = "id_token";
-                    };
-                    BeanUtils.copyProperties(old, updated);
-                    def = Maps.newHashMap(def);
-                    def.put(TENANT_REFERENCE, updated);
+        private SecurityContext tenantSecurityContext() {
+            return SecurityContext.builder()
+                    .securityReferences(
+                            Lists.newArrayList(
+                                    new SecurityReference(TENANT_REFERENCE, new AuthorizationScope[0])
+                            )
+                    )
+                    .forPaths(PathSelectors.regex("/.*"))
+                    .build();
+        }
+
+        @Bean
+        @Primary
+        SecurityMapper securityMapperWorkaround() {
+            return new SecurityMapperImpl() {
+                @Override
+                public Map<String, SecuritySchemeDefinition> toSecuritySchemeDefinitions(ResourceListing from) {
+                    Map<String, SecuritySchemeDefinition> def = super.toSecuritySchemeDefinitions(from);
+                    SecuritySchemeDefinition old = def.get(TENANT_REFERENCE);
+                    if (old != null) {
+                        OAuth2Definition updated = new OAuth2Definition() {
+                            public String tokenName = "id_token";
+                        };
+                        BeanUtils.copyProperties(old, updated);
+                        def = Maps.newHashMap(def);
+                        def.put(TENANT_REFERENCE, updated);
+                    }
+
+                    return def;
                 }
-
-                return def;
-            }
-        };
-    }
+            };
+        }
+    };
 
 }

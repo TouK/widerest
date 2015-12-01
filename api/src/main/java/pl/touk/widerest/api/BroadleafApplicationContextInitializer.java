@@ -1,4 +1,4 @@
-package pl.touk.widerest;
+package pl.touk.widerest.api;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;

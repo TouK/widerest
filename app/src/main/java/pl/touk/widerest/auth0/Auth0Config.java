@@ -5,6 +5,8 @@ import com.auth0.spring.security.auth0.Auth0AuthenticationProvider;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -16,14 +18,20 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import pl.touk.widerest.multitenancy.MultiTenancyConfig;
+import pl.touk.widerest.multitenancy.TenantTokenStore;
 import springfox.documentation.service.Documentation;
 import springfox.documentation.spring.web.DocumentationCache;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@ConditionalOnClass({TenantTokenStore.class})
+@ConditionalOnBean(CurrentTenantIdentifierResolver.class)
 @ConditionalOnProperty("auth0.domain")
 @Configuration
 @ComponentScan("com.auth0")
@@ -115,10 +123,13 @@ public class Auth0Config extends WebSecurityConfigurerAdapter {
 
             @Override
             public Map<String, Documentation> all() {
-                String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
+                String tenantIdentifier = Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+                        .map(attributes -> attributes.getAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST))
+                        .map(String.class::cast)
+                        .orElse(null);
                 Map<String, Documentation> all = super.all().entrySet().stream()
                         .filter(entry ->
-                                        "api".equals(entry.getKey()) != /*XOR*/ MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier)
+                                        "api".equals(entry.getKey()) != /*XOR*/ (tenantIdentifier == null)
                         ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 return all;
             }

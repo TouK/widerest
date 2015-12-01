@@ -34,7 +34,7 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.BroadleafApplicationContextInitializer;
+import pl.touk.widerest.api.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
