@@ -33,8 +33,9 @@ import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.BroadleafApplicationContextInitializer;
+import pl.touk.widerest.api.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
@@ -43,7 +44,6 @@ import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
-import pl.touk.widerest.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import javax.annotation.Resource;

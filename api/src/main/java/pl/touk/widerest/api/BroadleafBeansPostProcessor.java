@@ -1,4 +1,4 @@
-package pl.touk.widerest;
+package pl.touk.widerest.api;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
