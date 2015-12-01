@@ -20,13 +20,6 @@
         </dependency>
 
         <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-
-        <dependency>
             <groupId>com.paypal.sdk</groupId>
             <artifactId>rest-api-sdk</artifactId>
         </dependency>

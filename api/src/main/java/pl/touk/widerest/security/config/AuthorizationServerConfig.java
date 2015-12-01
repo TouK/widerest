@@ -50,7 +50,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints
-               // .addInterceptor(anonymousUserInterceptor)
+                .addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore)
                 .tokenEnhancer(tokenEnhancer)
                 .authenticationManager(authenticationManager)

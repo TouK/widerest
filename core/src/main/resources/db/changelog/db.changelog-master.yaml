@@ -3,16 +3,6 @@ databaseChangeLog:
         id: initial
         author: trombka
         changes:
-            - createTable:
-                tableName: test
-                columns:
-                    - column:
-                        name: id
-                        type: int
-                        autoIncrement: true
-                        constraints:
-                            primaryKey: true
-                            nullable: true
             - sql:
                 sql: SET search_path TO "${database.defaultSchemaName}"
             - sqlFile:
@@ -47,11 +37,3 @@ databaseChangeLog:
                 path: /sql/load_catalog_i18n_data_ES.sql
             - sqlFile:
                 path: /sql/load_sitemap_data.sql
-#            - sqlFile:
-#                path: /sql/load_desa_auctions.sql.vm
-    - changeSet:
-        id: 001-cleanup
-        author: trombka
-        changes:
-            - dropTable:
-                tableName: test

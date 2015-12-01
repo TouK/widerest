@@ -43,8 +43,6 @@ import pl.touk.widerest.paypal.exception.FulfillmentOptionNotSetException;
 import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
 import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 import pl.touk.widerest.paypal.gateway.PayPalRequestDto;
-
-import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.PostConstruct;
@@ -55,7 +53,7 @@ import java.util.Optional;
 
 @Controller
 @ResponseBody
-@RequestMapping(value = ResourceServerConfig.API_PATH + "/orders/{id}/paypal")
+@RequestMapping(value = "/v1" + "/orders/{id}/paypal")
 @Api(value = "paypal", description = "PayPal payment endpoint")
 public class PayPalController {
 
