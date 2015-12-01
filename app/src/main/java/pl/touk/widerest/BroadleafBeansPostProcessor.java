@@ -20,10 +20,11 @@ public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {
         //TODO: must be substituted with something for all tenants
         ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blSequenceGeneratorCorruptionDetection");
 
-        ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blJpaVendorAdapter");
-        beanFactory.registerAlias("jpaVendorAdapter", "blJpaVendorAdapter");
 
-
+        if (((DefaultListableBeanFactory) beanFactory).containsBeanDefinition("jpaVendorAdapter")) {
+            ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blJpaVendorAdapter");
+            beanFactory.registerAlias("jpaVendorAdapter", "blJpaVendorAdapter");
+        }
     }
 
     private void registerAliases(ConfigurableListableBeanFactory beanFactory) {

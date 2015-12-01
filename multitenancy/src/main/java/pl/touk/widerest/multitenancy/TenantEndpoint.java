@@ -1,7 +1,6 @@
 package pl.touk.widerest.multitenancy;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +37,6 @@ public class TenantEndpoint {
 
     @Resource
     private IdentifierTool identifierTool;
-
-    @Resource
-    private ObjectMapper objectMapper;
 
     @Resource
     private MultiTenancyService multiTenancyService;

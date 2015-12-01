@@ -7,8 +7,9 @@ import org.hibernate.Session;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,7 @@ import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import pl.touk.widerest.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.multitenancy.TenantRequest;
+import pl.touk.widerest.security.jwt.WiderestAccessTokenConverter;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
@@ -42,7 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @Configuration
-@EnableAutoConfiguration(exclude = { /*HibernateJpaAutoConfiguration.class,*/ LiquibaseAutoConfiguration.class })
+@EnableAutoConfiguration(exclude = { /*HibernateJpaAutoConfiguration.class, LiquibaseAutoConfiguration.class*/ })
 @ComponentScan("pl.touk.widerest")
 @EnableTransactionManagement
 public class Application extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
@@ -79,6 +81,7 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
     }
 
     @Bean
+    @ConditionalOnBean(CurrentTenantIdentifierResolver.class)
     Consumer<String> clientIdValidator(CurrentTenantIdentifierResolver currentTenantIdentifierResolver) {
         return clientId -> {
             if (!clientId.startsWith(currentTenantIdentifierResolver.resolveCurrentTenantIdentifier()))
@@ -86,31 +89,44 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
         };
     }
 
-
     @Bean
+    @ConditionalOnBean(CurrentTenantIdentifierResolver.class)
     public Supplier<String> resourceIdSupplier(CurrentTenantIdentifierResolver currentTenantIdentifierResolver) {
         return currentTenantIdentifierResolver::resolveCurrentTenantIdentifier;
     }
 
     @Bean
-    public Consumer<TenantRequest> setTenantDetails(AdminSecurityService adminSecurityService, CurrentTenantIdentifierResolver tenantIdentifierResolver) {
-        return new Consumer<TenantRequest>() {
-
-            @PersistenceContext(unitName = "blPU")
-            protected EntityManager em;
-
-            @Override
-            public void accept(TenantRequest tenantRequest) {
-                Object tenantInRequest = RequestContextHolder.getRequestAttributes().getAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
-                String tenantIdentifier = tenantIdentifierResolver.resolveCurrentTenantIdentifier();
-                String tenantIdInEntityManager = em.unwrap(Session.class).getTenantIdentifier();
-                AdminUser adminUser = adminSecurityService.readAdminUserByUserName("admin");
-                adminUser.setEmail(tenantRequest.getAdminEmail());
-                adminUser.setUnencodedPassword(tenantRequest.getAdminPassword());
-                adminSecurityService.saveAdminUser(adminUser);
-            }
-        };
+    @ConditionalOnBean(CurrentTenantIdentifierResolver.class)
+    public Supplier<String> issuerSupplier(CurrentTenantIdentifierResolver currentTenantIdentifierResolver) {
+        return () -> WiderestAccessTokenConverter.WIDEREST_ISS + WiderestAccessTokenConverter.DELIMITER +currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
     }
+
+    @ConditionalOnClass({
+            TenantRequest.class,
+            MultiTenancyConfig.class
+    })
+    @Configuration
+    public static class MultiTenancy {
+        @Bean
+        public Consumer<TenantRequest> setTenantDetails(AdminSecurityService adminSecurityService, CurrentTenantIdentifierResolver tenantIdentifierResolver) {
+            return new Consumer<TenantRequest>() {
+
+                @PersistenceContext(unitName = "blPU")
+                protected EntityManager em;
+
+                @Override
+                public void accept(TenantRequest tenantRequest) {
+                    Object tenantInRequest = RequestContextHolder.getRequestAttributes().getAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+                    String tenantIdentifier = tenantIdentifierResolver.resolveCurrentTenantIdentifier();
+                    String tenantIdInEntityManager = em.unwrap(Session.class).getTenantIdentifier();
+                    AdminUser adminUser = adminSecurityService.readAdminUserByUserName("admin");
+                    adminUser.setEmail(tenantRequest.getAdminEmail());
+                    adminUser.setUnencodedPassword(tenantRequest.getAdminPassword());
+                    adminSecurityService.saveAdminUser(adminUser);
+                }
+            };
+        }
+    };
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
