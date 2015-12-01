@@ -525,6 +525,52 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
 
+    /* ----------------------------- SUBCATEGORIES TESTS ----------------------------- */
+
+    @Test
+    public void shouldAddAndDeleteASubcategoryProperlyTest() {
+        final ResponseEntity<?> categoryResponseEntity = addNewTestCategory(DtoTestType.NEXT);
+        final long testCategoryId = getIdFromLocationUrl(categoryResponseEntity.getHeaders().getLocation().toString());
+
+        final ResponseEntity<CategoryDto[]> receivedSubcategoriesEntities =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, testCategoryId);
+
+        assertThat(receivedSubcategoriesEntities.getBody().length, equalTo(0));
+
+        final CategoryDto subcategoryDto= DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+
+        subcategoryDto.setName("Subcategory");
+        subcategoryDto.setDescription("This is a subcategory description");
+
+        final ResponseEntity<?> subcategoryResponseEntity = addNewTestCategory(subcategoryDto);
+        final long testSubcategoryId = getIdFromLocationUrl(subcategoryResponseEntity.getHeaders().getLocation().toString());
+
+        final ResponseEntity<Object> addSubcategoryResponseEntity = oAuth2AdminRestTemplate().postForEntity(
+                ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, testCategoryId, serverPort, testSubcategoryId);
+
+        assertThat(addSubcategoryResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        final ResponseEntity<CategoryDto[]> receivedSubcategoriesEntities2 =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, testCategoryId);
+
+        assertThat(receivedSubcategoriesEntities2.getBody().length, equalTo(1));
+        assertThat(receivedSubcategoriesEntities2.getBody()[0].getName(), equalTo(subcategoryDto.getName()));
+        assertThat(receivedSubcategoriesEntities2.getBody()[0].getDescription(), equalTo(subcategoryDto.getDescription()));
+
+        oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
+                serverPort, testCategoryId, serverPort, testSubcategoryId);
+
+        final ResponseEntity<CategoryDto[]> receivedSubcategoriesEntities3 =
+                restTemplate.getForEntity(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, CategoryDto[].class, serverPort, testCategoryId);
+
+        assertThat(receivedSubcategoriesEntities3.getBody().length, equalTo(0));
+
+    }
+
+
+    /* ----------------------------- SUBCATEGORIES TESTS ----------------------------- */
+
 
     /* ----------------------------- HELPER METHODS ----------------------------- */
 

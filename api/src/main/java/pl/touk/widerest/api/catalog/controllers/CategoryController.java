@@ -66,21 +66,24 @@ public class CategoryController {
             @ApiParam(value = "Offset which to start returning categories from")
             @RequestParam(value = "offset", required = false) Integer offset) {
 
+        List<CategoryDto> categoriesToReturn;
+
         if(depth == null || depth < 0) {
-            return catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
+            categoriesToReturn = catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
                     .map(DtoConverters.categoryEntityToDto)
                     .collect(Collectors.toList());
+        } else {
+            final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
+                    .collect(Collectors.toList());
+
+            categoriesToReturn = getCategoriesAtLevel(globalParentCategories, depth).stream()
+                    .map(DtoConverters.categoryEntityToDto)
+                    .collect(Collectors.toList());
         }
-
-        final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
-                .collect(Collectors.toList());
-
-        return getCategoriesAtLevel(globalParentCategories, depth).stream()
-                .map(DtoConverters.categoryEntityToDto)
-                .collect(Collectors.toList());
+        return categoriesToReturn;
     }
 
     /* GET /{categoryId}/subcategories */
@@ -109,7 +112,7 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        return catalogService.findActiveSubCategoriesByCategory(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
+        return catalogService.findAllSubCategories(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
@@ -209,48 +212,61 @@ public class CategoryController {
             ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+//        Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist"));
+//
+//        final Category parentCategory = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+//
+//        final CategoryXref categoryXref = Optional.ofNullable(parentCategory.getAllChildCategoryXrefs()).orElse(Collections.emptyList()).stream()
+//                .filter(x -> Optional.ofNullable(x.getSubCategory()).map(Category::getId).orElse(-1L) == hrefCategoryId)
+//                .findAny()
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
+//
+//        parentCategory.getAllChildCategoryXrefs().remove(categoryXref);
+//        catalogService.saveCategory(parentCategory);
+
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
-                    CategoryXref parentChildCategoryXref = e.getChildCategoryXrefs().stream()
-                            .filter(x -> x.getSubCategory().getId().longValue() == hrefCategoryId)
+                    final CategoryXref catXref = Optional.ofNullable(e.getAllChildCategoryXrefs()).orElse(Collections.emptyList()).stream()
+                            .filter(x -> Optional.ofNullable(x.getSubCategory()).map(Category::getId).orElse(-1L) == hrefCategoryId)
                             .findAny()
                             .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
 
-                    return Pair.of(e, parentChildCategoryXref);
+                    return Pair.of(e, catXref);
                 })
                 .map(e -> {
                     e.getKey().getAllChildCategoryXrefs().remove(e.getValue());
-                    return e.getKey();
+                    return catalogService.saveCategory(e.getKey());
                 })
-                .map(catalogService::saveCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
+
+
+//        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .map(e -> {
+//                    CategoryXref parentChildCategoryXref = Optional.ofNullable(e.getChildCategoryXrefs())
+//                            .orElse(Collections.emptyList()).stream()
+//                            .filter(x -> Optional.ofNullable(x.getSubCategory())
+//                                    .map(Category::getId)
+//                                    .orElse(-1L) == hrefCategoryId)
+//                            .findAny()
+//                            .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist or is not a subcategory of a category with ID: " + categoryId));
+//
+//                    return Pair.of(e, parentChildCategoryXref);
+//                })
+//                .map(e -> {
+//                    e.getKey().getAllChildCategoryXrefs().remove(e.getValue());
+//                    return e.getKey();
+//                })
+//                .map(catalogService::saveCategory)
+//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         return ResponseEntity.noContent().build();
     }
-
-
-
-//    /* GET /categories */
-//    @Transactional
-//    @PreAuthorize("permitAll")
-//    @RequestMapping(value = "/parent-categories", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "List all parent categories",
-//            notes = "Gets a list of all parent categories in the catalog",
-//            response = CategoryDto.class,
-//            responseContainer = "List")
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of parent categories list", response = CategoryDto.class, responseContainer = "List")
-//    })
-//    public List<CategoryDto> readAllParentCategories() {
-//
-//        return catalogService.findAllParentCategories().stream()
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                //.filter(category -> category.getAllParentCategoryXrefs().size() == 0)
-//                .map(DtoConverters.categoryEntityToDto)
-//                .collect(Collectors.toList());
-//    }
 
     /* POST /categories */
     @Transactional
