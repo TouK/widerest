@@ -66,24 +66,27 @@ public class CategoryController {
             @ApiParam(value = "Offset which to start returning categories from")
             @RequestParam(value = "offset", required = false) Integer offset) {
 
-        List<CategoryDto> categoriesToReturn;
+        List<Category> categoriesToReturn;
 
         if(depth == null || depth < 0) {
             categoriesToReturn = catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
-                    .map(DtoConverters.categoryEntityToDto)
                     .collect(Collectors.toList());
         } else {
+
             final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
                     .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
                     .collect(Collectors.toList());
 
-            categoriesToReturn = getCategoriesAtLevel(globalParentCategories, depth).stream()
-                    .map(DtoConverters.categoryEntityToDto)
-                    .collect(Collectors.toList());
+            categoriesToReturn = CatalogUtils.getSublistForOffset(getCategoriesAtLevel(globalParentCategories, depth),
+                                        offset != null ? offset : 0, limit != null ? limit : 0);
+
         }
-        return categoriesToReturn;
+
+        return categoriesToReturn.stream()
+                .map(DtoConverters.categoryEntityToDto)
+                .collect(Collectors.toList());
     }
 
     /* GET /{categoryId}/subcategories */

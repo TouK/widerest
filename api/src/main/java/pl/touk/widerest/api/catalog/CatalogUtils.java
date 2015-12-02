@@ -284,4 +284,55 @@ public class CatalogUtils {
 
         return Long.parseLong(categoryPath.substring(lastSlashIndex + 1));
     }
+
+    /*
+        (mst)
+
+        Limits:
+                0 : unlimited
+
+     */
+    public static <T> List<T> getSublistForOffset(final List<T> list, final int offset, final int limit) {
+
+        final int listSize = list.size();
+
+        if(listSize == 0) {
+            return list;
+        }
+
+        /* (mst) Rather than just throwing an exception, we'll set some 'default' values instead */
+
+//        if(offset < 0 || limit < 0) {
+//            throw new IllegalArgumentException("Offset/Limit must be >= 0");
+//        }
+
+        int offsetParam = offset;
+        int limitParam  = limit;
+
+        if(offset < 0) {
+            offsetParam = 0;
+        }
+
+        if(limit < 0) {
+            limitParam = 0;
+        }
+
+        if(offsetParam > 0) {
+
+            if(offsetParam >= listSize) {
+                return list.subList(0, 0);
+            }
+
+            if(limitParam > 0) {
+                return list.subList(offsetParam, Math.min(offsetParam + limitParam, listSize));
+            } else {
+                return list.subList(offsetParam, list.size());
+            }
+        } else if(limitParam > 0) {
+            return list.subList(0, Math.min(limitParam, listSize));
+        } else {
+            return list.subList(0, listSize);
+        }
+    }
+
 }

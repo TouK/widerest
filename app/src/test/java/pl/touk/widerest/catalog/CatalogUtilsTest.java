@@ -6,6 +6,9 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 
 import java.net.MalformedURLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -37,5 +40,37 @@ public class CatalogUtilsTest {
         assertThat(CatalogUtils.getIdFromUrl(validUrl), equalTo(2008L));
     }
 
+    @Test
+    public void shouldReturnEmptySublistForEmptyListTest() {
+        assertThat(CatalogUtils.getSublistForOffset(Collections.emptyList(), 1, 2).size(), equalTo(0));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForValidList1Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        List<Integer> outputSublist = Arrays.asList(1, 2, 3, 4, 5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 0, 0), equalTo(outputSublist));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForValidList2Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        List<Integer> outputSublist = Arrays.asList(3, 4, 5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 2, 0), equalTo(outputSublist));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForValidList3Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        List<Integer> outputSublist = Arrays.asList(2, 3, 4);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 1, 3), equalTo(outputSublist));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForValidList4Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        List<Integer> outputSublist = Arrays.asList(5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 4, 4), equalTo(outputSublist));
+    }
 
 }
