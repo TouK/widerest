@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.multitenancy.TenantTokenStore;
+import pl.touk.widerest.multitenancy.TenantTokenStore;
 
 import java.util.ArrayList;
 import java.util.Collections;
