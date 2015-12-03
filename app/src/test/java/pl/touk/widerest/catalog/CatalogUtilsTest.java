@@ -73,4 +73,30 @@ public class CatalogUtilsTest {
         assertThat(CatalogUtils.getSublistForOffset(inputList, 4, 4), equalTo(outputSublist));
     }
 
+    @Test
+    public void shouldReturnValidSublistForBoundaryConditions1Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, -1, 0), equalTo(inputList));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForBoundaryConditions2Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        List<Integer> outputSublist = Arrays.asList(6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 5, 3), equalTo(outputSublist));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForBoundaryConditions3Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 6, 4), equalTo(Collections.emptyList()));
+    }
+
+    @Test
+    public void shouldReturnValidSublistForBoundaryConditions4Test() {
+        List<Integer> inputList = Arrays.asList(1, 2, 3, 4, 5, 6);
+        assertThat(CatalogUtils.getSublistForOffset(inputList, 0, 20), equalTo(inputList));
+    }
+
+
 }
