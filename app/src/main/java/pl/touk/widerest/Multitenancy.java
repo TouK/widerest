@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.NoSuchClientException;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
-import pl.touk.widerest.multitenancy.MultiTenancyConfig;
-import pl.touk.widerest.multitenancy.TenantRequest;
+import pl.touk.multitenancy.MultiTenancyConfig;
+import pl.touk.multitenancy.TenantRequest;
 import pl.touk.widerest.security.jwt.WiderestAccessTokenConverter;
 
 import javax.persistence.EntityManager;
