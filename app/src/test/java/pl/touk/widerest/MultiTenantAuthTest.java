@@ -26,9 +26,9 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.security.oauth2.common.exceptions.UserDeniedAuthorizationException;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.MultiValueMap;
+import pl.touk.multitenancy.TenantHeaderRequestFilter;
+import pl.touk.multitenancy.TenantRequest;
 import pl.touk.widerest.base.ApiTestBase;
-import pl.touk.widerest.multitenancy.TenantHeaderRequestFilter;
-import pl.touk.widerest.multitenancy.TenantRequest;
 
 import java.util.Arrays;
 import java.util.List;
