@@ -5,6 +5,8 @@
 
     <logger name="pl.touk" level="INFO"/>
 
+    <logger name="liquibase.integration.spring" level="INFO"/>
+
     <root level="WARN" />
 
 </configuration>
