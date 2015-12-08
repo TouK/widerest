@@ -7,17 +7,26 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
+import org.broadleafcommerce.common.payment.PaymentGatewayType;
+import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
+import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
+import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
+import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.Customer;
@@ -44,6 +53,7 @@ import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
+import pl.touk.widerest.api.cart.dto.PaymentDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
@@ -54,6 +64,8 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -93,6 +105,12 @@ public class OrderController {
 
     @Resource(name = "blInventoryService")
     private InventoryService inventoryService;
+
+    @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
+    private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
+
+    @Resource(name = "blOrderToPaymentRequestDTOService")
+    private OrderToPaymentRequestDTOService orderToPaymentRequestDTOService;
 
     @Resource
     private ISOService isoService;
@@ -579,30 +597,92 @@ public class OrderController {
         return orderServiceProxy.getOrderFulfilmentAddress(userDetails, orderId);
     }
 
-    
-
-    /* GET /orders/{id}/payments */
-    /*
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}/payments", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a list of available payments for an order", response = List.class)
-    public List<OrderPaymentDto> getPaymentsByOrderId(
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/payment", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Initiate order payment execution using the given payment provider",
+            notes = "Initiates for one chosen order",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Redirects to checkout website"),
+            @ApiResponse(code = 403, message = "Access denied to given order")
+            // and throws
+    })
+    public ResponseEntity initiatePayment(
+            PaymentDto paymentDto,
+            HttpServletRequest request,
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "id") Long orderId) {
+            @PathVariable(value = "id") Long orderId
+    ) throws PaymentException {
 
-        Customer currentCustomer = customerService.readCustomerById(customerUserDetails.getId());
+        Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+                .filter(OrderController::notYetSubmitted)
+                .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
 
-        if(currentCustomer == null) {
-            throw new CustomerNotFoundException();
+        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
+            throw new IllegalAccessError("Access Denied");
         }
 
-        Order cart = orderService.findCartForCustomer(currentCustomer);
+        orderValidationService.validateOrderBeforeCheckout(order);
 
-        if(cart == null || cart.getId() != orderId) {
-            throw new ResourceNotFoundException("Cannot find an order with ID: " + orderId);
-        }
+        PaymentRequestDTO paymentRequestDTO =
+                orderToPaymentRequestDTOService.translateOrder(order)
+                        .additionalField("SUCCESS_URL", paymentDto.getSuccessUrl())
+                        .additionalField("CANCEL_URL", paymentDto.getCancelUrl())
+                        .additionalField("FAILURE_URL", paymentDto.getFailureUrl())
+                ;
 
-        return cart.getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList());
+        paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
+
+        PaymentGatewayConfigurationService configurationService =
+                paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
+                        PaymentGatewayType.getInstance(String.valueOf(paymentDto.getProvider()))
+                );
+
+        PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint(paymentRequestDTO);
+
+        //return redirect URI from the paymentResponse
+        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
+                .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
+
+        return ResponseEntity.created(URI.create(redirectURI)).build();
     }
-    */
+
+    private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
+        for (OrderItem item : order.getOrderItems()) {
+            String name = null;
+
+            /* (mst) Previously, there was SKU's Description used here to set item's name
+                    but because it is not required in our implementation, I chose to use SKU's Name instead */
+
+            if (item instanceof BundleOrderItem) {
+                name = ((BundleOrderItem) item).getSku().getName();
+            } else if (item instanceof DiscreteOrderItem) {
+                name = ((DiscreteOrderItem) item).getSku().getName();
+            } else {
+                name = item.getName();
+            }
+
+            String category = item.getCategory() == null ? null : item.getCategory().getName();
+            paymentRequest = paymentRequest
+                    .lineItem()
+                    .name(name)
+                    .amount(String.valueOf(item.getAveragePrice()))
+                    .category(category)
+                    .quantity(String.valueOf(item.getQuantity()))
+                    .total(order.getTotal().toString())
+                    .done();
+        }
+
+
+        return paymentRequest;
+    }
+
+
+
+    private static boolean notYetSubmitted(Order order) {
+        return !order.getStatus().equals(OrderStatus.SUBMITTED);
+    }
+
+
 }

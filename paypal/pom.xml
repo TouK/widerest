@@ -15,8 +15,9 @@
     <dependencies>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-core</artifactId>
+            <artifactId>widerest-blc-deps</artifactId>
             <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
 
         <dependency>

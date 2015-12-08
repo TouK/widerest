@@ -3,7 +3,6 @@ package pl.touk.widerest.paypal.gateway;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.PayPalRESTException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.velocity.exception.ResourceNotFoundException;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentTransactionType;
 import org.broadleafcommerce.common.payment.dto.LineItemDTO;
@@ -15,6 +14,8 @@ import org.broadleafcommerce.common.payment.service.PaymentGatewayTransactionCon
 import org.broadleafcommerce.common.payment.service.PaymentGatewayWebResponseService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
+import pl.touk.widerest.paypal.endpoint.PayPalController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -71,7 +72,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
 
             Details details = new Details();
-            details.setShipping(payPalRequest.getShippingTotal());
+            details.setShipping(payPalRequest.getWrapped().getShippingTotal());
             details.setSubtotal(payPalRequest.getOrderSubtotal());
             details.setTax(payPalRequest.getTaxTotal());
 
@@ -101,8 +102,16 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
 
 
             RedirectUrls redirectUrls = new RedirectUrls();
-            redirectUrls.setCancelUrl(payPalRequest.getCancelUri());
-            redirectUrls.setReturnUrl(payPalRequest.getReturnUri());
+            redirectUrls.setCancelUrl(
+                    MvcUriComponentsBuilder.fromMethodName(PayPalController.class, "handleCancel", null, null, payPalRequest.getOrderId())
+                            .build()
+                            .toUriString()
+            );
+            redirectUrls.setReturnUrl(
+                    MvcUriComponentsBuilder.fromMethodName(PayPalController.class, "handleReturn", null, null, payPalRequest.getOrderId())
+                            .build()
+                            .toUriString()
+            );
 
             payment.setRedirectUrls(redirectUrls);
 
@@ -112,7 +121,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
                     .filter(x -> x.getRel().equalsIgnoreCase("approval_url"))
                     .findAny()
                     .map(Links::getHref)
-                    .orElseThrow(() -> new ResourceNotFoundException(""));
+                    .get();
 
             PayPalResponseDto response = new PayPalResponseDto();
             response.setRedirectUri(redirect);

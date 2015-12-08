@@ -15,6 +15,7 @@ import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.i18n.service.ISOServiceImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
+import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayCheckoutService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
@@ -63,17 +64,25 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import pl.touk.widerest.paypal.gateway.PayPalGatewayConfigurationService;
+import pl.touk.widerest.paypal.gateway.PayPalMessageConstants;
+import pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.mockito.Mockito.anyObject;
@@ -83,6 +92,15 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = PayPalControllerTest.TestConfiguration.class)
 public class PayPalControllerTest {
+
+    @Resource(name = "blOrderService")
+    private OrderService orderService;
+
+    @Resource(name = "blOrderToPaymentRequestDTOService")
+    private OrderToPaymentRequestDTOService orderToPaymentRequestDTOService;
+
+    @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
+    private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
 
     @Before
     public void setUpUserDetails() {
@@ -119,14 +137,41 @@ public class PayPalControllerTest {
         public PayPalBehaviour() {
         }
 
-        public void userSendsPaymentRequest(UserDetails userDetails, Long orderId)  throws PaymentException {
+        public void userSendsPaymentRequest(CustomerUserDetails userDetails, Long orderId)  throws PaymentException {
             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
                     "/orders/1/paypal/");
-            paymentRequestResponse = payPalController.initiate(httpServletRequest, userDetails, orderId);
+
+            RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+
+            Order order = Optional.of(orderService.findOrderById(orderId)).get();
+
+            String returnUrl = "/return?"
+                    +PayPalMessageConstants.QUERY_AMOUNT+"="+order.getTotal().toString();
+            String cancelUrl = "/cancel";
+
+            PaymentRequestDTO paymentRequestDTO =
+                    orderToPaymentRequestDTOService.translateOrder(order)
+                            .additionalField(PayPalMessageConstants.RETURN_URL, returnUrl)
+                            .additionalField(PayPalMessageConstants.CANCEL_URL, cancelUrl)
+                    ;
+
+//            paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
+
+                PaymentResponseDTO paymentResponse =
+                        paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(PayPalPaymentGatewayType.PAYPAL)
+                                .getHostedService().requestHostedEndpoint(paymentRequestDTO);
+
+                //return redirect URI from the paymentResponse
+                String redirectURI = paymentResponse.getResponseMap().get(PayPalMessageConstants.REDIRECT_URL);
+
+                HttpHeaders responseHeader = new HttpHeaders();
+
+                responseHeader.setLocation(URI.create(redirectURI));
+                paymentRequestResponse = new ResponseEntity<>(responseHeader, HttpStatus.ACCEPTED);
         }
 
         public void userEntersReturnPageWithNoArgs(UserDetails userDetails, Long orderId) throws PaymentException, CheckoutException {
-            HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
+             HttpServletRequest httpServletRequest = new MockHttpServletRequest("GET",
                     "http://localhost:8080/orders/1/paypal/return");
 
             returnRequestResponse = payPalController.handleReturn(httpServletRequest, userDetails, orderId);

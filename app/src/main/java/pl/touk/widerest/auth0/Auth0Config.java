@@ -102,7 +102,8 @@ public class Auth0Config extends WebSecurityConfigurerAdapter {
                 "secret",
                 "test-app-realm",
                 "test-app",
-                "TEST",
+                null,
+                null,
                 " "
         ) {
             @Override
