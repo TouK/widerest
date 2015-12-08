@@ -7,10 +7,14 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.tuple.Pair;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.CategoryXref;
+import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +36,12 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 @RestController
@@ -127,8 +136,7 @@ public class CategoryController {
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.POST)
     @ApiOperation(
             value = "Link an existing category to its new parent category",
-            notes = "Adds an existing category to another category as its subcategory",
-            response = ResponseEntity.class
+            notes = "Adds an existing category to another category as its subcategory"
     )
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "A new subcategory has been successfully created"),
@@ -185,8 +193,7 @@ public class CategoryController {
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a link to an existing subcategory from its parent category",
-            notes = "Removes an existing link to a specified subcategory from its parent category",
-            response = ResponseEntity.class
+            notes = "Removes an existing link to a specified subcategory from its parent category"
     )
     @ApiResponses(value = {
             @ApiResponse(code = 204, message = "Specified subcategory has been successfully removed from its parent category"),
@@ -243,8 +250,8 @@ public class CategoryController {
     @ApiOperation(
             value = "Add a new category",
             notes = "Adds a new category to the catalog. It does take duplicates (same NAME) into account. " +
-                    "Returns an URL to the newly added category in the Location field of the HTTP response header",
-            response = ResponseEntity.class)
+                    "Returns an URL to the newly added category in the Location field of the HTTP response header"
+    )
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "A new category entry successfully created"),
             @ApiResponse(code = 400, message = "Not enough data has been provided"),

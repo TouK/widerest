@@ -64,7 +64,7 @@ public class SkuDto extends ResourceSupport {
     private Date activeEndDate;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 10, value = "Attributes associated with the SKU", dataType = "java.util.Map")
+    @ApiModelProperty(position = 10, value = "Attributes associated with the SKU")
     private Map<String, String> skuAttributes;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)

@@ -8,11 +8,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.ResourceSupport;
-import pl.touk.widerest.ForceMultiLink;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -42,7 +39,6 @@ public class CategoryDto extends ResourceSupport {
     private String productsAvailability;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false,
-            dataType = "java.util.Map")
+    @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false)
     private Map<String, String> attributes;
 }

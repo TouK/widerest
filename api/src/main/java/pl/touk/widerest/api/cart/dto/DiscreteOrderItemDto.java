@@ -60,6 +60,6 @@ public class DiscreteOrderItemDto extends ResourceSupport {
     protected Money retailPrice;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 9, value = "Additional attributes for this item", dataType = "java.util.Map")
+    @ApiModelProperty(position = 9, value = "Additional attributes for this item")
     private Map attributes;
 }

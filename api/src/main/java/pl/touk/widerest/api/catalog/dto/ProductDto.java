@@ -54,7 +54,7 @@ public class ProductDto extends ResourceSupport {
     private String longDescription;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 4, value = "Map of attributes further describing the product", dataType = "java.util.Map")
+    @ApiModelProperty(position = 4, value = "Map of attributes further describing the product")
     private Map<String, String> attributes;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)

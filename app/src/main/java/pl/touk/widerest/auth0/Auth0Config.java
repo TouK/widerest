@@ -24,6 +24,7 @@ import pl.touk.multitenancy.MultiTenancyConfig;
 import pl.touk.multitenancy.TenantTokenStore;
 import springfox.documentation.service.Documentation;
 import springfox.documentation.spring.web.DocumentationCache;
+import springfox.documentation.swagger.web.ApiKeyVehicle;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 
 import java.util.Map;
@@ -103,7 +104,7 @@ public class Auth0Config extends WebSecurityConfigurerAdapter {
                 "test-app-realm",
                 "test-app",
                 null,
-                null,
+                ApiKeyVehicle.HEADER,
                 " "
         ) {
             @Override
