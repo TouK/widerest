@@ -109,11 +109,8 @@ public class Auth0Config extends WebSecurityConfigurerAdapter {
         ) {
             @Override
             public String getClientId() {
-                String tenantIdentifier = currentTenantIdentifierResolver.resolveCurrentTenantIdentifier();
-                if (MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER.equals(tenantIdentifier)) {
-                    tenantIdentifier = clientId;
-                }
-                return tenantIdentifier;
+                return Optional.ofNullable((String)RequestContextHolder.getRequestAttributes().getAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST))
+                        .orElse(Auth0Config.this.clientId);
             }
         };
     }
