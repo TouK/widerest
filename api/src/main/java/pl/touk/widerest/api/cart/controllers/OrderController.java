@@ -54,7 +54,6 @@ import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.dto.PaymentDto;
-import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
@@ -165,7 +164,7 @@ public class OrderController {
 
     /* POST /orders */
     @Transactional
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Create a new order",
@@ -178,9 +177,10 @@ public class OrderController {
     public ResponseEntity<?> createNewOrder(
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
-        Customer currentCustomer = Optional.ofNullable(customerService.readCustomerById(customerUserDetails.getId()))
-                .orElseThrow(() -> new CustomerNotFoundException("Cannot find a customer with ID: " + customerUserDetails.getId()));
-
+        Customer currentCustomer = Optional.ofNullable(customerUserDetails)
+                .map(CustomerUserDetails::getId)
+                .map(customerService::readCustomerById)
+                .orElse(customerService.createNewCustomer());
 
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
         cart.setLocale(localeService.findDefaultLocale());

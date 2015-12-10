@@ -26,7 +26,6 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import org.springframework.hateoas.EntityLinks;
 import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
@@ -55,7 +54,10 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -648,7 +650,7 @@ public class DtoConverters {
                 .orderItems(entity.getDiscreteOrderItems().stream()
                         .map(DtoConverters.discreteOrderItemEntityToDto)
                         .collect(Collectors.toList()))
-                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+//                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(entity.getTotal().getAmount())
                 .fulfillment(Optional.ofNullable(CartUtils.getFulfilmentOption(entity))
                         .map(FulfillmentOption::getLongDescription)
@@ -659,6 +661,9 @@ public class DtoConverters {
                         .collect(toList()))
                 .build();
 
+        orderDto.add(linkTo(
+                methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(entity.getCustomer().getId()))
+        ).withRel("customer"));
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
 

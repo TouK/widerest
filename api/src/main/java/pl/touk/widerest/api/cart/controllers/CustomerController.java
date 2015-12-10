@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,18 +48,18 @@ public class CustomerController {
     private CustomerServiceProxy customerServiceProxy;
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me'")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
     public ResponseEntity<CustomerDto> readOneCustomer(
-            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
     ) {
         CustomerDto customer = Optional.ofNullable(customerId)
                 .map(id -> {
                     try {
-                        return ("me".equals(customerId) && userDetails instanceof CustomerUserDetails) ?
-                                ((CustomerUserDetails) userDetails).getId()
+                        return ("me".equals(customerId) && customerUserDetails instanceof CustomerUserDetails) ?
+                                ((CustomerUserDetails) customerUserDetails).getId()
                                 : Long.parseLong(customerId);
                     } catch (NumberFormatException ex) {
                         return null;
@@ -69,6 +70,30 @@ public class CustomerController {
                 .orElseThrow(CustomerNotFoundException::new);
 
         return new ResponseEntity<>(customer, HttpStatus.OK);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
+    @RequestMapping(value = "/{id}/email", method = RequestMethod.PUT)
+    @ApiOperation(value = "Update customer's email")
+    public void updateCustomerEmail(
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId,
+            @RequestBody String email
+    ) {
+        Optional.ofNullable(customerId)
+                .map(id -> {
+                    try {
+                        return ("me".equals(customerId) && customerUserDetails instanceof CustomerUserDetails) ?
+                                ((CustomerUserDetails) customerUserDetails).getId()
+                                : Long.parseLong(customerId);
+                    } catch (NumberFormatException ex) {
+                        return null;
+                    }
+                })
+                .map(customerService::readCustomerById)
+                .map(customer -> { customer.setEmailAddress(email); return customer; })
+                .orElseThrow(CustomerNotFoundException::new);
     }
 
     @Transactional
