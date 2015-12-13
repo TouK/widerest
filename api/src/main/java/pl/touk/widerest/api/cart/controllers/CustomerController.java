@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.controllers;
 
 
+import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -13,7 +14,15 @@ import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.common.util.OAuth2Utils;
+import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerEndpointsConfiguration;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +36,10 @@ import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
+import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -58,7 +70,7 @@ public class CustomerController {
         CustomerDto customer = Optional.ofNullable(customerId)
                 .map(id -> {
                     try {
-                        return ("me".equals(customerId) && customerUserDetails instanceof CustomerUserDetails) ?
+                        return ("me".equals(customerId) && customerUserDetails != null) ?
                                 ((CustomerUserDetails) customerUserDetails).getId()
                                 : Long.parseLong(customerId);
                     } catch (NumberFormatException ex) {
@@ -84,8 +96,8 @@ public class CustomerController {
         Optional.ofNullable(customerId)
                 .map(id -> {
                     try {
-                        return ("me".equals(customerId) && customerUserDetails instanceof CustomerUserDetails) ?
-                                ((CustomerUserDetails) customerUserDetails).getId()
+                        return ("me".equals(customerId) && customerUserDetails != null) ?
+                                customerUserDetails.getId()
                                 : Long.parseLong(customerId);
                     } catch (NumberFormatException ex) {
                         return null;
@@ -95,6 +107,66 @@ public class CustomerController {
                 .map(customer -> { customer.setEmailAddress(email); return customer; })
                 .orElseThrow(CustomerNotFoundException::new);
     }
+
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
+    @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
+    @ApiOperation(value = "Update customer's email")
+    public String createAuthorizationCode(
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
+            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
+    ) {
+        String code = Optional.ofNullable(customerId)
+                .map(id -> {
+                    try {
+                        return ("me".equals(customerId) && customerUserDetails != null) ?
+                                ((CustomerUserDetails) customerUserDetails).getId()
+                                : Long.parseLong(customerId);
+                    } catch (NumberFormatException ex) {
+                        return null;
+                    }
+                })
+                .map(customerService::readCustomerById)
+                .map(this::generateCode)
+                .orElseThrow(CustomerNotFoundException::new);
+        return code;
+    }
+
+    @Resource
+    private AuthorizationCodeServices authorizationCodeServices;
+
+    @Resource
+    private AnonymousUserDetailsService customerUserDetailsService;
+
+    @Resource
+    private AuthorizationServerEndpointsConfiguration authorizationServerEndpointsConfiguration;
+
+    private String generateCode(Customer customer) throws AuthenticationException {
+
+        OAuth2Request oAuth2Request = ((OAuth2Authentication) SecurityContextHolder.getContext().getAuthentication()).getOAuth2Request();
+
+        OAuth2RequestFactory oAuth2RequestFactory =
+                authorizationServerEndpointsConfiguration
+                        .getEndpointsConfigurer()
+                        .getOAuth2RequestFactory();
+
+        OAuth2Request storedOAuth2Request = oAuth2RequestFactory.createOAuth2Request(
+                oAuth2RequestFactory.createAuthorizationRequest(
+                        ImmutableMap.<String, String>builder()
+                                .put(OAuth2Utils.SCOPE, Scope.CUSTOMER.toString())
+                                .put(OAuth2Utils.CLIENT_ID, oAuth2Request.getClientId())
+                                .build()
+                )
+        );
+
+        UserDetails customerUserDetails = customerUserDetailsService.createCustomerUserDetails(customer);
+        OAuth2Authentication combinedAuth = new OAuth2Authentication(storedOAuth2Request, new SiteAuthenticationToken(
+                customerUserDetails, null, customerUserDetails.getAuthorities()
+        ));
+        String code = authorizationCodeServices.createAuthorizationCode(combinedAuth);
+
+        return code;
+    }
+
 
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")

@@ -553,6 +553,7 @@ public class DtoConverters {
                 .build();
 
         customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(null, entity.getId().toString())).withSelfRel());
+        customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, entity.getId().toString())).withRel("authorization"));
 
 
         return customerDto;

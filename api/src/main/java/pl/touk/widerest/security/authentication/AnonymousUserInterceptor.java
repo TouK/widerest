@@ -21,7 +21,7 @@ public class AnonymousUserInterceptor implements WebRequestInterceptor {
     public void preHandle(WebRequest request) throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication instanceof AnonymousAuthenticationToken) {
-            UserDetails anonymousUser = anonymousUserDetailsService.createAnonymousUser();
+            UserDetails anonymousUser = anonymousUserDetailsService.createAnonymousUserDetails();
             authentication = new SiteAuthenticationToken(
                     anonymousUser, null, anonymousUser.getAuthorities()
             );

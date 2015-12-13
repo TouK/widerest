@@ -30,13 +30,15 @@ public class ScopedOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     @Override
     public TokenRequest createTokenRequest(Map<String, String> requestParameters, ClientDetails authenticatedClient) {
-        Set<String> scopes = OAuth2Utils.parseParameterList(requestParameters.get(OAuth2Utils.SCOPE));
-        if ((scopes == null || scopes.isEmpty())) {
-            String usertype = PrefixBasedAuthenticationManager.getAuthDataFromString(requestParameters.get("username")).getLeft();
-            if ("backoffice".equals(usertype)) {
-                requestParameters.put(OAuth2Utils.SCOPE, Scope.STAFF.toString());
-            } else if ("site".equals(usertype)) {
-                requestParameters.put(OAuth2Utils.SCOPE, Scope.CUSTOMER_REGISTERED.toString());
+        if ("password".equals(requestParameters.get(OAuth2Utils.GRANT_TYPE))) {
+            Set<String> scopes = OAuth2Utils.parseParameterList(requestParameters.get(OAuth2Utils.SCOPE));
+            if ((scopes == null || scopes.isEmpty())) {
+                String usertype = PrefixBasedAuthenticationManager.getAuthDataFromString(requestParameters.get("username")).getLeft();
+                if ("backoffice".equals(usertype)) {
+                    requestParameters.put(OAuth2Utils.SCOPE, Scope.STAFF.toString());
+                } else if ("site".equals(usertype)) {
+                    requestParameters.put(OAuth2Utils.SCOPE, Scope.CUSTOMER_REGISTERED.toString());
+                }
             }
         }
         return super.createTokenRequest(requestParameters, authenticatedClient);

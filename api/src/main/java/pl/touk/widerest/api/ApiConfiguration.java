@@ -1,35 +1,19 @@
 package pl.touk.widerest.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.broadleafcommerce.common.web.BroadleafRequestInterceptor;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.hateoas.RelProvider;
-import org.springframework.hateoas.ResourceSupport;
-import org.springframework.hateoas.hal.CurieProvider;
-import org.springframework.hateoas.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.TransactionManagementConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import pl.touk.widerest.MultiLinkAwareJackson2HalModule;
-
-import org.springframework.hateoas.MediaTypes;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManagerFactory;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableTransactionManagement
@@ -69,9 +53,16 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter implements Transac
         return new BroadleafRequestInterceptor();
     }
 
+//    @Bean
+//    public ChannelInterceptor channelInterceptor() {
+//        return new ChannelInterceptor();
+//
+//    }
+//
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addWebRequestInterceptor(broadleafRequestInterceptor());
+//        registry.addInterceptor(channelInterceptor());
     }
 
 

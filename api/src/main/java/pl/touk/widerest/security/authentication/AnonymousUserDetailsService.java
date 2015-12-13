@@ -25,15 +25,24 @@ public class AnonymousUserDetailsService  {
     @Resource(name = "blRoleService")
     protected RoleService roleService;
 
-    public UserDetails createAnonymousUser() throws DataAccessException {
+    public Customer createAnonymousCustomer() throws DataAccessException {
         Customer customer = customerService.createNewCustomer();
         customer.setUsername(String.valueOf(customer.getId()));
         customer.setPassword(RandomStringUtils.randomAscii(8));
-        List<GrantedAuthority> grantedAuthorities = createGrantedAuthorities(roleService.findCustomerRolesByCustomerId(customer.getId()));
-        CustomerUserDetails anonymous = new CustomerUserDetails(customer.getId(), customer.getUsername(), customer.getPassword(), !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
-        anonymous.eraseCredentials();
-        customerService.saveCustomer(customer);
+        return customerService.saveCustomer(customer);
+    }
+
+    public UserDetails createAnonymousUserDetails() throws DataAccessException {
+        Customer customer = createAnonymousCustomer();
+        UserDetails anonymous = createCustomerUserDetails(customer);
         return anonymous;
+    }
+
+    public UserDetails createCustomerUserDetails(Customer customer) {
+        List<GrantedAuthority> grantedAuthorities = createGrantedAuthorities(roleService.findCustomerRolesByCustomerId(customer.getId()));
+        CustomerUserDetails userDetails = new CustomerUserDetails(customer.getId(), customer.getUsername(), customer.getPassword(), !customer.isDeactivated(), true, !customer.isPasswordChangeRequired(), true, grantedAuthorities);
+        userDetails.eraseCredentials();
+        return userDetails;
     }
 
     protected List<GrantedAuthority> createGrantedAuthorities(List<CustomerRole> customerRoles) {

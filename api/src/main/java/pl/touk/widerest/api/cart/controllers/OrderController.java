@@ -59,6 +59,7 @@ import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderValidationService;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -113,6 +114,9 @@ public class OrderController {
 
     @Resource
     private ISOService isoService;
+
+    @Resource
+    private AnonymousUserDetailsService anonymousUserDetailsService;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
@@ -180,7 +184,7 @@ public class OrderController {
         Customer currentCustomer = Optional.ofNullable(customerUserDetails)
                 .map(CustomerUserDetails::getId)
                 .map(customerService::readCustomerById)
-                .orElse(customerService.createNewCustomer());
+                .orElse(anonymousUserDetailsService.createAnonymousCustomer());
 
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
         cart.setLocale(localeService.findDefaultLocale());
