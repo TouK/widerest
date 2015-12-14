@@ -110,8 +110,8 @@ public class CustomerController {
 
     @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
     @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
-    @ApiOperation(value = "Update customer's email")
-    public String createAuthorizationCode(
+    @ApiOperation(value = "Update customer's email", response = String.class)
+    public ResponseEntity createAuthorizationCode(
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
     ) {
@@ -128,7 +128,7 @@ public class CustomerController {
                 .map(customerService::readCustomerById)
                 .map(this::generateCode)
                 .orElseThrow(CustomerNotFoundException::new);
-        return code;
+        return ResponseEntity.ok(code);
     }
 
     @Resource
