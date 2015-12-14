@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.common.i18n.service.ISOService;
-import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
@@ -20,6 +19,8 @@ import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderAttribute;
+import org.broadleafcommerce.core.order.domain.OrderAttributeImpl;
 import org.broadleafcommerce.core.order.domain.OrderItem;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
@@ -48,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
@@ -96,9 +98,6 @@ public class OrderController {
 
     @Resource(name = "blAddressService")
     private AddressService addressService;
-
-    @Resource(name = "blLocaleService")
-    private LocaleService localeService;
 
     @Resource(name = "wdOrderValidationService")
     private OrderValidationService orderValidationService;
@@ -187,7 +186,16 @@ public class OrderController {
                 .orElse(anonymousUserDetailsService.createAnonymousCustomer());
 
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
-        cart.setLocale(localeService.findDefaultLocale());
+
+        String channel = RequestUtils.getRequestChannel();
+        if (channel != null) {
+            OrderAttribute channelAttribute = new OrderAttributeImpl();
+            channelAttribute.setName("channel");
+            channelAttribute.setValue(channel);
+            channelAttribute.setOrder(cart);
+            cart.getOrderAttributes().put(channelAttribute.getName(), channelAttribute);
+            cart.setName(channel);
+        }
 
         HttpHeaders responseHeader = new HttpHeaders();
 

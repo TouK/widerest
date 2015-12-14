@@ -53,16 +53,16 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter implements Transac
         return new BroadleafRequestInterceptor();
     }
 
-//    @Bean
-//    public ChannelInterceptor channelInterceptor() {
-//        return new ChannelInterceptor();
-//
-//    }
-//
+    @Bean
+    public ChannelInterceptor channelInterceptor() {
+        return new ChannelInterceptor();
+
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addWebRequestInterceptor(broadleafRequestInterceptor());
-//        registry.addInterceptor(channelInterceptor());
+        registry.addWebRequestInterceptor(channelInterceptor());
     }
 
 

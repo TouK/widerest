@@ -110,6 +110,7 @@ public class Auth0Config extends WebSecurityConfigurerAdapter {
             @Override
             public String getClientId() {
                 return Optional.ofNullable((String)RequestContextHolder.getRequestAttributes().getAttribute(MultiTenancyConfig.TENANT_IDENTIFIER_REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST))
+                        .map(tenantId -> tenantId + ".swagger")
                         .orElse(Auth0Config.this.clientId);
             }
         };
