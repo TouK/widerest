@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang3.StringUtils;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -188,7 +189,7 @@ public class OrderController {
         Order cart = orderService.createNewCartForCustomer(currentCustomer);
 
         String channel = RequestUtils.getRequestChannel();
-        if (channel != null) {
+        if (StringUtils.isNotEmpty(channel)) {
             OrderAttribute channelAttribute = new OrderAttributeImpl();
             channelAttribute.setName("channel");
             channelAttribute.setValue(channel);
