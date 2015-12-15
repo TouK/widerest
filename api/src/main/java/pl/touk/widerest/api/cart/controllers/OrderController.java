@@ -61,6 +61,8 @@ import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderValidationService;
+import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
@@ -68,6 +70,7 @@ import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -139,10 +142,10 @@ public class OrderController {
 
         return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
                 .orElse(Collections.<Order>emptyList())
-                    .stream()
-                    .map(DtoConverters.orderEntityToDto)
-                    .filter(x -> status == null || x.getStatus().equals(status))
-                    .collect(Collectors.toList());
+                .stream()
+                .map(DtoConverters.orderEntityToDto)
+                .filter(x -> status == null || x.getStatus().equals(status))
+                .collect(Collectors.toList());
     }
 
     /* GET /orders/{orderId} */
@@ -265,15 +268,29 @@ public class OrderController {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
+
         Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                            .orElseThrow(ResourceNotFoundException::new);
+                .orElseThrow(ResourceNotFoundException::new);
 
         final OrderItemRequestDTO req = new OrderItemRequestDTO();
         req.setQuantity(orderItemDto.getQuantity());
 
-        if (orderItemDto.getSkuId() != null) {
+
+        if(orderItemDto.getSkuHref() != null && !orderItemDto.getSkuHref().isEmpty()) {
+
+            long skuId;
+
+            try {
+                skuId = CatalogUtils.getIdFromUrl(orderItemDto.getSkuHref());
+                req.setSkuId(skuId);
+            } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+        else if (orderItemDto.getSkuId() != null) {
             Optional.ofNullable(catalogService.findSkuById(orderItemDto.getSkuId()))
                     .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + orderItemDto.getSkuId() + " does not exist"));
+
             req.setSkuId(orderItemDto.getSkuId());
         } else if (orderItemDto.getBundleProductId() != null) {
 
@@ -302,7 +319,7 @@ public class OrderController {
                     .path("/{id}")
                     .buildAndExpand(
                             (cart.getDiscreteOrderItems().stream()
-                                    .filter(x -> x.getSku().getId().longValue() == orderItemDto.getSkuId())
+                                    .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
                                     .findAny()
                                     .map(DiscreteOrderItem::getId)
                                     .orElseThrow(ResourceNotFoundException::new))
@@ -372,8 +389,8 @@ public class OrderController {
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
         final int ordersCount = Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
-            .orElseThrow(ResourceNotFoundException::new)
-            .size();
+                .orElseThrow(ResourceNotFoundException::new)
+                .size();
 
         return new ResponseEntity<>(ordersCount, HttpStatus.OK);
     }
@@ -538,7 +555,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId) {
 
         return fulfillmentServiceProxy.createFulfillmentDto(
-                 orderServiceProxy.getProperCart(userDetails, orderId));
+                orderServiceProxy.getProperCart(userDetails, orderId));
     }
 
 

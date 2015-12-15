@@ -60,7 +60,7 @@ public class CustomerController {
     private CustomerServiceProxy customerServiceProxy;
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
     public ResponseEntity<CustomerDto> readOneCustomer(
@@ -85,7 +85,7 @@ public class CustomerController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
     @RequestMapping(value = "/{id}/email", method = RequestMethod.PUT)
     @ApiOperation(value = "Update customer's email")
     public void updateCustomerEmail(
@@ -108,7 +108,7 @@ public class CustomerController {
                 .orElseThrow(CustomerNotFoundException::new);
     }
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #id == 'me' or #id == #customerUserDetails.id")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
     @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
     @ApiOperation(value = "Update customer's email", response = String.class)
     public ResponseEntity createAuthorizationCode(
