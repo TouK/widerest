@@ -30,4 +30,7 @@ public class OrderItemDto {
 
     @ApiModelProperty(position = 2, value = "ID of a bundle to be added into the order", dataType = "java.lang.Long")
     private Long bundleProductId;
+
+    @ApiModelProperty(position = 3, value = "Href of a SKU to be added into the order", required = true, dataType = "java.lang.String")
+    private String skuHref;
 }
