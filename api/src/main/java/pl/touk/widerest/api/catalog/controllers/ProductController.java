@@ -92,6 +92,25 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(method = RequestMethod.GET, params = "url")
+    @ApiOperation(
+            value = "Get product by URL",
+            notes = "Gets a single product details",
+            response = ProductDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of product", response = ProductDto.class)
+    })
+    public ProductDto getProductByUrl(
+            @ApiParam @RequestParam(value = "url", required = true) String url) {
+
+        return Optional.ofNullable(catalogService.findProductByURI(url))
+                .filter(CatalogUtils::archivedProductFilter)
+                .map(dtoConverters.productEntityToDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
+    }
+
     /* GET /products/bundles */
     @Transactional
     @PreAuthorize("permitAll")
