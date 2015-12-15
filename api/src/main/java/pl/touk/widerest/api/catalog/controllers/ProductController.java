@@ -81,9 +81,9 @@ public class ProductController {
     })
     public List<ProductDto> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
-            @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
             @ApiParam(value = "Offset which to  start returning products from")
-            @RequestParam(value = "offset", required = false) Integer offset) {
+            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset) {
 
         return catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0)
                 .stream()
