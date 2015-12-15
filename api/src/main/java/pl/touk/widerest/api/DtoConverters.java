@@ -219,6 +219,8 @@ public class DtoConverters {
         dto.setManufacturer(Optional.ofNullable(entity.getManufacturer()).orElse(""));
         dto.setModel(Optional.ofNullable(entity.getModel()).orElse(""));
 
+        Optional.ofNullable(entity.getUrl()).ifPresent(dto::setUrl);
+
         dto.setValidFrom(Optional.ofNullable(entity.getActiveStartDate()).orElse(null));
         dto.setValidTo(Optional.ofNullable(entity.getActiveEndDate()).orElse(null));
 

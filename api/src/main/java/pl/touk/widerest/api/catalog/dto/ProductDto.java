@@ -92,4 +92,9 @@ public class ProductDto extends ResourceSupport {
 //    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
 //    @ApiModelProperty(position = 13, value = "Possible bundles for the product", dataType = "java.util.List")
 //    private List<Long> possibleBundles;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty(position = 14, dataType = "java.lang.String")
+    private String url;
+
 }

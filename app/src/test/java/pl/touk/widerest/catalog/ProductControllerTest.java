@@ -5,6 +5,7 @@ import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -102,6 +103,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     }
 
+    @Ignore("considering allowing duplicate names")
     @Test
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         long currentProductCount = getRemoteTotalProductsCount();
@@ -194,6 +196,7 @@ public class ProductControllerTest extends ApiTestBase {
 
     }
 
+    @Ignore("considering allowing duplicate names")
     @Test
     public void updatingProductsNameWithAnExistingOneCausesExceptionTest() {
         ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);

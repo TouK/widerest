@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
@@ -235,9 +234,9 @@ public class ProductController {
             productDto.getDefaultSku().setName(productDto.getName());
         }
 
-        if (hasDuplicates(productDto.getName())) {
-            throw new DtoValidationException("Provided bundle already exists");
-        }
+//        if (hasDuplicates(productDto.getName())) {
+//            throw new DtoValidationException("Provided bundle already exists");
+//        }
 
         CatalogUtils.validateSkuPrices(productDto.getDefaultSku());
 
@@ -387,9 +386,9 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        if (hasDuplicates(productDto.getName())) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
+//        if (hasDuplicates(productDto.getName())) {
+//            return new ResponseEntity<>(HttpStatus.CONFLICT);
+//        }
 
         CatalogUtils.validateSkuPrices(productDto.getDefaultSku());
 

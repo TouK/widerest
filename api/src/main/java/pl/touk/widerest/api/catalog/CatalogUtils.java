@@ -236,6 +236,7 @@ public class CatalogUtils {
         productEntity.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(productEntity.getDefaultSku().getActiveEndDate()));
         productEntity.setModel(productDto.getModel());
         productEntity.setManufacturer(productDto.getManufacturer());
+        productEntity.setUrl(productDto.getUrl());
 
        /* List<Sku> s;
 

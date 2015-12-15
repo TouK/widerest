@@ -269,13 +269,13 @@ public class CategoryController {
     	/* (mst) Providing that both Description() and LongDescription() can be null, which...is OK, this one
     	 *       should do the job "better" IMO
     	 */
-        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
-
-        if(duplicatesCount > 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
+//        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .count();
+//
+//        if(duplicatesCount > 0) {
+//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+//        }
 
         final Category createdCategoryEntity = catalogService.saveCategory(DtoConverters.categoryDtoToEntity.apply(categoryDto));
 
@@ -379,13 +379,13 @@ public class CategoryController {
             return ResponseEntity.badRequest().build();
         }
 
-        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
-
-        if(duplicatesCount > 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
+//        final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .count();
+//
+//        if(duplicatesCount > 0) {
+//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+//        }
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -417,16 +417,16 @@ public class CategoryController {
             @RequestBody CategoryDto categoryDto) {
         
         /* (mst) Here...we don't need to have Name set BUT in case we do, we also check for duplicates! */
-        if(categoryDto.getName() != null) {
-
-            final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
-                    .filter(CatalogUtils::archivedCategoryFilter)
-                    .count();
-
-            if(duplicatesCount > 0) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-        }
+//        if(categoryDto.getName() != null) {
+//
+//            final long duplicatesCount = catalogService.findCategoriesByName(categoryDto.getName()).stream()
+//                    .filter(CatalogUtils::archivedCategoryFilter)
+//                    .count();
+//
+//            if(duplicatesCount > 0) {
+//                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+//            }
+//        }
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)

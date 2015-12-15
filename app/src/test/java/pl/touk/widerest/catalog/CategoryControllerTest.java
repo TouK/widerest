@@ -4,6 +4,7 @@ import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -88,6 +89,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(getRemoteTotalCategoriesCount(), equalTo(currentCategoryCount + 1));
     }
 
+    @Ignore("considering allowing duplicate names")
     @Test
     public void addingDuplicateCategoryDoesNotIncreaseTotalCountNumberTest() {
 
