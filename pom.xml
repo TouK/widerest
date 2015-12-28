@@ -36,17 +36,23 @@
             <name>public blc releases</name>
             <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
         </repository>
-        <!--<repository>
+        <repository>
             <id>public snapshots</id>
             <name>public snapshots</name>
             <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots/</url>
-        </repository>!-->
+        </repository>
+        <repository>
+            <id>public multitenacy relases</id>
+            <name>public multitenacy relases</name>
+            <url>http://nexus.touk.pl/nexus/service/local/repositories/releases/content/</url>
+        </repository>
         <repository>
             <id>public releases</id>
             <name>public releases</name>
             <!-- <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url> -->
             <url>http://nexus.touk.pl:8080/nexus/content/repositories/org.broadleafcommerce/</url>
         </repository>
+
         <repository>
             <id>jcenter-snapshots</id>
             <name>jcenter</name>
@@ -90,6 +96,8 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>2.3.2</version>
                 </plugin>
+
+
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
                     <configuration>
@@ -135,6 +143,12 @@
     </build>
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>org.springframework.hateoas</groupId>
+                <artifactId>spring-hateoas</artifactId>
+                <version>0.19.0.RELEASE</version>
+            </dependency>
 
             <dependency>
                 <groupId>pl.touk</groupId>

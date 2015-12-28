@@ -15,10 +15,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
 import org.springframework.hateoas.core.DelegatingRelProvider;
+import org.springframework.hateoas.hal.CurieProvider;
+import org.springframework.hateoas.hal.DefaultCurieProvider;
 import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -214,14 +217,14 @@ public abstract class ApiTestBase {
 
         DelegatingRelProvider delegatingRelProvider = new DelegatingRelProvider(relProviderPluginRegistry);
 
+
         ObjectMapper halObjectMapper = new ObjectMapper();
         halObjectMapper.registerModule(new Jackson2HalModule());
         halObjectMapper
-                .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null));
+                .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null, null));
 
         MappingJackson2HttpMessageConverter halConverter = new MappingJackson2HttpMessageConverter();
-        halConverter.setSupportedMediaTypes(ImmutableList.of(new MediaType("*", "json", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), new MediaType("*", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET)));
-
+        halConverter.setSupportedMediaTypes(ImmutableList.of(new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), new MediaType(" * ", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), MediaTypes.HAL_JSON));
         halConverter.setObjectMapper(halObjectMapper);
         return halConverter;
     }

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.TransactionManagementConfigurer;
@@ -16,13 +17,9 @@ import javax.annotation.Resource;
 import javax.persistence.EntityManagerFactory;
 
 @Configuration
+@EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
 @EnableTransactionManagement
 public class ApiConfiguration extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
-
-    private static final String DELEGATING_REL_PROVIDER_BEAN_NAME = "_relProvider";
-    private static final String LINK_DISCOVERER_REGISTRY_BEAN_NAME = "_linkDiscovererRegistry";
-    private static final String HAL_OBJECT_MAPPER_BEAN_NAME = "_halObjectMapper";
-
 
     @Autowired
     PlatformTransactionManager blTransactionManager;
