@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
+import java.util.List;
+
 /**
  * Created by mst on 07.07.15.
  */
@@ -33,4 +35,11 @@ public class OrderItemDto {
 
     @ApiModelProperty(position = 3, value = "Href of a SKU to be added into the order", required = true, dataType = "java.lang.String")
     private String skuHref;
+
+    /* (mst) ProductHref + Options */
+    @ApiModelProperty(position = 4, value = "Href of a product to be added into the order", required = true, dataType = "java.lang.String")
+    private String productHref;
+
+    @ApiModelProperty(position = 5, value = "A list of selected options for the product", required = true, dataType = "java.util.List")
+    private List<OrderItemOptionDto> selectedProductOptions;
 }

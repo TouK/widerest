@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiResponses;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
+import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
@@ -290,6 +291,7 @@ public class ProductController {
                         .map(e -> e.collect(Collectors.toList()))
                         .orElse(newProduct.getProductOptionXrefs())
         );
+
 
         newProduct = catalogService.saveProduct(newProduct);
 
@@ -1481,10 +1483,13 @@ public class ProductController {
     private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
         ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
         p.getAllowedValues().forEach(x -> x.setProductOption(p));
+        p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
+        p.setRequired(true);
 
         ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
         productOptionXref.setProduct(product);
         productOptionXref.setProductOption(p);
+
         return productOptionXref;
     }
 

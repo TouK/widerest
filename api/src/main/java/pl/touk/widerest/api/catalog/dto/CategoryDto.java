@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 import org.springframework.hateoas.ResourceSupport;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -41,4 +42,8 @@ public class CategoryDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false)
     private Map<String, String> attributes;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty(position = 5, value = "List of subcategories for this category", required = false)
+    private List<CategoryDto> subcategories;
 }

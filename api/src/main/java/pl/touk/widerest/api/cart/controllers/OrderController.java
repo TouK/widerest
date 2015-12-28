@@ -51,12 +51,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
-import pl.touk.widerest.api.cart.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.cart.dto.FulfillmentDto;
-import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.dto.OrderItemDto;
-import pl.touk.widerest.api.cart.dto.PaymentDto;
+import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
@@ -76,6 +71,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 @RestController
 @RequestMapping(ResourceServerConfig.API_PATH + "/orders")
@@ -239,6 +236,72 @@ public class OrderController {
         orderService.deleteOrder(orderServiceProxy.getProperCart(userDetails, orderId));
     }
 
+    /* POST /orders/{orderId}/items */
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/itemsp", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Add a new item",
+            notes = "Adds a new item to the specified order",
+            response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Specified product successfully added"),
+            @ApiResponse(code = 404, message = "The specified order does not exist"),
+            @ApiResponse(code = 409, message = "Only one option: skuID or productBundleId can be selected at once")
+
+    })
+    public ResponseEntity<?> addProductToOrderByProductOptions(
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+            @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "orderId") Long orderId,
+            @ApiParam(value = "Description of a new order item", required = true)
+            @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
+
+        if(orderItemDto.getQuantity() == null || orderItemDto.getProductHref() == null || orderItemDto.getSelectedProductOptions() == null ||
+                orderItemDto.getSelectedProductOptions().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+                .orElseThrow(ResourceNotFoundException::new);
+
+        long hrefProductId;
+
+        try {
+            hrefProductId = CatalogUtils.getIdFromUrl(orderItemDto.getProductHref());
+        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        final OrderItemRequestDTO orderItemRequestDTO = new OrderItemRequestDTO();
+        orderItemRequestDTO.setQuantity(orderItemDto.getQuantity());
+        orderItemRequestDTO.setProductId(hrefProductId);
+
+        if(orderItemDto.getSelectedProductOptions() != null && !orderItemDto.getSelectedProductOptions().isEmpty()) {
+            orderItemRequestDTO.getItemAttributes().putAll(
+                    orderItemDto.getSelectedProductOptions().stream()
+                        .collect(toMap(OrderItemOptionDto::getOptionName, OrderItemOptionDto::getOptionValue)));
+        }
+
+        orderService.addItem(cart.getId(), orderItemRequestDTO, true);
+        cart.calculateSubTotal();
+        cart = orderService.save(cart, false);
+
+        final HttpHeaders responseHeaders = new HttpHeaders();
+
+        responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(
+                        (cart.getDiscreteOrderItems().stream()
+                                .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
+                                .findAny()
+                                .map(DiscreteOrderItem::getId)
+                                .orElseThrow(ResourceNotFoundException::new))
+                )
+                .toUri());
+
+        return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
+    }
 
     /* POST /orders/{orderId}/items */
     @Transactional

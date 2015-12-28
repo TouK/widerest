@@ -2,6 +2,7 @@ package pl.touk.widerest.cart;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -17,23 +18,22 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.cart.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.cart.dto.FulfillmentDto;
-import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.*;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
 
@@ -41,10 +41,10 @@ import static org.junit.Assert.*;
 @SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
-//    @Before
-//    public void initTests() {
-//        serverPort = String.valueOf(8080);
-//    }
+    @Before
+    public void initTests() {
+        //serverPort = String.valueOf(8080);
+    }
 
     @Test
     public void CreateAnonymousUserTest() throws URISyntaxException {
@@ -540,8 +540,171 @@ public class OrderControllerTest extends ApiTestBase {
         long addedItemId = getIdFromEntity(itemAddResponse);
 
         getItemDetailsFromCart(orderId, addedItemId, accessToken);
-
-
     }
 
+    @Test
+    public void shouldAddItemToOrderByProductOptionsTest() throws URISyntaxException {
+        /* (mst) Prepare a single product with 2 'options' assigned to different SKUs */
+        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
+        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+
+        final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
+        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+
+        final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
+        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
+
+        additionalSku1.setRetailPrice(new BigDecimal("29.99"));
+        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setCurrencyCode("USD");
+        additionalSku1.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku1.setSkuProductOptionValues(additionalSku1Options);
+
+        additionalSku2.setRetailPrice(new BigDecimal("49.99"));
+        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setCurrencyCode("USD");
+        additionalSku2.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku2.setSkuProductOptionValues(additionalSku2Options);
+
+        newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
+
+        final ResponseEntity<?> responseEntity = addNewTestProduct(newProductDto);
+        assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final String productHref = responseEntity.getHeaders().getLocation().toString();
+
+        /* (mst) Place an order */
+        final Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        final RestTemplate restTemplate = firstUser.getKey();
+        final String accessToken = firstUser.getValue();
+
+        final Integer orderId = createNewOrder(accessToken);
+
+        final OrderItemDto orderItemDto = new OrderItemDto();
+        orderItemDto.setQuantity(2);
+        orderItemDto.setProductHref(productHref);
+
+        final OrderItemOptionDto orderItemOptionDto = OrderItemOptionDto.builder()
+                .optionName("TESTOPTION")
+                .optionValue("test2")
+                .build();
+
+        orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
+
+        final HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + accessToken);
+        final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
+
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+
+        assertThat(placeOrderResponseEntity .getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        final List<DiscreteOrderItemDto> itemDetailsFromCart = getItemsFromCart(orderId, accessToken);
+
+        /* (mst) Make sure that the correct SKU has been selected */
+        assertTrue(!itemDetailsFromCart.isEmpty());
+        assertThat(itemDetailsFromCart.size(), equalTo(1));
+        assertThat(itemDetailsFromCart.get(0).getRetailPrice().getAmount(), equalTo(additionalSku2.getRetailPrice()));
+    }
+
+    @Test
+    public void shouldAddItemToOrderByProductOptions2Test() throws URISyntaxException {
+        /* (mst) Prepare a single product with 2 'options' assigned to different SKUs */
+        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
+        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+
+        final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
+        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+
+        final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
+        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
+
+        additionalSku1.setRetailPrice(new BigDecimal("29.99"));
+        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setCurrencyCode("USD");
+        additionalSku1.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku1.setSkuProductOptionValues(additionalSku1Options);
+
+        additionalSku2.setRetailPrice(new BigDecimal("49.99"));
+        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setCurrencyCode("USD");
+        additionalSku2.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku2.setSkuProductOptionValues(additionalSku2Options);
+
+        newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
+
+        final ResponseEntity<?> responseEntity = addNewTestProduct(newProductDto);
+        assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final String productHref = responseEntity.getHeaders().getLocation().toString();
+
+        /* (mst) Place an order */
+        final Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        final RestTemplate restTemplate = firstUser.getKey();
+        final String accessToken = firstUser.getValue();
+
+        final Integer orderId = createNewOrder(accessToken);
+
+        /* (mst) Add first product with given options */
+        final OrderItemDto orderItemDto = new OrderItemDto();
+        orderItemDto.setQuantity(2);
+        orderItemDto.setProductHref(productHref);
+
+        final OrderItemOptionDto orderItemOptionDto = OrderItemOptionDto.builder()
+                .optionName("TESTOPTION")
+                .optionValue("test2")
+                .build();
+
+        orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
+
+        final HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + accessToken);
+        final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
+
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+
+        assertThat(placeOrderResponseEntity .getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        /* (mst) Add second product with given options */
+        final OrderItemDto orderItemDto2 = new OrderItemDto();
+        orderItemDto2.setQuantity(2);
+        orderItemDto2.setProductHref(productHref);
+
+        final OrderItemOptionDto orderItemOptionDto2 = OrderItemOptionDto.builder()
+                .optionName("TESTOPTION")
+                .optionValue("test1")
+                .build();
+
+        orderItemDto2.setSelectedProductOptions(Arrays.asList(orderItemOptionDto2));
+
+        final HttpEntity httpRequestEntity2 = new HttpEntity(orderItemDto2, requestHeaders);
+
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity2 = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity2, HttpHeaders.class, serverPort);
+
+        assertThat(placeOrderResponseEntity2 .getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        /* (mst) Verify that both SKUs have been properly added */
+        final List<DiscreteOrderItemDto> itemDetailsFromCart = getItemsFromCart(orderId, accessToken);
+
+        /* (mst) Make sure that the correct SKU has been selected */
+        assertTrue(!itemDetailsFromCart.isEmpty());
+        assertThat(itemDetailsFromCart.size(), equalTo(2));
+
+        DiscreteOrderItemDto firstDiscreteOrderItemDto = itemDetailsFromCart.get(0);
+
+        if(firstDiscreteOrderItemDto.getRetailPrice().getAmount().compareTo(additionalSku1.getRetailPrice()) == 0) {
+            assertThat(itemDetailsFromCart.get(1).getRetailPrice().getAmount(), equalTo(additionalSku2.getRetailPrice()));
+        } else {
+            assertThat(itemDetailsFromCart.get(1).getRetailPrice().getAmount(), equalTo(additionalSku1.getRetailPrice()));
+            assertThat(firstDiscreteOrderItemDto.getRetailPrice().getAmount(), equalTo(additionalSku2.getRetailPrice()));
+        }
+    }
 }

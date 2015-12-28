@@ -15,6 +15,8 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.hateoas.ExposesResourceFor;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,7 +47,8 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH, produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH/*, produces = "application/hal+json"*/)
+@ExposesResourceFor(CategoryDto.class)
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 
@@ -78,6 +81,7 @@ public class CategoryController {
         List<Category> categoriesToReturn;
 
         if(depth == null || depth < 0) {
+
             categoriesToReturn = catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
                     .collect(Collectors.toList());
@@ -731,6 +735,8 @@ public class CategoryController {
 
         return levelCategories;
     }
+
+
 
 }
 
