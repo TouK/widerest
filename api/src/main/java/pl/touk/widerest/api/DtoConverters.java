@@ -593,8 +593,8 @@ public class DtoConverters {
                 .city(entity.getCity())
                 .postalCode(entity.getPostalCode())
                 .companyName(entity.getCompanyName())
-                .county(entity.getCounty())
-                .countryAbbreviation(entity.getIsoCountryAlpha2().getAlpha2())
+                .countryCode(entity.getIsoCountryAlpha2().getAlpha2())
+                .countrySubdivisionCode(entity.getIsoCountrySubdivision())
                 .build();
 
         return addressDto;
@@ -611,8 +611,8 @@ public class DtoConverters {
         addressEntity.setCity(dto.getCity());
         addressEntity.setPostalCode(dto.getPostalCode());
         addressEntity.setCompanyName(dto.getCompanyName());
-        addressEntity.setCounty(dto.getCounty());
-        addressEntity.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(dto.getCountryAbbreviation()));
+        addressEntity.setCounty(dto.getCountrySubdivisionCode());
+        addressEntity.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(dto.getCountryCode()));
 
 
         return addressEntity;

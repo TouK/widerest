@@ -14,12 +14,8 @@ import lombok.experimental.Builder;
 @ApiModel(value = "Payment", description = "Payment request details")
 public class PaymentDto {
 
-    public enum Provider {
-        PAYPAL
-    };
-
     @ApiModelProperty
-    private Provider provider;
+    private String provider;
 
     @ApiModelProperty
     protected String successUrl;

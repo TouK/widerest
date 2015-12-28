@@ -62,8 +62,7 @@ public class PayPalGatewayService implements PaymentGatewayHostedService, Paymen
             Item temp = null;
             for(LineItemDTO item : payPalRequest.getWrapped().getLineItems()) {
                 temp = new Item();
-                //temp.setName(item.getName());
-                temp.setName("tmp!");
+                temp.setName(item.getName());
                 temp.setQuantity(item.getQuantity());
                 temp.setPrice(item.getAmount());
                 temp.setCurrency(payPalRequest.getOrderCurrencyCode());
