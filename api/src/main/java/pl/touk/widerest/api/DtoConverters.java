@@ -27,6 +27,7 @@ import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Resources;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
@@ -54,10 +55,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -393,7 +391,9 @@ public class DtoConverters {
                         .orElse(null))
                 .attributes(entity.getCategoryAttributesMap().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
+                .subcategories(new ArrayList<>())
                 .build();
+
 
         dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 

@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toMap;
 
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { "application/json", "application/hal+json" })
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
 
@@ -136,7 +136,7 @@ public class ProductController {
     /* GET /products/bundles/{bundleId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single bundle details",
             notes = "Gets details of a single bundle specified by its ID",
@@ -364,7 +364,7 @@ public class ProductController {
     /* GET /products/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single product details",
             notes = "Gets details of a single product specified by its ID",
@@ -590,7 +590,7 @@ public class ProductController {
     /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get product's categories",
             notes = "Gets a list of all categories belonging to a specified product",
@@ -749,7 +749,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single SKU details",
             notes = "Gets details of a single SKU, specified by its ID",
@@ -778,7 +778,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/default */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get default SKU details",
             notes = "Gets details of a default SKU belonging to a specified product",
@@ -1201,7 +1201,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single media details",
             notes = "Gets details of a particular media belonging to a specified SKU",
