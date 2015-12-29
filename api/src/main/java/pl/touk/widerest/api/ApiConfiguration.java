@@ -23,7 +23,7 @@ import javax.persistence.EntityManagerFactory;
 @Configuration
 @EnableTransactionManagement
 @EnableSpringDataWebSupport
-@EnableHypermediaSupport(type = { EnableHypermediaSupport.HypermediaType.HAL })
+@EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
 public class ApiConfiguration extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
 
     @Autowired

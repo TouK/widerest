@@ -108,7 +108,7 @@ public class OrderControllerTest extends ApiTestBase {
         addressDto.setPostalCode("05-134");
         addressDto.setFirstName("Haskell");
         addressDto.setLastName("Curry");
-        addressDto.setCountryAbbreviation("US");
+        addressDto.setCountryCode("US");
 
         // When POST /orders/{orderId}/fulfillment/address
         HttpHeaders requestHeaders = new HttpHeaders();
@@ -423,7 +423,7 @@ public class OrderControllerTest extends ApiTestBase {
         addressDto.setAddressLine1("Semigroup Valley 12");
         addressDto.setPostalCode("13-337");
         addressDto.setCity("Massachusetts");
-        addressDto.setCountryAbbreviation("USA");
+        addressDto.setCountryCode("USA");
 
         HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
         httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
@@ -443,7 +443,7 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         // When sending address with correct country code
-        addressDto.setCountryAbbreviation("PL");
+        addressDto.setCountryCode("PL");
         addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
 
 

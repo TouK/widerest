@@ -53,8 +53,7 @@ public class OrderValidationService {
         if(StringUtils.isEmpty(address.getPostalCode()) || StringUtils.isEmpty(address.getCity())) {
             throw new OrderValidationException("Provided address does not contain postal code and/or city");
         }
-        if(StringUtils.isEmpty(address.getIsoCountrySubdivision())
-                || countryService.findCountryByAbbreviation(address.getIsoCountrySubdivision()) == null) {
+        if(address.getIsoCountryAlpha2() == null) {
             throw new OrderValidationException("Provided address does not contain valid country code");
         }
     }
@@ -69,8 +68,8 @@ public class OrderValidationService {
         if(StringUtils.isEmpty(address.getPostalCode()) || StringUtils.isEmpty(address.getCity())) {
             throw new OrderValidationException("Provided address does not contain postal code and/or city");
         }
-        if(StringUtils.isEmpty(address.getCountryAbbreviation())
-                || isoService.findISOCountryByAlpha2Code(address.getCountryAbbreviation()) == null) {
+        if(StringUtils.isEmpty(address.getCountryCode())
+                || isoService.findISOCountryByAlpha2Code(address.getCountryCode()) == null) {
             throw new OrderValidationException("Provided address does not contain valid country code");
         }
     }

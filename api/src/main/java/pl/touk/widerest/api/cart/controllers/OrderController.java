@@ -659,8 +659,8 @@ public class OrderController {
         shippingAddress.setAddressLine1(addressDto.getAddressLine1());
         shippingAddress.setAddressLine2(addressDto.getAddressLine2());
         shippingAddress.setAddressLine3(addressDto.getAddressLine3());
-        shippingAddress.setCounty(addressDto.getCounty());
-        shippingAddress.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryAbbreviation()));
+        shippingAddress.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryCode()));
+        shippingAddress.setIsoCountrySubdivision(addressDto.getCountrySubdivisionCode());
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 
@@ -701,11 +701,12 @@ public class OrderController {
             @ApiResponse(code = 403, message = "Access denied to given order")
             // and throws
     })
+    @Transactional
     public ResponseEntity initiatePayment(
-            PaymentDto paymentDto,
+            @RequestBody PaymentDto paymentDto,
             HttpServletRequest request,
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "id") Long orderId
+            @PathVariable(value = "orderId") Long orderId
     ) throws PaymentException {
 
         Order order = Optional.ofNullable(orderService.findOrderById(orderId))
