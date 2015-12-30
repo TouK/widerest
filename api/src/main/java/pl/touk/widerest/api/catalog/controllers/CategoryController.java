@@ -181,7 +181,7 @@ public class CategoryController {
                 currentRootCategoryDto.setSubcategories(Resources.wrap(subcategories));
             }
         }
-        return new Resources<>(categoriesToReturn.stream().collect(Collectors.toList()));
+        return new Resources<>(categoriesToReturn);
     }
 
     /* GET /categoriesTest */
