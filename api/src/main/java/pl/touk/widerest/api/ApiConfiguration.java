@@ -63,6 +63,11 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter implements Transac
 
     }
 
+    @Bean
+    public RelProvider relProvider() {
+        return new JsonRootRelProvider();
+    }
+
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer.defaultContentType(MediaTypes.HAL_JSON);

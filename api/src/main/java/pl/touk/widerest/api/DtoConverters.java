@@ -391,7 +391,6 @@ public class DtoConverters {
                         .orElse(null))
                 .attributes(entity.getCategoryAttributesMap().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-                .subcategories(new ArrayList<>())
                 .build();
 
 

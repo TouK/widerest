@@ -19,6 +19,8 @@ import org.springframework.hateoas.ExposesResourceFor;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.Resources;
+import org.springframework.hateoas.core.EmbeddedWrapper;
+import org.springframework.hateoas.core.EmbeddedWrappers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -165,17 +167,20 @@ public class CategoryController {
                     currentDepth++;
                 }
 
+
+                final List<CategoryDto> subcategories = new ArrayList<>();
+
                 for (CategoryXref categoryXref : currentRootCategory.getAllChildCategoryXrefs()) {
                     final Category currentSubcategory = categoryXref.getSubCategory();
                     final CategoryDto currentSubcategoryDto = DtoConverters.categoryEntityToDto.apply(currentSubcategory);
-                    currentRootCategoryDto.getSubcategories().add(new Resource<>(currentSubcategoryDto));
 
                     subcategoriesQueue.add(currentSubcategory);
                     subcategoriesDtoQueue.add(currentSubcategoryDto);
+                    subcategories.add(currentSubcategoryDto);
                 }
+                currentRootCategoryDto.setSubcategories(Resources.wrap(subcategories));
             }
         }
-
         return new Resources<>(categoriesToReturn.stream().collect(Collectors.toList()));
     }
 
@@ -190,7 +195,7 @@ public class CategoryController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = HalTestDto.class)
     })
-    public org.springframework.hateoas.Resources<org.springframework.hateoas.Resource> readHalTestCategory() {
+    public Resources<Resource> readHalTestCategory() {
 
         final HalTestDto halTestDto = HalTestDto.builder()
                 .name("TestName1")
@@ -208,12 +213,23 @@ public class CategoryController {
                 .name("TestResource2")
                 .build();
 
+        final HalTestResource halTestSubResource = HalTestResource.builder()
+                .name("TestSubResource1")
+                .build();
+
+
         final Link link = linkTo(CategoryController.class).withSelfRel();
 
         halTestDto.add(linkTo(CategoryController.class).withSelfRel());
         halTestDto2.add(linkTo(CategoryController.class).withSelfRel());
 
-        return new Resources<>(Arrays.asList(
+        halTestResource.setSubResource(new Resources(Arrays.asList(halTestSubResource, link)));
+
+//        return (Arrays.asList(
+//                new Resource(halTestResource, link),
+//                new Resource(halTestResource2, link)
+//        ));
+        return new Resources(Arrays.asList(
                 new Resource(halTestResource, link),
                 new Resource(halTestResource2, link)
         ));

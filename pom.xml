@@ -147,6 +147,12 @@
         <dependencies>
 
             <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>pl.touk</groupId>
                 <artifactId>spring-boot-multitenancy</artifactId>
                 <version>0.0.1</version>
@@ -248,6 +254,13 @@
                 <artifactId>xml-apis</artifactId>
                 <version>2.0.2</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.atteo</groupId>
+                <artifactId>evo-inflector</artifactId>
+                <version>1.2.1</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>

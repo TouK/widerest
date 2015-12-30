@@ -1,5 +1,7 @@
 package pl.touk.widerest.api.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -11,6 +13,7 @@ import lombok.experimental.Builder;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.ResourceSupport;
 import org.springframework.hateoas.Resources;
+import org.springframework.hateoas.core.EmbeddedWrapper;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +22,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("category")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Category", description = "Category DTO resource representation")
 public class CategoryDto extends ResourceSupport {
@@ -45,7 +49,7 @@ public class CategoryDto extends ResourceSupport {
     @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false)
     private Map<String, String> attributes;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 5, value = "List of subcategories for this category", required = false)
-    private List<Resource<CategoryDto>> subcategories;
+    private Resources<Resource<CategoryDto>> subcategories;
 }
