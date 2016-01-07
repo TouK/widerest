@@ -28,6 +28,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 
 import javax.mail.internet.MimeMessage;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertThat;
@@ -91,7 +92,7 @@ public class OrderCompletedActivityTest {
 
 //        String hookUrl = "sendwithus://test_c92a0fa5bee7da24847f78d8b4e3963451d00eb5@?templateId=tem_NrXPntKhwnFjDCCbL2E8Rc";
 
-        when(hooksResolver.getOrderCompletedHookUrl()).thenReturn(hookUrl);
+        when(hooksResolver.getOrderCompletedHookUrl()).thenReturn(Optional.of(hookUrl));
 
         orderCompletedActivity.execute(context);
 

@@ -62,7 +62,7 @@
         </repository>
 
         <repository>
-            <id>repo</id>
+            <id>public sendwithus releases</id>
             <url>https://github.com/sendwithus/sendwithus-mvn-repo/raw/master/releases</url>
         </repository>
 
