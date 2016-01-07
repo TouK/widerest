@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.client.token.grant.implicit.ImplicitA
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.security.oauth2.common.exceptions.UserDeniedAuthorizationException;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.MultiValueMap;
 import pl.touk.multitenancy.TenantHeaderRequestFilter;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 @SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Slf4j
 public class MultiTenantAuthTest extends ApiTestBase {
 
