@@ -107,8 +107,8 @@ public class DockerizedDataSource extends DelegatingDataSource {
         } else {
             for (int i = 0; i < 100; i++) {
                 int randomPort = RandomUtils.nextInt(32768, 49151);
-                try (Socket ignored = new Socket(dockerHost, randomPort)) {}
-                catch (ConnectException ex) {
+                try (Socket ignored = new Socket(dockerHost, randomPort)) {
+                } catch (ConnectException ex) {
                     return randomPort;
                 }
             }
@@ -135,13 +135,13 @@ public class DockerizedDataSource extends DelegatingDataSource {
 
         while (true) {
             Thread.sleep(1000);
-            Socket s = new Socket(dockerHost, databasePort);
-            s.setKeepAlive(true);
-            s.setSoTimeout(3000);
-            s.sendUrgentData(1);
-            InputStream is = s.getInputStream();
-            boolean connected = s.isConnected();
             try {
+                Socket s = new Socket(dockerHost, databasePort);
+                s.setKeepAlive(true);
+                s.setSoTimeout(3000);
+                s.sendUrgentData(1);
+                InputStream is = s.getInputStream();
+                boolean connected = s.isConnected();
                 int read = is.read();
                 log.info("read: {}", read);
 //                break;
