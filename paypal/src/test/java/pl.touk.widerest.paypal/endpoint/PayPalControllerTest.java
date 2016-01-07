@@ -53,7 +53,16 @@ import org.broadleafcommerce.profile.core.dao.StateDao;
 import org.broadleafcommerce.profile.core.dao.StateDaoImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import org.broadleafcommerce.profile.core.service.*;
+import org.broadleafcommerce.profile.core.service.AddressService;
+import org.broadleafcommerce.profile.core.service.AddressServiceImpl;
+import org.broadleafcommerce.profile.core.service.AddressVerificationProvider;
+import org.broadleafcommerce.profile.core.service.CountryService;
+import org.broadleafcommerce.profile.core.service.CountryServiceImpl;
+import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.broadleafcommerce.profile.core.service.PhoneService;
+import org.broadleafcommerce.profile.core.service.PhoneServiceImpl;
+import org.broadleafcommerce.profile.core.service.StateService;
+import org.broadleafcommerce.profile.core.service.StateServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,7 +78,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -91,7 +99,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ContextConfiguration(classes = PayPalControllerTest.TestConfiguration.class)
 public class PayPalControllerTest {
 
