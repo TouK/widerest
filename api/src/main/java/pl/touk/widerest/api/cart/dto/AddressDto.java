@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.ResourceSupport;
 
 @Data
 @Builder
@@ -16,7 +15,7 @@ import org.springframework.hateoas.ResourceSupport;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Address", description = "Address DTO resource representation")
-public class AddressDto extends ResourceSupport {
+public class AddressDto {
 
     @ApiModelProperty(position = 0, value = "First name of the customer", required = true)
     private String firstName;

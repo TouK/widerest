@@ -60,6 +60,12 @@
             <name>jcenter</name>
             <url>http://oss.jfrog.org/artifactory/oss-snapshot-local/</url>
         </repository>
+
+        <repository>
+            <id>repo</id>
+            <url>https://github.com/sendwithus/sendwithus-mvn-repo/raw/master/releases</url>
+        </repository>
+
     </repositories>
     <build>
         <pluginManagement>

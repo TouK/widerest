@@ -654,7 +654,7 @@ public class DtoConverters {
                         .map(DtoConverters.discreteOrderItemEntityToDto)
                         .collect(Collectors.toList()))
 //                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
-                .totalPrice(entity.getTotal().getAmount())
+                .totalPrice(Money.toAmount(entity.getTotal()))
                 .fulfillment(Optional.ofNullable(CartUtils.getFulfilmentOption(entity))
                         .map(FulfillmentOption::getLongDescription)
                         .orElse(null))
