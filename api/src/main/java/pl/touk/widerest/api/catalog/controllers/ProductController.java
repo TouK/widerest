@@ -5,6 +5,9 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang.StringUtils;
+import org.broadleafcommerce.common.exception.ServiceException;
+import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
@@ -12,6 +15,10 @@ import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationSt
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
+import org.broadleafcommerce.core.search.domain.SearchCriteria;
+import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
+import org.broadleafcommerce.core.search.domain.SearchResult;
+import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,25 +33,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -67,6 +62,14 @@ public class ProductController {
 
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
+
+    /* Searching related services */
+    @Resource(name = "blSearchService")
+    protected SearchService searchService;
+
+    @Resource(name = "blExploitProtectionService")
+    protected ExploitProtectionService exploitProtectionService;
+
 
     /* GET /products */
     @Transactional
@@ -95,7 +98,7 @@ public class ProductController {
 
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(method = RequestMethod.GET, params = "url")
+    @RequestMapping(value = "/url", method = RequestMethod.GET, params = "url")
     @ApiOperation(
             value = "Get product by URL",
             notes = "Gets a single product details",
@@ -469,7 +472,7 @@ public class ProductController {
 
         //product.getAdditionalSkus().stream().forEach(catalogService::removeSku);
 
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+        Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
                     catalogService.removeProduct(e);
@@ -477,9 +480,55 @@ public class ProductController {
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
 
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
+
+
+    @Transactional
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
+    public ResponseEntity<?> getProductsByQuery(
+            @ApiParam(value = "Search query")
+            @RequestParam(value = "query", required = true) String query,
+            @RequestParam(value = "pageSize", defaultValue = "15") Integer pageSize,
+            @RequestParam(value = "page", defaultValue = "1") Integer page) {
+
+        if(StringUtils.isEmpty(query)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String cleanedUpQuery;
+
+        try {
+            cleanedUpQuery = StringUtils.trim(query);
+            cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
+        } catch(ServiceException ex) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        final SearchCriteria searchCriteria = new SearchCriteria();
+        searchCriteria.setPage(page);
+        searchCriteria.setPageSize(pageSize);
+
+        final List<SearchFacetDTO> availableFacets = searchService.getSearchFacets();
+
+        try {
+            final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
+
+            final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
+                    .totalPages(searchResult.getTotalPages())
+                    .totalResults(searchResult.getTotalResults())
+                    .products(searchResult.getProducts().stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
+                    .build();
+
+            return ResponseEntity.ok(productSearchResultDto);
+        } catch (ServiceException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
+
+
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 

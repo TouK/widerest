@@ -20,6 +20,7 @@ import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
+import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
@@ -42,15 +43,7 @@ import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
-import pl.touk.widerest.api.catalog.dto.BundleItemDto;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
@@ -402,7 +395,7 @@ public class DtoConverters {
 
         dto.add(linkTo(methodOn(CategoryController.class).getAllProductsInCategoryCount(entity.getId())).withRel("products-count"));
 
-        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount()).withRel("categories-count"));
+        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount(null)).withRel("categories-count"));
 
         final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                 .orElse(Collections.emptyList()).stream()
@@ -772,8 +765,5 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** DISCRETEORDERITEM ********************************/
-
-
-
 
 }
