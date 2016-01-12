@@ -126,14 +126,13 @@ public abstract class ApiTestBase {
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
 
+    @Value("${local.server.port}")
+    protected String serverPort;
+
     protected RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
     /* HATEOAS Rest Template */
     private List<HttpMessageConverter<?>> httpMessageConverters = new ArrayList<>();
     private RestTemplate hateoasRestTemplate;
-
-    @Value("${local.server.port}")
-    protected String serverPort;
-
 
     private HttpHeaders httpJsonRequestHeaders;
     private HttpEntity<String> httpJsonRequestEntity;
@@ -378,9 +377,6 @@ public abstract class ApiTestBase {
     protected ResponseEntity<?> addNewTestSKUToProduct(long productId, SkuDto skuDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
-
-
-
 
     private org.springframework.hateoas.Resource<ProductDto> getProductWithMultipleSkus() {
 

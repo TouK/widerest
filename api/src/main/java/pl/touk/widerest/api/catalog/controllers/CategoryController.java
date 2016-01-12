@@ -15,7 +15,14 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.hateoas.ExposesResourceFor;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Resource;
+import org.springframework.hateoas.Resources;
+import org.springframework.hateoas.core.EmbeddedWrapper;
+import org.springframework.hateoas.core.EmbeddedWrappers;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,30 +36,28 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.HalTestDto;
+import pl.touk.widerest.api.catalog.dto.HalTestResource;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
-import javax.annotation.Resource;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH, produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaType.APPLICATION_JSON_VALUE, "application/hal+json" })
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 
-    @Resource(name="blCatalogService")
+    @javax.annotation.Resource(name="blCatalogService")
     protected CatalogService catalogService;
 
-    @Resource(name = "wdDtoConverters")
+    @javax.annotation.Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
     /* GET /categories */
@@ -78,6 +83,7 @@ public class CategoryController {
         List<Category> categoriesToReturn;
 
         if(depth == null || depth < 0) {
+
             categoriesToReturn = catalogService.findAllCategories(limit != null ? limit : 0, offset != null ? offset : 0).stream()
                     .filter(CatalogUtils::archivedCategoryFilter)
                     .collect(Collectors.toList());
@@ -96,6 +102,136 @@ public class CategoryController {
         return categoriesToReturn.stream()
                 .map(DtoConverters.categoryEntityToDto)
                 .collect(Collectors.toList());
+    }
+
+    /* GET /categories */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/categories2", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all categories",
+            notes = "Gets a list of all available categories in the catalog",
+            response = CategoryDto.class,
+            responseContainer = "List")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = CategoryDto.class, responseContainer = "List")
+    })
+    public Resources<CategoryDto> readAllCategories2(
+            @ApiParam(value = "Level in the categories hierarchy tree")
+            @RequestParam(value = "depth", required = false) Integer depth,
+            @ApiParam(value = "Amount of categories to be returned")
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @ApiParam(value = "Offset which to start returning categories from")
+            @RequestParam(value = "offset", required = false) Integer offset) {
+
+        final List<CategoryDto> categoriesToReturn = new ArrayList<>();
+
+        final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
+                    .collect(Collectors.toList());
+
+        /* TODO (mst): Figure out how to do this without a secondary queue */
+        final Queue<Category> subcategoriesQueue = new LinkedList<>();
+        final Queue<CategoryDto> subcategoriesDtoQueue = new LinkedList<>();
+
+        int currentDepth;
+
+        for(Category rootCategory : globalParentCategories) {
+
+            subcategoriesQueue.add(rootCategory);
+            subcategoriesDtoQueue.add(DtoConverters.categoryEntityToDto.apply(rootCategory));
+            currentDepth = 0;
+
+            while (!subcategoriesQueue.isEmpty()) {
+
+                final Category currentRootCategory = subcategoriesQueue.remove();
+                final CategoryDto currentRootCategoryDto = subcategoriesDtoQueue.remove();
+
+                if(currentRootCategory.equals(rootCategory)) {
+                    categoriesToReturn.add(currentRootCategoryDto);
+                }
+
+                /* (mst) We are done with processing currently selected category when:
+                         * we reach the specified depth,
+                         * it does not contain any more subcategories
+                 */
+                if((depth != null && currentDepth >= depth) ||
+                   (currentRootCategory.getAllChildCategoryXrefs() == null && currentRootCategory.getAllChildCategoryXrefs().isEmpty())) {
+                    break;
+                }
+
+                /* (mst) If the queue is empty here, it means that all categories from an entire level have been processed */
+                if(subcategoriesQueue.isEmpty()) {
+                    currentDepth++;
+                }
+
+
+                final List<CategoryDto> subcategories = new ArrayList<>();
+
+                for (CategoryXref categoryXref : currentRootCategory.getAllChildCategoryXrefs()) {
+                    final Category currentSubcategory = categoryXref.getSubCategory();
+                    final CategoryDto currentSubcategoryDto = DtoConverters.categoryEntityToDto.apply(currentSubcategory);
+
+                    subcategoriesQueue.add(currentSubcategory);
+                    subcategoriesDtoQueue.add(currentSubcategoryDto);
+                    subcategories.add(currentSubcategoryDto);
+                }
+                currentRootCategoryDto.setSubcategories(Resources.wrap(subcategories));
+            }
+        }
+        return new Resources<>(categoriesToReturn);
+    }
+
+    /* GET /categoriesTest */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/categoriesTest", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "List all categories",
+            notes = "Gets a list of all available categories in the catalog",
+            response = HalTestDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = HalTestDto.class)
+    })
+    public Resources<Resource> readHalTestCategory() {
+
+        final HalTestDto halTestDto = HalTestDto.builder()
+                .name("TestName1")
+                .build();
+
+        final HalTestDto halTestDto2 = HalTestDto.builder()
+                .name("TestName2")
+                .build();
+
+        final HalTestResource halTestResource = HalTestResource.builder()
+                .name("TestResource1")
+                .build();
+
+        final HalTestResource halTestResource2 = HalTestResource.builder()
+                .name("TestResource2")
+                .build();
+
+        final HalTestResource halTestSubResource = HalTestResource.builder()
+                .name("TestSubResource1")
+                .build();
+
+
+        final Link link = linkTo(CategoryController.class).withSelfRel();
+
+        halTestDto.add(linkTo(CategoryController.class).withSelfRel());
+        halTestDto2.add(linkTo(CategoryController.class).withSelfRel());
+
+        halTestResource.setSubResource(new Resources(Arrays.asList(halTestSubResource, link)));
+
+//        return (Arrays.asList(
+//                new Resource(halTestResource, link),
+//                new Resource(halTestResource2, link)
+//        ));
+        return new Resources(Arrays.asList(
+                new Resource(halTestResource, link),
+                new Resource(halTestResource2, link)
+        ));
     }
 
     /* GET /{categoryId}/subcategories */
@@ -223,7 +359,6 @@ public class CategoryController {
         }
 
 
-
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
@@ -295,19 +430,32 @@ public class CategoryController {
             notes = "Gets a number of all categories available in the catalog",
             response = Long.class
     )
-    public ResponseEntity<Long> getAllCategoriesCount() {
+    public ResponseEntity<Long> getAllCategoriesCount(
+            @ApiParam(value = "Level in the categories hierarchy tree")
+            @RequestParam(value = "depth", required = false) Integer depth) {
 
-        final long allCategoriesCount = catalogService.findAllCategories().stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
+        List<Category> categoriesToCount;
 
-        return ResponseEntity.ok(allCategoriesCount);
+        if(depth == null || depth < 0) {
+            categoriesToCount = catalogService.findAllCategories().stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .collect(Collectors.toList());
+        } else {
+            final List<Category> globalParentCategories = catalogService.findAllParentCategories().stream()
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .filter(category -> category.getAllParentCategoryXrefs().size() == 0)
+                    .collect(Collectors.toList());
+
+            categoriesToCount = getCategoriesAtLevel(globalParentCategories, depth);
+        }
+
+        return ResponseEntity.ok(categoriesToCount.stream().count());
     }
 
     /* GET /categories/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/categories/{categoryId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/categories/{categoryId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single category details",
             notes = "Gets details of a single category specified by its ID",
@@ -316,15 +464,16 @@ public class CategoryController {
             @ApiResponse(code = 200, message = "Successful retrieval of category details", response = CategoryDto.class),
             @ApiResponse(code = 404, message = "The specified category does not exist or is marked as archived")
     })
-    public CategoryDto readOneCategoryById(
+    public ResponseEntity<CategoryDto> readOneCategoryById(
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value="categoryId") Long categoryId) {
 
-        return Optional.ofNullable(catalogService.findCategoryById(categoryId))
+        final CategoryDto categoryToReturnDto = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(DtoConverters.categoryEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
+        return ResponseEntity.ok(categoryToReturnDto);
     }
 
     /* DELETE /categories/{categoryId} */
@@ -731,132 +880,4 @@ public class CategoryController {
 
         return levelCategories;
     }
-
 }
-
-
-   /* (mst) TO BE REMOVED!!! */
-    /* GET /categories/{id}/products/{productId} */
-//    @Transactional
-//    @PreAuthorize("permitAll")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Get details of a product from a category",
-//            notes = "Gets details of a specific product in a given category",
-//            response = ProductDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of product details", response = ProductDto.class),
-//            @ApiResponse(code = 404, message = "The specified category does not exist")
-//    })
-//    public ProductDto readOneProductFromCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//        return this.getProductsFromCategoryId(categoryId).stream()
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .filter(x -> x.getId().longValue() == productId)
-//                .findAny()
-//                .map(dtoConverters.productEntityToDto)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
-//    }
-
-
-    /* (mst) TO BE REMOVED!!! */
-    /* PUT /categories/{id}/products/{productId} */
-    /* (mst) This endpoint inserts only a reference to the product (so it has to exist)
-     *            into Category's product list. In case the product does not exist, use
-     *            ProductController's POST methods first
-     */
-//    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.PUT)
-//    @ApiOperation(
-//            value = "Insert existing product into category",
-//            notes = "Inserts existing product into category. It actually only updates few references therefore" +
-//                    " to insert a completely new product refer to ProductControllers' POST methods first",
-//            response = Void.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 201, message = "Product successfully inserted into specified category"),
-//            @ApiResponse(code = 404, message = "The specified category or product does not exist"),
-//            @ApiResponse(code = 409, message = "Category already contains the specified product")
-//    })
-//    public ResponseEntity<?> insertOneProductIntoCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//        final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-//
-//        /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
-//        final Product productToAdd = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-//
-//        final CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
-//        productToAddXref.setProduct(productToAdd);
-//        productToAddXref.setCategory(categoryEntity);
-//
-//        if(!categoryEntity.getAllProductXrefs().contains(productToAddXref)) {
-//            categoryEntity.getAllProductXrefs().add(productToAddXref);
-//            catalogService.saveCategory(categoryEntity);
-//            /* TODO: (mst) add URI */
-//            return new ResponseEntity<>(HttpStatus.CREATED);
-//        } else {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-//        }
-//    }
-
-     /* (mst) TO BE REMOVED!!! */
-//    /* DELETE /categories/{categoryId}/products/{productId} */
-//    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
-//    @RequestMapping(value = "/categories/{categoryId}/products/{productId}", method = RequestMethod.DELETE)
-//    @ApiOperation(
-//            value = "Remove a product from a category",
-//            notes = "Removes a product from a specific category. It DOES NOT delete the product completely from catalog, just removes its " +
-//                    "references to the specified category",
-//            response = Void.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 204, message = "Specified product successfully removed from a category"),
-//            @ApiResponse(code = 400, message = "Not enough data has been provided (missing product link)"),
-//            @ApiResponse(code = 404, message = "The specified category does not exist")
-//    })
-//    public ResponseEntity<?> removeOneProductFromCategory(
-//            @ApiParam(value = "ID of a specific category", required = true)
-//            @PathVariable(value="categoryId") Long categoryId,
-//            @ApiParam(value = "ID of a product belonging to the specified category", required = true)
-//            @PathVariable(value = "productId") Long productId) {
-//
-//    	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
-//        getProductsFromCategoryId(categoryId).stream()
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .filter(x -> x.getId().longValue() == productId)
-//                .findAny()
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist in category with ID: " + categoryId));
-//
-//
-//        Optional.ofNullable(catalogService.findCategoryById(categoryId))
-//                .filter(CatalogUtils::archivedCategoryFilter)
-//                .map(e -> {
-//                    CategoryProductXref xref = e.getAllProductXrefs().stream()
-//                            .filter(x -> x.getProduct().getId().longValue() == productId)
-//                            .findAny()
-//                            .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + productId + " not found on the list of references for category with ID: " + categoryId));
-//                    return Pair.of(e, xref);
-//                })
-//                .map(e -> {
-//                    e.getKey().getAllProductXrefs().remove(e.getValue());
-//                    return e.getKey();
-//                })
-//                .map(catalogService::saveCategory)
-//                .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
-//
-//
-//        return ResponseEntity.noContent().build();
-//
-//    }

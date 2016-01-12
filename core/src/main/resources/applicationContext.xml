@@ -114,9 +114,9 @@
     <!-- application footprint, it will default the search service to use the database implementation, which  -->
     <!-- is slower and less full-featured. Broadleaf suggests maintaining this solr implementation in the vast -->
     <!-- majority of cases. -->
-    <!--bean id="solrEmbedded" class="java.lang.String">
+    <bean id="solrEmbedded" class="java.lang.String">
         <constructor-arg value="solrhome"/>
-    </bean-->
+    </bean>
 
     <!--A simple quartz jobs for enabling cart and customer purge functionality. Uncomment the following quartz configurations-->
     <!--to activate this functionality (Also, uncomment the 'purgeCartTrigger' and 'purgeCustomerTrigger' configured under SchedulerFactoryBean.-->
@@ -200,29 +200,29 @@
     <!--     <bean id="solrAdminServer" class="org.apache.solr.client.solrj.impl.HttpSolrServer"> -->
     <!--         <constructor-arg value="${solr.url.admin}"/> -->
     <!--     </bean> -->
-    <!--bean id="blSearchService" class="org.broadleafcommerce.core.search.service.solr.SolrSearchServiceImpl">
+    <bean id="blSearchService" class="org.broadleafcommerce.core.search.service.solr.SolrSearchServiceImpl">
         <constructor-arg name="solrServer" ref="${solr.source.primary}" />
         <constructor-arg name="reindexServer" ref="${solr.source.reindex}" />
         <constructor-arg name="adminServer" ref="${solr.source.admin}" />
     </bean>
-    <bean id="rebuildIndexJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
-        <property name="targetObject" ref="blSearchService" />
-        <property name="targetMethod" value="rebuildIndex" />
-    </bean>
-    <bean id="rebuildIndexTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
-        <property name="jobDetail" ref="rebuildIndexJobDetail" />
-        <property name="startDelay" value="${solr.index.start.delay}" />
-        <property name="repeatInterval" value="${solr.index.repeat.interval}" />
-    </bean-->
-    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
-        <property name="triggers">
-            <list>
-                <!--ref bean="rebuildIndexTrigger" /-->
-                <!--<ref bean="purgeCartTrigger" />-->
-                <!--<ref bean="purgeCustomerTrigger" />-->
-            </list>
-        </property>
-    </bean>
+    <!--<bean id="rebuildIndexJobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">-->
+        <!--<property name="targetObject" ref="blSearchService" />-->
+        <!--<property name="targetMethod" value="rebuildIndex" />-->
+    <!--</bean>-->
+    <!--<bean id="rebuildIndexTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">-->
+        <!--<property name="jobDetail" ref="rebuildIndexJobDetail" />-->
+        <!--<property name="startDelay" value="${solr.index.start.delay}" />-->
+        <!--<property name="repeatInterval" value="${solr.index.repeat.interval}" />-->
+    <!--</bean&ndash;&gt;-->
+    <!--<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">-->
+        <!--<property name="triggers">-->
+            <!--<list>-->
+                <!--&lt;!&ndash;ref bean="rebuildIndexTrigger" /&ndash;&gt;-->
+                <!--&lt;!&ndash;<ref bean="purgeCartTrigger" />&ndash;&gt;-->
+                <!--&lt;!&ndash;<ref bean="purgeCustomerTrigger" />&ndash;&gt;-->
+            <!--</list>-->
+        <!--</property>-->
+    <!--</bean>-->
 
     <!--  Broaldeaf Commerce comes with an Image Server that allows you to manipulate images.   For example, the
           demo includes a high resolution image for each product that is reduced in size for browsing operations -->

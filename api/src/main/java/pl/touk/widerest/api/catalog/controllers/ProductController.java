@@ -5,12 +5,21 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.SequenceFile;
+import org.broadleafcommerce.common.exception.ServiceException;
+import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
+import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
+import org.broadleafcommerce.core.search.domain.SearchCriteria;
+import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
+import org.broadleafcommerce.core.search.domain.SearchResult;
+import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,25 +34,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -51,7 +48,7 @@ import static java.util.stream.Collectors.toMap;
 
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = "application/json")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { "application/json", "application/hal+json" })
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
 
@@ -67,6 +64,14 @@ public class ProductController {
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
+    /* Searching related services */
+    @Resource(name = "blSearchService")
+    protected SearchService searchService;
+
+    @Resource(name = "blExploitProtectionService")
+    protected ExploitProtectionService exploitProtectionService;
+
+
     /* GET /products */
     @Transactional
     @PreAuthorize("permitAll")
@@ -77,24 +82,70 @@ public class ProductController {
             response = ProductDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List")
+            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List"),
+            @ApiResponse(code = 400, message = "Invalid query text")
     })
-    public List<ProductDto> getAllProducts(
+    public ResponseEntity<?> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
             @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
             @ApiParam(value = "Offset which to  start returning products from")
-            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset) {
+            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+            @ApiParam(value = "Search query text")
+            @RequestParam(value = "q", required = false) String q,
+            @ApiParam(value = "Amount of items per page (applies only to searching)")
+            @RequestParam(value = "pageSize", defaultValue = "15") Integer pageSize,
+            @ApiParam(value = "Page number to return (applies only to searching)")
+            @RequestParam(value = "page", defaultValue = "1") Integer page) {
 
-        return catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0)
-                .stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .map(dtoConverters.productEntityToDto)
-                .collect(Collectors.toList());
+
+        List<Product> productsToReturn;
+
+        if(StringUtils.isNotEmpty(q)) {
+
+            String cleanedUpQuery;
+
+            try {
+                cleanedUpQuery = StringUtils.trim(q);
+                cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
+            } catch(ServiceException ex) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            final SearchCriteria searchCriteria = new SearchCriteria();
+            searchCriteria.setPage(page);
+            searchCriteria.setPageSize(pageSize);
+
+            try {
+                final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
+
+                /* (mst) For now, we only return a list of founded products with no additional info */
+//                final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
+//                        .totalPages(searchResult.getTotalPages())
+//                        .totalResults(searchResult.getTotalResults())
+//                        .page(searchResult.getPage())
+//                        .pageSize(searchResult.getPageSize())
+//                        .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
+//                        .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
+//                        .build();
+
+                productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
+
+            } catch (ServiceException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else {
+            productsToReturn = catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0);
+        }
+
+        return ResponseEntity.ok(productsToReturn.stream()
+                                .filter(CatalogUtils::archivedProductFilter)
+                                .map(dtoConverters.productEntityToDto)
+                                .collect(Collectors.toList()));
     }
 
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(method = RequestMethod.GET, params = "url")
+    @RequestMapping(value = "/url", method = RequestMethod.GET, params = "url")
     @ApiOperation(
             value = "Get product by URL",
             notes = "Gets a single product details",
@@ -135,7 +186,7 @@ public class ProductController {
     /* GET /products/bundles/{bundleId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/bundles/{bundleId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single bundle details",
             notes = "Gets details of a single bundle specified by its ID",
@@ -291,6 +342,7 @@ public class ProductController {
                         .orElse(newProduct.getProductOptionXrefs())
         );
 
+
         newProduct = catalogService.saveProduct(newProduct);
 
 
@@ -362,7 +414,7 @@ public class ProductController {
     /* GET /products/{id} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single product details",
             notes = "Gets details of a single product specified by its ID",
@@ -467,7 +519,7 @@ public class ProductController {
 
         //product.getAdditionalSkus().stream().forEach(catalogService::removeSku);
 
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+        Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(e -> {
                     catalogService.removeProduct(e);
@@ -475,8 +527,7 @@ public class ProductController {
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
 
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
@@ -588,7 +639,7 @@ public class ProductController {
     /* GET /products/{id}/categories */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/categories", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get product's categories",
             notes = "Gets a list of all categories belonging to a specified product",
@@ -747,7 +798,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single SKU details",
             notes = "Gets details of a single SKU, specified by its ID",
@@ -776,7 +827,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/default */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get default SKU details",
             notes = "Gets details of a default SKU belonging to a specified product",
@@ -1199,7 +1250,7 @@ public class ProductController {
     /* GET /products/{productId}/skus/{skuId}/media/{mediaId} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single media details",
             notes = "Gets details of a particular media belonging to a specified SKU",
@@ -1481,10 +1532,13 @@ public class ProductController {
     private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
         ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
         p.getAllowedValues().forEach(x -> x.setProductOption(p));
+        p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
+        p.setRequired(true);
 
         ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
         productOptionXref.setProduct(product);
         productOptionXref.setProductOption(p);
+
         return productOptionXref;
     }
 
