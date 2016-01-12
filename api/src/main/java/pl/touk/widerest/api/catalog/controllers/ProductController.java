@@ -82,7 +82,8 @@ public class ProductController {
             response = ProductDto.class,
             responseContainer = "List")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List")
+            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List"),
+            @ApiResponse(code = 400, message = "Invalid query text")
     })
     public ResponseEntity<?> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
