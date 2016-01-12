@@ -517,18 +517,18 @@ public class ProductController {
             final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
                     .totalPages(searchResult.getTotalPages())
                     .totalResults(searchResult.getTotalResults())
-                    .products(searchResult.getProducts().stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
+                    .page(searchResult.getPage())
+                    .pageSize(searchResult.getPageSize())
+                    .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
+                    .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
                     .build();
 
             return ResponseEntity.ok(productSearchResultDto);
+
         } catch (ServiceException e) {
             return ResponseEntity.badRequest().build();
         }
     }
-
-
-
-
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 

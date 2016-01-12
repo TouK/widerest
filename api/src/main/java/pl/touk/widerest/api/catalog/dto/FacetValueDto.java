@@ -5,14 +5,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FacetDto {
-    private Boolean active;
-    private String label;
-    private List<FacetValueDto> facetOptions;
+public class FacetValueDto {
+    private String value;
+    private BigDecimal minValue;
+    private BigDecimal maxValue;
+    private Integer quantity;
 }

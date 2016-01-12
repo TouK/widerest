@@ -12,6 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductSearchResultDto {
+    private Integer page;
+    private Integer pageSize;
     private Integer totalResults;
     private Integer totalPages;
     private List<FacetDto> facets;

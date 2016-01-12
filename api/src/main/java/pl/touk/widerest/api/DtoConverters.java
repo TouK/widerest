@@ -20,6 +20,8 @@ import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
+import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
+import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
@@ -765,5 +767,29 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** DISCRETEORDERITEM ********************************/
+    public static Function<SearchFacetResultDTO, FacetValueDto> searchFacetResultDTOFacetValueToDto = entity -> {
+        final FacetValueDto facetValueDto = FacetValueDto.builder()
+                .value(entity.getValue())
+                .minValue(entity.getMinValue())
+                .maxValue(entity.getMaxValue())
+                .quantity(entity.getQuantity())
+                .build();
+
+        return facetValueDto;
+    };
+
+    public static Function<SearchFacetDTO, FacetDto> searchFacetDTOFacetToDto = entity -> {
+        final FacetDto facetDto = FacetDto.builder()
+                .active(entity.isActive())
+                .label(entity.getFacet().getLabel())
+                .build();
+
+        facetDto.setFacetOptions(Optional.ofNullable(entity.getFacetValues()).orElse(Collections.emptyList()).stream()
+                .map(searchFacetResultDTOFacetValueToDto)
+                .collect(toList()));
+
+        return facetDto;
+    };
+
 
 }
