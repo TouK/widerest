@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.SequenceFile;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.core.catalog.domain.*;
@@ -83,17 +84,62 @@ public class ProductController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List")
     })
-    public List<ProductDto> getAllProducts(
+    public ResponseEntity<?> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
             @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
             @ApiParam(value = "Offset which to  start returning products from")
-            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset) {
+            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+            @ApiParam(value = "Search query text")
+            @RequestParam(value = "q", required = false) String q,
+            @ApiParam(value = "Amount of items per page (applies only to searching)")
+            @RequestParam(value = "pageSize", defaultValue = "15") Integer pageSize,
+            @ApiParam(value = "Page number to return (applies only to searching)")
+            @RequestParam(value = "page", defaultValue = "1") Integer page) {
 
-        return catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0)
-                .stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .map(dtoConverters.productEntityToDto)
-                .collect(Collectors.toList());
+
+        List<Product> productsToReturn;
+
+        if(StringUtils.isNotEmpty(q)) {
+
+            String cleanedUpQuery;
+
+            try {
+                cleanedUpQuery = StringUtils.trim(q);
+                cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
+            } catch(ServiceException ex) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            final SearchCriteria searchCriteria = new SearchCriteria();
+            searchCriteria.setPage(page);
+            searchCriteria.setPageSize(pageSize);
+
+            try {
+                final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
+
+                /* (mst) For now, we only return a list of products and no additional info */
+//                final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
+//                        .totalPages(searchResult.getTotalPages())
+//                        .totalResults(searchResult.getTotalResults())
+//                        .page(searchResult.getPage())
+//                        .pageSize(searchResult.getPageSize())
+//                        .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
+//                        .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
+//                        .build();
+
+                productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
+
+            } catch (ServiceException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else {
+            productsToReturn = catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0);
+        }
+
+        return ResponseEntity.ok(productsToReturn.stream()
+                                .filter(CatalogUtils::archivedProductFilter)
+                                .map(dtoConverters.productEntityToDto)
+                                .collect(Collectors.toList()));
     }
 
     @Transactional
@@ -481,53 +527,6 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete product with ID: " + productId + ". Product does not exist"));
 
         return ResponseEntity.noContent().build();
-    }
-
-
-    @Transactional
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public ResponseEntity<?> getProductsByQuery(
-            @ApiParam(value = "Search query")
-            @RequestParam(value = "query", required = true) String query,
-            @RequestParam(value = "pageSize", defaultValue = "15") Integer pageSize,
-            @RequestParam(value = "page", defaultValue = "1") Integer page) {
-
-        if(StringUtils.isEmpty(query)) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        String cleanedUpQuery;
-
-        try {
-            cleanedUpQuery = StringUtils.trim(query);
-            cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
-        } catch(ServiceException ex) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        final SearchCriteria searchCriteria = new SearchCriteria();
-        searchCriteria.setPage(page);
-        searchCriteria.setPageSize(pageSize);
-
-        final List<SearchFacetDTO> availableFacets = searchService.getSearchFacets();
-
-        try {
-            final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
-
-            final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
-                    .totalPages(searchResult.getTotalPages())
-                    .totalResults(searchResult.getTotalResults())
-                    .page(searchResult.getPage())
-                    .pageSize(searchResult.getPageSize())
-                    .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
-                    .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
-                    .build();
-
-            return ResponseEntity.ok(productSearchResultDto);
-
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest().build();
-        }
     }
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
