@@ -117,7 +117,7 @@ public class ProductController {
             try {
                 final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
 
-                /* (mst) For now, we only return a list of products and no additional info */
+                /* (mst) For now, we only return a list of founded products with no additional info */
 //                final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
 //                        .totalPages(searchResult.getTotalPages())
 //                        .totalResults(searchResult.getTotalResults())
