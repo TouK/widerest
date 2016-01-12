@@ -183,57 +183,6 @@ public class CategoryController {
         return new Resources<>(categoriesToReturn);
     }
 
-    /* GET /categoriesTest */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/categoriesTest", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "List all categories",
-            notes = "Gets a list of all available categories in the catalog",
-            response = HalTestDto.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of categories list", response = HalTestDto.class)
-    })
-    public Resources<Resource> readHalTestCategory() {
-
-        final HalTestDto halTestDto = HalTestDto.builder()
-                .name("TestName1")
-                .build();
-
-        final HalTestDto halTestDto2 = HalTestDto.builder()
-                .name("TestName2")
-                .build();
-
-        final HalTestResource halTestResource = HalTestResource.builder()
-                .name("TestResource1")
-                .build();
-
-        final HalTestResource halTestResource2 = HalTestResource.builder()
-                .name("TestResource2")
-                .build();
-
-        final HalTestResource halTestSubResource = HalTestResource.builder()
-                .name("TestSubResource1")
-                .build();
-
-
-        final Link link = linkTo(CategoryController.class).withSelfRel();
-
-        halTestDto.add(linkTo(CategoryController.class).withSelfRel());
-        halTestDto2.add(linkTo(CategoryController.class).withSelfRel());
-
-        halTestResource.setSubResource(new Resources(Arrays.asList(halTestSubResource, link)));
-
-//        return (Arrays.asList(
-//                new Resource(halTestResource, link),
-//                new Resource(halTestResource2, link)
-//        ));
-        return new Resources(Arrays.asList(
-                new Resource(halTestResource, link),
-                new Resource(halTestResource2, link)
-        ));
-    }
-
     /* GET /{categoryId}/subcategories */
     @Transactional
     @PreAuthorize("permitAll")
