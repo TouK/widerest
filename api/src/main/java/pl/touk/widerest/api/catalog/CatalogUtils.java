@@ -150,9 +150,9 @@ public class CatalogUtils {
 
         if(skuDto.getSkuMedia() != null) {
             skuEntity.setSkuMediaXref(
-                    skuDto.getSkuMedia().stream()
+                    skuDto.getSkuMedia().entrySet().stream()
                             .collect(toMap(e -> e.getKey(), e -> {
-                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e);
+                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
                                 newSkuMediaXref.setSku(skuEntity);
                                 newSkuMediaXref.setKey(e.getKey());
                                 return newSkuMediaXref;

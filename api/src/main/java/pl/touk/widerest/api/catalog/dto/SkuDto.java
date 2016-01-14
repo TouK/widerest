@@ -13,7 +13,6 @@ import org.springframework.hateoas.ResourceSupport;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -73,5 +72,5 @@ public class SkuDto extends ResourceSupport {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
-    private List<SkuMediaDto> skuMedia;
+    private Map<String /*key*/, SkuMediaDto> skuMedia;
 }

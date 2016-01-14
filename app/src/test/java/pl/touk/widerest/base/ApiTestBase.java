@@ -20,8 +20,6 @@ import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
 import org.springframework.hateoas.core.DelegatingRelProvider;
-import org.springframework.hateoas.hal.CurieProvider;
-import org.springframework.hateoas.hal.DefaultCurieProvider;
 import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -93,8 +91,7 @@ public abstract class ApiTestBase {
     public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
     public static final String CATEGORIES_BY_PRODUCT_BY_ID_COUNT = PRODUCT_BY_ID_URL + "/categories/count";
     public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
-    public static final String MEDIAS_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media";
-    public static final String MEDIA_BY_ID_URL = MEDIAS_URL + "/{mediaId}";
+    public static final String MEDIA_BY_KEY_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media/{key}";
     public static final String BUNDLES_URL = PRODUCTS_URL + "/bundles";
     public static final String BUNDLE_BU_ID_URL = BUNDLES_URL + "/{bundleId}";
     public static final String PRODUCT_BY_ID_ATTRIBUTES_URL = PRODUCT_BY_ID_URL + "/attributes";
@@ -336,14 +333,14 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
     }
 
-    protected ResponseEntity<?> addNewTestSkuMediaToProductSku(long productId, long skuId, SkuMediaDto skuMediaDto) {
-        return oAuth2AdminRestTemplate().postForEntity(
-                MEDIAS_URL,
+    protected void addOrUpdateNewTestSkuMediaToProductSku(long productId, long skuId, String key, SkuMediaDto skuMediaDto) {
+        oAuth2AdminRestTemplate().put(
+                MEDIA_BY_KEY_URL,
                 skuMediaDto,
-                null,
                 serverPort,
                 productId,
-                skuId);
+                skuId,
+                key);
     }
 
 

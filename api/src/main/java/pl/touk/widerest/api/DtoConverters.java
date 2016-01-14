@@ -22,7 +22,6 @@ import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
-import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.broadleafcommerce.profile.core.domain.Customer;
@@ -30,7 +29,6 @@ import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Resources;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
@@ -50,7 +48,10 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -132,9 +133,11 @@ public class DtoConverters {
                         .map(DtoConverters.productOptionValueToSkuValueDto)
                         .collect(toSet()))
                 .skuMedia(entity.getSkuMediaXref().entrySet().stream()
-                        .map(Map.Entry::getValue)
-                        .map(DtoConverters.skuMediaXrefToDto)
-                        .collect(toList()))
+                        .collect(toMap(Map.Entry::getKey, entry -> DtoConverters.skuMediaXrefToDto.apply(entry.getValue())))
+                )
+//                        .map(Map.Entry::getValue)
+//                        .map(DtoConverters.skuMediaXrefToDto)
+//                        .collect(toList()))
 
                 .build();
 
@@ -443,12 +446,12 @@ public class DtoConverters {
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
                 .tags(entity.getTags())
-                .key(xref.getKey())
+//                .key(xref.getKey())
                 .build();
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
                 xref.getSku().getId(),
-                entity.getId())).withSelfRel());
+                xref.getKey())).withSelfRel());
 
         skuMediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
                 xref.getSku().getId())).withRel("sku"));

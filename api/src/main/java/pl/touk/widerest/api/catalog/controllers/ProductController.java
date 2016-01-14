@@ -6,9 +6,9 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.io.SequenceFile;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
+import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
@@ -17,7 +17,6 @@ import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
-import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.http.HttpHeaders;
@@ -34,13 +33,24 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
+import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -71,6 +81,8 @@ public class ProductController {
     @Resource(name = "blExploitProtectionService")
     protected ExploitProtectionService exploitProtectionService;
 
+    @Resource(name = "blGenericEntityService")
+    protected GenericEntityService genericEntityService;
 
     /* GET /products */
     @Transactional
@@ -1247,10 +1259,10 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
-    /* GET /products/{productId}/skus/{skuId}/media/{mediaId} */
+    /* GET /products/{productId}/skus/{skuId}/media/{key} */
     @Transactional
     @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{key}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a single media details",
             notes = "Gets details of a particular media belonging to a specified SKU",
@@ -1266,34 +1278,30 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "mediaId") Long mediaId) {
+            @PathVariable(value = "key") String key) {
 
         /* (mst) Here is the deal: if the specified SKU does not contain any medias
          *       BL's service will return medias associated with Default SKU instead.,
          */
 
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
+        Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
-                .getSkuMediaXref().entrySet().stream()
-                .map(Map.Entry::getValue)
-                .filter(x -> x.getMedia().getId().longValue() == mediaId)
+                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+
+        return Optional.ofNullable(sku.getSkuMediaXref().get(key))
                 .map(DtoConverters.skuMediaXrefToDto)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId + " of product with ID: " + productId));
-
-
+                .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " for this sku"));
     }
 
-    /* DELETE /products/{productId}/skus/{id}/media/{mediaId} */
+    /* DELETE /products/{productId}/skus/{id}/media/{key} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/key", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing media",
             notes = "Removes a specific media related to the specified SKU",
@@ -1308,9 +1316,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "mediaId") Long mediaId) {
+            @PathVariable(value = "key") String key) {
 
-        final Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
+        final Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
@@ -1320,30 +1328,18 @@ public class ProductController {
                         "SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId
                 ));
 
+        SkuMediaXref removed = Optional.ofNullable(sku.getSkuMediaXref().remove(key))
+                .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + "for this sku"));
 
-        long currentSkuMediaSize = mediaSkuEntity.getSkuMediaXref().size();
-
-
-        Map<String, SkuMediaXref> newSkuMediaXref = mediaSkuEntity.getSkuMediaXref().entrySet().stream()
-                .filter(x -> x.getValue().getMedia().getId().longValue() != mediaId)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        if (currentSkuMediaSize == newSkuMediaXref.size()) {
-            throw new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId);
-        }
-
-        mediaSkuEntity.getSkuMediaXref().clear();
-        mediaSkuEntity.getSkuMediaXref().putAll(newSkuMediaXref);
-
-        catalogService.saveSku(mediaSkuEntity);
-
-        /* TODO: (mst) This might be a bit incomplete since we do nothing with the specified media... */
+        catalogService.saveSku(sku);
+        genericEntityService.remove(removed);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 
     /* POST /{productId}/skus/{skuId}/media */
+/*
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
@@ -1390,12 +1386,12 @@ public class ProductController {
 
         mediaSkuEntity.getSkuMediaXref().put(skuMediaDto.getKey(), newSkuMediaXref);
 
-        /* (mst) Here is the deal: if the specified SKU does not contain any medias,
-         *       BL's service will return medias associated with Default SKU instead. (from GET endpoint)
-         *
-         *       Therefore, when we add a media to a SKU, that does not contain any, all those
-         *       previously visible (eg: through GET endpoints) medias WILL "disappear".
-         */
+        // (mst) Here is the deal: if the specified SKU does not contain any medias,
+        //       BL's service will return medias associated with Default SKU instead. (from GET endpoint)
+        //
+        //       Therefore, when we add a media to a SKU, that does not contain any, all those
+        //       previously visible (eg: through GET endpoints) medias WILL "disappear".
+        //
 
         Sku alreadySavedSku = catalogService.saveSku(mediaSkuEntity);
 
@@ -1411,11 +1407,12 @@ public class ProductController {
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
+*/
 
-    /* PUT /{productId}/skus/{skuId}/media/{mediaId} */
+    /* PUT /{productId}/skus/{skuId}/media/{key} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing media",
             notes = "Updates an existing media with new details. If the media does not exist, it does NOT create it!",
@@ -1431,7 +1428,7 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") Long skuId,
             @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "mediaId") Long mediaId,
+            @PathVariable(value = "key") String key,
             @ApiParam(value = "(Full) Description of an updated media")
             @RequestBody SkuMediaDto skuMediaDto) {
 
@@ -1439,7 +1436,7 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        Sku skuMediaEntity = Optional.ofNullable(catalogService.findProductById(productId))
+        Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
@@ -1447,22 +1444,21 @@ public class ProductController {
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        /* (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available! */
+        Optional.ofNullable(sku.getSkuMediaXref().remove(key))
+                .ifPresent(genericEntityService::remove);
 
-        SkuMediaXref skuMediaXref = skuMediaEntity.getSkuMediaXref().entrySet().stream()
-                .filter(x -> x.getValue().getMedia().getId().longValue() == mediaId)
-                .map(Map.Entry::getValue)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId));
+        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(skuMediaDto);
+        newSkuMediaXref.setSku(sku);
+        newSkuMediaXref.setKey(key);
+        sku.getSkuMediaXref().put(key, newSkuMediaXref);
 
-        CatalogUtils.updateMediaEntityFromDto(skuMediaXref.getMedia(), skuMediaDto);
-
-        catalogService.saveSku(skuMediaEntity);
+        catalogService.saveSku(sku);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     /* PATCH /products/{productId}/skus/{skuId}/media/{mediaId} */
+/*
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PATCH)
@@ -1492,7 +1488,7 @@ public class ProductController {
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        /* (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available! */
+        // (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available!
 
         SkuMediaXref skuMediaXref = skuMediaEntity.getSkuMediaXref().entrySet().stream()
                 .filter(x -> x.getValue().getMedia().getId().longValue() == mediaId)
@@ -1506,6 +1502,7 @@ public class ProductController {
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
+*/
 
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 
