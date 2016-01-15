@@ -2,6 +2,7 @@ package pl.touk.widerest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import com.sendwithus.exception.SendWithUsException;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -18,20 +19,22 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.settings.SettingsConsumer;
+import pl.touk.widerest.api.settings.SettingsService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Created by mst on 08.10.15.
  */
-public class OrderCompletedActivity extends BaseActivity<ProcessContext<CheckoutSeed>> {
+public class OrderCompletedActivity extends BaseActivity<ProcessContext<CheckoutSeed>> implements SettingsConsumer {
 
-    @Resource
-    OrderHooksResolver hooksResolver;
+    private static final String ORDER_COMPLETED_HOOK = "orderCompletedHook";
 
     @Resource
     ObjectMapper objectMapper;
@@ -42,6 +45,8 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
     CamelContext camelContext;
 
     ProducerTemplate template;
+
+    protected SettingsService settingsService;
 
     @PostConstruct
     public void init() throws Exception {
@@ -65,7 +70,7 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
             return context;
         }
 
-        Optional<String> orderCompletedHookUrl = hooksResolver.getOrderCompletedHookUrl();
+        Optional<String> orderCompletedHookUrl = settingsService.getProperty(ORDER_COMPLETED_HOOK);
 
         if(orderCompletedHookUrl.isPresent()) {
             sendOrderToHook(orderCompletedHookUrl.get(), order);
@@ -93,4 +98,15 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
 
         }
     }
+
+    @Override
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
+
+    @Override
+    public Set<String> getHandledProperties() {
+        return Sets.newHashSet(ORDER_COMPLETED_HOOK);
+    }
+
 }
