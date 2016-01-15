@@ -7,7 +7,9 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.tuple.Pair;
+import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryMediaXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryXref;
@@ -15,12 +17,7 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.springframework.hateoas.ExposesResourceFor;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.Resources;
-import org.springframework.hateoas.core.EmbeddedWrapper;
-import org.springframework.hateoas.core.EmbeddedWrappers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,18 +33,20 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.dto.HalTestDto;
-import pl.touk.widerest.api.catalog.dto.HalTestResource;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.stream.Collectors;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaType.APPLICATION_JSON_VALUE, "application/hal+json" })
@@ -59,6 +58,9 @@ public class CategoryController {
 
     @javax.annotation.Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
+
+    @javax.annotation.Resource(name = "blGenericEntityService")
+    protected GenericEntityService genericEntityService;
 
     /* GET /categories */
     @Transactional
@@ -763,6 +765,72 @@ public class CategoryController {
                 .count();
 
         return ResponseEntity.ok(allProductsInCategoryCount);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/categories/{categoryId}/media/{key}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Create new or update existing media",
+            notes = "Updates an existing media with new details. If the media does not exist, it creates it!",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified media"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified category does not exist"),
+    })
+    public ResponseEntity<?> createOrUpdateOneMedia(
+            @ApiParam(required = true) @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(required = true) @PathVariable(value = "key") String key,
+            @ApiParam @RequestBody MediaDto mediaDto) {
+
+        if (mediaDto.getUrl() == null || mediaDto.getUrl().isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category does not exist"));
+
+        Optional.ofNullable(category.getCategoryMediaXref().remove(key))
+                .ifPresent(genericEntityService::remove);
+
+        CategoryMediaXref categoryMediaXref = DtoConverters.mediaDtoToCategoryMediaXref.apply(mediaDto);
+        categoryMediaXref.setCategory(category);
+        categoryMediaXref.setKey(key);
+        category.getCategoryMediaXref().put(key, categoryMediaXref);
+
+        catalogService.saveCategory(category);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @RequestMapping(value = "/categories/{categoryId}/media/key", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete existing media",
+            notes = "Removes a specific media related to the specified category",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "Successful removal of the specified media"),
+            @ApiResponse(code = 404, message = "The specified media, SKU or product does not exist")
+    })
+    public ResponseEntity<?> deleteOneMedia(
+            @ApiParam(required = true) @PathVariable(value = "categoryId") Long categoryId,
+            @ApiParam(required = true) @PathVariable(value = "key") String key) {
+
+        Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Category does not exist"));
+
+        CategoryMediaXref removed = Optional.ofNullable(category.getCategoryMediaXref().remove(key))
+                .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + "for this category"));
+
+        catalogService.saveCategory(category);
+        genericEntityService.remove(removed);
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     /* ------------------------------- HELPER METHODS ------------------------------- */

@@ -23,11 +23,11 @@ import org.springframework.web.client.RestClientException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.BundleItemDto;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -381,7 +381,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long skuId = getIdFromLocationUrl(addedAdditionalSkuEntity.getHeaders().getLocation().toString());
 
-        SkuMediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        MediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
 
         addOrUpdateNewTestSkuMediaToProductSku(productId, skuId, "alt1", testSkuMedia);
 //        assertThat(addedSkuMediaEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -499,9 +499,9 @@ public class ProductControllerTest extends ApiTestBase {
         SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        SkuMediaDto skuMediaDto1 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
-        SkuMediaDto skuMediaDto2 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
-        SkuMediaDto skuMediaDto3 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        MediaDto mediaDto1 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        MediaDto mediaDto2 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        MediaDto mediaDto3 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
 
 
 
@@ -519,8 +519,8 @@ public class ProductControllerTest extends ApiTestBase {
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
         additionalSku1.setSkuMedia(new HashMap<>());
-        additionalSku1.getSkuMedia().put("primary", skuMediaDto1);
-        additionalSku1.getSkuMedia().put("alt1", skuMediaDto2);
+        additionalSku1.getSkuMedia().put("primary", mediaDto1);
+        additionalSku1.getSkuMedia().put("alt1", mediaDto2);
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
         additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
         additionalSku1.setCurrencyCode("USD");
@@ -528,7 +528,7 @@ public class ProductControllerTest extends ApiTestBase {
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
         additionalSku2.setSkuMedia(new HashMap<>());
-        additionalSku2.getSkuMedia().put("primary", skuMediaDto3);
+        additionalSku2.getSkuMedia().put("primary", mediaDto3);
         additionalSku2.setRetailPrice(new BigDecimal("19.99"));
         additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
         additionalSku2.setCurrencyCode("EUR");
@@ -580,7 +580,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         // validate addtional Sku #1
 
-        Map<String, SkuMediaDto> additionalSku1Media = receivedAdditionalSku1.getSkuMedia();
+        Map<String, MediaDto> additionalSku1Media = receivedAdditionalSku1.getSkuMedia();
 
         assertThat(additionalSku1Media.size(), equalTo(2));
         assertTrue(CollectionUtils.isEqualCollection(additionalSku1Media.entrySet(), additionalSku1.getSkuMedia().entrySet()));
@@ -593,7 +593,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
         // validate addtional Sku #2
-        Map<String, SkuMediaDto> additionalSku2Media = receivedAdditionalSku2.getSkuMedia();
+        Map<String, MediaDto> additionalSku2Media = receivedAdditionalSku2.getSkuMedia();
 
         assertThat(additionalSku2Media.size(), equalTo(1));
         assertThat(additionalSku2Media.get(0), equalTo(additionalSku2.getSkuMedia().get(0)));

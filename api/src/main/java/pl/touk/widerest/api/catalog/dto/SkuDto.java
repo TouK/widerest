@@ -72,5 +72,5 @@ public class SkuDto extends ResourceSupport {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
-    private Map<String /*key*/, SkuMediaDto> skuMedia;
+    private Map<String /*key*/, MediaDto> skuMedia;
 }

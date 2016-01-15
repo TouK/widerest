@@ -389,6 +389,7 @@ public class DtoConverters {
                         .orElse(null))
                 .attributes(entity.getCategoryAttributesMap().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
+                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
                 .build();
 
 
@@ -437,11 +438,11 @@ public class DtoConverters {
 
     /******************************** Sku Media  ********************************/
 
-    public static Function<SkuMediaXref, SkuMediaDto> skuMediaXrefToDto = xref -> {
+    public static Function<CategoryMediaXref, MediaDto> categoryMediaXrefToDto = xref -> {
 
         final Media entity = xref.getMedia();
 
-        final SkuMediaDto skuMediaDto = SkuMediaDto.builder()
+        final MediaDto mediaDto = MediaDto.builder()
                 .title(entity.getTitle())
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
@@ -449,18 +450,55 @@ public class DtoConverters {
 //                .key(xref.getKey())
                 .build();
 
-        skuMediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
+        mediaDto.add(
+                linkTo(
+                        methodOn(CategoryController.class).deleteOneMedia(xref.getCategory().getId(), xref.getKey())
+                ).withSelfRel()
+        );
+
+        mediaDto.add(
+                linkTo(
+                        methodOn(CategoryController.class).getCategoryByIdAvailability(xref.getCategory().getId())
+                ).withRel("category")
+        );
+
+        return mediaDto;
+    };
+
+    public static Function<MediaDto, CategoryMediaXref> mediaDtoToCategoryMediaXref = dto -> {
+        CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
+        Media media = new MediaImpl();
+
+        media = CatalogUtils.updateMediaEntityFromDto(media, dto);
+
+        categoryMediaXref.setMedia(media);
+        return categoryMediaXref;
+    };
+
+    public static Function<SkuMediaXref, MediaDto> skuMediaXrefToDto = xref -> {
+
+        final Media entity = xref.getMedia();
+
+        final MediaDto mediaDto = MediaDto.builder()
+                .title(entity.getTitle())
+                .url(entity.getUrl())
+                .altText(entity.getAltText())
+                .tags(entity.getTags())
+//                .key(xref.getKey())
+                .build();
+
+        mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
                 xref.getSku().getId(),
                 xref.getKey())).withSelfRel());
 
-        skuMediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
+        mediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
                 xref.getSku().getId())).withRel("sku"));
 
-        return skuMediaDto;
+        return mediaDto;
     };
 
     /* (mst) Remember to set SKU after this one */
-    public static Function<SkuMediaDto, SkuMediaXref> skuMediaDtoToXref = dto -> {
+    public static Function<MediaDto, SkuMediaXref> skuMediaDtoToXref = dto -> {
         SkuMediaXref skuMediaXref = new SkuMediaXrefImpl();
         Media skuMedia = new MediaImpl();
 

@@ -34,12 +34,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
@@ -1232,14 +1232,14 @@ public class ProductController {
     @ApiOperation(
             value = "List all SKU's media",
             notes = "Gets a list of all medias belonging to a specified SKU",
-            response = SkuMediaDto.class,
+            response = MediaDto.class,
             responseContainer = "List"
     )
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of media details", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public List<SkuMediaDto> getMediaBySkuId(
+    public List<MediaDto> getMediaBySkuId(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1266,13 +1266,13 @@ public class ProductController {
     @ApiOperation(
             value = "Get a single media details",
             notes = "Gets details of a particular media belonging to a specified SKU",
-            response = SkuMediaDto.class
+            response = MediaDto.class
     )
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of media details"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public SkuMediaDto getMediaByIdForSku(
+    public MediaDto getMediaByIdForSku(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1414,8 +1414,8 @@ public class ProductController {
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/{key}", method = RequestMethod.PUT)
     @ApiOperation(
-            value = "Update an existing media",
-            notes = "Updates an existing media with new details. If the media does not exist, it does NOT create it!",
+            value = "Create new or update existing media",
+            notes = "Updates an existing media with new details. If the media does not exist, it creates it!",
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful update of the specified media"),
@@ -1430,9 +1430,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific media", required = true)
             @PathVariable(value = "key") String key,
             @ApiParam(value = "(Full) Description of an updated media")
-            @RequestBody SkuMediaDto skuMediaDto) {
+            @RequestBody MediaDto mediaDto) {
 
-        if (skuMediaDto.getUrl() == null || skuMediaDto.getUrl().isEmpty()) {
+        if (mediaDto.getUrl() == null || mediaDto.getUrl().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -1447,7 +1447,7 @@ public class ProductController {
         Optional.ofNullable(sku.getSkuMediaXref().remove(key))
                 .ifPresent(genericEntityService::remove);
 
-        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(skuMediaDto);
+        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(mediaDto);
         newSkuMediaXref.setSku(sku);
         newSkuMediaXref.setKey(key);
         sku.getSkuMediaXref().put(key, newSkuMediaXref);

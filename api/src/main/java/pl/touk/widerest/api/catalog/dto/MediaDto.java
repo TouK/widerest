@@ -17,8 +17,8 @@ import org.springframework.hateoas.ResourceSupport;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = false)
-@ApiModel(value = "Sku Media", description = "Sku Media DTO resource representation")
-public class SkuMediaDto extends ResourceSupport {
+@ApiModel(value = "Media", description = "Media DTO resource representation")
+public class MediaDto extends ResourceSupport {
 
     @ApiModelProperty(position = 0, value = "Title of the media", required = true, dataType = "java.lang.String")
     private String title;

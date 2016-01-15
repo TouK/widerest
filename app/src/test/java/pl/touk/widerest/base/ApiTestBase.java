@@ -42,9 +42,9 @@ import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import javax.annotation.Resource;
@@ -333,10 +333,10 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
     }
 
-    protected void addOrUpdateNewTestSkuMediaToProductSku(long productId, long skuId, String key, SkuMediaDto skuMediaDto) {
+    protected void addOrUpdateNewTestSkuMediaToProductSku(long productId, long skuId, String key, MediaDto mediaDto) {
         oAuth2AdminRestTemplate().put(
                 MEDIA_BY_KEY_URL,
-                skuMediaDto,
+                mediaDto,
                 serverPort,
                 productId,
                 skuId,

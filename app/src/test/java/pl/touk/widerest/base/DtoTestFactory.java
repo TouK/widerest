@@ -2,11 +2,11 @@ package pl.touk.widerest.base;
 
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 
 import java.math.BigDecimal;
@@ -31,7 +31,7 @@ public class DtoTestFactory {
     private static SkuDto newSkuDto2;
     private static OrderDto newOrderDto;
 
-    private static SkuMediaDto newMediaDto;
+    private static MediaDto newMediaDto;
 
     private static final Date defaultActiveStartDate;
 
@@ -65,7 +65,7 @@ public class DtoTestFactory {
         }
     }
 
-    public static SkuMediaDto getTestSkuMedia(DtoTestType dtoTestType) {
+    public static MediaDto getTestSkuMedia(DtoTestType dtoTestType) {
         switch (dtoTestType) {
             case NEXT:
                 return nextTestMediaDto();
@@ -305,11 +305,11 @@ public class DtoTestFactory {
     }
 
 
-    private static SkuMediaDto nextTestMediaDto() {
+    private static MediaDto nextTestMediaDto() {
 
         long currentSkuMediaCounter = skuMediaCounter.incrementAndGet();
 
-        return SkuMediaDto.builder()
+        return MediaDto.builder()
                     .altText("Test Media Alt Text" + currentSkuMediaCounter)
                     .tags("Test Media Tags" + currentSkuMediaCounter)
                     .title("Test Media Title" + currentSkuMediaCounter)

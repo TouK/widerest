@@ -1,7 +1,6 @@
 package pl.touk.widerest.api.catalog.dto;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -13,9 +12,7 @@ import lombok.experimental.Builder;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.ResourceSupport;
 import org.springframework.hateoas.Resources;
-import org.springframework.hateoas.core.EmbeddedWrapper;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -52,4 +49,9 @@ public class CategoryDto extends ResourceSupport {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 5, value = "List of subcategories for this category", required = false)
     private Resources<Resource<CategoryDto>> subcategories;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty(position = 6, value = "List of medias associated with the SKU", dataType = "java.util.List")
+    private Map<String /*key*/, MediaDto> media;
+
 }

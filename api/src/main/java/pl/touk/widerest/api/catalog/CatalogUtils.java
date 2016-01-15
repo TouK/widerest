@@ -7,9 +7,9 @@ import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuMediaDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 
 import java.net.MalformedURLException;
@@ -196,32 +196,32 @@ public class CatalogUtils {
         return skuEntity;
     }
 
-    public static Media updateMediaEntityFromDto(Media mediaEntity, SkuMediaDto skuMediaDto) {
+    public static Media updateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
 
-        mediaEntity.setTitle(skuMediaDto.getTitle());
-        mediaEntity.setTags(skuMediaDto.getTags());
-        mediaEntity.setAltText(skuMediaDto.getAltText());
-        mediaEntity.setUrl(skuMediaDto.getUrl());
+        mediaEntity.setTitle(mediaDto.getTitle());
+        mediaEntity.setTags(mediaDto.getTags());
+        mediaEntity.setAltText(mediaDto.getAltText());
+        mediaEntity.setUrl(mediaDto.getUrl());
 
         return mediaEntity;
     }
 
-    public static Media partialUpdateMediaEntityFromDto(Media mediaEntity, SkuMediaDto skuMediaDto) {
+    public static Media partialUpdateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
 
-        if(skuMediaDto.getTitle() != null) {
-            mediaEntity.setTitle(skuMediaDto.getTitle());
+        if(mediaDto.getTitle() != null) {
+            mediaEntity.setTitle(mediaDto.getTitle());
         }
 
-        if(skuMediaDto.getTags() != null) {
-            mediaEntity.setTags(skuMediaDto.getTags());
+        if(mediaDto.getTags() != null) {
+            mediaEntity.setTags(mediaDto.getTags());
         }
 
-        if(skuMediaDto.getAltText() != null) {
-            mediaEntity.setAltText(skuMediaDto.getAltText());
+        if(mediaDto.getAltText() != null) {
+            mediaEntity.setAltText(mediaDto.getAltText());
         }
 
-        if(skuMediaDto.getUrl() != null) {
-            mediaEntity.setUrl(skuMediaDto.getUrl());
+        if(mediaDto.getUrl() != null) {
+            mediaEntity.setUrl(mediaDto.getUrl());
         }
 
         return mediaEntity;
