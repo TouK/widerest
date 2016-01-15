@@ -6,11 +6,18 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
@@ -27,12 +34,20 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
+import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.Application;
@@ -46,8 +61,11 @@ import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
+import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
+import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -55,6 +73,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -127,6 +147,12 @@ public abstract class ApiTestBase {
     protected String serverPort;
 
     protected RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+
+    protected BasicCookieStore cookieStore = new BasicCookieStore();
+    protected CloseableHttpClient authorizationServerClient = HttpClients.custom().setDefaultCookieStore(cookieStore).disableRedirectHandling().build();
+    protected OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(new BaseOAuth2ProtectedResourceDetails());
+
+
     /* HATEOAS Rest Template */
     private List<HttpMessageConverter<?>> httpMessageConverters = new ArrayList<>();
     private RestTemplate hateoasRestTemplate;
@@ -165,6 +191,10 @@ public abstract class ApiTestBase {
 
 
 
+    @Before
+    public void clearSession() {
+        cookieStore.clear();
+    }
 
     /* This is the way to access admin related REST API!
      *
@@ -625,6 +655,44 @@ public abstract class ApiTestBase {
         return response.getBody();
 
     }
+
+    protected void whenRegistrationPerformed(String username, String password, String email) {
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+        map.add("email", email);
+        map.add("username", username);
+        map.add("password", password);
+        map.add("passwordConfirm", password);
+        HttpEntity requestEntity = new HttpEntity(map, new HttpHeaders());
+        oAuth2RestTemplate.postForEntity(API_BASE_URL + "/customers/register", requestEntity, HttpHeaders.class, serverPort);
+    }
+
+    protected void whenLoggedIn(String usertype, String username, String password) throws IOException {
+        HttpUriRequest request = RequestBuilder
+                .post()
+                .setUri("http://localhost:" + serverPort + "/login")
+                .addParameter("usertype", usertype)
+                .addParameter("username", username)
+                .addParameter("password", password)
+                .build();
+        try (CloseableHttpResponse response = authorizationServerClient.execute(request)) {
+        }
+    }
+
+    protected void whenAuthorizationRequestedFor(Scope scope) throws IOException {
+        HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory(authorizationServerClient);
+        ClientHttpRequest request = httpRequestFactory.createRequest(
+                URI.create("http://localhost:" + serverPort + "/oauth/authorize?client_id=default&response_type=token&redirect_uri=" + OutOfBandUriHandler.OOB_URI + (scope != null ? "&scope=" + scope : "")),
+                HttpMethod.GET
+        );
+
+        try (ClientHttpResponse response = request.execute()) {
+            HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
+            Map<String, String> map = e.extractData(response);
+            Optional<String> accessToken = Optional.ofNullable(map.get("access_token"));
+            oAuth2RestTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
+        }
+    }
+
 
 
 }
