@@ -1,7 +1,6 @@
 package pl.touk.widerest.catalog;
 
 import org.junit.Test;
-import org.springframework.security.authentication.BadCredentialsException;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 
