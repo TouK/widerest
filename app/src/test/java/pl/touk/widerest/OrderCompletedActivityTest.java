@@ -26,14 +26,12 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.settings.SettingsService;
 
 import javax.mail.internet.MimeMessage;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +43,7 @@ public class OrderCompletedActivityTest {
     public final GreenMailRule greenMail = new GreenMailRule(ServerSetupTest.SMTP);
 
     @Mock
-    private SettingsService settingsService;
+    private OrderHooksResolver hooksResolver;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -94,7 +92,7 @@ public class OrderCompletedActivityTest {
 
 //        String hookUrl = "sendwithus://test_c92a0fa5bee7da24847f78d8b4e3963451d00eb5@?templateId=tem_NrXPntKhwnFjDCCbL2E8Rc";
 
-        when(settingsService.getProperty(any())).thenReturn(Optional.of(hookUrl));
+        when(hooksResolver.getOrderCompletedHookUrl()).thenReturn(Optional.of(hookUrl));
 
         orderCompletedActivity.execute(context);
 
