@@ -7,13 +7,10 @@ import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 @Component
 public class PayPalSessionImpl implements PayPalSession {
@@ -25,14 +22,6 @@ public class PayPalSessionImpl implements PayPalSession {
 
     @Resource(name = "blSystemPropertiesDao")
     protected SystemPropertiesDao systemPropertiesDao;
-
-    @Resource
-    protected Set<String> availableSystemPropertyNames;
-
-    @PostConstruct
-    public void init() {
-        Collections.addAll(availableSystemPropertyNames, CLIENT_ID, SECRET);
-    }
 
     // Should be replaced so that it uses refresh token instead
 

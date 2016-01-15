@@ -12,7 +12,6 @@ import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +24,6 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -40,8 +38,7 @@ public class SettingsController {
     protected SystemPropertiesDao systemPropertiesDao;
 
     @javax.annotation.Resource
-    protected Set<String> availableSystemPropertyNames;
-
+    protected SettingsService settingsService;
 
     @Builder
     @Data
@@ -69,7 +66,7 @@ public class SettingsController {
 
 
         return new Resources(
-                availableSystemPropertyNames.stream()
+                settingsService.getAvailableSystemPropertyNames().stream()
                         .map(name ->
                                         Property.builder()
                                                 .name(name)
@@ -104,7 +101,7 @@ public class SettingsController {
     ) {
 
         return Optional.of(key)
-                .filter(availableSystemPropertyNames::contains)
+                .filter(settingsService.getAvailableSystemPropertyNames()::contains)
                 .map(name ->
                                 Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(name))
                                         .map(SystemProperty::getValue)
@@ -134,7 +131,7 @@ public class SettingsController {
     ) {
 
         return Optional.of(key)
-                .filter(availableSystemPropertyNames::contains)
+                .filter(settingsService.getAvailableSystemPropertyNames()::contains)
                 .map(name -> {
                     SystemProperty systemProperty = Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(name))
                             .orElseGet(() -> {
