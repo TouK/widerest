@@ -2,9 +2,8 @@ package pl.touk.widerest.cloudinary;
 
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.Builder;
 
 import java.util.Arrays;
@@ -13,8 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @ApiModel
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
