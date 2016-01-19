@@ -12,11 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import pl.touk.widerest.api.settings.SettingsConsumer;
 import pl.touk.widerest.api.settings.SettingsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
-
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -31,7 +27,6 @@ public class PictureUploadController implements SettingsConsumer {
 
     @Resource
     private SettingsService service;
-
 
     private Cloudinary cloudinary = new Cloudinary();
 
@@ -70,7 +65,6 @@ public class PictureUploadController implements SettingsConsumer {
                     .signature(signature)
                     .build();
         }
-
         throw new PictureUploadAuthorizationException("Authorization failed");
     }
 

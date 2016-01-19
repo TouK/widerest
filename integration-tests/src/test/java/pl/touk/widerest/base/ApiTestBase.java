@@ -139,6 +139,7 @@ public abstract class ApiTestBase {
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
 
+
     public static final String PICTURE_UPLOAD_TOKEN_URL = API_BASE_URL + "/pictureUpload/requestToken";
 
 
