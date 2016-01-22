@@ -12,6 +12,7 @@ import java.util.Optional;
 
 class ChannelInterceptor implements WebRequestInterceptor {
 
+
     @Override
     public void preHandle(WebRequest request) throws Exception {
         Optional.ofNullable(SecurityContextHolder.getContext())
@@ -22,7 +23,7 @@ class ChannelInterceptor implements WebRequestInterceptor {
                 .map(oAuth2Request -> oAuth2Request.getClientId())
                 .map(clientId -> StringUtils.substringAfter(clientId, "."))
                 .ifPresent(RequestUtils::setRequestChannel);
-        ;
+
     }
 
     @Override
