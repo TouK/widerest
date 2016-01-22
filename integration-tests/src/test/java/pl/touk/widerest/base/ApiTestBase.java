@@ -139,6 +139,8 @@ public abstract class ApiTestBase {
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
 
+    public static final String GET_DEFAULT_CURRENCY_URL = API_BASE_URL + "/currency";
+    public static final String SET_DEFAULT_CURRENCY_URL = GET_DEFAULT_CURRENCY_URL + "/set";
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
