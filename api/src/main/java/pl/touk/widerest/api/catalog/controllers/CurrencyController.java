@@ -16,6 +16,7 @@ import pl.touk.widerest.api.catalog.exceptions.CurrencyNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
+import java.util.Optional;
 
 @Controller
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/currency")
@@ -45,18 +46,18 @@ public class CurrencyController {
             response = BroadleafCurrency.class)
 
     public @ResponseBody BroadleafCurrency setDefault(@ApiParam @RequestBody String currency) throws CurrencyNotFoundException {
-        final BroadleafCurrency def = currencyService.findDefaultBroadleafCurrency();
-        final BroadleafCurrency toBeDef = currencyService.findCurrencyByCode(currency.toUpperCase());
+        return Optional.of(currencyService.findCurrencyByCode(currency.toUpperCase()))
+                .map(newDefaultCurrency -> {
+                    final BroadleafCurrency previousDefault = currencyService.findDefaultBroadleafCurrency();
 
-        if(toBeDef != null) {
-            def.setDefaultFlag(false);
-            toBeDef.setDefaultFlag(true);
+                    previousDefault.setDefaultFlag(false);
+                    newDefaultCurrency.setDefaultFlag(true);
 
-            currencyService.save(def);
-            currencyService.save(toBeDef);
-            return currencyService.findDefaultBroadleafCurrency();
-        } else {
-            throw new CurrencyNotFoundException("Could not find desired currency in database");
-        }
+                    currencyService.save(previousDefault);
+                    currencyService.save(newDefaultCurrency);
+
+                    return newDefaultCurrency;
+                })
+                .orElseThrow(() -> new CurrencyNotFoundException("Could not find currency in database"));
     }
 }
