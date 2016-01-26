@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.Application;
@@ -65,7 +66,7 @@ public class CatalogTest extends ApiTestBase {
     public void exemplaryCatalogFlow1Test() {
 
         long currentGlobalProductCount = getRemoteTotalProductsCount();
-        long currentGlobalCategoriesCount = getRemoteTotalCategoriesCount();
+        long currentGlobalCategoriesCount = getLocalTotalCategoriesCount();
 
         //add test category
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
@@ -78,7 +79,7 @@ public class CatalogTest extends ApiTestBase {
 
         long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
-        long currentProductsInCategoryRemoteCount = getRemoteTotalProductsInCategoryCount(testCategoryId);
+        long currentProductsInCategoryRemoteCount = getLocalTotalProductsInCategoryCount(testCategoryId);
         assertThat(currentProductsInCategoryRemoteCount, equalTo(0L));
 
         //add test product with default sku into category
@@ -95,6 +96,7 @@ public class CatalogTest extends ApiTestBase {
         long testProductId1 = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
 
 
+        em.clear();
         assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
 
@@ -135,8 +137,9 @@ public class CatalogTest extends ApiTestBase {
         oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId1, serverPort);
         oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId2, serverPort);
 
+        em.clear();
         assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount));
 
         //assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
@@ -144,7 +147,8 @@ public class CatalogTest extends ApiTestBase {
 
         oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
-        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
+        em.clear();
+        assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
     }
 
 
@@ -160,7 +164,7 @@ public class CatalogTest extends ApiTestBase {
         // create N new Categories
         final long TEST_CATEGORIES_COUNT = 3;
 
-        long currentTotalCategoriesCount = getRemoteTotalCategoriesCount();
+        long currentTotalCategoriesCount = getLocalTotalCategoriesCount();
 
         List<Long> newCategoriesIds = new ArrayList<>();
 
@@ -174,7 +178,7 @@ public class CatalogTest extends ApiTestBase {
             newCategoriesIds.add(getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString()));
         }
 
-        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + TEST_CATEGORIES_COUNT));
+        assertThat(getLocalTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + TEST_CATEGORIES_COUNT));
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
             assertThat(getLocalTotalProductsInCategoryCount(newCategoriesIds.get(i)), equalTo(0L));
@@ -220,10 +224,10 @@ public class CatalogTest extends ApiTestBase {
     }
 
     @Test
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deletingProductRemovesAllSkusAndCategoriesReferencesTest() {
         long currentGlobalProductCount = getRemoteTotalProductsCount();
-        long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
+        long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
 
         //add test category
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
@@ -233,7 +237,7 @@ public class CatalogTest extends ApiTestBase {
                 categoryDto, null, serverPort);
 
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
+        assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
         long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
@@ -251,7 +255,7 @@ public class CatalogTest extends ApiTestBase {
 
         long testProductId = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
 
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId, serverPort, testProductId);
@@ -261,8 +265,9 @@ public class CatalogTest extends ApiTestBase {
             oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL, null, null, serverPort, testCategoryId, serverPort, testProductId);
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
+            em.clear();
             assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
-            assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         }
 
         // create N skus
@@ -298,10 +303,11 @@ public class CatalogTest extends ApiTestBase {
         ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
 
+        em.clear();
         assertNotNull(receivedCategoryEntity);
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
     }
 
     @Test
@@ -310,12 +316,12 @@ public class CatalogTest extends ApiTestBase {
 
         CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
-        long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
+        long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
 
         ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
 
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(getRemoteTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
+        assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
         long testCategoryId = getIdFromLocationUrl(newCategoryEntity.getHeaders().getLocation().toString());
 
@@ -354,7 +360,7 @@ public class CatalogTest extends ApiTestBase {
     public void modifyingfExistingCategoryDoesNotBreakReferencesToAndFromProductsTest() {
         CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
-        long currentGlobalCategoryCount = getRemoteTotalCategoriesCount();
+        long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
 
         ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
 
@@ -372,7 +378,7 @@ public class CatalogTest extends ApiTestBase {
 
         long testProductId1 = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId1), equalTo(1L));
 
         testCategory.setDescription("ModifiedTestCategoryDescription2");
@@ -388,7 +394,7 @@ public class CatalogTest extends ApiTestBase {
 
         oAuth2AdminRestTemplate().put(CATEGORY_BY_ID_URL, testCategory, serverPort, testCategoryId);
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId1), equalTo(1L));
     }
 
@@ -419,8 +425,8 @@ public class CatalogTest extends ApiTestBase {
             newProductsIds.add(getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString()));
         }
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId2), equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(0L));
 
         // first product references to the first category + should throw exception trying to "add" this product twice
         //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(0));
@@ -432,13 +438,13 @@ public class CatalogTest extends ApiTestBase {
             oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
-            assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
+            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
         }
 
         // second product references to first category
         //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(1));
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
 
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(0)), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(1L));
@@ -453,8 +459,8 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(2L));
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(3L));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId2), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(3L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(1L));
 
         // remove reference to second product from first category + "remove non existing reference check"
         oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
@@ -463,7 +469,7 @@ public class CatalogTest extends ApiTestBase {
             oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
-            assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
+            assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
         }
 
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(2L));
@@ -482,8 +488,8 @@ public class CatalogTest extends ApiTestBase {
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(1));
 
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
 
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(0)), equalTo(1L));
        // assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(1L));
@@ -493,8 +499,8 @@ public class CatalogTest extends ApiTestBase {
 //        oAuth2AdminRestTemplate().delete(PRODUCTS_IN_CATEGORY_BY_ID_URL, serverPort, testCategoryId1, newProductsIds.get(2));
         oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(2));
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
 
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(1L));
     }

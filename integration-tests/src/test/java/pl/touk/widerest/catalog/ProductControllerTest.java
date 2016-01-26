@@ -489,6 +489,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
+    @Transactional
     public void addingComplexProductSavesAllValuesProperly() {
 
         CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
@@ -548,7 +549,7 @@ public class ProductControllerTest extends ApiTestBase {
         long idFromLocationUrl = getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
 
 
         ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);

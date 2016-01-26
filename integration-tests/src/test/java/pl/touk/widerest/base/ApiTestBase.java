@@ -65,6 +65,8 @@ import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.Resource;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -91,6 +93,7 @@ public abstract class ApiTestBase {
 
     /* Categories */
     public static final String CATEGORIES_URL = API_BASE_URL + "/categories";
+    public static final String CATEGORIES_FLAT_URL = API_BASE_URL + "/categories?flat=true";
     public static final String CATEGORY_BY_ID_URL = CATEGORIES_URL + "/{categoryId}";
     public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
     public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
@@ -139,6 +142,8 @@ public abstract class ApiTestBase {
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
 
+    @PersistenceContext(unitName="blPU")
+    protected EntityManager em;
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
@@ -264,14 +269,14 @@ public abstract class ApiTestBase {
     }
 
     /* ---------------- TEST HELPER/COMMON METHODS ---------------- */
-    public long getRemoteTotalCategoriesCount() {
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
+//    public long getRemoteTotalCategoriesCount() {
+//        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
+//                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
+//
+//        assertNotNull(remoteCountEntity);
+//
+//        return remoteCountEntity.getBody();
+//    }
 
     public long getLocalTotalCategoriesCount() {
         return catalogService.findAllCategories().stream()
@@ -279,15 +284,15 @@ public abstract class ApiTestBase {
                 .count();
     }
 
-    protected long getRemoteTotalProductsInCategoryCount(long categoryId) {
-
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, categoryId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
+//    protected long getRemoteTotalProductsInCategoryCount(long categoryId) {
+//
+//        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
+//                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, categoryId);
+//
+//        assertNotNull(remoteCountEntity);
+//
+//        return remoteCountEntity.getBody();
+//    }
 
     protected long getLocalTotalProductsInCategoryCount(long categoryId) {
         return catalogService.findCategoryById(categoryId).getAllProductXrefs().stream()

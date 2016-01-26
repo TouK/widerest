@@ -671,7 +671,7 @@ public class ProductController {
                 .getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
                 .filter(CatalogUtils::archivedCategoryFilter)
-                .map(DtoConverters.categoryEntityToDto)
+                .map(DtoConverters::categoryEntityToDto)
                 .collect(Collectors.toList());
     }
 
