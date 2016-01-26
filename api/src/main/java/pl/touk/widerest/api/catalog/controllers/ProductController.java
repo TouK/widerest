@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.common.service.GenericEntityService;
+import org.broadleafcommerce.common.util.BLCSystemProperty;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
@@ -17,6 +18,7 @@ import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.rating.service.RatingService;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
+import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.http.HttpHeaders;
@@ -46,11 +48,7 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -74,10 +72,10 @@ public class ProductController {
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
-    /* Searching related services */
     @Resource(name = "blSearchService")
     protected SearchService searchService;
 
+    /* (mst) For filtering input search query */
     @Resource(name = "blExploitProtectionService")
     protected ExploitProtectionService exploitProtectionService;
 
@@ -124,8 +122,20 @@ public class ProductController {
             }
 
             final SearchCriteria searchCriteria = new SearchCriteria();
-            searchCriteria.setPage(page);
-            searchCriteria.setPageSize(pageSize);
+            searchCriteria.setPage((page <= 0) ? 1 : page);
+
+            final int maxAllowedPageSize = BLCSystemProperty.resolveIntSystemProperty("web.maxPageSize");
+            final int defaultPageSize = BLCSystemProperty.resolveIntSystemProperty("web.defaultPageSize");
+            searchCriteria.setPageSize((pageSize <= 0) ? defaultPageSize : Math.min(pageSize, maxAllowedPageSize));
+
+            final Map<String, String[]> searchFilterCriteria = new HashMap<>();
+            /* (nst)
+                 'defaultSku.name' -> 'name'
+             */
+            final String[] nameFilters = { };
+            searchFilterCriteria.put("name", nameFilters);
+
+            searchCriteria.setFilterCriteria(searchFilterCriteria);
 
             try {
                 final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
