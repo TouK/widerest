@@ -95,5 +95,15 @@
             <version>2.4</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.javaslang</groupId>
+            <artifactId>javaslang</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jason-goodwin</groupId>
+            <artifactId>better-monads</artifactId>
+        </dependency>
+
     </dependencies>
 </project>
