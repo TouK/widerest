@@ -4,6 +4,7 @@ package pl.touk.widerest.api.cart.controllers;
 import static com.jasongoodwin.monads.Try.ofFailable;
 import static java.lang.Long.parseLong;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
 import static pl.touk.widerest.api.DtoConverters.customerEntityToDto;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -170,21 +172,16 @@ public class CustomerController {
 
         ofNullable(customerUserDetails.getId())
                 .map(customerService::readCustomerById)
-                .map(Customer::isRegistered)
-                .map(e -> e ? null: e)
+                .filter(c -> !c.isRegistered())
                 .orElseThrow(() -> new ResourceNotFoundException("User already registered"));
 
         Optional.of(username)
-                .map(customerService::readCustomerByUsername)
-                .ifPresent(e -> {
-                    throw new ResourceNotFoundException("Username already taken, please try with other");
-                });
+                .filter(customerName -> isNull(customerService.readCustomerByUsername(customerName)))
+                .orElseThrow(() -> new ResourceNotFoundException("Username already taken, please try with other"));
 
         Optional.of(email)
-                .map(customerService::readCustomerByEmail)
-                .ifPresent(e -> {
-                    throw new ResourceNotFoundException("Email address already taken, please try with other");
-                });
+                .filter(e -> isNull(customerService.readCustomerByEmail(e)))
+                .orElseThrow(() -> new ResourceNotFoundException("Email address already taken, please try with other"));
 
         Customer customer = customerService.readCustomerById(customerUserDetails.getId());
         customer.setUsername(username);
@@ -214,10 +211,11 @@ public class CustomerController {
                 .orElse(ofFailable(() -> parseLong(customerId)).orElse(null));
     }
 
-    private static Function<Customer, Customer> toCustomerWithEmail(final String email) {
+    private static UnaryOperator<Customer> toCustomerWithEmail(final String email) {
         return customer -> {
             customer.setEmailAddress(email);
-            return customer; };
+            return customer;
+        };
     }
 
     private String generateCode(Customer customer) throws AuthenticationException {
