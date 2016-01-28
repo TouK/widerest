@@ -72,7 +72,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes;
 
 @RestController
 @RequestMapping(ResourceServerConfig.API_PATH + "/orders")
@@ -211,7 +213,6 @@ public class OrderController {
             /* Order is empty - there should not be any PricingException situations */
             e.printStackTrace();
         }
-
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
