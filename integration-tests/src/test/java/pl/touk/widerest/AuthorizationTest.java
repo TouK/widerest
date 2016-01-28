@@ -1,12 +1,11 @@
 package pl.touk.widerest;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -56,14 +55,13 @@ public class AuthorizationTest extends ApiTestBase {
         thenAuthorized();
     }
 
-    @Ignore
     @Test
-    public void shouldsAuthorizeRegisteredCustomer() throws IOException {
+    public void shouldAuthorizeMergingCarts() throws IOException {
         // given
         whenAuthorizationRequestedFor(Scope.CUSTOMER);
 
         final String anonymousUserToken = oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken().getValue();
-        Integer orderId = createNewOrder(anonymousUserToken);
+        createNewOrder(anonymousUserToken);
 
         cookieStore.clear();
 
@@ -78,12 +76,15 @@ public class AuthorizationTest extends ApiTestBase {
         whenLoggedIn("site", username, password);
         whenAuthorizationRequestedFor(Scope.CUSTOMER_REGISTERED);
 
-        oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
+        final String userToken = oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken().getValue();
+        createNewOrder(userToken);
 
-        //then
+        oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
         final String response =  oAuth2RestTemplate.getForObject(ORDERS_COUNT, String.class, serverPort);
 
-        assertTrue(response.contains(String.valueOf(1)));
+        //then
+
+        assertThat(response).isEqualTo("1");
     }
 
     @Test

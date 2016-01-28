@@ -454,10 +454,10 @@ public class OrderController {
             value = "Count all orders",
             notes = "Get a number of all active orders",
             response = Integer.class)
-    public ResponseEntity<Integer> getOrdersCount(
+    public ResponseEntity<String> getOrdersCount(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
-        final int ordersCount = (int) orderServiceProxy.getOrdersByCustomer(userDetails).stream().count();
+        final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
         return new ResponseEntity<>(ordersCount, HttpStatus.OK);
     }
 
