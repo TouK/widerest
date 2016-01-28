@@ -1,17 +1,18 @@
 package pl.touk.widerest;
 
-import java.io.IOException;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import lombok.extern.slf4j.Slf4j;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertTrue;
 
 @SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -59,6 +60,7 @@ public class AuthorizationTest extends ApiTestBase {
         whenAuthorizationRequestedFor(Scope.CUSTOMER);
 
         final String anonymousUserToken = oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken().getValue();
+        Integer orderId = createNewOrder(anonymousUserToken);
 
         cookieStore.clear();
 
@@ -75,7 +77,10 @@ public class AuthorizationTest extends ApiTestBase {
 
         oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
 
-        // then
+        //then
+        final Integer orderCount = oAuth2RestTemplate.getForObject(ORDERS_COUNT, Integer.class, serverPort);
+
+        assertTrue(orderCount.equals(1));
     }
 
     @Test

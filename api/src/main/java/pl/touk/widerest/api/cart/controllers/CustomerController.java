@@ -1,23 +1,13 @@
 package pl.touk.widerest.api.cart.controllers;
 
 
-import static com.jasongoodwin.monads.Try.ofFailable;
-import static java.lang.Long.parseLong;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.isNull;
-import static java.util.Optional.ofNullable;
-import static org.springframework.security.core.context.SecurityContextHolder.getContext;
-import static pl.touk.widerest.api.DtoConverters.customerEntityToDto;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
+import com.google.common.collect.ImmutableMap;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import javaslang.control.Match;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
@@ -43,15 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.google.common.collect.ImmutableMap;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import javaslang.control.Match;
 import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
@@ -61,6 +42,22 @@ import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.annotations.ApiIgnore;
+
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+
+import static com.jasongoodwin.monads.Try.ofFailable;
+import static java.lang.Long.parseLong;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
+import static java.util.Optional.ofNullable;
+import static org.springframework.security.core.context.SecurityContextHolder.getContext;
+import static pl.touk.widerest.api.DtoConverters.customerEntityToDto;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/customers")
