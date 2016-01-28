@@ -28,7 +28,7 @@ public class PictureUploadController implements SettingsConsumer {
     @Resource
     private SettingsService service;
 
-    private Cloudinary cloudinary = new Cloudinary();
+    private final Cloudinary cloudinary = new Cloudinary();
 
     @ApiOperation(value = "Get token", response = PictureUploadToken.class)
     @RequestMapping(value = "requestToken", method = RequestMethod.GET)

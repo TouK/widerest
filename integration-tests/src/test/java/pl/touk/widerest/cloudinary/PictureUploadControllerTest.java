@@ -36,9 +36,11 @@ public class PictureUploadControllerTest extends ApiTestBase {
         final String SECRET = "cloudinarySecret";
         final String SECRET_VALUE = "secret";
 
+        //when
         oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, KEY_VALUE, serverPort, KEY);
         oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, SECRET_VALUE, serverPort, SECRET);
 
+        //then
         final ResponseEntity<PictureUploadToken> recivedTokenEntity = oAuth2RestTemplate.getForEntity(PICTURE_UPLOAD_TOKEN_URL, PictureUploadToken.class, serverPort);
         final PictureUploadToken token = recivedTokenEntity.getBody();
 

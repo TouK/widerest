@@ -266,6 +266,11 @@
                 <artifactId>evo-inflector</artifactId>
                 <version>1.2.1</version>
             </dependency>
+            <dependency>
+                <groupId>com.cloudinary</groupId>
+                <artifactId>cloudinary-http44</artifactId>
+                <version>1.2.2</version>
+            </dependency>
 
 
         </dependencies>
