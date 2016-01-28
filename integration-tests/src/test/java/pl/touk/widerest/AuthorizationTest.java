@@ -78,9 +78,9 @@ public class AuthorizationTest extends ApiTestBase {
         oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
 
         //then
-        final Integer orderCount = oAuth2RestTemplate.getForObject(ORDERS_COUNT, Integer.class, serverPort);
+        final String response =  oAuth2RestTemplate.getForObject(ORDERS_COUNT, String.class, serverPort);
 
-        assertTrue(orderCount.equals(1));
+        assertTrue(response.contains(String.valueOf(1)));
     }
 
     @Test
