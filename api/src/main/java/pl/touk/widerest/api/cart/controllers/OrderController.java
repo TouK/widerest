@@ -1,10 +1,16 @@
 package pl.touk.widerest.api.cart.controllers;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.StringUtils;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
@@ -13,6 +19,7 @@ import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
+import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -49,9 +56,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import javaslang.control.Match;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
-import pl.touk.widerest.api.cart.dto.*;
+import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
+import pl.touk.widerest.api.cart.dto.FulfillmentDto;
+import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.dto.OrderItemDto;
+import pl.touk.widerest.api.cart.dto.OrderItemOptionDto;
+import pl.touk.widerest.api.cart.dto.PaymentDto;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
@@ -62,19 +82,6 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
-
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toMap;
-import static org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes;
 
 @RestController
 @RequestMapping(ResourceServerConfig.API_PATH + "/orders")
@@ -139,12 +146,10 @@ public class OrderController {
             @ApiParam(value = "Status to be used to filter orders")
             @RequestParam(value = "status", required = false) String status) {
 
-        return Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
-                .orElse(Collections.<Order>emptyList())
-                .stream()
+        return orderServiceProxy.getOrdersByCustomer(userDetails).stream()
                 .map(DtoConverters.orderEntityToDto)
                 .filter(x -> status == null || x.getStatus().equals(status))
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /* GET /orders/{orderId} */
@@ -183,12 +188,12 @@ public class OrderController {
     public ResponseEntity<?> createNewOrder(
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
 
-        Customer currentCustomer = Optional.ofNullable(customerUserDetails)
+        final Customer currentCustomer = Optional.ofNullable(customerUserDetails)
                 .map(CustomerUserDetails::getId)
                 .map(customerService::readCustomerById)
                 .orElse(anonymousUserDetailsService.createAnonymousCustomer());
 
-        Order cart = orderService.createNewCartForCustomer(currentCustomer);
+        final Order cart = orderService.createNewCartForCustomer(currentCustomer);
 
         String channel = RequestUtils.getRequestChannel();
         if (StringUtils.isNotEmpty(channel)) {
@@ -418,7 +423,7 @@ public class OrderController {
 
         return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
                 .map(DtoConverters.discreteOrderItemEntityToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
 
     }
 
@@ -452,10 +457,7 @@ public class OrderController {
     public ResponseEntity<Integer> getOrdersCount(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
-        final int ordersCount = Optional.ofNullable(orderServiceProxy.getOrdersByCustomer(userDetails))
-                .orElseThrow(ResourceNotFoundException::new)
-                .size();
-
+        final int ordersCount = (int) orderServiceProxy.getOrdersByCustomer(userDetails).stream().count();
         return new ResponseEntity<>(ordersCount, HttpStatus.OK);
     }
 
@@ -642,7 +644,7 @@ public class OrderController {
             @ApiParam(value = "Description of a fulfillment address", required = true)
             @RequestBody AddressDto addressDto) throws PricingException {
 
-        Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+        final Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
@@ -724,8 +726,7 @@ public class OrderController {
                 orderToPaymentRequestDTOService.translateOrder(order)
                         .additionalField("SUCCESS_URL", paymentDto.getSuccessUrl())
                         .additionalField("CANCEL_URL", paymentDto.getCancelUrl())
-                        .additionalField("FAILURE_URL", paymentDto.getFailureUrl())
-                ;
+                        .additionalField("FAILURE_URL", paymentDto.getFailureUrl());
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
@@ -743,24 +744,23 @@ public class OrderController {
         return ResponseEntity.created(URI.create(redirectURI)).build();
     }
 
-    private PaymentRequestDTO populateLineItemsAndSubscriptions(Order order, PaymentRequestDTO paymentRequest) {
+    private PaymentRequestDTO populateLineItemsAndSubscriptions(final Order order, PaymentRequestDTO
+            paymentRequest) {
         for (OrderItem item : order.getOrderItems()) {
-            String name = null;
 
             /* (mst) Previously, there was SKU's Description used here to set item's name
                     but because it is not required in our implementation, I chose to use SKU's Name instead */
 
-            if (item instanceof BundleOrderItem) {
-                name = ((BundleOrderItem) item).getSku().getName();
-            } else if (item instanceof DiscreteOrderItem) {
-                name = ((DiscreteOrderItem) item).getSku().getName();
-            } else {
-                name = item.getName();
-            }
+            final String name = Match.of(item)
+                    .whenType(BundleOrderItem.class).then(it -> it.getSku().getName())
+                    .whenType(DiscreteOrderItem.class).then(it -> it.getSku().getName())
+                    .otherwise(OrderItem::getName).get();
 
-            String category = item.getCategory() == null ? null : item.getCategory().getName();
-            paymentRequest = paymentRequest
-                    .lineItem()
+            final String category = Optional.ofNullable(item.getCategory())
+                    .map(Category::getName)
+                    .orElse(null);
+
+            paymentRequest = paymentRequest.lineItem()
                     .name(name)
                     .amount(String.valueOf(item.getAveragePrice()))
                     .category(category)
@@ -774,10 +774,7 @@ public class OrderController {
     }
 
 
-
     private static boolean notYetSubmitted(Order order) {
         return !order.getStatus().equals(OrderStatus.SUBMITTED);
     }
-
-
 }
