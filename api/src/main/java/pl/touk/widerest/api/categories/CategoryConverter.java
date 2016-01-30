@@ -12,6 +12,7 @@ import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
+import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 
 import java.util.Collection;
@@ -40,7 +41,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                         .orElse(null))
                 .attributes(entity.getCategoryAttributesMap().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-//                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
+                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
                 .build();
 
 
