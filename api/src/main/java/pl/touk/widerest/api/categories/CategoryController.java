@@ -47,7 +47,7 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaTypes.HAL_JSON_VALUE, MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaTypes.HAL_JSON_VALUE})
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 

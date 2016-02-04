@@ -152,6 +152,7 @@ public abstract class ApiTestBase {
     protected String serverPort;
 
     protected RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+    protected RestTemplate restTemplateForHalJsonHandling = new RestTemplate(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
 
     protected BasicCookieStore cookieStore = new BasicCookieStore();
     protected CloseableHttpClient authorizationServerClient = HttpClients.custom().setDefaultCookieStore(cookieStore).disableRedirectHandling().build();
