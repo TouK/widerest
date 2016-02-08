@@ -13,6 +13,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -58,6 +60,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.jasongoodwin.monads.Try;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -88,6 +92,8 @@ import springfox.documentation.annotations.ApiIgnore;
 @RequestMapping(ResourceServerConfig.API_PATH + "/orders")
 @Api(value = "orders", description = "Order management endpoint")
 public class OrderController {
+
+    private static final Log LOG = LogFactory.getLog(OrderController.class);
 
     @Resource(name = "blOrderService")
     protected OrderService orderService;
@@ -213,12 +219,8 @@ public class OrderController {
                 .buildAndExpand(cart.getId())
                 .toUri());
 
-        try {
-            orderService.save(cart, true);
-        } catch (PricingException e) {
-            /* Order is empty - there should not be any PricingException situations */
-            e.printStackTrace();
-        }
+        Try.ofFailable(() -> orderService.save(cart, true)).onFailure(LOG::error);
+
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
