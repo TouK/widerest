@@ -1,8 +1,19 @@
 package pl.touk.widerest.api.categories;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+import static pl.touk.widerest.api.catalog.CatalogUtils.valueExtractor;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
-import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryXref;
@@ -11,21 +22,10 @@ import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Component
 public class CategoryConverter implements Converter<Category, CategoryDto> {
@@ -112,26 +112,17 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         }
 
         categoryEntity.getCategoryAttributesMap().clear();
+
         Optional.ofNullable(categoryDto.getAttributes())
-                .map(Map::entrySet)
-                .map(Collection::stream)
-                .map(stream -> stream.collect(toMap(
-                        Map.Entry::getKey,
-                        attributeEntry -> {
-                            CategoryAttribute categoryAttribute = new CategoryAttributeImpl();
-                            categoryAttribute.setName(attributeEntry.getKey());
-                            categoryAttribute.setValue(attributeEntry.getValue());
-                            categoryAttribute.setCategory(categoryEntity);
-                            return categoryAttribute;
-                        }
-                )))
-                .ifPresent(attributesMap -> categoryEntity.getCategoryAttributesMap().putAll(attributesMap));
+                .map(Map::entrySet).orElse(Collections.emptySet()).stream()
+                .map(e -> Pair.of(e.getKey(), valueExtractor(categoryEntity).apply(e)))
+                .forEach(o -> categoryEntity.getCategoryAttributesMap().put(o.getKey(), o.getValue()));
 
         categoryEntity.getCategoryMediaXref().clear();
-        Optional.ofNullable(categoryDto.getMedia())
-                .map(Map::entrySet)
-                .map(Collection::stream)
-                .map(stream -> stream.collect(toMap(
+
+        final Map<String, CategoryMediaXrefImpl> mediaXrefs = Optional.ofNullable(categoryDto.getMedia())
+                .map(Map::entrySet).orElse(Collections.emptySet()).stream()
+                .collect(toMap(
                         Map.Entry::getKey,
                         mediaDtoEntry -> {
                             CategoryMediaXrefImpl categoryMediaXref = new CategoryMediaXrefImpl();
@@ -140,8 +131,9 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                             CatalogUtils.updateMediaEntityFromDto(categoryMediaXref, mediaDtoEntry.getValue());
                             return categoryMediaXref;
                         }
-                )))
-                .ifPresent(media -> categoryEntity.getCategoryMediaXref().putAll(media));
+                ));
+
+        categoryEntity.getCategoryMediaXref().putAll(mediaXrefs);
 
         return categoryEntity;
     }

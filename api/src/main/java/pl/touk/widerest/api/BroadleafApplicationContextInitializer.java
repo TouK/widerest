@@ -1,5 +1,10 @@
 package pl.touk.widerest.api;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.logging.Log;
@@ -19,11 +24,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.StringUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BroadleafApplicationContextInitializer implements ApplicationContextInitializer<GenericApplicationContext> {
 
@@ -61,16 +61,17 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         String patchLocation = getPatchLocation();
         String[] patchLocations = StringUtils.tokenizeToStringArray(patchLocation, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
         List<ResourceInputStream> patchList = new ArrayList<ResourceInputStream>();
-        for (int i = 0; i < patchLocations.length; i++) {
+        for (String patchLocation1 : patchLocations) {
             ResourceInputStream patch;
-            if (patchLocations[i].startsWith("classpath")) {
-                InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(patchLocations[i].substring("classpath*:".length(), patchLocations[i].length()));
-                patch = new ResourceInputStream(is, patchLocations[i]);
+            if (patchLocation1.startsWith("classpath")) {
+                InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
+                        patchLocation1.substring("classpath*:".length(), patchLocation1.length()));
+                patch = new ResourceInputStream(is, patchLocation1);
             } else {
                 throw new NotImplementedException("Only classpath resources merge implemented");
             }
-            if (patch == null || patch.available() <= 0) {
-                patchList.addAll(getResourcesFromPatternResolver(patchLocations[i]));
+            if (patch.available() <= 0) {
+                patchList.addAll(getResourcesFromPatternResolver(patchLocation1));
             } else {
                 patchList.add(patch);
             }
@@ -101,7 +102,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
 
         for (Resource resource : resources) {
             resolverPatch = new ResourceInputStream(resource.getInputStream(), patchLocation);
-            if (resolverPatch == null || resolverPatch.available() <= 0) {
+            if (resolverPatch.available() <= 0) {
                 throw new IOException("Unable to open an input stream on specified application context resource: " + patchLocation);
             }
             resolverList.add(resolverPatch);

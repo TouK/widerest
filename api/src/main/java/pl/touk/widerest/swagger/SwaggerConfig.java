@@ -1,5 +1,6 @@
 package pl.touk.widerest.swagger;
 
+import static java.util.Collections.singletonList;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 import java.util.Arrays;
@@ -61,7 +62,7 @@ public class SwaggerConfig {
 
     private SecurityContext apiSecurityContext() {
         return SecurityContext.builder()
-                .securityReferences(Arrays.asList(new SecurityReference(API_REFERENCE, new AuthorizationScope[0])))
+                .securityReferences(singletonList(new SecurityReference(API_REFERENCE, new AuthorizationScope[0])))
                 .forPaths(PathSelectors.regex("/.*"))
                 .build();
     }

@@ -1,15 +1,37 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.common.service.GenericEntityService;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductBundle;
+import org.broadleafcommerce.core.catalog.domain.ProductBundleImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductOption;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
+import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXrefImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
@@ -31,6 +53,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
@@ -45,17 +73,6 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.api.categories.CategoryConverter;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
-
-import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 
 @RestController
@@ -1165,7 +1182,7 @@ public class ProductController {
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .orElseThrow(() -> new ResourceNotFoundException(format("Product with ID: %d does not exist", productId)))
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findFirst()
@@ -1289,7 +1306,7 @@ public class ProductController {
          */
 
 
-        Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
+        final Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
@@ -1341,78 +1358,6 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-
-    /* POST /{productId}/skus/{skuId}/media */
-/*
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add media to the product",
-            notes = "Adds a new media to the existing SKU",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "Specified media successfully added"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided"),
-            @ApiResponse(code = 404, message = "The specified product does not exist"),
-            @ApiResponse(code = 409, message = "Media with that key already exists")
-    })
-    public ResponseEntity<?> saveOneMediaForSku(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId,
-            @ApiParam(value = "Description of a new media")
-            @RequestBody SkuMediaDto skuMediaDto) {
-
-        List<String> allowableKeys = Arrays.asList("primary", "alt1", "alt2", "alt3", "alt4", "alt5", "alt6", "alt7", "alt8", "alt9");
-
-        if (skuMediaDto.getKey() == null || !allowableKeys.contains(skuMediaDto.getKey()) || skuMediaDto.getUrl() == null || skuMediaDto.getUrl().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-
-        Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
-
-        if (mediaSkuEntity.getSkuMediaXref().get(skuMediaDto.getKey()) != null) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
-
-        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(skuMediaDto);
-
-        newSkuMediaXref.setSku(mediaSkuEntity);
-        newSkuMediaXref.setKey(skuMediaDto.getKey());
-
-        mediaSkuEntity.getSkuMediaXref().put(skuMediaDto.getKey(), newSkuMediaXref);
-
-        // (mst) Here is the deal: if the specified SKU does not contain any medias,
-        //       BL's service will return medias associated with Default SKU instead. (from GET endpoint)
-        //
-        //       Therefore, when we add a media to a SKU, that does not contain any, all those
-        //       previously visible (eg: through GET endpoints) medias WILL "disappear".
-        //
-
-        Sku alreadySavedSku = catalogService.saveSku(mediaSkuEntity);
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/products/{productId}/skus/{skuId}/media/{mediaId}")
-                .buildAndExpand(
-                        productId,
-                        skuId,
-                        alreadySavedSku.getSkuMediaXref().get(newSkuMediaXref.getKey()).getMedia().getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
-    }
-*/
-
     /* PUT /{productId}/skus/{skuId}/media/{key} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
@@ -1460,53 +1405,6 @@ public class ProductController {
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
-
-    /* PATCH /products/{productId}/skus/{skuId}/media/{mediaId} */
-/*
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PATCH)
-    @ApiOperation(
-            value = "Partially update an existing media",
-            notes = "Partially updates an existing media with new details. It does not follow the format specified in RFC yet though",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful update of the specified media"),
-            @ApiResponse(code = 404, message = "The specified product or SKU does not exist")
-    })
-    public ResponseEntity<?> partialUpdateOneMediaForSkuById(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId,
-            @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "mediaId") Long mediaId,
-            @ApiParam(value = "(Partial) Description of an updated media")
-            @RequestBody SkuMediaDto skuMediaDto) {
-
-        Sku skuMediaEntity = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
-
-        // (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available!
-
-        SkuMediaXref skuMediaXref = skuMediaEntity.getSkuMediaXref().entrySet().stream()
-                .filter(x -> x.getValue().getMedia().getId().longValue() == mediaId)
-                .map(Map.Entry::getValue)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId));
-
-        CatalogUtils.partialUpdateMediaEntityFromDto(skuMediaXref.getMedia(), skuMediaDto);
-
-        catalogService.saveSku(skuMediaEntity);
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-*/
 
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 

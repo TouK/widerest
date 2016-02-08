@@ -12,6 +12,9 @@ import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class CartUtils {
 
     public static Optional<FulfillmentOption> getFulfilmentOption(Order order) {

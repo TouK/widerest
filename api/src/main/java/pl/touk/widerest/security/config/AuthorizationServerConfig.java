@@ -52,15 +52,13 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-        endpoints
-                .addInterceptor(anonymousUserInterceptor)
+        endpoints.addInterceptor(anonymousUserInterceptor)
                 .tokenStore(tokenStore)
                 .tokenEnhancer(tokenEnhancer)
                 .authenticationManager(authenticationManager)
                 .requestFactory(new ScopedOAuth2RequestFactory(implicitClientDetailsService))
                 .requestValidator(oAuth2RequestValidator)
-                .authorizationCodeServices(authorizationCodeServices())
-        ;
+                .authorizationCodeServices(authorizationCodeServices());
     }
 
     @Override

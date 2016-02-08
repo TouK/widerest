@@ -1,5 +1,12 @@
 package pl.touk.widerest.security.authentication;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerRole;
@@ -11,10 +18,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class AnonymousUserDetailsService  {
@@ -33,9 +36,7 @@ public class AnonymousUserDetailsService  {
     }
 
     public UserDetails createAnonymousUserDetails() throws DataAccessException {
-        Customer customer = createAnonymousCustomer();
-        UserDetails anonymous = createCustomerUserDetails(customer);
-        return anonymous;
+        return createCustomerUserDetails(createAnonymousCustomer());
     }
 
     public UserDetails createCustomerUserDetails(Customer customer) {
@@ -46,21 +47,18 @@ public class AnonymousUserDetailsService  {
     }
 
     protected List<GrantedAuthority> createGrantedAuthorities(List<CustomerRole> customerRoles) {
-        boolean roleUserFound = false;
+        return customerRoles.stream()
+                .flatMap(r -> {
+                    final Stream.Builder<SimpleGrantedAuthority> builder = Stream.<SimpleGrantedAuthority>builder().add(new
+                            SimpleGrantedAuthority(r.getRoleName()));
 
-        List<GrantedAuthority> grantedAuthorities = new ArrayList<GrantedAuthority>();
-        for (CustomerRole role : customerRoles) {
-            grantedAuthorities.add(new SimpleGrantedAuthority(role.getRoleName()));
-            if (role.getRoleName().equals("ROLE_USER")) {
-                roleUserFound = true;
-            }
-        }
+                    if (r.getRoleName().equals("ROLE_USER")) {
+                        builder.add(new SimpleGrantedAuthority("ROLE_USER"));
+                    }
 
-        if (!roleUserFound) {
-            grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        }
-
-        return grantedAuthorities;
+                    return builder.build();
+                }).distinct()
+                .collect(toList());
     }
 
 }
