@@ -8,9 +8,6 @@ import lombok.experimental.Builder;
 
 import java.util.List;
 
-/**
- * Created by mst on 17.09.15.
- */
 @Data
 @Builder
 @NoArgsConstructor

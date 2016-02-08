@@ -1,17 +1,16 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import org.broadleafcommerce.common.money.Money;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.experimental.Builder;
-import org.broadleafcommerce.common.money.Money;
 
 
-/**
- * Created by mst on 07.07.15.
- */
 @Data
 @Builder
 @ApiModel(value = "Order Payment", description = "Order Payment DTO resource description")

@@ -1,8 +1,5 @@
 package pl.touk.widerest.api.cart.exceptions;
 
-/**
- * Created by mst on 05.08.15.
- */
 public class NoShippingAddressException extends OrderValidationException {
     public NoShippingAddressException() {
     }

@@ -1,8 +1,14 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.hateoas.ResourceSupport;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -10,14 +16,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.ResourceSupport;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-/**
- * Created by mst on 07.07.15.
- */
 
 @Data
 @Builder

@@ -1,8 +1,5 @@
 package pl.touk.widerest.api.cart.exceptions;
 
-/**
- * Created by mst on 05.08.15.
- */
 public class NoFulfillmentOptionException extends OrderValidationException  {
     public NoFulfillmentOptionException() {
     }

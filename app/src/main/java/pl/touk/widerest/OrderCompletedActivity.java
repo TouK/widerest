@@ -25,9 +25,6 @@ import javax.annotation.Resource;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Created by mst on 08.10.15.
- */
 public class OrderCompletedActivity extends BaseActivity<ProcessContext<CheckoutSeed>> {
 
     @Resource

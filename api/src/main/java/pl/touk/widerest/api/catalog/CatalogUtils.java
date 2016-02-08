@@ -21,13 +21,7 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
 
-/**
- * Created by mst on 27.07.15.
- */
 public class CatalogUtils {
-
-
-
 
     public static final String EMPTY_STRING = "";
 

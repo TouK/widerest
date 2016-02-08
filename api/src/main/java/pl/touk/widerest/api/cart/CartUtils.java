@@ -8,9 +8,6 @@ import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Created by mst on 31.07.15.
- */
 public class CartUtils {
 
     public static FulfillmentOption getFulfilmentOption(Order order) {

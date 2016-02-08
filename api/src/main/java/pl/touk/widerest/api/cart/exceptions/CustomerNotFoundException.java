@@ -1,8 +1,5 @@
 package pl.touk.widerest.api.cart.exceptions;
 
-/**
- * Created by mst on 08.07.15.
- */
 public class CustomerNotFoundException extends RuntimeException {
     public CustomerNotFoundException () {
 
