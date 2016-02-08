@@ -1,5 +1,18 @@
 package pl.touk.widerest.api.cart.service;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -14,6 +27,7 @@ import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.controllers.OrderController;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
@@ -21,16 +35,6 @@ import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.UnknownFulfillmentOptionException;
-
-import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Service("wdfulfilmentService")
 public class FulfilmentServiceProxy {
@@ -51,7 +55,7 @@ public class FulfilmentServiceProxy {
         FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(cart);
 
         if (fulfillmentGroup == null) {
-            return null;
+            return null; // TODO nie lepiej pustą mapę?
         }
 
         return fulfillmentPricingService.estimateCostForFulfillmentGroup(fulfillmentGroup, findFulfillmentOptionsForProductsInOrder(cart)).getFulfillmentOptionPrices();
@@ -61,7 +65,7 @@ public class FulfilmentServiceProxy {
         Set<FulfillmentOption> fulfillmentOptions = new HashSet<>(fulfillmentOptionService.readAllFulfillmentOptions());
 
         for (DiscreteOrderItem item : cart.getDiscreteOrderItems()) {
-            fulfillmentOptions.removeAll(((DiscreteOrderItem) item).getSku().getExcludedFulfillmentOptions());
+            fulfillmentOptions.removeAll(item.getSku().getExcludedFulfillmentOptions());
         }
 
         return fulfillmentOptions;
@@ -88,16 +92,10 @@ public class FulfilmentServiceProxy {
     }
 
     @Transactional
-    public Address getFulfillmentAddress(Order order) {
-        FulfillmentGroup shippableFulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
-
-        Address fulfillmentAddress = null;
-
-        if(shippableFulfillmentGroup != null) {
-            fulfillmentAddress = shippableFulfillmentGroup.getAddress();
-        }
-
-        return fulfillmentAddress;
+    public Optional<Address> getFulfillmentAddress(Order order) {
+        return Optional.ofNullable(fulfillmentGroupService.getFirstShippableFulfillmentGroup(order))
+                .filter(Objects::nonNull)
+                .map(FulfillmentGroup::getAddress);
     }
 
     public Order updateFulfillmentAddress(Order order, Address address) throws PricingException {

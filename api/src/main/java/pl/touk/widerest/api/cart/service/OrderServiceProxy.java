@@ -4,6 +4,7 @@ import static java.lang.String.format;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Resource;
@@ -85,24 +86,19 @@ public class OrderServiceProxy {
     }
 
     @Transactional
-    public Order getProperCart(UserDetails userDetails, Long orderId) {
+    public Optional<Order> getProperCart(UserDetails userDetails, Long orderId) {
 
-        Order cart = null;
-
-        if (userDetails instanceof CustomerUserDetails) {
-            cart = getOrderForCustomerById((CustomerUserDetails) userDetails, orderId);
-        } else if (userDetails instanceof AdminUserDetails) {
-            cart = orderService.findOrderById(orderId);
-        }
-
-        return cart;
+        return Match.of(userDetails)
+                .whenType(CustomerUserDetails.class).then(d -> getOrderForCustomerById(d, orderId))
+                .whenType(AdminUserDetails.class).then(() -> orderService.findOrderById(orderId))
+                .toJavaOptional();
     }
 
     @Transactional
     public List<DiscreteOrderItem> getDiscreteOrderItemsFromProperCart(UserDetails userDetails, Long orderId) {
-        return Optional.ofNullable(getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new)
-                .getDiscreteOrderItems();
+        return getProperCart(userDetails, orderId)
+                .map(Order::getDiscreteOrderItems)
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     public Order getOrderForCustomerById(CustomerUserDetails customerUserDetails, Long orderId) throws OrderNotFoundException {
@@ -119,10 +115,10 @@ public class OrderServiceProxy {
     public AddressDto getOrderFulfilmentAddress(
            UserDetails userDetails, Long orderId) {
 
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+        final Order order = getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        return Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentAddress(order))
+        return fulfillmentServiceProxy.getFulfillmentAddress(order)
                 .map(DtoConverters.addressEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
     }
@@ -136,10 +132,10 @@ public class OrderServiceProxy {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+        final Order cart = getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+        if (cart.getDiscreteOrderItems().stream().filter(x -> Objects.equals(x.getId(), itemId)).count() != 1) {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
@@ -155,8 +151,8 @@ public class OrderServiceProxy {
     @Transactional
     public ResponseEntity<?> updateSelectedFulfillmentOption
             (UserDetails userDetails, Long orderId, Long fulfillmentOptionId) throws PricingException {
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
-            .orElseThrow(ResourceNotFoundException::new);
+
+        final Order order = getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
             throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");
