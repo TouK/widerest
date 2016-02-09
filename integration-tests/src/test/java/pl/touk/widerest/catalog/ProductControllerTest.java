@@ -54,7 +54,6 @@ public class ProductControllerTest extends ApiTestBase {
     @javax.annotation.Resource(name="blCurrencyService")
     protected BroadleafCurrencyService crrencyService;
 
-
     @Before
     public void initProductTests() {
         //serverPort = String.valueOf(8080);
@@ -62,61 +61,50 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
      /* ----------------------------- PRODUCT RELATED TESTS----------------------------- */
-
-    @Test
-    public void localAndRemoteProductCountValuesAreEqualTest() {
-
-        long remoteTotalProductCount = getRemoteTotalProductsCount();
-
-        assertThat(remoteTotalProductCount, equalTo(getLocalTotalProductsCount()));
-    }
-
     @Test
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
-        long currentProductsCount = getRemoteTotalProductsCount();
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        // when: adding a new product without a specified category
+        final long currentProductsCount = getRemoteTotalProductsCount();
 
-        //when
-        ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
+        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        final ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
+        final long productId = getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
 
-        long productId = getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
-
-        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
+        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
                 PRODUCT_BY_ID_URL,
                 HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        ProductDto receivedProductDto = receivedProductEntity.getBody();
+        final ProductDto receivedProductDto = receivedProductEntity.getBody();
 
-        //then
+        // then: all of the provided product values should have been saved/set correctly
         assertThat(receivedProductDto.getName(), equalTo(productDto.getName()));
         assertThat(receivedProductDto.getDescription(), equalTo(productDto.getDescription()));
         assertThat(receivedProductDto.getModel(), equalTo(productDto.getModel()));
         assertThat(receivedProductDto.getDefaultSku().getSalePrice().longValue(), equalTo(productDto.getDefaultSku().getSalePrice().longValue()));
         assertThat(receivedProductDto.getDefaultSku().getQuantityAvailable(), equalTo(productDto.getDefaultSku().getQuantityAvailable()));
-        /* ... */
-
     }
 
     @Ignore("considering allowing duplicate names")
     @Test
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
-        long currentProductCount = getRemoteTotalProductsCount();
-
-        ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-
-        ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
+        // when: adding the same (new) product twice
+        final long currentProductCount = getRemoteTotalProductsCount();
+        final ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        final ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        // then: API should return 4xx code and only one copy of the product should be saved
         try {
             addNewTestProduct(testProduct);
             fail();
         } catch (HttpClientErrorException httpClientException) {
-            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+            assertTrue(httpClientException.getStatusCode().is4xxClientError());
             assertThat(getRemoteTotalProductsCount(), equalTo(currentProductCount + 1));
         }
 
@@ -124,21 +112,18 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Test
     public void successfullyDeletingNewlyCreatedProductTest() {
-        long currentProductsCount = getRemoteTotalProductsCount();
-        ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-
-        ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
+        // when: adding a new product and then deleting it
+        final long currentProductsCount = getRemoteTotalProductsCount();
+        final ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+        final ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
+        final long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
 
-        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
-
-        //when
         oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString());
 
-        //then
-
+        // then: the deleted product should no longer exist (HTTP code returned by API => 404)
         try {
             restTemplate.exchange(PRODUCT_BY_ID_URL,
                     HttpMethod.GET,
@@ -153,65 +138,63 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Test
     public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() {
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-
-        ResponseEntity<?> retEntity = addNewTestProduct(productDto);
+        // when: adding a new product and then modifying its values
+        final ResponseEntity<?> retEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+        final long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
-        long currentGlobalProductsCount = getRemoteTotalProductsCount();
-
-        ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final long currentGlobalProductsCount = getRemoteTotalProductsCount();
+        final  ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
+        // then: no new product gets created
         assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductsCount));
-
     }
 
     @Test
     public void modifyingExistingProductDoesActuallyModifyItsValuesTest() {
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-
-        ResponseEntity<?> retEntity = addNewTestProduct(productDto);
+        // when: adding a test new product and then modifying its values
+        final ResponseEntity<?> retEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+        final long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
-        ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
-        ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+        // then: the modified fields get updated in test product
+        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
                 getHttpJsonRequestEntity(),
                 ProductDto.class, serverPort, productId);
 
-        ProductDto receivedProductDto = receivedProductEntity.getBody();
+        final ProductDto receivedProductDto = receivedProductEntity.getBody();
 
         assertThat(modifiedProductDto.getName(), equalTo(receivedProductDto.getName()));
         assertThat(modifiedProductDto.getLongDescription(), equalTo(receivedProductDto.getLongDescription()));
         assertThat(modifiedProductDto.getDescription(), equalTo(receivedProductDto.getDescription()));
         assertThat(modifiedProductDto.getModel(), equalTo(receivedProductDto.getModel()));
         assertThat(modifiedProductDto.getManufacturer(), equalTo(receivedProductDto.getManufacturer()));
-
     }
 
-    @Ignore("considering allowing duplicate names")
     @Test
+    @Ignore("considering allowing duplicate names")
     public void updatingProductsNameWithAnExistingOneCausesExceptionTest() {
-        ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        // when: creating two new products and then updating the first one with second one's name
+        final ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        ResponseEntity<?> retEntity1 = addNewTestProduct(productDto1);
+        final ResponseEntity<?> retEntity1 = addNewTestProduct(productDto1);
         assertThat(retEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId1 = getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
+        final long productId1 = getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
 
-        ResponseEntity<?> retEntity2 = addNewTestProduct(productDto2);
+        final ResponseEntity<?> retEntity2 = addNewTestProduct(productDto2);
         assertThat(retEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId2 = getIdFromLocationUrl(retEntity2.getHeaders().getLocation().toString());
 
         productDto1.setName(productDto2.getName());
 
+        // then: API should return HTTP.CONFLICT
         try {
             oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
             fail();

@@ -261,8 +261,13 @@ public abstract class ApiTestBase {
         return halConverter;
     }
 
-    protected long getIdFromLocationUrl(String locationUrl) {
-        return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
+    protected long getIdFromLocationUrl(final String locationUrl) {
+        if(locationUrl != null && org.apache.commons.lang.StringUtils.isNotEmpty(locationUrl)) {
+            return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
+        } else {
+            return -1;
+        }
+
     }
 
     protected long getIdFromEntity(ResponseEntity responseEntity) {
@@ -360,12 +365,12 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
     }
 
-    protected ResponseEntity<?> addNewTestCategory(CategoryDto categoryDto) throws HttpClientErrorException {
+    protected ResponseEntity<?> addNewTestCategory(final CategoryDto categoryDto) throws HttpClientErrorException {
 
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
     }
 
-    protected ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
+    protected ResponseEntity<?> addNewTestProduct(final ProductDto productDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
     }
 
