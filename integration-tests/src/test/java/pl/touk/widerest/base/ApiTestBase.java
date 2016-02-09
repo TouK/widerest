@@ -305,7 +305,7 @@ public abstract class ApiTestBase {
 
 
     protected long getRemoteTotalProductsCount() {
-        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
+        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
                 HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
 
         assertNotNull(remoteCountEntity);
@@ -356,7 +356,7 @@ public abstract class ApiTestBase {
     }
 
 
-    protected ResponseEntity<?> addNewTestCategory(DtoTestType dtoTestType) throws HttpClientErrorException {
+    protected ResponseEntity<?> addNewTestCategory(final DtoTestType dtoTestType) throws HttpClientErrorException {
         return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
     }
 
@@ -367,6 +367,12 @@ public abstract class ApiTestBase {
 
     protected ResponseEntity<?> addNewTestProduct(ProductDto productDto) {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
+    }
+
+    protected long addNewTestCategory() {
+        final ResponseEntity<?> newTestCategoryEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
+        assertThat(newTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        return getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
     }
 
     protected void addOrUpdateNewTestSkuMediaToProductSku(long productId, long skuId, String key, MediaDto mediaDto) {
@@ -494,8 +500,8 @@ public abstract class ApiTestBase {
     /* --------------------------------  HELPER METHODS -------------------------------- */
 
     protected String getAccessTokenFromLocationUrl(String locationUrl) throws URISyntaxException {
-        String accessTokenUrl = locationUrl.replace("#", "?");
-        List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
+        final String accessTokenUrl = locationUrl.replace("#", "?");
+        final List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
 
         return authorizationParams.stream()
                 .filter(x -> x.getName().equals("access_token"))
@@ -503,16 +509,16 @@ public abstract class ApiTestBase {
     }
 
     protected Date addNDaysToDate(Date date, int N) {
-        Calendar cal = Calendar.getInstance();
+        final Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         cal.add(Calendar.DATE, N);
 
         return cal.getTime();
     }
 
-    protected String strapToken(URI response) throws URISyntaxException {
-        String authorizationUrl = response.toString().replaceFirst("#", "?");
-        List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
+    protected String strapToken(final URI response) throws URISyntaxException {
+        final String authorizationUrl = response.toString().replaceFirst("#", "?");
+        final List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
 
         return authParams.stream()
                 .filter(x -> x.getName().equals("access_token"))
