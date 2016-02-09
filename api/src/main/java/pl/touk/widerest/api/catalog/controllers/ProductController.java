@@ -1400,7 +1400,7 @@ public class ProductController {
         Optional.ofNullable(sku.getSkuMediaXref().remove(key))
                 .ifPresent(genericEntityService::remove);
 
-        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(mediaDto);
+        final SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(mediaDto);
         newSkuMediaXref.setSku(sku);
         newSkuMediaXref.setKey(key);
         sku.getSkuMediaXref().put(key, newSkuMediaXref);

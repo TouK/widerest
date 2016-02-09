@@ -194,7 +194,7 @@ public class CustomerController {
                 .filter(e -> isNull(customerService.readCustomerByEmail(e)))
                 .orElseThrow(() -> new ResourceNotFoundException("Email address already taken, please try with other"));
 
-        Customer customer = customerService.readCustomerById(customerUserDetails.getId());
+        final Customer customer = customerService.readCustomerById(customerUserDetails.getId());
         customer.setUsername(username);
         customer.setEmailAddress(email);
 

@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -699,7 +698,6 @@ public class OrderController {
     @Transactional
     public ResponseEntity initiatePayment(
             @RequestBody PaymentDto paymentDto,
-            HttpServletRequest request,
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "orderId") Long orderId
     ) throws PaymentException {
