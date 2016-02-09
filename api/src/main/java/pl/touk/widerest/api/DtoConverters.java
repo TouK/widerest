@@ -28,7 +28,6 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
@@ -41,10 +40,10 @@ import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
 import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.categories.CategoryController;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -378,62 +377,6 @@ public class DtoConverters {
 
     /******************************** CATEGORY ********************************/
 
-    public static Function<Category, CategoryDto> categoryEntityToDto = entity -> {
-
-        final CategoryDto dto = CategoryDto.builder()
-                .name(entity.getName())
-                .description(entity.getDescription())
-                .longDescription(entity.getLongDescription())
-                .productsAvailability(Optional.ofNullable(entity.getInventoryType())
-                        .map(InventoryType::getType)
-                        .orElse(null))
-                .attributes(entity.getCategoryAttributesMap().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
-                .build();
-
-
-        dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
-
-        dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getCategoryByIdAvailability(entity.getId())).withRel("availability"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getAllProductsInCategoryCount(entity.getId())).withRel("products-count"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount(null)).withRel("categories-count"));
-
-        final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getSubCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories");
-                })
-                .collect(toList());
-
-        dto.add(subcategoriesLinks);
-
-        final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories");
-                })
-                .collect(toList());
-
-        dto.add(parentCategoriesLinks);
-
-
-
-        return dto;
-    };
-
-    public static Function<CategoryDto, Category> categoryDtoToEntity = dto -> {
-        final Category categoryEntity = new CategoryImpl();
-
-        return CatalogUtils.updateCategoryEntityFromDto(categoryEntity, dto);
-    };
-
     /******************************** CATEGORY ********************************/
 
     /******************************** Sku Media  ********************************/
@@ -450,22 +393,10 @@ public class DtoConverters {
 //                .key(xref.getKey())
                 .build();
 
-        mediaDto.add(
-                linkTo(
-                        methodOn(CategoryController.class).deleteOneMedia(xref.getCategory().getId(), xref.getKey())
-                ).withSelfRel()
-        );
-
-        mediaDto.add(
-                linkTo(
-                        methodOn(CategoryController.class).getCategoryByIdAvailability(xref.getCategory().getId())
-                ).withRel("category")
-        );
-
         return mediaDto;
     };
 
-    public static Function<MediaDto, CategoryMediaXref> mediaDtoToCategoryMediaXref = dto -> {
+    public static CategoryMediaXref mediaDtoToCategoryMediaXref(MediaDto dto) {
         CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
         Media media = new MediaImpl();
 
@@ -486,13 +417,6 @@ public class DtoConverters {
                 .tags(entity.getTags())
 //                .key(xref.getKey())
                 .build();
-
-        mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
-                xref.getSku().getId(),
-                xref.getKey())).withSelfRel());
-
-        mediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
-                xref.getSku().getId())).withRel("sku"));
 
         return mediaDto;
     };

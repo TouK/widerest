@@ -22,13 +22,13 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.BundleItemDto;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
@@ -489,6 +489,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
+    @Transactional
     public void addingComplexProductSavesAllValuesProperly() {
 
         CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
@@ -548,7 +549,7 @@ public class ProductControllerTest extends ApiTestBase {
         long idFromLocationUrl = getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
 
-        assertThat(getRemoteTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
 
 
         ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);

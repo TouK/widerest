@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.ResourceSupport;
 
 @Data
 @Builder
@@ -18,7 +17,7 @@ import org.springframework.hateoas.ResourceSupport;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Media", description = "Media DTO resource representation")
-public class MediaDto extends ResourceSupport {
+public class MediaDto {
 
     @ApiModelProperty(position = 0, value = "Title of the media", required = true, dataType = "java.lang.String")
     private String title;

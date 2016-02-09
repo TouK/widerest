@@ -1,13 +1,13 @@
 package pl.touk.widerest.base;
 
 import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.categories.CategoryDto;
 
 import java.math.BigDecimal;
 import java.util.Arrays;

@@ -6,11 +6,11 @@ import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
+import pl.touk.widerest.api.categories.CategoryDto;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -44,34 +44,6 @@ public class CatalogUtils {
         return (inventoryType != null) ? inventoryType : InventoryType.ALWAYS_AVAILABLE;
     }
 
-    public static Category updateCategoryEntityFromDto(Category categoryEntity,
-                                                       CategoryDto categoryDto) {
-
-        categoryEntity.setName(categoryDto.getName());
-        categoryEntity.setDescription(categoryDto.getDescription());
-        categoryEntity.setLongDescription(categoryDto.getLongDescription());
-
-
-        if(categoryDto.getProductsAvailability() != null) {
-            categoryEntity.setInventoryType(getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));
-        } else {
-            /* (mst) Remove this if you don't want to have a "default" availability set */
-            categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
-
-        categoryEntity.getCategoryAttributesMap().clear();
-        categoryEntity.getCategoryAttributesMap().putAll(
-                Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> {
-                            CategoryAttribute a = new CategoryAttributeImpl();
-                            a.setName(e.getKey());
-                            a.setValue(e.getValue());
-                            a.setCategory(categoryEntity);
-                            return a;
-                        })));
-
-        return categoryEntity;
-    }
 
     public static Category partialUpdateCategoryEntityFromDto(
             Category categoryEntity, CategoryDto categoryDto) {
