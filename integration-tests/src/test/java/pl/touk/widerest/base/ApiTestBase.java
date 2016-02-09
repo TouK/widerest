@@ -380,7 +380,7 @@ public abstract class ApiTestBase {
         return getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
     }
 
-    protected void addOrUpdateNewTestSkuMediaToProductSku(long productId, long skuId, String key, MediaDto mediaDto) {
+    protected void addOrUpdateNewTestSkuMediaToProductSku(final long productId, final long skuId, final String key, final MediaDto mediaDto) {
         oAuth2AdminRestTemplate().put(
                 MEDIA_BY_KEY_URL,
                 mediaDto,
