@@ -144,28 +144,29 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void remotelyRetrievedCategoryEqualsLocalyRetrievedOneTest() {
-        /* retrieve the IDs of all available, non-archived categories */
-        List<Long> localCategoryIds = catalogService.findAllCategories().stream()
+        // when: picking a random category via local service
+        final List<Long> localCategoryIds = catalogService.findAllCategories().stream()
                 .filter(entity -> ((Status) entity).getArchived() == 'N')
                 .map(Category::getId).collect(Collectors.toList());
 
-        Random rnd = new Random();
+        if(localCategoryIds.isEmpty()) {
+            return;
+        }
 
-        /* pick a random category */
-        int pickedCategoryIndex = rnd.nextInt(localCategoryIds.size());
-        long pickedCategoryId = localCategoryIds.get(pickedCategoryIndex);
+        final Random rnd = new Random();
 
-        //when
-        ResponseEntity<CategoryDto> receivedCategoryEntity =
+        final int pickedCategoryIndex = rnd.nextInt(localCategoryIds.size());
+        final long pickedCategoryId = localCategoryIds.get(pickedCategoryIndex);
+
+        final ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplateForHalJsonHandling.getForEntity(ApiTestBase.CATEGORIES_URL + "/" + pickedCategoryId, CategoryDto.class, serverPort);
 
-        assertNotNull(receivedCategoryEntity);
-        assertTrue("List of categories not found", receivedCategoryEntity.getStatusCode().value() == 200);
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+        final CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
 
-        //then
-        Category localCategoryEntity = catalogService.findCategoryById(pickedCategoryId);
+        // then: locally retrieved random category should be equal to the remotely retrieved one
+        final Category localCategoryEntity = catalogService.findCategoryById(pickedCategoryId);
 
         assertTrue(receivedCategoryDto.getName().equals(localCategoryEntity.getName()) &&
                 receivedCategoryDto.getDescription().equals(localCategoryEntity.getDescription()));
@@ -260,7 +261,6 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(categoryDto.getLongDescription(), equalTo(receivedCategoryDto.getLongDescription()));
     }
 
-
     @Test
     @Transactional
     public void addingNewProductWithDefaultSKUToExistingCategoryIncreasesProductsCountTest() {
@@ -290,27 +290,27 @@ public class CategoryControllerTest extends ApiTestBase {
     @Test
     @Transactional
     public void deletingCategoryDoesNotRemoveProductPreviouslyAssociatedWithItTest() {
+        // when: 1) creating a new category and inserting a new product into it
+        final long currentTotalProductsCount = getLocalTotalProductsCount();
 
-        long currentTotalProductsCount = getLocalTotalProductsCount();
-
-
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
+        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
         assertThat(newCategoryResponseHeaders.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long categoryId = getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final long categoryId = getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
+
+        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         productDto.setCategoryName(categoryDto.getName());
 
-        ResponseEntity<?> newProductInTestCategoryEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> newProductInTestCategoryEntity = addNewTestProduct(productDto);
         assertThat(newProductInTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId = getIdFromLocationUrl(newProductInTestCategoryEntity.getHeaders().getLocation().toString());
 
         assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(1L));
 
-
+        // when: 1) deleting the newly created category
         oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, categoryId);
 
+        // then: deleting the category does not remove its products
         try {
             restTemplateForHalJsonHandling.getForEntity(CATEGORY_BY_ID_URL, Void.class, serverPort, categoryId);
             fail();
@@ -318,7 +318,6 @@ public class CategoryControllerTest extends ApiTestBase {
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
         }
 
-        // our product is still in there!
         assertThat(getLocalTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
     }
 
@@ -366,38 +365,37 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void newlyAddedCategoryHasDefaultAvailabilityTest() {
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
-        assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        // when: adding a new category without availability status
+        final long testCategoryId = addNewTestCategory();
 
-        ResponseEntity<CategoryDto> receivedCategoryEntity =
+        final ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplateForHalJsonHandling.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
 
-        assertNotNull(receivedCategoryEntity);
-        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
+        final CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
 
+        // then: the availability status of the newly created category is ALWAYS_AVAILABLE (by default)
         assertThat(receviedCategoryDto.getProductsAvailability(), equalTo(InventoryType.ALWAYS_AVAILABLE.getType()));
     }
 
     @Test
     public void addingCategoryWithIncorrectAvailabilitySetsDefaultValueTest() {
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        // when: adding a new category with incorrect availability status
+        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
         categoryDto.setProductsAvailability("dasdadasda");
-        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        final ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
         assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
-        ResponseEntity<CategoryDto> receivedCategoryEntity =
+        final ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplateForHalJsonHandling.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
 
-        assertNotNull(receivedCategoryEntity);
-        assertThat(receivedCategoryEntity.getStatusCode().value(), equalTo(200));
+        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
+        final CategoryDto receviedCategoryDto = receivedCategoryEntity.getBody();
 
+        // then: the availability status of the newly created category should be set to ALWAYS_AVAILABLE (by default)
         assertThat(receviedCategoryDto.getProductsAvailability(), equalTo(InventoryType.ALWAYS_AVAILABLE.getType()));
     }
 
@@ -459,32 +457,32 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void addingCategoryWithAttributesSavesThemCorrectlyTest() {
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        // when: adding a new category with 3 attributes
+        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
-        Map<String, String> categoryAttributes = new HashMap<>();
+        final Map<String, String> categoryAttributes = new HashMap<>();
         categoryAttributes.put("size", String.valueOf(99));
         categoryAttributes.put("color", "red");
         categoryAttributes.put("length", String.valueOf(12.222));
 
         categoryDto.setAttributes(categoryAttributes);
 
-        ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
+        final ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
         assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
-
-        ResponseEntity<CategoryDto> receivedCategoryEntity =
+        // then: category attributes have been set properly
+        final ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplateForHalJsonHandling.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
-        Map<String, String> receivedAttributes = receivedCategoryDto.getAttributes();
+        final CategoryDto receivedCategoryDto = receivedCategoryEntity.getBody();
+        final Map<String, String> receivedAttributes = receivedCategoryDto.getAttributes();
 
         assertThat(receivedAttributes.size(), equalTo(categoryAttributes.size()));
         assertThat(receivedAttributes.get("size"), equalTo(String.valueOf(99)));
         assertThat(receivedAttributes.get("color"), equalTo("red"));
         assertThat(receivedAttributes.get("length"), equalTo(String.valueOf(12.222)));
-
     }
 
 
@@ -492,16 +490,17 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void shouldAddAndDeleteASubcategoryProperlyTest() {
-        final ResponseEntity<?> categoryResponseEntity = addNewTestCategory(DtoTestType.NEXT);
-        final long testCategoryId = getIdFromLocationUrl(categoryResponseEntity.getHeaders().getLocation().toString());
+        // when: 1) creating a new test category
+        final long testCategoryId = addNewTestCategory();
 
         final ResponseEntity<Resources<CategoryDto>> receivedSubcategoriesEntity =
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort, testCategoryId);
 
+        // then: 1) newly created category should not have any subcategories
         assertThat(receivedSubcategoriesEntity.getBody().getContent().size(), equalTo(0));
 
+        // when: 2) adding a new subcategory to test category
         final CategoryDto subcategoryDto= DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-
         subcategoryDto.setName("Subcategory");
         subcategoryDto.setDescription("This is a subcategory description");
 
@@ -514,23 +513,25 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertThat(addSubcategoryResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
+        // then: 2) test category should have 1 subcategory
         final ResponseEntity<Resources<CategoryDto>> receivedSubcategoriesEntity2 =
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort, testCategoryId);
 
         assertThat(receivedSubcategoriesEntity2.getBody().getContent().size(), equalTo(1));
 
-        CategoryDto category = receivedSubcategoriesEntity2.getBody().iterator().next();
+        final CategoryDto category = receivedSubcategoriesEntity2.getBody().iterator().next();
         assertThat(category.getName(), equalTo(subcategoryDto.getName()));
         assertThat(category.getDescription(), equalTo(subcategoryDto.getDescription()));
 
+        // when: 3) deleting test category's subcategory
         oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
                 serverPort, testCategoryId, serverPort, testSubcategoryId);
 
         final ResponseEntity<Resources<CategoryDto>> receivedSubcategoriesEntity3 =
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort, testCategoryId);
 
+        // then: 3) test category should not contain any subcategories any more
         assertThat(receivedSubcategoriesEntity3.getBody().getContent().size(), equalTo(0));
-
     }
 
     @Test
@@ -545,7 +546,7 @@ public class CategoryControllerTest extends ApiTestBase {
                            B
          */
 
-        /* (mst) Builds the category tree */
+        /* Build the category tree */
         final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
         final long rootSubcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
         final long childSubcategory1Id = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
@@ -570,13 +571,14 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertThat(receivedRootSubcategoriesEntity.getBody().getContent().size(), equalTo(1));
 
-        /* Test the effects of removing the S Node (Category) */
+        // when: removing the S Node Category reference from P Node Category
         oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
                 serverPort, rootCategoryId, serverPort, rootSubcategoryId);
 
         final ResponseEntity<Resources<CategoryDto>> receivedChildSubcategoriesEntity =
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort, rootSubcategoryId);
 
+        // then: S Node category still exists and has all of its subcategories but is no longer "associated" with P Node Category
         assertThat(receivedChildSubcategoriesEntity.getBody().getContent().size(), equalTo(2));
 
         final ResponseEntity<Resources<CategoryDto>> receivedRootSubcategoriesEntity1 =
@@ -587,6 +589,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void shouldThrowExceptionWhenAddingTheSameSubcategoryTwiceTest() {
+        // when: 1) adding a new category with a new subcategory
         final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
         final long subcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
 
@@ -596,13 +599,14 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertThat(addSubcategoryResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
+        // when: 2) adding the same subcategory to the test category
         try {
             oAuth2AdminRestTemplate().postForEntity(
                     ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
                     serverPort, rootCategoryId, serverPort, subcategoryId);
             fail();
         } catch (HttpClientErrorException httpClientErrorException) {
-            // then
+            // then; API should return 4xx code (HTTP.CONFLICT?) and the amount of test category's subcategories should remain 1
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
 
             final ResponseEntity<Resources<CategoryDto>> receivedRootSubcategoriesEntity =
@@ -614,6 +618,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
     @Test
     public void shouldRemoveAllReferencesInTheParentCategoryAfterDeletingItsSubcategoryTest() {
+        // when: 1) adding a new test category with a new subcategory
         final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
         final long subcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
 
@@ -628,8 +633,10 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertThat(receivedSubcategoriesEntity.getBody().getContent().size(), equalTo(1));
 
+        // when: 2) deleting the subcategory from test category
         oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, subcategoryId);
 
+        // then: test category should no longer have any subcategories
         final ResponseEntity<Resources<CategoryDto>> receivedRootSubcategoriesEntity2 =
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.SUBCATEGORY_IN_CATEGORY_BY_ID_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort, rootCategoryId);
 
