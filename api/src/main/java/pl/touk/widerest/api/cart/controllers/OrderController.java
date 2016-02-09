@@ -511,14 +511,9 @@ public class OrderController {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
-        try {
-            /* price order?! */
-            Order updatedOrder = orderService.removeItem(cart.getId(), itemId, true);
-            orderService.save(updatedOrder, true);
-        } catch (Exception e) {
-            throw new ResourceNotFoundException("Error while removing item with ID: " + itemId);
-        }
-
+        Try.ofFailable(() -> orderService.save(orderService.removeItem(cart.getId(), itemId, true), true))
+                .toOptional()
+                .orElseThrow(() -> new ResourceNotFoundException("Error while removing item with ID: " + itemId));
     }
 
     /* GET /orders/items/{itemId} */
@@ -598,8 +593,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Fulfillment Option value", required = true)
-            @RequestBody long fulfillmentOptionId) throws PricingException
-    {
+            @RequestBody long fulfillmentOptionId) throws PricingException {
         return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, fulfillmentOptionId);
     }
 
@@ -710,7 +704,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId
     ) throws PaymentException {
 
-        Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+        final Order order = Optional.ofNullable(orderService.findOrderById(orderId))
                 .filter(OrderController::notYetSubmitted)
                 .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
 
@@ -728,15 +722,16 @@ public class OrderController {
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
-        PaymentGatewayConfigurationService configurationService =
+        final PaymentGatewayConfigurationService configurationService =
                 paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
                         PaymentGatewayType.getInstance(String.valueOf(paymentDto.getProvider()))
                 );
 
-        PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint(paymentRequestDTO);
+        final PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint
+                (paymentRequestDTO);
 
         //return redirect URI from the paymentResponse
-        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
+        final String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
                 .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
 
         return ResponseEntity.created(URI.create(redirectURI)).build();

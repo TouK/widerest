@@ -1,14 +1,18 @@
 package pl.touk.widerest.api.catalog.controllers;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Stream.empty;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -17,7 +21,6 @@ import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.common.service.GenericEntityService;
-import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
@@ -29,6 +32,7 @@ import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
 import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
 import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXrefImpl;
@@ -79,6 +83,8 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { "application/json", "application/hal+json" })
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
+
+    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
 
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
@@ -141,30 +147,20 @@ public class ProductController {
                 cleanedUpQuery = StringUtils.trim(q);
                 cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
             } catch(ServiceException ex) {
-                return ResponseEntity.badRequest().build();
+                return BAD_REQUEST;
             }
 
             final SearchCriteria searchCriteria = new SearchCriteria();
             searchCriteria.setPage(page);
             searchCriteria.setPageSize(pageSize);
 
+
             try {
                 final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
-
-                /* (mst) For now, we only return a list of founded products with no additional info */
-//                final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
-//                        .totalPages(searchResult.getTotalPages())
-//                        .totalResults(searchResult.getTotalResults())
-//                        .page(searchResult.getPage())
-//                        .pageSize(searchResult.getPageSize())
-//                        .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
-//                        .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
-//                        .build();
-
                 productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
 
             } catch (ServiceException e) {
-                return ResponseEntity.badRequest().build();
+                return BAD_REQUEST;
             }
         } else {
             productsToReturn = catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0);
@@ -173,7 +169,7 @@ public class ProductController {
         return ResponseEntity.ok(productsToReturn.stream()
                                 .filter(CatalogUtils::archivedProductFilter)
                                 .map(dtoConverters.productEntityToDto)
-                                .collect(Collectors.toList()));
+                                .collect(toList()));
     }
 
     @Transactional
@@ -212,7 +208,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(e -> e instanceof ProductBundle)
                 .map(dtoConverters.productEntityToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
 
@@ -260,7 +256,6 @@ public class ProductController {
 
         if (hasDuplicates(productBundleDto.getName())) {
             throw new DtoValidationException("Provided bundle already exists");
-//            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
         CatalogUtils.validateSkuPrices(productBundleDto.getDefaultSku());
@@ -275,15 +270,12 @@ public class ProductController {
 
         product.getDefaultSku().setProduct(product);
 
-        final ProductBundle p = (ProductBundle) product;
+        final ProductBundle productBundle = (ProductBundle) product;
 
         ((ProductBundle) product).setSkuBundleItems(productBundleDto.getBundleItems().stream()
                 .filter(x -> catalogService.findSkuById(x.getSkuId()) != null)
                 .map(dtoConverters.bundleItemDtoToSkuBundleItem)
-                .map(e -> {
-                    e.setBundle(p);
-                    return e;
-                })
+                .map(toSkuWithBundle(productBundle))
                 .collect(toList()));
 
 
@@ -294,8 +286,7 @@ public class ProductController {
 
         product = catalogService.saveProduct(product);
 
-
-        HttpHeaders responseHeader = new HttpHeaders();
+        final HttpHeaders responseHeader = new HttpHeaders();
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -305,6 +296,13 @@ public class ProductController {
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
 
 
+    }
+
+    private static Function<SkuBundleItem, SkuBundleItem> toSkuWithBundle(ProductBundle p) {
+        return e -> {
+            e.setBundle(p);
+            return e;
+        };
     }
 
 
@@ -354,27 +352,12 @@ public class ProductController {
                  Otherwise just ignore it.
 
          */
-        if (productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
-            Optional<Category> categoryToReference = catalogService.findCategoriesByName(productDto.getCategoryName()).stream()
-                    .filter(CatalogUtils::archivedCategoryFilter)
-                    .findAny();
 
-            if (categoryToReference.isPresent()) {
-                newProduct.setCategory(categoryToReference.get());
-            }
-        }
+        setCategoryIfPresent(productDto, newProduct);
 
         final Product productParam = newProduct;
 
-        newProduct.setProductOptionXrefs(
-                Optional.ofNullable(productDto.getOptions())
-                        .filter(e -> !e.isEmpty())
-                        .map(List::stream)
-                        .map(e -> e.map(x -> generateProductXref(x, productParam)))
-                        .map(e -> e.collect(Collectors.toList()))
-                        .orElse(newProduct.getProductOptionXrefs())
-        );
-
+        setProductOptionXrefs(productDto, newProduct, productParam);
 
         newProduct = catalogService.saveProduct(newProduct);
 
@@ -424,6 +407,27 @@ public class ProductController {
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+    }
+
+    private void setProductOptionXrefs(ProductDto productDto, Product newProduct, Product productParam) {
+        final List<ProductOptionXref> productOptionXrefs = Optional.ofNullable(productDto.getOptions())
+                .filter(e -> !e.isEmpty())
+                .map(List::stream)
+                .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                .map(e -> e.collect(toList()))
+                .orElse(newProduct.getProductOptionXrefs());
+
+        newProduct.setProductOptionXrefs(productOptionXrefs);
+    }
+
+    private void setCategoryIfPresent(ProductDto productDto, Product newProduct) {
+        Optional.ofNullable(productDto.getCategoryName())
+                .filter(name -> !isNullOrEmpty(name))
+                .map(name -> catalogService.findCategoriesByName(name))
+                .map(Collection::stream).orElse(empty())
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .findAny()
+                .ifPresent(newProduct::setCategory);
     }
 
     /* GET /products/count */
@@ -693,7 +697,7 @@ public class ProductController {
                 .map(CategoryProductXref::getCategory)
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(category -> categoryConverter.createDto(category, true))
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /* GET /products/{id}/categories */
@@ -747,7 +751,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .map(dtoConverters.skuEntityToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
 
     }
 
@@ -849,8 +853,8 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
+                .map(Product::getAllSkus)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist")).stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
                 .map(dtoConverters.skuEntityToDto)
@@ -907,12 +911,12 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
+        final Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
 
         defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
 
         //defaultSKU.setProduct(product);
-        defaultSKU = catalogService.saveSku(defaultSKU);
+        final Sku savedSKU = catalogService.saveSku(defaultSKU);
 
         //product.setDefaultSku(newSkuEntity);
         //catalogService.saveProduct(product);
@@ -922,7 +926,7 @@ public class ProductController {
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/products/{productId}/skus/{skuId}")
-                .buildAndExpand(productId, defaultSKU.getId())
+                .buildAndExpand(productId, savedSKU.getId())
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
@@ -1144,7 +1148,7 @@ public class ProductController {
         product.setAdditionalSkus(
                 product.getAllSkus().stream()
                         .filter(x -> x.getId().longValue() != skuId)
-                        .collect(Collectors.toList())
+                        .collect(toList())
         );
 
         catalogService.saveProduct(product);
@@ -1277,7 +1281,7 @@ public class ProductController {
                 .getSkuMediaXref().entrySet().stream()
                 .map(Map.Entry::getValue)
                 .map(DtoConverters.skuMediaXrefToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /* GET /products/{productId}/skus/{skuId}/media/{key} */
@@ -1409,14 +1413,15 @@ public class ProductController {
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 
     private SkuProductOptionValueXref generateXref(SkuProductOptionValueDto skuProductOption, Sku sku, Product product) {
-        ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
+        final ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
                 skuProductOption.getAttributeName(),
                 product))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product option: " + skuProductOption.getAttributeName() + " does not exist in product with ID: " + product.getId()
                 ));
 
-        ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters.getProductOptionValueByNameForProduct(
+        final ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters
+                .getProductOptionValueByNameForProduct(
                 currentProductOption,
                 skuProductOption.getAttributeValue()))
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -1429,7 +1434,8 @@ public class ProductController {
     }
 
     private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
-        ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
+        final ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply
+                (productOptionDto));
         p.getAllowedValues().forEach(x -> x.setProductOption(p));
         p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
         p.setRequired(true);
