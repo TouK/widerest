@@ -78,7 +78,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final ResponseEntity<?> newProductInTestCategoryEntity = addNewTestProduct(productDto);
         assertThat(newProductInTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        // then: the amount of products in that category equals 1
+        // then: the number of products in that category equals 1
         assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(1L));
     }
 
@@ -88,7 +88,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final long currentCategoriesCount = getLocalTotalCategoriesCount();
         final long newCategoryId = addNewTestCategory();
 
-        // then: total categories amount increases by 1
+        // then: total categories number increases by 1
         assertThat(getLocalTotalCategoriesCount(), equalTo(currentCategoriesCount + 1));
     }
 
@@ -108,7 +108,7 @@ public class CategoryControllerTest extends ApiTestBase {
             addNewTestCategory(categoryDto);
             fail();
         } catch (HttpClientErrorException httpClientErrorException) {
-            // then: API should return HTTP.CONFLICT code and the total amount of categories should
+            // then: API should return HTTP.CONFLICT code and the total number of categories should
             //       not change
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
             assertThat(getLocalTotalCategoriesCount(), equalTo(currentCategoryCount));
@@ -123,7 +123,7 @@ public class CategoryControllerTest extends ApiTestBase {
                 restTemplateForHalJsonHandling.exchange(ApiTestBase.CATEGORIES_FLAT_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<CategoryDto>>() {}, serverPort);
         assertThat(receivedCategoriesEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        // then: the amount of remotely retrieved categories should equal the amount of locally retrieved ones
+        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
         assertThat((long) receivedCategoriesEntity.getBody().getContent().size(), equalTo(getLocalTotalCategoriesCount()));
     }
 
@@ -271,7 +271,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
-        // then: 1) the amount of products in added category is equal to 0 (by default)
+        // then: 1) the number of products in added category is equal to 0 (by default)
         final long currentProductsInCategoryRemoteCount = getLocalTotalProductsInCategoryCount(testCategoryId);
         assertThat(currentProductsInCategoryRemoteCount, equalTo(0L));
 
@@ -283,7 +283,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         em.clear();
 
-        // then: 2) total amount of products in that category increases by 1
+        // then: 2) total number of products in that category increases by 1
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
     }
 
@@ -606,7 +606,7 @@ public class CategoryControllerTest extends ApiTestBase {
                     serverPort, rootCategoryId, serverPort, subcategoryId);
             fail();
         } catch (HttpClientErrorException httpClientErrorException) {
-            // then; API should return 4xx code (HTTP.CONFLICT?) and the amount of test category's subcategories should remain 1
+            // then; API should return 4xx code (HTTP.CONFLICT?) and the number of test category's subcategories should remain 1
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
 
             final ResponseEntity<Resources<CategoryDto>> receivedRootSubcategoriesEntity =

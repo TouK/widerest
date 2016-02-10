@@ -240,7 +240,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         addNewTestSKUToProduct(productId, additionalSkuDto);
-        // then: total amount of SKUs for that product should increase
+        // then: total number of SKUs for that product should increase
         assertThat(getLocalTotalSkusForProductCount(productId), equalTo(2L));
     }
 
