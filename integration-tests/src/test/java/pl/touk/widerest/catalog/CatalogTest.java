@@ -402,71 +402,84 @@ public class CatalogTest extends ApiTestBase {
 
     @Test
     @Transactional
-    @Ignore
     public void creatingAndDeletingCategoriesReferencesDoesNotAffectActualEntitiesTest() {
-        CategoryDto testCategory1 = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        ResponseEntity<?> newCategoryEntity1 = addNewTestCategory(testCategory1);
+        // when: 1) adding 2 test categories and 3 test products
+        final ResponseEntity<?> newCategoryEntity1 = addNewTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
         assertThat(newCategoryEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long testCategoryId1 = getIdFromLocationUrl(newCategoryEntity1.getHeaders().getLocation().toString());
+        final long testCategoryId1 = getIdFromEntity(newCategoryEntity1);
 
-        CategoryDto testCategory2 = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        ResponseEntity<?> newCategoryEntity2 = addNewTestCategory(testCategory2);
+        final ResponseEntity<?> newCategoryEntity2 = addNewTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
         assertThat(newCategoryEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long testCategoryId2 = getIdFromLocationUrl(newCategoryEntity2.getHeaders().getLocation().toString());
+        final long testCategoryId2 = getIdFromEntity(newCategoryEntity2);
 
         final List<Long> newProductsIds = new ArrayList<>();
 
+        ResponseEntity<?> remoteAddProductEntity;
+
         for(int i = 0; i < 3; i++) {
-            ResponseEntity<ProductDto> remoteAddProductEntity= oAuth2AdminRestTemplate().postForEntity(
-                    PRODUCTS_URL,
-                    DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT), null, serverPort);
+            remoteAddProductEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
 
             assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-            newProductsIds.add(getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString()));
+            newProductsIds.add(getIdFromEntity(remoteAddProductEntity));
         }
 
+        // then: 1) both categories do not "include" any of the test products yet
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(0L));
 
-        // first product references to the first category + should throw exception trying to "add" this product twice
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(0));
-
+        // when: 2) adding the 1st product to the 1st category twice
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
 
+        em.clear();
+
+        // then: 2) API should only add that product once
         try {
-            //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(0));
             oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
         }
 
-        // second product references to first category
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(1));
+        // when: 3) adding 2nd product to the 1st category
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
+
+        em.clear();
+
+        // then: 3) 1st category should now have 2 product references while both of those products should reference only 1 category
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
 
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(0)), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(1L));
 
 
-        // third product references to both categories
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId1, newProductsIds.get(2));
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId2, newProductsIds.get(2));
-
+        // when: 4) adding 3rd product to both categories
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(2));
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(2));
 
+        em.clear();
+
+        // then: 4)
+        //         - 3rd product should now reference both categories
+        //         - 1st category should reference all 3 products
+        //         - 2nd category should reference only 1 product
         assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(2L));
 
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(3L));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(1L));
 
-        // remove reference to second product from first category + "remove non existing reference check"
+        // when: 5) removing reference to 2nd product from 1st category twice
         oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
+
+        em.clear();
+
+        // then: 5)
+        //         - 1st category should reference 2 products
+        //         - 1st product should reference 1 category
+        //         - 2nd product should not reference any category
+        //         - 3rd product should reference both categories
+        //         - API should throw an error on removing non existent product reference from category
         try {
-            //oAuth2AdminRestTemplate().delete(PRODUCTS_IN_CATEGORY_BY_ID_URL, serverPort, testCategoryId1, newProductsIds.get(1));
             oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
@@ -477,37 +490,41 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(0)), equalTo(1L));
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(0L));
 
-
-        // remove reference to first product from first category
-        //oAuth2AdminRestTemplate().delete(PRODUCTS_IN_CATEGORY_BY_ID_URL, serverPort, testCategoryId1, newProductsIds.get(0));
+        // when: 6a) removing reference to 1st product from 1st category
         oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
 
-        // add first and second products to second category
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId2, newProductsIds.get(0));
-        //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, testCategoryId2, newProductsIds.get(1));
+        // when: 6b) adding 1st and 2nd product to 2nd category
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(0));
         oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(1));
 
+        em.clear();
 
+        // then: 6)
+        //        - 1st category should reference only 1 product
+        //        - 2nd category should reference all 3 products
+        //        - 1st and 2nd products should reference only 1 category
+        //        - 3rd product should reference both categories
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
 
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(0)), equalTo(1L));
-       // assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(1L));
+        assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(1L));
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(2L));
 
-        // remove 3rd product from first category
-//        oAuth2AdminRestTemplate().delete(PRODUCTS_IN_CATEGORY_BY_ID_URL, serverPort, testCategoryId1, newProductsIds.get(2));
+        // when: 7) removing reference to 3rd product from 1st category
         oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(2));
 
+        em.clear();
+
+        // then: 7)
+        //         - 1st category should not have any product references
+        //         - 2nd category should reference to all 3 products
+        //         - 3rd product should only reference 1 category
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(0L));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(3L));
 
-        assertThat(getRemoteTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(1L));
+        assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(1L));
     }
-
-
-
 
     /* ------------------ HELPER METHODS -------------------*/
 
