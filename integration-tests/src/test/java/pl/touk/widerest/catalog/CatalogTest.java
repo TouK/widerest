@@ -71,9 +71,7 @@ public class CatalogTest extends ApiTestBase {
         // when: 1) adding a new test category
         final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
-                CATEGORIES_URL,
-                categoryDto, null, serverPort);
+        final ResponseEntity<?> remoteAddCategoryEntity = addNewTestCategory(categoryDto);
 
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -87,8 +85,7 @@ public class CatalogTest extends ApiTestBase {
         final ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
         productDto.setCategoryName(categoryDto.getName());
 
-        final ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_URL, productDto, null, serverPort);
+        final ResponseEntity<?> remoteAddProduct1Entity = addNewTestProduct(productDto);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -118,8 +115,7 @@ public class CatalogTest extends ApiTestBase {
         // when: 3) adding another product without category
         final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<ProductDto> remoteAddProduct2Entity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_URL, productDto2, null, serverPort);
+        final ResponseEntity<?> remoteAddProduct2Entity = addNewTestProduct(productDto2);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -168,12 +164,10 @@ public class CatalogTest extends ApiTestBase {
 
         final List<Long> newCategoriesIds = new ArrayList<>();
 
-        ResponseEntity<CategoryDto> remoteAddCategoryEntity;
+        ResponseEntity<?> remoteAddCategoryEntity;
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
-                    CATEGORIES_URL,
-                    DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
+            remoteAddCategoryEntity = addNewTestCategory(DtoTestType.NEXT);
 
             assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -193,8 +187,7 @@ public class CatalogTest extends ApiTestBase {
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_URL, productDto, null, serverPort);
+        final ResponseEntity<?> remoteAddProduct1Entity = addNewTestProduct(productDto);
 
         // then: 2) total number of products should increase
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -322,86 +315,86 @@ public class CatalogTest extends ApiTestBase {
     @Transactional
     public void modifyingExistingCategoryDoesNotAffectItsProductsTest() {
 
-        CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final int PRODUCT_COUNT = 4;
 
-        long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
+        // when: 1) adding a test category
+        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
 
-        ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
+        final long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
 
+        final ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
+
+        // then: 1) total number of categories should increase
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
-        long testCategoryId = getIdFromLocationUrl(newCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = getIdFromEntity(newCategoryEntity);
 
-        final int PRODUCT_COUNT = 4;
+        // when: 2) creating and inserting PRODUCT_COUNT products into test category
+        ProductDto productDto;
+        ResponseEntity<?> remoteAddProductEntity;
 
         for(int i = 0; i < PRODUCT_COUNT; i++) {
-
-            ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+            productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
             productDto.setCategoryName(testCategory.getName());
 
-            ResponseEntity<ProductDto> remoteAddProductEntity = oAuth2AdminRestTemplate().postForEntity(
-                    PRODUCTS_URL,
-                    productDto, null, serverPort);
+            remoteAddProductEntity = addNewTestProduct(productDto);
 
             assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-
-
         }
 
-
-
+        // then: 2) total number of products in test category should be equal to PRODUCT_COUNT
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo((long)PRODUCT_COUNT));
 
-        CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
+        // when: 3) modifying test category values
+        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
         categoryDto.setDescription("ModifiedTestCategoryDescription");
         categoryDto.setName("ModifiedTestCategoryName");
         categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
 
         oAuth2AdminRestTemplate().put(newCategoryEntity.getHeaders().getLocation().toString(), categoryDto, serverPort);
 
+        // then: 3) test category does not "lose" its product references
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo((long)PRODUCT_COUNT));
     }
 
     @Test
     @Transactional
     public void modifyingfExistingCategoryDoesNotBreakReferencesToAndFromProductsTest() {
-        CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-
-        long currentGlobalCategoryCount = getLocalTotalCategoriesCount();
-
-        ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
-
+        // when: 1) adding a new category with a new product
+        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long testCategoryId = getIdFromLocationUrl(newCategoryEntity.getHeaders().getLocation().toString());
 
-        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        final long testCategoryId = getIdFromEntity(newCategoryEntity);
 
+        final ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
         productDto.setCategoryName(testCategory.getName());
 
-        ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCTS_URL, productDto, null, serverPort);
+        final ResponseEntity<?> remoteAddProduct1Entity = addNewTestProduct(productDto);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        long testProductId1 = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
+        final long testProductId1 = getIdFromEntity(remoteAddProduct1Entity);
 
+        // then: 1) Total number of products in test category equals 1
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId1), equalTo(1L));
 
+        // when: 2) modifying test category and adding 3 attributes to it
         testCategory.setDescription("ModifiedTestCategoryDescription2");
         testCategory.setName("ModifiedTestCategoryName2");
         testCategory.setLongDescription("ModifiedTestCategoryLongDescription2");
 
-        Map<String, String> categoryAttributes = new HashMap<>();
+        final Map<String, String> categoryAttributes = new HashMap<>();
         categoryAttributes.put("size", String.valueOf(99));
         categoryAttributes.put("color", "red");
         categoryAttributes.put("length", String.valueOf(12.222));
-
         testCategory.setAttributes(categoryAttributes);
 
         oAuth2AdminRestTemplate().put(CATEGORY_BY_ID_URL, testCategory, serverPort, testCategoryId);
 
+        // then: 2) modification does not change category's products
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId1), equalTo(1L));
     }
