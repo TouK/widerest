@@ -593,19 +593,18 @@ public class ProductController {
                     "name already exists, it overwrites its value",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new attribute successfully created"),
+            @ApiResponse(code = 201, message = "A new attribute successfully created/updated"),
             @ApiResponse(code = 400, message = "Not enough data has been provided")
     })
     public ResponseEntity<?> addOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new attribute", required = true)
-                @RequestBody ProductAttributeDto productAttributeDto) {
-
+                @RequestBody final ProductAttributeDto productAttributeDto) {
 
         if(productAttributeDto.getAttributeName() == null || productAttributeDto.getAttributeValue() == null ||
                 productAttributeDto.getAttributeName().isEmpty() || productAttributeDto.getAttributeValue().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
@@ -621,7 +620,11 @@ public class ProductController {
 
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                .build()
+                .toUri()
+        ).build();
     }
 
     @Transactional
