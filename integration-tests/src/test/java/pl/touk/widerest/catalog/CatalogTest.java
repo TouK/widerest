@@ -92,13 +92,15 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        // then: 2a) number of products in the test category should increase
         final long testProductId1 = getIdFromEntity(remoteAddProduct1Entity);
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
-        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
 
         em.clear();
 
+        // then: 2a) number of products in the test category should increase
+        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
+
+
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
         // then: 2b) product's default SKU should have proper values
         final ResponseEntity<SkuDto> receivedSkuEntity = restTemplate.exchange(
                 PRODUCT_BY_ID_SKUS_DEFAULT, HttpMethod.GET,
@@ -131,20 +133,21 @@ public class CatalogTest extends ApiTestBase {
         oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId1, serverPort);
         oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId2, serverPort);
 
+        em.clear();
+
         // then: 4) total number of products in catalog should decrease by 2 AND total number of products in the test
         //          category should drop down to 0 (no products in category)
         assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductCount));
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount));
 
-        em.clear();
 
         // when: 5) removing test category from catalog
         oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
         // then: 5) the total number of categories should decrease by 1
-        assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
-
         em.clear();
+
+        assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoriesCount));
     }
 
 
@@ -157,57 +160,66 @@ public class CatalogTest extends ApiTestBase {
     @Test
     @Transactional
     public void removingCategoriesFromCatalogDoesNotRemoveProductThatIsInThemTest() {
-        // create N new Categories
+
+        // when: 1) creating TEST_CATEGORIES_COUNT categories
         final long TEST_CATEGORIES_COUNT = 3;
 
-        long currentTotalCategoriesCount = getLocalTotalCategoriesCount();
+        final long currentTotalCategoriesCount = getLocalTotalCategoriesCount();
 
-        List<Long> newCategoriesIds = new ArrayList<>();
+        final List<Long> newCategoriesIds = new ArrayList<>();
+
+        ResponseEntity<CategoryDto> remoteAddCategoryEntity;
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
+            remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(
                     CATEGORIES_URL,
                     DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
 
             assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-            newCategoriesIds.add(getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString()));
+            newCategoriesIds.add(getIdFromEntity(remoteAddCategoryEntity));
         }
 
+        // then: 1) total number of categories should increase by TEST_CATEGORIES_COUNT and all of the categories
+        //          should not have any products in them
         assertThat(getLocalTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + TEST_CATEGORIES_COUNT));
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
             assertThat(getLocalTotalProductsInCategoryCount(newCategoriesIds.get(i)), equalTo(0L));
         }
 
+        // when: 2) adding a new test product
+        final long currentTotalProductsCount = getRemoteTotalProductsCount();
 
-        // create a single product
+        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        long currentTotalProductsCount = getRemoteTotalProductsCount();
-
-        ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-
-        ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
+        final ResponseEntity<ProductDto> remoteAddProduct1Entity = oAuth2AdminRestTemplate().postForEntity(
                 PRODUCTS_URL, productDto, null, serverPort);
 
+        // then: 2) total number of products should increase
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getRemoteTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
 
-        long testProductId = getIdFromLocationUrl(remoteAddProduct1Entity.getHeaders().getLocation().toString());
+        final long testProductId = getIdFromEntity(remoteAddProduct1Entity);
 
-        //add product to all N Categories
-
+        // when: 3) inserting test product into all TEST_CATEGORIES_COUNT categories
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            //oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, newCategoriesIds.get(i).longValue(), testProductId);
-            oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, newCategoriesIds.get(i).longValue(), serverPort, testProductId);
+            // "old way" of inserting using PUT...
+            // oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, newCategoriesIds.get(i).longValue(), testProductId);
+            oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, newCategoriesIds.get(i), serverPort, testProductId);
         }
 
+        // then: 3) product's categories number should be equal to TEST_CATEGORIES_COUNT (=> it has been inserted into all of them)
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId), equalTo(TEST_CATEGORIES_COUNT));
 
-        for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, newCategoriesIds.get(i).longValue());
+        ResponseEntity<ProductDto> receivedProductEntity;
 
-            ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
+        // when: 4) deleting each of TEST_CATEGORIES_COUNT categories
+        for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
+            oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, newCategoriesIds.get(i));
+
+            // then: 4a) product's categories number should decrease (by 1) on each category deletion
+            receivedProductEntity = restTemplate.exchange(
                     PRODUCT_BY_ID_URL,
                     HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort, testProductId);
 
@@ -215,8 +227,8 @@ public class CatalogTest extends ApiTestBase {
             assertThat(getRemoteTotalCategoriesForProductCount(testProductId), equalTo(TEST_CATEGORIES_COUNT - (i + 1)));
         }
 
+        // then: 4b) product's categories number should equal to 0 after all categories have been removed
         assertThat(getRemoteTotalCategoriesForProductCount(testProductId), equalTo(0L));
-
     }
 
     @Test
