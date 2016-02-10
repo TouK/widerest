@@ -660,7 +660,6 @@ public class ProductController {
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 
-
     /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
 
     /* GET /products/{id}/categories */

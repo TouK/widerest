@@ -509,6 +509,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(1L));
     }
 
+
     /* ------------------ HELPER METHODS -------------------*/
 
     private void cleanupCatalogTests() {

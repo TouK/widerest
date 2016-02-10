@@ -410,6 +410,20 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
+    protected ResponseEntity<?> addCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
+        return oAuth2AdminRestTemplate().postForEntity(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
+                serverPort, rootCategoryId, serverPort, childCategoryId);
+    }
+
+    protected void removeCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
+        oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
+                serverPort, rootCategoryId, serverPort, childCategoryId);
+    }
+
+//    protected ResponseEntity<?> addProductToCategoryReference(final ) {
+//
+//    }
+
     /* --------------------------------  CLEANUP METHODS -------------------------------- */
 
     protected void removeRemoteTestCategories() {
