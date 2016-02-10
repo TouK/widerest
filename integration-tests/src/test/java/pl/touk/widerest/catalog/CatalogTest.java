@@ -193,9 +193,7 @@ public class CatalogTest extends ApiTestBase {
 
         // when: 3) inserting test product into all TEST_CATEGORIES_COUNT categories
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            // "old way" of inserting using PUT...
-            // oAuth2AdminRestTemplate().put(PRODUCTS_IN_CATEGORY_BY_ID_URL, null, serverPort, newCategoriesIds.get(i).longValue(), testProductId);
-            oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, newCategoriesIds.get(i), serverPort, testProductId);
+            addProductToCategoryReference(newCategoriesIds.get(i), testProductId);
         }
 
         // then: 3) product's categories number should be equal to TEST_CATEGORIES_COUNT (=> it has been inserted into all of them)
@@ -248,11 +246,11 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId, serverPort, testProductId);
+        addProductToCategoryReference(testCategoryId, testProductId);
 
         // then: 1) total number of all products as well as products in test category should increase by 1
         try {
-            oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL, null, null, serverPort, testCategoryId, serverPort, testProductId);
+            addProductToCategoryReference(testCategoryId, testProductId);
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             em.clear();
@@ -412,20 +410,20 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(0L));
 
         // when: 2) adding the 1st product to the 1st category twice
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
+        addProductToCategoryReference(testCategoryId1, newProductsIds.get(0));
 
         em.clear();
 
         // then: 2) API should only add that product once
         try {
-            oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
+            addProductToCategoryReference(testCategoryId1, newProductsIds.get(0));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(1L));
         }
 
         // when: 3) adding 2nd product to the 1st category
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
+        addProductToCategoryReference(testCategoryId1, newProductsIds.get(1));
 
         em.clear();
 
@@ -437,8 +435,8 @@ public class CatalogTest extends ApiTestBase {
 
 
         // when: 4) adding 3rd product to both categories
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId1, serverPort, newProductsIds.get(2));
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(2));
+        addProductToCategoryReference(testCategoryId1, newProductsIds.get(2));
+        addProductToCategoryReference(testCategoryId2, newProductsIds.get(2));
 
         em.clear();
 
@@ -452,7 +450,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId2), equalTo(1L));
 
         // when: 5) removing reference to 2nd product from 1st category twice
-        oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
+        removeProductToCategoryReference(testCategoryId1, newProductsIds.get(1));
 
         em.clear();
 
@@ -463,7 +461,7 @@ public class CatalogTest extends ApiTestBase {
         //         - 3rd product should reference both categories
         //         - API should throw an error on removing non existent product reference from category
         try {
-            oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(1));
+            removeProductToCategoryReference(testCategoryId1, newProductsIds.get(1));
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(getLocalTotalProductsInCategoryCount(testCategoryId1), equalTo(2L));
@@ -474,11 +472,11 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(1)), equalTo(0L));
 
         // when: 6a) removing reference to 1st product from 1st category
-        oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(0));
+        removeProductToCategoryReference(testCategoryId1, newProductsIds.get(0));
 
         // when: 6b) adding 1st and 2nd product to 2nd category
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(0));
-        oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, testCategoryId2, serverPort, newProductsIds.get(1));
+        addProductToCategoryReference(testCategoryId2, newProductsIds.get(0));
+        addProductToCategoryReference(testCategoryId2, newProductsIds.get(1));
 
         em.clear();
 
@@ -495,7 +493,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(getLocalTotalCategoriesForProductCount(newProductsIds.get(2)), equalTo(2L));
 
         // when: 7) removing reference to 3rd product from 1st category
-        oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, testCategoryId1, serverPort, newProductsIds.get(2));
+        removeProductToCategoryReference(testCategoryId1, newProductsIds.get(2));
 
         em.clear();
 

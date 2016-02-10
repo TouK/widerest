@@ -420,9 +420,13 @@ public abstract class ApiTestBase {
                 serverPort, rootCategoryId, serverPort, childCategoryId);
     }
 
-//    protected ResponseEntity<?> addProductToCategoryReference(final ) {
-//
-//    }
+    protected ResponseEntity<?> addProductToCategoryReference(final long categoryId, final long productId) {
+        return oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, categoryId, serverPort, productId);
+    }
+
+    protected void removeProductToCategoryReference(final long categoryId, final long productId) {
+        oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, categoryId, serverPort, productId);
+    }
 
     /* --------------------------------  CLEANUP METHODS -------------------------------- */
 
