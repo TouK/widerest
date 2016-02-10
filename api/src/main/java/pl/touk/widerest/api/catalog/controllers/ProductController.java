@@ -567,11 +567,11 @@ public class ProductController {
             response = Map.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
-            @ApiResponse(code = 404, message = "The specified product does not exist or is marked as archived")
+            @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
     })
     public Map<String, String> getProductByIdAttributes(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId) {
+                @PathVariable(value = "productId") final Long productId) {
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -593,8 +593,8 @@ public class ProductController {
                     "name already exists, it overwrites its value",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new attribute successfully created/updated"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided")
+            @ApiResponse(code = 201, message = "New attribute successfully created/updated"),
+            @ApiResponse(code = 400, message = "Attribute name and/or attribute value were not provided")
     })
     public ResponseEntity<?> addOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
@@ -636,29 +636,27 @@ public class ProductController {
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 204, message = "Successful removal of the specified attribute"),
-            @ApiResponse(code = 404, message = "The specified product or attribute does not exist")
+            @ApiResponse(code = 404, message = "Specified product or attribute does not exist")
     })
     public ResponseEntity<?> removeOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Name of the attribute", required = true)
-                @PathVariable(value = "attributeName") String attributeName){
+                @PathVariable(value = "attributeName") final String attributeName){
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-
         Optional.ofNullable(product.getProductAttributes().get(attributeName))
                 .orElseThrow(() -> new ResourceNotFoundException("Attribute of name: " + attributeName + " does not exist or is not related to product with ID: " + productId));
 
         product.getProductAttributes().remove(attributeName);
+
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
-
-
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 
