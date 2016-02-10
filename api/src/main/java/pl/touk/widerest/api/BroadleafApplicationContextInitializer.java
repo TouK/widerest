@@ -1,9 +1,15 @@
 package pl.touk.widerest.api;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
+import static org.springframework.context.ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS;
+import static org.springframework.util.StringUtils.tokenizeToStringArray;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -19,18 +25,15 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.FatalBeanException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.util.StringUtils;
 
 public class BroadleafApplicationContextInitializer implements ApplicationContextInitializer<GenericApplicationContext> {
 
     private static final Log LOG = LogFactory.getLog(BroadleafApplicationContextInitializer.class);
 
     private String patchLocation;
-    private int standardLocationTypes = StandardConfigLocations.SERVICECONTEXTTYPE;
 
     public BroadleafApplicationContextInitializer() {
         setPatchLocation(
@@ -46,47 +49,44 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
 
     }
 
-    protected void loadBeanDefinitions(XmlBeanDefinitionReader reader, ImportProcessor importProcessor) throws BeansException, IOException {
-        String[] broadleafConfigLocations = StandardConfigLocations.retrieveAll(standardLocationTypes);
+    protected int loadBeanDefinitions(XmlBeanDefinitionReader reader, ImportProcessor importProcessor) throws BeansException, IOException {
+        final int standardLocationTypes = StandardConfigLocations.SERVICECONTEXTTYPE;
 
-        ArrayList<ResourceInputStream> sources = new ArrayList<ResourceInputStream>(20);
-        for (String location : broadleafConfigLocations) {
-            InputStream source = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(location);
-            if (source != null) {
-                sources.add(new ResourceInputStream(source, location));
-            }
-        }
-        ResourceInputStream[] filteredSources = new ResourceInputStream[]{};
-        filteredSources = sources.toArray(filteredSources);
-        String patchLocation = getPatchLocation();
-        String[] patchLocations = StringUtils.tokenizeToStringArray(patchLocation, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
-        List<ResourceInputStream> patchList = new ArrayList<ResourceInputStream>();
-        for (String patchLocation1 : patchLocations) {
-            ResourceInputStream patch;
-            if (patchLocation1.startsWith("classpath")) {
-                InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
-                        patchLocation1.substring("classpath*:".length(), patchLocation1.length()));
-                patch = new ResourceInputStream(is, patchLocation1);
-            } else {
-                throw new NotImplementedException("Only classpath resources merge implemented");
-            }
-            if (patch.available() <= 0) {
-                patchList.addAll(getResourcesFromPatternResolver(patchLocation1));
-            } else {
-                patchList.add(patch);
-            }
-        }
+        final ResourceInputStream[] filteredSources = stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
+                .map(location -> {
+                    final InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(location);
+                    return new ResourceInputStream(is, location);
+                })
+                .toArray(ResourceInputStream[]::new);
 
-        ResourceInputStream[] patchArray;
+        final List<ResourceInputStream> patchList = stream(tokenizeToStringArray(getPatchLocation(), CONFIG_LOCATION_DELIMITERS))
+                .flatMap(location -> {
+                    if (location.startsWith("classpath")) {
+                        InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
+                                location.substring("classpath*:".length(), location.length()));
+                        final ResourceInputStream patch = new ResourceInputStream(is, location);
+
+                        try {
+                            return patch.available() <= 0 ? getResourcesFromPatternResolver(
+                                    location).stream() : Stream.of(patch);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        throw new NotImplementedException("Only classpath resources merge implemented");
+                    }
+                }).collect(toList());
+
         try {
-            filteredSources = importProcessor.extract(filteredSources);
-            patchArray = importProcessor.extract(patchList.toArray(new ResourceInputStream[patchList.size()]));
+            final ResourceInputStream[]extractedSources = importProcessor.extract(filteredSources);
+            final ResourceInputStream[] patchArray = importProcessor.extract(patchList.toArray(new ResourceInputStream[patchList.size()]));
+
+            final Resource[] resources = new MergeApplicationContextXmlConfigResource().getConfigResources(extractedSources, patchArray);
+
+            return reader.loadBeanDefinitions(resources);
         } catch (MergeException e) {
             throw new FatalBeanException("Unable to merge source and patch locations", e);
         }
-
-        Resource[] resources = new MergeApplicationContextXmlConfigResource().getConfigResources(filteredSources, patchArray);
-        reader.loadBeanDefinitions(resources);
     }
 
     protected List<ResourceInputStream> getResourcesFromPatternResolver(String patchLocation) throws IOException {
@@ -132,7 +132,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         try {
             loadBeanDefinitions(reader, importProcessor);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error(e);
         }
     }
 }
