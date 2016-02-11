@@ -36,6 +36,7 @@ import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXrefImpl;
+import org.broadleafcommerce.common.util.BLCSystemProperty;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
@@ -78,6 +79,7 @@ import pl.touk.widerest.api.categories.CategoryConverter;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
+import java.util.*;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { "application/json", "application/hal+json" })
@@ -98,10 +100,10 @@ public class ProductController {
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
-    /* Searching related services */
     @Resource(name = "blSearchService")
     protected SearchService searchService;
 
+    /* (mst) For filtering input search query */
     @Resource(name = "blExploitProtectionService")
     protected ExploitProtectionService exploitProtectionService;
 
@@ -151,8 +153,20 @@ public class ProductController {
             }
 
             final SearchCriteria searchCriteria = new SearchCriteria();
-            searchCriteria.setPage(page);
-            searchCriteria.setPageSize(pageSize);
+            searchCriteria.setPage((page <= 0) ? 1 : page);
+
+            final int maxAllowedPageSize = BLCSystemProperty.resolveIntSystemProperty("web.maxPageSize");
+            final int defaultPageSize = BLCSystemProperty.resolveIntSystemProperty("web.defaultPageSize");
+            searchCriteria.setPageSize((pageSize <= 0) ? defaultPageSize : Math.min(pageSize, maxAllowedPageSize));
+
+            final Map<String, String[]> searchFilterCriteria = new HashMap<>();
+            /* (nst)
+                 'defaultSku.name' -> 'name'
+             */
+            final String[] nameFilters = { };
+            searchFilterCriteria.put("name", nameFilters);
+
+            searchCriteria.setFilterCriteria(searchFilterCriteria);
 
 
             try {
@@ -578,11 +592,11 @@ public class ProductController {
             response = Map.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
-            @ApiResponse(code = 404, message = "The specified product does not exist or is marked as archived")
+            @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
     })
     public Map<String, String> getProductByIdAttributes(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId) {
+                @PathVariable(value = "productId") final Long productId) {
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -604,19 +618,18 @@ public class ProductController {
                     "name already exists, it overwrites its value",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new attribute successfully created"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided")
+            @ApiResponse(code = 201, message = "New attribute successfully created/updated"),
+            @ApiResponse(code = 400, message = "Attribute name and/or attribute value were not provided")
     })
     public ResponseEntity<?> addOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new attribute", required = true)
-                @RequestBody ProductAttributeDto productAttributeDto) {
-
+                @RequestBody final ProductAttributeDto productAttributeDto) {
 
         if(productAttributeDto.getAttributeName() == null || productAttributeDto.getAttributeValue() == null ||
                 productAttributeDto.getAttributeName().isEmpty() || productAttributeDto.getAttributeValue().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
@@ -632,7 +645,11 @@ public class ProductController {
 
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                .build()
+                .toUri()
+        ).build();
     }
 
     @Transactional
@@ -644,32 +661,29 @@ public class ProductController {
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 204, message = "Successful removal of the specified attribute"),
-            @ApiResponse(code = 404, message = "The specified product or attribute does not exist")
+            @ApiResponse(code = 404, message = "Specified product or attribute does not exist")
     })
     public ResponseEntity<?> removeOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Name of the attribute", required = true)
-                @PathVariable(value = "attributeName") String attributeName){
+                @PathVariable(value = "attributeName") final String attributeName){
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-
         Optional.ofNullable(product.getProductAttributes().get(attributeName))
                 .orElseThrow(() -> new ResourceNotFoundException("Attribute of name: " + attributeName + " does not exist or is not related to product with ID: " + productId));
 
         product.getProductAttributes().remove(attributeName);
+
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
-
-
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
-
 
     /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
 
