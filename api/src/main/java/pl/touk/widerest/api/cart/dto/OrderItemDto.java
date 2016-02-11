@@ -1,7 +1,10 @@
 package pl.touk.widerest.api.cart.dto;
 
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -9,11 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
-import java.util.List;
-
-/**
- * Created by mst on 07.07.15.
- */
 @Data
 @Builder
 @NoArgsConstructor

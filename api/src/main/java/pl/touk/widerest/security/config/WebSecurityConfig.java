@@ -61,10 +61,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth
-                .authenticationProvider(backofficeAuthenticationProvider())
-                .authenticationProvider(siteAuthenticationProvider())
-        ;
+        auth.authenticationProvider(backofficeAuthenticationProvider())
+                .authenticationProvider(siteAuthenticationProvider());
     }
 
     @Override
@@ -97,8 +95,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                             (request, response, authException) ->
                                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage()),
                             new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest")
-                    )
-        ;
+                    );
     }
 
 }

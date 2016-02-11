@@ -1,5 +1,7 @@
 package pl.touk.widerest.api.cart.dto;
 
+import java.math.BigDecimal;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -8,11 +10,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
 
-import java.math.BigDecimal;
-
-/**
- * Created by mst on 31.07.15.
- */
 @Data
 @Builder
 @NoArgsConstructor

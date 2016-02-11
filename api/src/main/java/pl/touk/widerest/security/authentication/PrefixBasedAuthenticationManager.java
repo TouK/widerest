@@ -1,5 +1,7 @@
 package pl.touk.widerest.security.authentication;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -7,8 +9,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-
-import java.util.Optional;
 
 public class PrefixBasedAuthenticationManager implements AuthenticationManager {
 
@@ -31,9 +31,10 @@ public class PrefixBasedAuthenticationManager implements AuthenticationManager {
                 .map(String.class::cast)
                 .map(PrefixBasedAuthenticationManager::getAuthDataFromString)
                 .map(authDetails -> {
-                    String usertype = authDetails.getLeft();
-                    String username = authDetails.getRight();
-                    Object password = authentication.getCredentials();
+                    final String usertype = authDetails.getLeft();
+                    final String username = authDetails.getRight();
+                    final Object password = authentication.getCredentials();
+
                     switch (usertype) {
                         case "backoffice":
                             return new BackofficeAuthenticationToken(username, password);
@@ -51,7 +52,7 @@ public class PrefixBasedAuthenticationManager implements AuthenticationManager {
             throw new BadCredentialsException("Credentials not passed");
         }
 
-        String[] result = StringUtils.split(authenticationString, "/");
+        final String[] result = StringUtils.split(authenticationString, "/");
 
         if(result.length == 0 || result.length > 2) {
             throw new BadCredentialsException("Wrong credentials provided");
@@ -59,8 +60,7 @@ public class PrefixBasedAuthenticationManager implements AuthenticationManager {
             throw new BadCredentialsException("Missing username or usertype");
         } else {
             /* proper form: usertype/username has been provided */
-            Pair<String, String> resultPair = new ImmutablePair<>(result[0], result[1]);
-            return resultPair;
+            return new ImmutablePair<>(result[0], result[1]);
         }
     }
 

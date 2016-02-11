@@ -45,18 +45,15 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
                         }
                         return auth;
                     }
-                })
-        ;
+                });
     }
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
-        http
-            .requestMatchers()
+        http.requestMatchers()
                 .antMatchers(API_PATH + "/**")
                 .and()
             .authorizeRequests()
-                .anyRequest().permitAll()
-        ;
+                .anyRequest().permitAll();
     }
 }

@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Created by mst on 06.07.15.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

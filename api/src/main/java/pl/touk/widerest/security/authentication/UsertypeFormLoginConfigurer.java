@@ -1,5 +1,7 @@
 package pl.touk.widerest.security.authentication;
 
+import java.util.Optional;
+
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
@@ -55,14 +57,15 @@ public final class UsertypeFormLoginConfigurer<H extends HttpSecurityBuilder<H>>
     }
 
     private void initDefaultLoginFilter(H http) {
-        DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http.getSharedObject(DefaultLoginPageGeneratingFilter.class);
-        if(loginPageGeneratingFilter != null && !isCustomLoginPage()) {
-            loginPageGeneratingFilter.setFormLoginEnabled(true);
-            loginPageGeneratingFilter.setUsernameParameter(getUsernameParameter());
-            loginPageGeneratingFilter.setPasswordParameter(getPasswordParameter());
-            loginPageGeneratingFilter.setLoginPageUrl(getLoginPage());
-            loginPageGeneratingFilter.setFailureUrl(getFailureUrl());
-            loginPageGeneratingFilter.setAuthenticationUrl(getLoginProcessingUrl());
-        }
+        Optional.ofNullable(http.getSharedObject(DefaultLoginPageGeneratingFilter.class))
+                .filter(f -> !isCustomLoginPage())
+                .ifPresent(f -> {
+                    f.setFormLoginEnabled(true);
+                    f.setUsernameParameter(getUsernameParameter());
+                    f.setPasswordParameter(getPasswordParameter());
+                    f.setLoginPageUrl(getLoginPage());
+                    f.setFailureUrl(getFailureUrl());
+                    f.setAuthenticationUrl(getLoginProcessingUrl());
+                });
     }
 }

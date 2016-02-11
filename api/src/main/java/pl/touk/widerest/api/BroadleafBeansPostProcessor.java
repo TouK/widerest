@@ -1,13 +1,14 @@
 package pl.touk.widerest.api;
 
+import java.util.Arrays;
+
+import javax.servlet.Filter;
+
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
-
-import javax.servlet.Filter;
 
 @Component
 public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {
@@ -21,26 +22,25 @@ public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {
         ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blSequenceGeneratorCorruptionDetection");
 
 
-        if (((DefaultListableBeanFactory) beanFactory).containsBeanDefinition("jpaVendorAdapter")) {
+        if (beanFactory.containsBeanDefinition("jpaVendorAdapter")) {
             ((DefaultListableBeanFactory) beanFactory).removeBeanDefinition("blJpaVendorAdapter");
             beanFactory.registerAlias("jpaVendorAdapter", "blJpaVendorAdapter");
         }
     }
 
-    private void registerAliases(ConfigurableListableBeanFactory beanFactory) {
+    private static void registerAliases(ConfigurableListableBeanFactory beanFactory) {
         beanFactory.registerAlias("dataSource", "webDS");
         beanFactory.registerAlias("dataSource", "webStorageDS");
         beanFactory.registerAlias("dataSource", "webSecureDS");
     }
 
-    private void removeWebFilters(DefaultListableBeanFactory beanFactory) {
-        for (String beanName : beanFactory.getBeanNamesForType(Filter.class)) {
-            BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
-            String beanClassName = beanDefinition.getBeanClassName();
-            if (beanClassName != null && beanClassName.startsWith("org.broadleafcommerce")) {
-                beanFactory.removeBeanDefinition(beanName);
-            }
-        }
+    private static void removeWebFilters(DefaultListableBeanFactory beanFactory) {
+        Arrays.stream(beanFactory.getBeanNamesForType(Filter.class))
+                .filter(beanName -> {
+                    final String beanClassName = beanFactory.getBeanDefinition(beanName).getBeanClassName();
+                    return beanClassName != null && beanClassName.startsWith("org.broadleafcommerce");
+                })
+                .forEach(beanFactory::removeBeanDefinition);
 
     }
 }

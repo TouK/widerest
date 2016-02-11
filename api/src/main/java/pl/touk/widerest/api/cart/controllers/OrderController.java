@@ -6,12 +6,14 @@ import static java.util.stream.Collectors.toMap;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -57,6 +59,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.jasongoodwin.monads.Try;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -87,6 +91,8 @@ import springfox.documentation.annotations.ApiIgnore;
 @RequestMapping(ResourceServerConfig.API_PATH + "/orders")
 @Api(value = "orders", description = "Order management endpoint")
 public class OrderController {
+
+    private static final Log LOG = LogFactory.getLog(OrderController.class);
 
     @Resource(name = "blOrderService")
     protected OrderService orderService;
@@ -169,7 +175,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId));
+        return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
 
     }
 
@@ -212,12 +218,8 @@ public class OrderController {
                 .buildAndExpand(cart.getId())
                 .toUri());
 
-        try {
-            orderService.save(cart, true);
-        } catch (PricingException e) {
-            /* Order is empty - there should not be any PricingException situations */
-            e.printStackTrace();
-        }
+        Try.ofFailable(() -> orderService.save(cart, true)).onFailure(LOG::error);
+
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
     }
 
@@ -239,7 +241,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId) {
 
         //orderService.cancelOrder(orders.get(0));
-        orderService.deleteOrder(orderServiceProxy.getProperCart(userDetails, orderId));
+        orderService.deleteOrder(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 
     /* POST /orders/{orderId}/items */
@@ -268,8 +270,7 @@ public class OrderController {
             return ResponseEntity.badRequest().build();
         }
 
-        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
+        Order cart = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         long hrefProductId;
 
@@ -338,7 +339,7 @@ public class OrderController {
         }
 
 
-        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+        Order cart = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
         final OrderItemRequestDTO req = new OrderItemRequestDTO();
@@ -440,7 +441,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        final int itemsInOrderCount = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
+        final int itemsInOrderCount = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new)
                 .getItemCount();
 
@@ -478,9 +479,9 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new)
-                .getStatus();
+        return orderServiceProxy.getProperCart(userDetails, orderId)
+                .map(Order::getStatus)
+                .orElseThrow(ResourceNotFoundException::new);
 
     }
 
@@ -503,21 +504,15 @@ public class OrderController {
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId) {
 
-        Order cart = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
+        final Order cart = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
-        if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+        if (cart.getDiscreteOrderItems().stream().filter(x -> Objects.equals(x.getId(), itemId)).count() != 1) {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
-        try {
-            /* price order?! */
-            Order updatedOrder = orderService.removeItem(cart.getId(), itemId, true);
-            orderService.save(updatedOrder, true);
-        } catch (Exception e) {
-            throw new ResourceNotFoundException("Error while removing item with ID: " + itemId);
-        }
-
+        Try.ofFailable(() -> orderService.save(orderService.removeItem(cart.getId(), itemId, true), true))
+                .toOptional()
+                .orElseThrow(() -> new ResourceNotFoundException("Error while removing item with ID: " + itemId));
     }
 
     /* GET /orders/items/{itemId} */
@@ -540,10 +535,9 @@ public class OrderController {
             @PathVariable(value = "itemId") Long itemId) {
 
 
-        return Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new)
+        return orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new)
                 .getDiscreteOrderItems().stream()
-                .filter(x -> x.getId() == itemId).findAny()
+                .filter(x -> Objects.equals(x.getId(), itemId)).findAny()
                 .map(DtoConverters.discreteOrderItemEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find the item in card with ID: " + itemId));
 
@@ -598,8 +592,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "Fulfillment Option value", required = true)
-            @RequestBody long fulfillmentOptionId) throws PricingException
-    {
+            @RequestBody long fulfillmentOptionId) throws PricingException {
         return orderServiceProxy.updateSelectedFulfillmentOption(userDetails, orderId, fulfillmentOptionId);
     }
 
@@ -620,8 +613,7 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        return fulfillmentServiceProxy.createFulfillmentDto(
-                orderServiceProxy.getProperCart(userDetails, orderId));
+        return fulfillmentServiceProxy.createFulfillmentDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 
 
@@ -644,8 +636,7 @@ public class OrderController {
             @ApiParam(value = "Description of a fulfillment address", required = true)
             @RequestBody AddressDto addressDto) throws PricingException {
 
-        final Order order = Optional.ofNullable(orderServiceProxy.getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new);
+        final Order order = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
             throw new NotShippableException("Order with ID: " + orderId + " is empty");
@@ -707,12 +698,11 @@ public class OrderController {
     @Transactional
     public ResponseEntity initiatePayment(
             @RequestBody PaymentDto paymentDto,
-            HttpServletRequest request,
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "orderId") Long orderId
     ) throws PaymentException {
 
-        Order order = Optional.ofNullable(orderService.findOrderById(orderId))
+        final Order order = Optional.ofNullable(orderService.findOrderById(orderId))
                 .filter(OrderController::notYetSubmitted)
                 .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
 
@@ -730,15 +720,16 @@ public class OrderController {
 
         paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
-        PaymentGatewayConfigurationService configurationService =
+        final PaymentGatewayConfigurationService configurationService =
                 paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
                         PaymentGatewayType.getInstance(String.valueOf(paymentDto.getProvider()))
                 );
 
-        PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint(paymentRequestDTO);
+        final PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint
+                (paymentRequestDTO);
 
         //return redirect URI from the paymentResponse
-        String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
+        final String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
                 .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
 
         return ResponseEntity.created(URI.create(redirectURI)).build();
@@ -768,7 +759,6 @@ public class OrderController {
                     .total(order.getTotal().toString())
                     .done();
         }
-
 
         return paymentRequest;
     }

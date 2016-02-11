@@ -34,13 +34,13 @@ public class OutOfBandUriConfig extends WebMvcConfigurerAdapter {
 
     @Bean
     HandlerMethodReturnValueHandler oAuth2OutOfBandUriHandler(RequestMappingHandlerAdapter adapter) {
-        OutOfBandUriHandler handler = new OutOfBandUriHandler(adapter);
-        return handler;
+        return new OutOfBandUriHandler(adapter);
     };
 
     @Override
     public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
-        ExceptionHandlerExceptionResolver exceptionHandlerExceptionResolver = new ExceptionHandlerExceptionResolver();
+        final ExceptionHandlerExceptionResolver exceptionHandlerExceptionResolver = new
+                ExceptionHandlerExceptionResolver();
         exceptionHandlerExceptionResolver.setContentNegotiationManager(webMvcConfigurationSupport.mvcContentNegotiationManager());
         exceptionHandlerExceptionResolver.setMessageConverters(this.messageConverters.getConverters());
             List<ResponseBodyAdvice<?>> interceptors = new ArrayList<ResponseBodyAdvice<?>>();
@@ -48,7 +48,7 @@ public class OutOfBandUriConfig extends WebMvcConfigurerAdapter {
             exceptionHandlerExceptionResolver.setResponseBodyAdvice(interceptors);
         exceptionHandlerExceptionResolver.setApplicationContext(this.applicationContext);
         exceptionHandlerExceptionResolver.afterPropertiesSet();
-        new OutOfBandUriHandler(exceptionHandlerExceptionResolver);
+        new OutOfBandUriHandler(exceptionHandlerExceptionResolver); // TODO to jest celowo ignorowane?
         exceptionResolvers.add(exceptionHandlerExceptionResolver);
 
         ResponseStatusExceptionResolver responseStatusExceptionResolver = new ResponseStatusExceptionResolver();

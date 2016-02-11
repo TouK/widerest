@@ -1,12 +1,11 @@
 package pl.touk.widerest.api.settings;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import lombok.Data;
-import lombok.experimental.Builder;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.hateoas.Resource;
@@ -21,14 +20,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import lombok.Data;
+import lombok.experimental.Builder;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
-
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/settings")
@@ -44,7 +45,6 @@ public class SettingsController {
     @Builder
     @Data
     public static class Property {
-
         private String name;
 
         private Object value;
@@ -78,7 +78,7 @@ public class SettingsController {
                                                 )
                                                 .build()
                         )
-                        .map(dto -> new Resource(dto, linkTo(methodOn(getClass()).getValue(dto.getName(), null)).withSelfRel()))
+                        .map(dto -> new Resource(dto, linkTo(methodOn(getClass()).getValue(dto.getName())).withSelfRel()))
                         .collect(Collectors.toList()),
                 linkTo(methodOn(getClass()).listAll()).withSelfRel()
         );
@@ -96,15 +96,11 @@ public class SettingsController {
             @ApiResponse(code = 204, message = "Value for the key hasn't been set yet"),
             @ApiResponse(code = 404, message = "There is no system property for the key")
     })
-    public ResponseEntity getValue(
-            @ApiParam @PathVariable("key") String key,
-            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails
-    ) {
+    public ResponseEntity getValue(@ApiParam @PathVariable("key") String key) {
 
         return Optional.of(key)
                 .filter(settingsService.getAvailableSystemPropertyNames()::contains)
-                .map(name ->
-                                Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(name))
+                .map(name -> Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(name))
                                         .map(SystemProperty::getValue)
                                         .map(ResponseEntity::ok)
                                         .map(ResponseEntity.class::cast)

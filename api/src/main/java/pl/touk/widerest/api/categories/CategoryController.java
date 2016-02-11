@@ -1,11 +1,17 @@
 package pl.touk.widerest.api.categories;
 
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -18,7 +24,6 @@ import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,22 +34,18 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.config.ResourceServerConfig;
-
-import javax.annotation.Resource;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaTypes.HAL_JSON_VALUE})
@@ -463,7 +464,7 @@ public class CategoryController {
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
         getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .filter(x -> x.getId().longValue() == hrefProductId)
+                .filter(x -> x.getId() == hrefProductId)
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + hrefProductId + " does not exist in category with ID: " + categoryId));
 
@@ -472,7 +473,7 @@ public class CategoryController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
                     CategoryProductXref xref = e.getAllProductXrefs().stream()
-                            .filter(x -> x.getProduct().getId().longValue() == hrefProductId)
+                            .filter(x -> x.getProduct().getId() == hrefProductId)
                             .findAny()
                             .orElseThrow(() -> new ResourceNotFoundException("(Internal) Product with ID: " + hrefProductId + " not found on the list of references for category with ID: " + categoryId));
                     return Pair.of(e, xref);

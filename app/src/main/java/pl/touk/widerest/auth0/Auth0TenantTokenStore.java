@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by mst on 16.09.15.
- */
 @Slf4j
 public class Auth0TenantTokenStore implements TenantTokenStore {
 

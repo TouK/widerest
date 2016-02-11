@@ -1,9 +1,9 @@
 package pl.touk.widerest.api;
 
+import java.util.Optional;
+
 import org.broadleafcommerce.common.web.BroadleafRequestContext;
 import org.springframework.web.context.request.RequestAttributes;
-
-import java.util.Optional;
 
 public class RequestUtils {
 
@@ -20,7 +20,7 @@ public class RequestUtils {
     private static <T> T getAttribute(String key, T defaultValue) {
         return Optional.ofNullable(BroadleafRequestContext.getBroadleafRequestContext())
                 .map(BroadleafRequestContext::getWebRequest)
-                .map(request -> (T)request.getAttribute(key, RequestAttributes.SCOPE_REQUEST))
+                .map(request -> (T) request.getAttribute(key, RequestAttributes.SCOPE_REQUEST))
                 .orElse(defaultValue);
     }
 

@@ -1,16 +1,6 @@
 package pl.touk.widerest.api.catalog;
 
-import org.broadleafcommerce.common.media.domain.Media;
-import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.common.persistence.Status;
-import org.broadleafcommerce.core.catalog.domain.*;
-import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
-import pl.touk.widerest.api.categories.CategoryDto;
+import static java.util.stream.Collectors.toMap;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -18,16 +8,31 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
-import static java.util.stream.Collectors.toMap;
+import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.common.money.Money;
+import org.broadleafcommerce.common.persistence.Status;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
+import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuAttribute;
+import org.broadleafcommerce.core.catalog.domain.SkuAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 
-/**
- * Created by mst on 27.07.15.
- */
+import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
+import pl.touk.widerest.api.categories.CategoryDto;
+
 public class CatalogUtils {
-
-
-
 
     public static final String EMPTY_STRING = "";
 
@@ -68,16 +73,20 @@ public class CatalogUtils {
             categoryEntity.getCategoryAttributesMap().clear();
             categoryEntity.getCategoryAttributesMap().putAll(
                     Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                            .collect(toMap(Map.Entry::getKey, e -> {
-                                CategoryAttribute a = new CategoryAttributeImpl();
-                                a.setName(e.getKey());
-                                a.setValue(e.getValue());
-                                a.setCategory(categoryEntity);
-                                return a;
-                            })));
+                            .collect(toMap(Map.Entry::getKey, valueExtractor(categoryEntity))));
         }
 
         return categoryEntity;
+    }
+
+    public static Function<Map.Entry<String, String>, CategoryAttribute> valueExtractor(Category categoryEntity) {
+        return e -> {
+            CategoryAttribute a = new CategoryAttributeImpl();
+            a.setName(e.getKey());
+            a.setValue(e.getValue());
+            a.setCategory(categoryEntity);
+            return a;
+        };
     }
 
     public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
@@ -123,7 +132,7 @@ public class CatalogUtils {
         if(skuDto.getSkuMedia() != null) {
             skuEntity.setSkuMediaXref(
                     skuDto.getSkuMedia().entrySet().stream()
-                            .collect(toMap(e -> e.getKey(), e -> {
+                            .collect(toMap(Map.Entry::getKey, e -> {
                                 SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
                                 newSkuMediaXref.setSku(skuEntity);
                                 newSkuMediaXref.setKey(e.getKey());
