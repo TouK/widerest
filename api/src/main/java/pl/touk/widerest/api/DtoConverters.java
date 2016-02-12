@@ -78,7 +78,7 @@ import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.controllers.ProductController;
+import pl.touk.widerest.api.products.ProductController;
 import pl.touk.widerest.api.catalog.dto.BundleItemDto;
 import pl.touk.widerest.api.catalog.dto.FacetDto;
 import pl.touk.widerest.api.catalog.dto.FacetValueDto;
@@ -94,9 +94,6 @@ import pl.touk.widerest.api.categories.CategoryController;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
-
-    @Resource(name = "blLocaleService")
-    private LocaleService localeService;
 
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
@@ -136,63 +133,6 @@ public class DtoConverters {
 
     /******************************** SKU ********************************/
 
-    public Function<Sku, SkuDto> skuEntityToDto = entity -> {
-
-        final SkuDto dto = SkuDto.builder()
-                .name(entity.getName())
-                .description(entity.getDescription())
-                .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
-                .retailPrice(Optional.ofNullable(entity.getRetailPrice()).map(Money::getAmount).orElse(null))
-                .quantityAvailable(entity.getQuantityAvailable())
-                .availability(Optional.ofNullable(entity.getInventoryType()).map(InventoryType::getType).orElse(null))
-                .taxCode(entity.getTaxCode())
-                .activeStartDate(entity.getActiveStartDate())
-                .activeEndDate(entity.getActiveEndDate())
-                .currencyCode(Optional.ofNullable(entity.getCurrency())
-                        .orElse(localeService.findDefaultLocale().getDefaultCurrency())
-                        .getCurrencyCode())
-                .skuAttributes(entity.getSkuAttributes().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())))
-                .skuProductOptionValues(entity.getProductOptionValueXrefs().stream()
-                        .map(SkuProductOptionValueXref::getProductOptionValue)
-                        .map(DtoConverters.productOptionValueToSkuValueDto)
-                        .collect(toSet()))
-                .skuMedia(entity.getSkuMediaXref().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, entry -> DtoConverters.skuMediaXrefToDto.apply(entry.getValue())))
-                )
-//                        .map(Map.Entry::getValue)
-//                        .map(DtoConverters.skuMediaXrefToDto)
-//                        .collect(toList()))
-
-                .build();
-
-        dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getProduct().getId(), entity.getId()))
-                .withSelfRel());
-
-        dto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getProduct().getId()))
-                .withRel("product"));
-
-        dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(entity.getProduct().getId(), entity.getId()))
-                .withRel("media"));
-
-        dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(entity.getProduct().getId(), entity.getId()))
-                .withRel("availability"));
-
-        dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(entity.getProduct().getId())).withRel("count")));
-
-        dto.add((linkTo(methodOn(ProductController.class).getSkuByIdQuantity(entity.getProduct().getId(), entity.getId())).withRel("quantity")));
-
-        return dto;
-    };
-
-
-    public Function<SkuDto, Sku> skuDtoToEntity = skuDto -> {
-        Sku skuEntity = new SkuImpl();
-
-        skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
-
-        return CatalogUtils.updateSkuEntityFromDto(skuEntity, skuDto);
-    };
 
     /******************************** SKU ********************************/
 
@@ -217,114 +157,6 @@ public class DtoConverters {
 
     /******************************** Product ********************************/
 
-    public Function<Product, ProductDto> productEntityToDto = entity -> {
-
-        final ProductDto dto = entity instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
-
-        dto.setName(entity.getName());
-
-        dto.setDefaultSku(skuEntityToDto.apply(entity.getDefaultSku()));
-
-        dto.setCategoryName(Optional.ofNullable(entity.getCategory()).map(Category::getName).orElse(""));
-
-        dto.setLongDescription(Optional.ofNullable(entity.getLongDescription()).orElse(""));
-
-        dto.setDescription(Optional.ofNullable(entity.getDescription()).orElse(""));
-        dto.setOfferMessage(Optional.ofNullable(entity.getPromoMessage()).orElse(""));
-        dto.setManufacturer(Optional.ofNullable(entity.getManufacturer()).orElse(""));
-        dto.setModel(Optional.ofNullable(entity.getModel()).orElse(""));
-
-        Optional.ofNullable(entity.getUrl()).ifPresent(dto::setUrl);
-
-        dto.setValidFrom(Optional.ofNullable(entity.getActiveStartDate()).orElse(null));
-        dto.setValidTo(Optional.ofNullable(entity.getActiveEndDate()).orElse(null));
-
-		/* (Map<String, String>) */
-        dto.setAttributes(entity.getProductAttributes().entrySet().stream()
-                .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
-
-        dto.setOptions(entity.getProductOptionXrefs().stream().map(DtoConverters.productOptionXrefToDto).collect(toList()));
-
-
-        dto.setSkus(entity.getAdditionalSkus().stream().map(skuEntityToDto).collect(toList()));
-
-
-		/* TODO: (mst) Implement Possible Bundles */
-
-		/*
-		 * Collection<ProductBundle> possibleBundles = Lists.transform(
-		 * ((VirginSkuImpl) defaultSku).getSkuBundleItems(), new
-		 * Function<SkuBundleItem, ProductBundle>() {
-		 *
-		 * @Nullable
-		 *
-		 * @Override public ProductBundle apply(@Nullable SkuBundleItem input) {
-		 * return input.getBundle(); } } ); possibleBundles =
-		 * Collections2.filter( possibleBundles, new Predicate<ProductBundle>()
-		 * {
-		 *
-		 * @Override public boolean apply(@Nullable ProductBundle input) {
-		 * return ((VirginSku) input.getDefaultSku()).getDefaultProductBundle()
-		 * == null; } } );
-		 * dto.setPossibleBundles(Lists.newArrayList(Iterables.transform(
-		 * possibleBundles, new Function<ProductBundle, Long>() {
-		 *
-		 * @Nullable
-		 *
-		 * @Override public Long apply(@Nullable ProductBundle input) { return
-		 * input.getId(); } } )));
-		 */
-
-        if (dto instanceof ProductBundleDto) {
-            ProductBundle productBundle = (ProductBundle) entity;
-
-            ((ProductBundleDto) dto).setBundleItems(productBundle.getSkuBundleItems().stream()
-                    .map(DtoConverters.skuBundleItemToBundleItemDto)
-                    .collect(toList()));
-
-            ((ProductBundleDto) dto).setBundleRetailPrice(productBundle.getRetailPrice().getAmount());
-            ((ProductBundleDto) dto).setBundleSalePrice(productBundle.getSalePrice().getAmount());
-            ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
-        }
-
-		/* HATEOAS links */
-        dto.add(linkTo(methodOn(ProductController.class).readOneProductById(entity.getId())).withSelfRel());
-
-        if (entity.getDefaultSku() != null) {
-            dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getId(), entity.getDefaultSku().getId()))
-                    .withRel("default-sku"));
-        }
-
-		/* skus link does not include default SKU! */
-        if (entity.getAdditionalSkus() != null && !entity.getAdditionalSkus().isEmpty()) {
-            for (Sku additionalSku : entity.getAdditionalSkus()) {
-                if (!additionalSku.equals(entity.getDefaultSku())) {
-                    dto.add(linkTo(methodOn(ProductController.class).getSkuById(entity.getId(), additionalSku.getId()))
-                            .withRel("skus"));
-                }
-            }
-        }
-
-        /* Links to the product's categories */
-        if (entity.getAllParentCategoryXrefs() != null && !entity.getAllParentCategoryXrefs().isEmpty()) {
-            entity.getAllParentCategoryXrefs().stream()
-                    .map(CategoryProductXref::getCategory)
-                    .filter(CatalogUtils::archivedCategoryFilter)
-                    .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
-        }
-
-        dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(entity.getId())).withRel("attributes"));
-
-        return dto;
-    };
-
-    public Function<ProductDto, Product> productDtoToEntity = productDto -> {
-        Product product = new ProductImpl();
-
-        product.setDefaultSku(skuDtoToEntity.apply(productDto.getDefaultSku()));
-
-        return CatalogUtils.updateProductEntityFromDto(product, productDto);
-    };
 
     /******************************** Product ********************************/
 

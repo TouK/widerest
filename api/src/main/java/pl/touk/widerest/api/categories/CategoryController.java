@@ -45,6 +45,7 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.products.ProductConverter;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 @RestController
@@ -63,6 +64,9 @@ public class CategoryController {
 
     @Resource
     private CategoryConverter categoryConverter;
+
+    @Resource
+    protected ProductConverter productConverter;
 
     @Transactional
     @PreAuthorize("permitAll")
@@ -365,7 +369,7 @@ public class CategoryController {
 
         List<ProductDto> productDtos = getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(dtoConverters.productEntityToDto)
+                .map(product -> productConverter.createDto(product, false))
                 .collect(Collectors.toList());
 
         return new Resources(productDtos);

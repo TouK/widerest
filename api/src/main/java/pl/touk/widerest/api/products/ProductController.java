@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.controllers;
+package pl.touk.widerest.api.products;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
@@ -113,6 +113,12 @@ public class ProductController {
     @Resource
     protected CategoryConverter categoryConverter;
 
+    @Resource
+    protected ProductConverter productConverter;
+
+    @Resource
+    protected SkuConverter skuConverter;
+
     /* GET /products */
     @Transactional
     @PreAuthorize("permitAll")
@@ -182,7 +188,7 @@ public class ProductController {
 
         return ResponseEntity.ok(productsToReturn.stream()
                                 .filter(CatalogUtils::archivedProductFilter)
-                                .map(dtoConverters.productEntityToDto)
+                                .map(product -> productConverter.createDto(product, false))
                                 .collect(toList()));
     }
 
@@ -201,7 +207,7 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductByURI(url))
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(dtoConverters.productEntityToDto)
+                .map(product -> productConverter.createDto(product, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
 
@@ -221,7 +227,7 @@ public class ProductController {
         return catalogService.findAllProducts().stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(e -> e instanceof ProductBundle)
-                .map(dtoConverters.productEntityToDto)
+                .map(product -> productConverter.createDto(product, false))
                 .collect(toList());
     }
 
@@ -245,7 +251,7 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(bundleId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(e -> e instanceof ProductBundle)
-                .map(dtoConverters.productEntityToDto)
+                .map(product -> productConverter.createDto(product, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
     }
 
@@ -276,7 +282,7 @@ public class ProductController {
 
         Product product = new ProductBundleImpl();
 
-        product.setDefaultSku(dtoConverters.skuDtoToEntity.apply(productBundleDto.getDefaultSku()));
+        product.setDefaultSku(skuConverter.createEntity(productBundleDto.getDefaultSku()));
 
         product = CatalogUtils.updateProductEntityFromDto(product, productBundleDto);
 
@@ -355,7 +361,7 @@ public class ProductController {
 
         CatalogUtils.validateSkuPrices(productDto.getDefaultSku());
 
-        Product newProduct = dtoConverters.productDtoToEntity.apply(productDto);
+        Product newProduct = productConverter.createEntity(productDto);
 
         newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
@@ -390,7 +396,7 @@ public class ProductController {
                     continue;
                 }
 
-                Sku s = dtoConverters.skuDtoToEntity.apply(skuDto);
+                Sku s = skuConverter.createEntity(skuDto);
 
                 final Sku skuParam = s;
                 final Product p = newProduct;
@@ -480,7 +486,7 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .map(dtoConverters.productEntityToDto)
+                .map(product -> productConverter.createDto(product, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
@@ -521,7 +527,7 @@ public class ProductController {
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(p -> {
-                    Product productEntity = dtoConverters.productDtoToEntity.apply(productDto);
+                    Product productEntity = productConverter.createEntity(productDto);
                     productEntity.setId(productId);
                     catalogService.saveProduct(productEntity);
                     return p;
@@ -764,7 +770,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
-                .map(dtoConverters.skuEntityToDto)
+                .map(sku -> skuConverter.createDto(sku, false))
                 .collect(toList());
 
     }
@@ -811,7 +817,7 @@ public class ProductController {
             }
         }
 
-        Sku newSkuEntity = dtoConverters.skuDtoToEntity.apply(skuDto);
+        Sku newSkuEntity = skuConverter.createEntity(skuDto);
         newSkuEntity.setProduct(product);
 
 
@@ -871,7 +877,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist")).stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
-                .map(dtoConverters.skuEntityToDto)
+                .map(sku -> skuConverter.createDto(sku, false))
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
@@ -895,7 +901,7 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(Product::getDefaultSku)
-                .map(dtoConverters.skuEntityToDto)
+                .map(sku -> skuConverter.createDto(sku, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 

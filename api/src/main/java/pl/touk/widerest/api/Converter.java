@@ -2,10 +2,10 @@ package pl.touk.widerest.api;
 
 public interface Converter<Entity, Dto> {
 
-    Dto createDto(Entity entity, boolean embed);
+    Dto createDto(final Entity entity, final boolean embed);
 
-    Entity createEntity(Dto dto);
+    Entity createEntity(final Dto dto);
 
-    Entity updateEntity(Entity entity, Dto dto);
+    Entity updateEntity(final Entity entity, final Dto dto);
 
 }
