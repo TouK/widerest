@@ -1,5 +1,7 @@
 package pl.touk.widerest.security.oauth2;
 
+import java.util.stream.Collectors;
+
 import org.springframework.core.MethodParameter;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
@@ -13,8 +15,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.stream.Collectors;
 
 public class OutOfBandUriHandler implements HandlerMethodReturnValueHandler {
 
@@ -33,6 +33,10 @@ public class OutOfBandUriHandler implements HandlerMethodReturnValueHandler {
                     }
 
                 }).collect(Collectors.toList()));
+
+
+
+
     }
 
     public OutOfBandUriHandler(RequestMappingHandlerAdapter requestMappingHandlerAdapter) {

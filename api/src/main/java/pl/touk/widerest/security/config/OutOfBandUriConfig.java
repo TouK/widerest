@@ -15,10 +15,13 @@ import org.springframework.web.servlet.mvc.method.annotation.JsonViewResponseBod
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
+
+import javaslang.control.Try;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 @Configuration
 public class OutOfBandUriConfig extends WebMvcConfigurerAdapter {
@@ -39,11 +42,16 @@ public class OutOfBandUriConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
+
+        Try.of(() -> {
+            throw new Exception();
+        }).
+
         final ExceptionHandlerExceptionResolver exceptionHandlerExceptionResolver = new
                 ExceptionHandlerExceptionResolver();
         exceptionHandlerExceptionResolver.setContentNegotiationManager(webMvcConfigurationSupport.mvcContentNegotiationManager());
         exceptionHandlerExceptionResolver.setMessageConverters(this.messageConverters.getConverters());
-            List<ResponseBodyAdvice<?>> interceptors = new ArrayList<ResponseBodyAdvice<?>>();
+            List<ResponseBodyAdvice<?>> interceptors = new ArrayList<>();
             interceptors.add(new JsonViewResponseBodyAdvice());
             exceptionHandlerExceptionResolver.setResponseBodyAdvice(interceptors);
         exceptionHandlerExceptionResolver.setApplicationContext(this.applicationContext);
