@@ -58,9 +58,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                 .orElse(Collections.emptyList()).stream()
                 .map(CategoryXref::getSubCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories");
-                })
+                .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories"))
                 .collect(toList());
 
         dto.add(subcategoriesLinks);
@@ -68,9 +66,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
                 .orElse(Collections.emptyList()).stream()
                 .map(CategoryXref::getCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories");
-                })
+                .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories"))
                 .collect(toList());
 
         dto.add(parentCategoriesLinks);
