@@ -711,11 +711,11 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product's categories", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public List<CategoryDto> readCategoriesByProduct(
+    public Resources<CategoryDto> readCategoriesByProduct(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId) {
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
+        final List<CategoryDto> productCategories = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllParentCategoryXrefs().stream()
@@ -723,6 +723,8 @@ public class ProductController {
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(category -> categoryConverter.createDto(category, true))
                 .collect(toList());
+
+        return new Resources<>(productCategories);
     }
 
     /* GET /products/{id}/categories */
@@ -768,17 +770,18 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public List<SkuDto> readSkusByProduct(
+    public Resources<SkuDto> readSkusByProduct(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") Long productId) {
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
+        final List<SkuDto> productSkus = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .map(sku -> skuConverter.createDto(sku, false))
                 .collect(toList());
 
+        return new Resources<>(productSkus);
     }
 
     /* POST /products/{id}/skus */

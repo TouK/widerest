@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.catalog.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -20,6 +21,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@JsonRootName("sku")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ApiModel(value = "Sku", description = "SKU DTO resource representation")
 public class SkuDto extends BaseDto {
