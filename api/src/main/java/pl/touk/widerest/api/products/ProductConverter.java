@@ -127,16 +127,49 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
     @Override
     public Product createEntity(final ProductDto productDto) {
-        Product product = new ProductImpl();
+        final Product product = new ProductImpl();
 
         product.setDefaultSku(skuConverter.createEntity(productDto.getDefaultSku()));
 
-        return CatalogUtils.updateProductEntityFromDto(product, productDto);
+        return updateEntity(product, productDto);
     }
 
     @Override
     public Product updateEntity(final Product product, final ProductDto productDto) {
-        return CatalogUtils.updateProductEntityFromDto(product, productDto);
+        product.setName(productDto.getName());
+        product.setDescription(productDto.getDescription());
+        product.setLongDescription(productDto.getLongDescription());
+        product.setPromoMessage(productDto.getOfferMessage());
+        product.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(product.getDefaultSku().getActiveStartDate()));
+        product.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(product.getDefaultSku().getActiveEndDate()));
+        product.setModel(productDto.getModel());
+        product.setManufacturer(productDto.getManufacturer());
+        product.setUrl(productDto.getUrl());
+
+       /* List<Sku> s;
+
+        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
+            s = productDto.getSkus().stream()
+                    .map(skuDtoToEntity)
+                    .collect(toList());
+
+            product.setAdditionalSkus(s);
+        }*/
+
+
+        if (productDto.getAttributes() != null) {
+
+            product.setProductAttributes(
+                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+                        ProductAttribute p = new ProductAttributeImpl();
+                        p.setName(e.getKey());
+                        p.setValue(e.getValue());
+                        p.setProduct(product);
+                        return p;
+                    })));
+        }
+
+        return product;
     }
 
 

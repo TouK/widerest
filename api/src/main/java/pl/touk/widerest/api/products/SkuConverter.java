@@ -4,9 +4,7 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.core.catalog.domain.Sku;
-import org.broadleafcommerce.core.catalog.domain.SkuImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
@@ -16,6 +14,7 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -89,12 +88,61 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
         skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
 
-        return CatalogUtils.updateSkuEntityFromDto(skuEntity, skuDto);
+        return updateEntity(skuEntity, skuDto);
     }
 
     @Override
     public Sku updateEntity(final Sku sku, final SkuDto skuDto) {
-        return CatalogUtils.updateSkuEntityFromDto(sku, skuDto);
+        sku.setName(skuDto.getName());
+        sku.setDescription(skuDto.getDescription());
+        sku.setSalePrice(new Money(skuDto.getSalePrice()));
+        sku.setQuantityAvailable(skuDto.getQuantityAvailable());
+        sku.setTaxCode(skuDto.getTaxCode());
+        sku.setActiveStartDate(skuDto.getActiveStartDate());
+        sku.setActiveEndDate(skuDto.getActiveEndDate());
+
+		/*
+		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
+		 * new one has not been provided
+		 */
+        if (skuDto.getRetailPrice() != null) {
+            sku.setRetailPrice(new Money(skuDto.getRetailPrice()));
+        } else {
+            sku.setRetailPrice(new Money(skuDto.getSalePrice()));
+        }
+
+        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
+            sku.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
+        } else {
+            /* (mst) turn on Inventory Service by default */
+            sku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+        }
+
+
+        sku.getSkuAttributes().clear();
+        sku.getSkuAttributes().putAll(
+                Optional.ofNullable(skuDto.getSkuAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, e -> {
+                            SkuAttribute s = new SkuAttributeImpl();
+                            s.setName(e.getKey());
+                            s.setValue(e.getValue());
+                            s.setSku(sku);
+                            return s;
+                        })));
+
+
+        if(skuDto.getSkuMedia() != null) {
+            sku.setSkuMediaXref(
+                    skuDto.getSkuMedia().entrySet().stream()
+                            .collect(toMap(Map.Entry::getKey, e -> {
+                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
+                                newSkuMediaXref.setSku(sku);
+                                newSkuMediaXref.setKey(e.getKey());
+                                return newSkuMediaXref;
+                            })));
+        }
+
+        return sku;
     }
 
     private Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {

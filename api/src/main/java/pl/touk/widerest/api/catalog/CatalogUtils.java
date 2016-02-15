@@ -89,59 +89,59 @@ public class CatalogUtils {
         };
     }
 
-    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
-
-        skuEntity.setName(skuDto.getName());
-        skuEntity.setDescription(skuDto.getDescription());
-        skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
-        skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
-        skuEntity.setTaxCode(skuDto.getTaxCode());
-        skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
-        skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
-
-		/*
-		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
-		 * new one has not been provided
-		 */
-        if (skuDto.getRetailPrice() != null) {
-            skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
-        } else {
-            skuEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
-        }
-
-        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
-            skuEntity.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
-        } else {
-            /* (mst) turn on Inventory Service by default */
-            skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
-
-
-        skuEntity.getSkuAttributes().clear();
-        skuEntity.getSkuAttributes().putAll(
-                Optional.ofNullable(skuDto.getSkuAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> {
-                            SkuAttribute s = new SkuAttributeImpl();
-                            s.setName(e.getKey());
-                            s.setValue(e.getValue());
-                            s.setSku(skuEntity);
-                            return s;
-                        })));
-
-
-        if(skuDto.getSkuMedia() != null) {
-            skuEntity.setSkuMediaXref(
-                    skuDto.getSkuMedia().entrySet().stream()
-                            .collect(toMap(Map.Entry::getKey, e -> {
-                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
-                                newSkuMediaXref.setSku(skuEntity);
-                                newSkuMediaXref.setKey(e.getKey());
-                                return newSkuMediaXref;
-                            })));
-        }
-
-        return skuEntity;
-    }
+//    public static Sku updateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
+//
+//        skuEntity.setName(skuDto.getName());
+//        skuEntity.setDescription(skuDto.getDescription());
+//        skuEntity.setSalePrice(new Money(skuDto.getSalePrice()));
+//        skuEntity.setQuantityAvailable(skuDto.getQuantityAvailable());
+//        skuEntity.setTaxCode(skuDto.getTaxCode());
+//        skuEntity.setActiveStartDate(skuDto.getActiveStartDate());
+//        skuEntity.setActiveEndDate(skuDto.getActiveEndDate());
+//
+//		/*
+//		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
+//		 * new one has not been provided
+//		 */
+//        if (skuDto.getRetailPrice() != null) {
+//            skuEntity.setRetailPrice(new Money(skuDto.getRetailPrice()));
+//        } else {
+//            skuEntity.setRetailPrice(new Money(skuDto.getSalePrice()));
+//        }
+//
+//        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
+//            skuEntity.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
+//        } else {
+//            /* (mst) turn on Inventory Service by default */
+//            skuEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
+//        }
+//
+//
+//        skuEntity.getSkuAttributes().clear();
+//        skuEntity.getSkuAttributes().putAll(
+//                Optional.ofNullable(skuDto.getSkuAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+//                        .collect(toMap(Map.Entry::getKey, e -> {
+//                            SkuAttribute s = new SkuAttributeImpl();
+//                            s.setName(e.getKey());
+//                            s.setValue(e.getValue());
+//                            s.setSku(skuEntity);
+//                            return s;
+//                        })));
+//
+//
+//        if(skuDto.getSkuMedia() != null) {
+//            skuEntity.setSkuMediaXref(
+//                    skuDto.getSkuMedia().entrySet().stream()
+//                            .collect(toMap(Map.Entry::getKey, e -> {
+//                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
+//                                newSkuMediaXref.setSku(skuEntity);
+//                                newSkuMediaXref.setKey(e.getKey());
+//                                return newSkuMediaXref;
+//                            })));
+//        }
+//
+//        return skuEntity;
+//    }
 
     public static Sku partialUpdateSkuEntityFromDto(Sku skuEntity, SkuDto skuDto) {
 
@@ -208,42 +208,42 @@ public class CatalogUtils {
         return mediaEntity;
     }
 
-    public static Product updateProductEntityFromDto(Product productEntity, ProductDto productDto) {
-        productEntity.setName(productDto.getName());
-        productEntity.setDescription(productDto.getDescription());
-        productEntity.setLongDescription(productDto.getLongDescription());
-        productEntity.setPromoMessage(productDto.getOfferMessage());
-        productEntity.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(productEntity.getDefaultSku().getActiveStartDate()));
-        productEntity.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(productEntity.getDefaultSku().getActiveEndDate()));
-        productEntity.setModel(productDto.getModel());
-        productEntity.setManufacturer(productDto.getManufacturer());
-        productEntity.setUrl(productDto.getUrl());
-
-       /* List<Sku> s;
-
-        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
-            s = productDto.getSkus().stream()
-                    .map(skuDtoToEntity)
-                    .collect(toList());
-
-            product.setAdditionalSkus(s);
-        }*/
-
-
-        if (productDto.getAttributes() != null) {
-
-            productEntity.setProductAttributes(
-                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
-                        ProductAttribute p = new ProductAttributeImpl();
-                        p.setName(e.getKey());
-                        p.setValue(e.getValue());
-                        p.setProduct(productEntity);
-                        return p;
-                    })));
-        }
-
-        return productEntity;
-    }
+//    public static Product updateProductEntityFromDto(Product productEntity, ProductDto productDto) {
+//        productEntity.setName(productDto.getName());
+//        productEntity.setDescription(productDto.getDescription());
+//        productEntity.setLongDescription(productDto.getLongDescription());
+//        productEntity.setPromoMessage(productDto.getOfferMessage());
+//        productEntity.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(productEntity.getDefaultSku().getActiveStartDate()));
+//        productEntity.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(productEntity.getDefaultSku().getActiveEndDate()));
+//        productEntity.setModel(productDto.getModel());
+//        productEntity.setManufacturer(productDto.getManufacturer());
+//        productEntity.setUrl(productDto.getUrl());
+//
+//       /* List<Sku> s;
+//
+//        if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
+//            s = productDto.getSkus().stream()
+//                    .map(skuDtoToEntity)
+//                    .collect(toList());
+//
+//            product.setAdditionalSkus(s);
+//        }*/
+//
+//
+//        if (productDto.getAttributes() != null) {
+//
+//            productEntity.setProductAttributes(
+//                    productDto.getAttributes().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> {
+//                        ProductAttribute p = new ProductAttributeImpl();
+//                        p.setName(e.getKey());
+//                        p.setValue(e.getValue());
+//                        p.setProduct(productEntity);
+//                        return p;
+//                    })));
+//        }
+//
+//        return productEntity;
+//    }
 
     public static void validateSkuPrices(final SkuDto skuDtoToValidate) throws DtoValidationException {
         if((skuDtoToValidate.getSalePrice() != null && skuDtoToValidate.getSalePrice().longValue() < 0) ||
