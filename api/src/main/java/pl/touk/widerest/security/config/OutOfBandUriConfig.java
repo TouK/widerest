@@ -45,7 +45,7 @@ public class OutOfBandUriConfig extends WebMvcConfigurerAdapter {
 
         Try.of(() -> {
             throw new Exception();
-        }).
+        });
 
         final ExceptionHandlerExceptionResolver exceptionHandlerExceptionResolver = new
                 ExceptionHandlerExceptionResolver();
