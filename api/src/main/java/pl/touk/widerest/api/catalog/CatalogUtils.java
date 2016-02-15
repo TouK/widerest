@@ -2,6 +2,7 @@ package pl.touk.widerest.api.catalog;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
@@ -17,20 +18,14 @@ import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
-import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.Sku;
-import org.broadleafcommerce.core.catalog.domain.SkuAttribute;
-import org.broadleafcommerce.core.catalog.domain.SkuAttributeImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.products.ProductDto;
 
 public class CatalogUtils {
 
@@ -177,15 +172,15 @@ public class CatalogUtils {
         return skuEntity;
     }
 
-    public static Media updateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
-
-        mediaEntity.setTitle(mediaDto.getTitle());
-        mediaEntity.setTags(mediaDto.getTags());
-        mediaEntity.setAltText(mediaDto.getAltText());
-        mediaEntity.setUrl(mediaDto.getUrl());
-
-        return mediaEntity;
-    }
+//    public static Media updateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
+//
+//        mediaEntity.setTitle(mediaDto.getTitle());
+//        mediaEntity.setTags(mediaDto.getTags());
+//        mediaEntity.setAltText(mediaDto.getAltText());
+//        mediaEntity.setUrl(mediaDto.getUrl());
+//
+//        return mediaEntity;
+//    }
 
     public static Media partialUpdateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
 
@@ -245,13 +240,20 @@ public class CatalogUtils {
 //        return productEntity;
 //    }
 
-    public static void validateSkuPrices(final SkuDto skuDtoToValidate) throws DtoValidationException {
-        if((skuDtoToValidate.getSalePrice() != null && skuDtoToValidate.getSalePrice().longValue() < 0) ||
-                (skuDtoToValidate.getRetailPrice() != null && skuDtoToValidate.getRetailPrice().longValue() < 0)) {
+    public static void validateSkuPrices(final BigDecimal salePrice, final BigDecimal retailPrice) throws DtoValidationException {
+        if((salePrice != null && salePrice.longValue() < 0) ||
+                (retailPrice != null && retailPrice.longValue() < 0)) {
             throw new DtoValidationException("Sku's prices cannot be negative");
         }
     }
 
+    public static void validateProductDto(final ProductDto productDto) throws DtoValidationException {
+        validateSkuPrices(productDto.getSalePrice(), productDto.getRetailPrice());
+
+        if(productDto.getName() == null || productDto.getName().isEmpty()) {
+            throw new DtoValidationException("Product has to have a name");
+        }
+    }
 
     public static long getIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
         final URL categoryPathURL = new URL(categoryPathUrl);

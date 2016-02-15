@@ -6,7 +6,6 @@ import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.categories.CategoryController;
 
 import javax.annotation.Resource;
@@ -30,7 +29,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         dto.setName(product.getName());
 
-        dto.setDefaultSku(skuConverter.createDto(product.getDefaultSku(), false));
+        // TODO: Create default SKU
+
+        //dto.setDefaultSku(skuConverter.createDto(product.getDefaultSku(), false));
 
         dto.setCategoryName(Optional.ofNullable(product.getCategory()).map(Category::getName).orElse(""));
 
@@ -129,7 +130,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
     public Product createEntity(final ProductDto productDto) {
         final Product product = new ProductImpl();
 
-        product.setDefaultSku(skuConverter.createEntity(productDto.getDefaultSku()));
+        // TODO:
+        //product.setDefaultSku(skuConverter.createEntity(productDto.getDefaultSku()));
 
         return updateEntity(product, productDto);
     }

@@ -1,5 +1,6 @@
 package pl.touk.widerest.api.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -7,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import pl.touk.widerest.api.products.ProductDto;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("bundle")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Product Bundle", description = "Product Bundle Dto resource representation")
 public class ProductBundleDto extends ProductDto {

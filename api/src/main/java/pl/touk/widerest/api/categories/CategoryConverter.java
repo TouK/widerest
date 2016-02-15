@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
@@ -26,9 +28,15 @@ import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.products.MediaConverter;
+
+import javax.annotation.Resource;
 
 @Component
 public class CategoryConverter implements Converter<Category, CategoryDto> {
+
+    @Resource
+    protected MediaConverter mediaConverter;
 
     @Override
     public CategoryDto createDto(Category entity, boolean embed) {
@@ -125,10 +133,15 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 .collect(toMap(
                         Map.Entry::getKey,
                         mediaDtoEntry -> {
-                            CategoryMediaXrefImpl categoryMediaXref = new CategoryMediaXrefImpl();
+                            final CategoryMediaXrefImpl categoryMediaXref = new CategoryMediaXrefImpl();
                             categoryMediaXref.setCategory(categoryEntity);
                             categoryMediaXref.setKey(mediaDtoEntry.getKey());
-                            CatalogUtils.updateMediaEntityFromDto(categoryMediaXref, mediaDtoEntry.getValue());
+
+                            final Media skuMedia = new MediaImpl();
+                            mediaConverter.updateEntity(skuMedia, mediaDtoEntry.getValue());
+
+
+//                            CatalogUtils.updateMediaEntityFromDto(categoryMediaXref, mediaDtoEntry.getValue());
                             return categoryMediaXref;
                         }
                 ));

@@ -2,7 +2,6 @@ package pl.touk.widerest.api;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -19,20 +18,15 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.i18n.service.ISOService;
-import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.common.value.ValueAssignable;
-import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryMediaXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
-import org.broadleafcommerce.core.catalog.domain.ProductBundle;
-import org.broadleafcommerce.core.catalog.domain.ProductImpl;
 import org.broadleafcommerce.core.catalog.domain.ProductOption;
 import org.broadleafcommerce.core.catalog.domain.ProductOptionImpl;
 import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
@@ -42,12 +36,9 @@ import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -83,14 +74,10 @@ import pl.touk.widerest.api.catalog.dto.BundleItemDto;
 import pl.touk.widerest.api.catalog.dto.FacetDto;
 import pl.touk.widerest.api.catalog.dto.FacetValueDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.categories.CategoryController;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
@@ -235,39 +222,39 @@ public class DtoConverters {
                 .build();
     };
 
-    public static CategoryMediaXref mediaDtoToCategoryMediaXref(MediaDto dto) {
-        CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
-        Media media = new MediaImpl();
+//    public static CategoryMediaXref mediaDtoToCategoryMediaXref(MediaDto dto) {
+//        CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
+//        Media media = new MediaImpl();
+//
+//        media = CatalogUtils.updateMediaEntityFromDto(media, dto);
+//
+//        categoryMediaXref.setMedia(media);
+//        return categoryMediaXref;
+//    };
 
-        media = CatalogUtils.updateMediaEntityFromDto(media, dto);
-
-        categoryMediaXref.setMedia(media);
-        return categoryMediaXref;
-    };
-
-    public static Function<SkuMediaXref, MediaDto> skuMediaXrefToDto = xref -> {
-
-        final Media entity = xref.getMedia();
-
-        return MediaDto.builder()
-                .title(entity.getTitle())
-                .url(entity.getUrl())
-                .altText(entity.getAltText())
-                .tags(entity.getTags())
-//                .key(xref.getKey())
-                .build();
-    };
+//    public static Function<SkuMediaXref, MediaDto> skuMediaXrefToDto = xref -> {
+//
+//        final Media entity = xref.getMedia();
+//
+//        return MediaDto.builder()
+//                .title(entity.getTitle())
+//                .url(entity.getUrl())
+//                .altText(entity.getAltText())
+//                .tags(entity.getTags())
+////                .key(xref.getKey())
+//                .build();
+//    };
 
     /* (mst) Remember to set SKU after this one */
-    public static Function<MediaDto, SkuMediaXref> skuMediaDtoToXref = dto -> {
-        SkuMediaXref skuMediaXref = new SkuMediaXrefImpl();
-        Media skuMedia = new MediaImpl();
-
-        skuMedia = CatalogUtils.updateMediaEntityFromDto(skuMedia, dto);
-
-        skuMediaXref.setMedia(skuMedia);
-        return skuMediaXref;
-    };
+//    public static Function<MediaDto, SkuMediaXref> skuMediaDtoToXref = dto -> {
+//        SkuMediaXref skuMediaXref = new SkuMediaXrefImpl();
+//        Media skuMedia = new MediaImpl();
+//
+//        skuMedia = CatalogUtils.updateMediaEntityFromDto(skuMedia, dto);
+//
+//        skuMediaXref.setMedia(skuMedia);
+//        return skuMediaXref;
+//    };
 
     /******************************** Sku Media  ********************************/
 

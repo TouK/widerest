@@ -25,7 +25,7 @@ import pl.touk.widerest.api.catalog.dto.BundleItemDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.categories.CategoryDto;
@@ -86,8 +86,8 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductDto.getName(), equalTo(productDto.getName()));
         assertThat(receivedProductDto.getDescription(), equalTo(productDto.getDescription()));
         assertThat(receivedProductDto.getModel(), equalTo(productDto.getModel()));
-        assertThat(receivedProductDto.getDefaultSku().getSalePrice().longValue(), equalTo(productDto.getDefaultSku().getSalePrice().longValue()));
-        assertThat(receivedProductDto.getDefaultSku().getQuantityAvailable(), equalTo(productDto.getDefaultSku().getQuantityAvailable()));
+        assertThat(receivedProductDto.getSalePrice().longValue(), equalTo(productDto.getSalePrice().longValue()));
+        assertThat(receivedProductDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
     }
 
     @Ignore("considering allowing duplicate names")
@@ -213,7 +213,7 @@ public class ProductControllerTest extends ApiTestBase {
         // when: adding a new product without default SKu
         final long currentProductsCount = getRemoteTotalProductsCount();
         final ProductDto productWihtoutDefaultSkuDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        productWihtoutDefaultSkuDto.setDefaultSku(null);
+        //productWihtoutDefaultSkuDto.setDefaultSku(null);
 
         // then: API should return HTTP.BAD_REQUEST code and the product should not be added
         try {
@@ -301,7 +301,7 @@ public class ProductControllerTest extends ApiTestBase {
         // when: adding product without currency specified
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        productDto.getDefaultSku().setCurrencyCode(null);
+        productDto.setCurrencyCode(null);
 
         final ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -317,7 +317,7 @@ public class ProductControllerTest extends ApiTestBase {
         // then: the default API currency is being used
         final String defaultCurrencyCode = currencyService.findDefaultBroadleafCurrency().getCurrencyCode();
 
-        assertThat(receivedProductEntity.getBody().getDefaultSku().getCurrencyCode(), equalTo(defaultCurrencyCode));
+        assertThat(receivedProductEntity.getBody().getCurrencyCode(), equalTo(defaultCurrencyCode));
     }
 
     @Test
@@ -339,7 +339,7 @@ public class ProductControllerTest extends ApiTestBase {
                 ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
-        assertThat(receivedProductEntity.getBody().getDefaultSku().getName(), equalTo(newProductName));
+        assertThat(receivedProductEntity.getBody().getName(), equalTo(newProductName));
     }
 
     @Test
@@ -478,8 +478,8 @@ public class ProductControllerTest extends ApiTestBase {
         complexProductDto.setCategoryName(testCategory.getName());
 
         // set additional default SKU options
-        complexProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(complexProductDto.getDefaultSku().getActiveStartDate(), 30));
-        complexProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+        complexProductDto.setValidFrom(addNDaysToDate(complexProductDto.getValidFrom(), 30));
+        complexProductDto.setRetailPrice(new BigDecimal("19.99"));
 
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
@@ -636,10 +636,10 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ProductBundleDto receivedBundleDto = receivedBundleEntity.getBody();
 
-        final BigDecimal totalNormalPriceForSku1 = remoteTestProductByIdDto1.getDefaultSku().getRetailPrice()
+        final BigDecimal totalNormalPriceForSku1 = remoteTestProductByIdDto1.getRetailPrice()
                 .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(0).getQuantity()));
 
-        final BigDecimal totalNormalPriceForSku2 = remoteTestProductByIdDto2.getDefaultSku().getRetailPrice()
+        final BigDecimal totalNormalPriceForSku2 = remoteTestProductByIdDto2.getRetailPrice()
                 .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(1).getQuantity()));
 
         final BigDecimal totalNormalPriceForBundle = totalNormalPriceForSku1.add(totalNormalPriceForSku2);

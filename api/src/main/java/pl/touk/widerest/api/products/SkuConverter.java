@@ -3,6 +3,7 @@ package pl.touk.widerest.api.products;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
+import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
@@ -32,6 +33,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
+
+    @Resource
+    protected MediaConverter mediaConverter;
     
     @Override
     public SkuDto createDto(final Sku sku, final boolean embed) {
@@ -55,7 +59,8 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                         .map(DtoConverters.productOptionValueToSkuValueDto)
                         .collect(toSet()))
                 .skuMedia(sku.getSkuMediaXref().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, entry -> DtoConverters.skuMediaXrefToDto.apply(entry.getValue())))
+                       .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)))
+                        //.collect(toMap(Map.Entry::getKey, entry -> DtoConverters.skuMediaXrefToDto.apply(entry.getValue())))
                 )
 //                        .map(Map.Entry::getValue)
 //                        .map(DtoConverters.skuMediaXrefToDto)
@@ -135,7 +140,12 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
             sku.setSkuMediaXref(
                     skuDto.getSkuMedia().entrySet().stream()
                             .collect(toMap(Map.Entry::getKey, e -> {
-                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
+
+                                final Media media = mediaConverter.createEntity(e.getValue());
+                                final SkuMediaXref newSkuMediaXref = new SkuMediaXrefImpl();
+                                newSkuMediaXref.setMedia(media);
+
+//                                SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(e.getValue());
                                 newSkuMediaXref.setSku(sku);
                                 newSkuMediaXref.setKey(e.getKey());
                                 return newSkuMediaXref;

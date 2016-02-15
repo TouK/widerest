@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.catalog.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -15,6 +16,7 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonRootName("media")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Media", description = "Media DTO resource representation")
 public class MediaDto {

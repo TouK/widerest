@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import org.springframework.hateoas.ResourceSupport;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -23,7 +22,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ApiModel(value = "Sku", description = "SKU DTO resource representation")
-public class SkuDto extends ResourceSupport {
+public class SkuDto extends BaseDto {
 
     @ApiModelProperty(position = 0, value = "SKU name", required = true, dataType = "java.lang.String")
     private String name;
@@ -71,6 +70,6 @@ public class SkuDto extends ResourceSupport {
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
+    @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.Map")
     private Map<String /*key*/, MediaDto> skuMedia;
 }
