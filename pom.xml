@@ -11,10 +11,23 @@
 
     <groupId>pl.touk.widerest</groupId>
     <artifactId>widerest</artifactId>
-    <version>1.0</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>widerest</name>
     <organization><name>TouK</name><url>http://touk.pl</url></organization>
+
+    <distributionManagement>
+        <repository>
+            <id>touk.nexus.release</id>
+            <name>TouK Release Repository</name>
+            <url>http://nexus.touk.pl/nexus/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>touk.nexus.snapshots</id>
+            <name>TouK SNAPSHOT Repository</name>
+            <url>http://nexus.touk.pl/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <blc.version>4.0.0-RC1</blc.version>
