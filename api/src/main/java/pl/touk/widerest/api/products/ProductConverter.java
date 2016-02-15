@@ -1,14 +1,22 @@
 package pl.touk.widerest.api.products;
 
+import org.broadleafcommerce.common.locale.service.LocaleService;
+import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.categories.CategoryController;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,18 +28,49 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Component
 public class ProductConverter implements Converter<Product, ProductDto>{
     
+    @Resource(name = "blLocaleService")
+    protected LocaleService localeService;
+
     @Resource
     protected SkuConverter skuConverter;
-    
+
+    @Resource
+    protected MediaConverter mediaConverter;
+
     @Override
     public ProductDto createDto(final Product product, final boolean embed) {
         final ProductDto dto = product instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
 
         dto.setName(product.getName());
 
-        // TODO: Create default SKU
+        /* (mst) This should never be null */
+        final Sku productDefaultSku = product.getDefaultSku();
 
-        //dto.setDefaultSku(skuConverter.createDto(product.getDefaultSku(), false));
+        dto.setRetailPrice(Optional.ofNullable(productDefaultSku.getRetailPrice()).map(Money::getAmount).orElse(null));
+        dto.setSalePrice(Optional.ofNullable(productDefaultSku.getSalePrice()).map(Money::getAmount).orElse(null));
+        dto.setAvailability(Optional.ofNullable(productDefaultSku.getInventoryType()).map(InventoryType::getType).orElse(null));
+        dto.setQuantityAvailable(productDefaultSku.getQuantityAvailable());
+        dto.setTaxCode(productDefaultSku.getTaxCode());
+        dto.setCurrencyCode(Optional.ofNullable(productDefaultSku.getCurrency())
+                                .orElse(localeService.findDefaultLocale().getDefaultCurrency())
+                                .getCurrencyCode());
+
+        dto.setSkuAttributes(productDefaultSku.getSkuAttributes().entrySet().stream()
+                                .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())));
+
+        // skuproductoptionvalues
+
+        // skumedia
+
+        // embedd media
+
+        final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)));
+
+        if(!CollectionUtils.isEmpty(defaultSkuMedias)) {
+            dto.add(new EmbeddedResource("medias", defaultSkuMedias));
+        }
+
 
         dto.setCategoryName(Optional.ofNullable(product.getCategory()).map(Category::getName).orElse(""));
 
