@@ -104,7 +104,7 @@ public class DtoTestFactory {
                     .manufacturer("Test Product Manufacturer")
                     .model("Test Product Model")
                     .offerMessage("Test Product Offer Message")
-                    .defaultSku(null)
+                    //.defaultSku(null)
                     .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                     .build();
 
@@ -119,7 +119,7 @@ public class DtoTestFactory {
                 .manufacturer("Test Product Manufacturer" + productCounter)
                 .model("Test Product Model" + productCounter)
                 .offerMessage("Test Product Offer Message" + productCounter)
-                .defaultSku(null)
+                //.defaultSku(null)
                 .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
                 .categoryName(null)
                 .validFrom(defaultActiveStartDate)
@@ -135,13 +135,13 @@ public class DtoTestFactory {
         switch(dtoTestType) {
             case NEXT:
                 ProductDto p = nextTestProduct();
-                p.setDefaultSku(nextTestDefaultSku());
+                //p.setDefaultSku(nextTestDefaultSku());
                 p.setCategoryName(nextTestCategory().getName());
                 return p;
             case SAME: {
                 if (fullProductDto == null) {
                     fullProductDto = testProduct();
-                    fullProductDto.setDefaultSku(getTestDefaultSku());
+                  //  fullProductDto.setDefaultSku(getTestDefaultSku());
                     fullProductDto.setCategoryName(testCategory().getName());
                 }
                 return fullProductDto;
@@ -157,12 +157,12 @@ public class DtoTestFactory {
         switch(dtoTestType) {
             case NEXT:
                 ProductDto p = nextTestProduct();
-                p.setDefaultSku(nextTestDefaultSku());
+                //p.setDefaultSku(nextTestDefaultSku());
                 return p;
             case SAME: {
                 if(defaultProductWithDefaultSKU == null) {
                     defaultProductWithDefaultSKU = testProduct();
-                    defaultProductWithDefaultSKU.setDefaultSku(getTestDefaultSku());
+                    //defaultProductWithDefaultSKU.setDefaultSku(getTestDefaultSku());
                 }
                 return defaultProductWithDefaultSKU;
             }
@@ -205,7 +205,7 @@ public class DtoTestFactory {
         productBundleDto.setManufacturer("Test Bundle Manufacturer" + productCounter);
         productBundleDto.setModel("Test Bundle Model" + productCounter);
         productBundleDto.setOfferMessage("Test Bundle Offer Message" + productCounter);
-        productBundleDto.setDefaultSku(nextTestDefaultSku());
+        //productBundleDto.setDefaultSku(nextTestDefaultSku());
         productBundleDto.setOptions(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))));
         productBundleDto.setValidFrom(defaultActiveStartDate);
 

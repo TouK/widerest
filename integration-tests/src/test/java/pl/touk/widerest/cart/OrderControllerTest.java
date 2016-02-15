@@ -561,8 +561,11 @@ public class OrderControllerTest extends ApiTestBase {
         final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
-        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+//        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
+//        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+//
+        newProductDto.setValidFrom(addNDaysToDate(newProductDto.getValidFrom(), 30));
+        newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
         additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
@@ -630,8 +633,8 @@ public class OrderControllerTest extends ApiTestBase {
         final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
-        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
+        newProductDto.setValidTo(addNDaysToDate(newProductDto.getValidFrom(), 30));
+        newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
         additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));

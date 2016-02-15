@@ -365,14 +365,14 @@ public class CategoryController {
     })
     public Resources<ProductDto> readProductsFromCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") final Long categoryId) {
 
-        List<ProductDto> productDtos = getProductsFromCategoryId(categoryId).stream()
+        return new Resources<>(
+                getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils::archivedProductFilter)
                 .map(product -> productConverter.createDto(product, false))
-                .collect(Collectors.toList());
-
-        return new Resources(productDtos);
+                .collect(Collectors.toList())
+        );
     }
 
     /* (mst) This endpoint inserts only a reference to the product (so it has to exist)

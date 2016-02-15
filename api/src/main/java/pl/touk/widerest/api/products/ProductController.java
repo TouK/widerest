@@ -112,7 +112,7 @@ public class ProductController {
     @Resource
     protected MediaConverter mediaConverter;
 
-    /* GET /products */
+//    /* GET /products */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
@@ -207,27 +207,27 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
 
-//    /* GET /products/bundles */
-//    @Transactional
-//    @PreAuthorize("permitAll")
-//    @RequestMapping(value = "/bundles", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "List all bundles",
-//            notes = "Gets a list of all available product bundles in the catalog",
-//            response = ProductBundleDto.class,
-//            responseContainer = "List")
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductBundleDto.class, responseContainer = "List")
-//    })
-//    public List<ProductDto> getAllBundlesProducts() {
-//        return catalogService.findAllProducts().stream()
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .filter(e -> e instanceof ProductBundle)
-//                .map(product -> productConverter.createDto(product, false))
-//                .collect(toList());
-//    }
-
-
+////    /* GET /products/bundles */
+////    @Transactional
+////    @PreAuthorize("permitAll")
+////    @RequestMapping(value = "/bundles", method = RequestMethod.GET)
+////    @ApiOperation(
+////            value = "List all bundles",
+////            notes = "Gets a list of all available product bundles in the catalog",
+////            response = ProductBundleDto.class,
+////            responseContainer = "List")
+////    @ApiResponses(value = {
+////            @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductBundleDto.class, responseContainer = "List")
+////    })
+////    public List<ProductDto> getAllBundlesProducts() {
+////        return catalogService.findAllProducts().stream()
+////                .filter(CatalogUtils::archivedProductFilter)
+////                .filter(e -> e instanceof ProductBundle)
+////                .map(product -> productConverter.createDto(product, false))
+////                .collect(toList());
+////    }
+//
+//
     /* GET /products/bundles/{bundleId} */
     @Transactional
     @PreAuthorize("permitAll")
@@ -421,15 +421,12 @@ public class ProductController {
             newProduct = catalogService.saveProduct(newProduct);
         }
 
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(newProduct.getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(newProduct.getId())
+                        .toUri()
+        ).build();
     }
 
     private void setProductOptionXrefs(ProductDto productDto, Product newProduct, Product productParam) {
@@ -485,7 +482,7 @@ public class ProductController {
     })
     public ProductDto readOneProductById(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId) {
+            @PathVariable(value = "productId") final Long productId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -765,7 +762,8 @@ public class ProductController {
             value = "Get product's SKUs",
             notes = "Gets a list of all SKUs available for a specified product",
             response = SkuDto.class,
-            responseContainer = "List")
+            responseContainer = "List"
+    )
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
@@ -976,7 +974,7 @@ public class ProductController {
     })
     public ResponseEntity<Long> getSkusCountByProductId(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId) {
+            @PathVariable(value = "productId") final Long productId) {
 
 
         final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
@@ -985,7 +983,7 @@ public class ProductController {
                 .getAllSkus().stream()
                 .count();
 
-        return new ResponseEntity<>(skusCount, HttpStatus.OK);
+        return ResponseEntity.ok(skusCount);
     }
 
     /* GET /products/{productId}/skus/{skuId}/quantity */

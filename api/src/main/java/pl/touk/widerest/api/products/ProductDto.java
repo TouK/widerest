@@ -27,8 +27,8 @@ import pl.touk.widerest.api.catalog.dto.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
 @JsonRootName("product")
+@EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -78,7 +78,7 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 7, value = "Default retail price of this product", dataType = "java.math.BigDecimal")
     private BigDecimal retailPrice;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 8, value = "Available quantity of the product", required = true, dataType = "java.lang.Integer")
     private Integer quantityAvailable;
 
@@ -110,7 +110,7 @@ public class ProductDto extends BaseDto {
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 14, value = "List of medias associated with this product", dataType = "java.util.Map")
+    @ApiModelProperty(position = 14, value = "List of medias associated with this product", dataType = "java.util.List")
     private Map<String /*key*/, MediaDto> skuMedia;
 
     // ------------------- Replaces defaultSku

@@ -269,9 +269,9 @@ public class DtoConverters {
 
         final Product associatedProduct = entity.getSku().getProduct();
 
-        bundleItemDto.add(linkTo(methodOn(ProductController.class).getSkuById(
-                associatedProduct.getId(),
-                entity.getSku().getId())).withSelfRel());
+//        bundleItemDto.add(linkTo(methodOn(ProductController.class).getSkuById(
+//                associatedProduct.getId(),
+//                entity.getSku().getId())).withSelfRel());
 
 
         return bundleItemDto;
@@ -543,7 +543,7 @@ public class DtoConverters {
                 .build();
 
         orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, entity.getId(), entity.getOrder().getId())).withSelfRel());
-        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
+//        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
 
         return orderItemDto;
     };

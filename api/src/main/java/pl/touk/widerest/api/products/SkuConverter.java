@@ -60,7 +60,6 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                         .collect(toSet()))
                 .skuMedia(sku.getSkuMediaXref().entrySet().stream()
                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)))
-                        //.collect(toMap(Map.Entry::getKey, entry -> DtoConverters.skuMediaXrefToDto.apply(entry.getValue())))
                 )
 //                        .map(Map.Entry::getValue)
 //                        .map(DtoConverters.skuMediaXrefToDto)

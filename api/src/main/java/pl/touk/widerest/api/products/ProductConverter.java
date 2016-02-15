@@ -130,6 +130,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
     public Product createEntity(final ProductDto productDto) {
         final Product product = new ProductImpl();
 
+        final Sku defaultSku = new SkuImpl();
+        product.setDefaultSku(defaultSku);
+
         // TODO:
         //product.setDefaultSku(skuConverter.createEntity(productDto.getDefaultSku()));
 
@@ -138,6 +141,11 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
     @Override
     public Product updateEntity(final Product product, final ProductDto productDto) {
+
+        if(product.getDefaultSku() == null) {
+            throw new RuntimeException("Product Entity does not have any default SKU set!");
+        }
+
         product.setName(productDto.getName());
         product.setDescription(productDto.getDescription());
         product.setLongDescription(productDto.getLongDescription());
