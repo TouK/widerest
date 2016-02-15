@@ -84,7 +84,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
     @Override
     public Sku createEntity(final SkuDto skuDto) {
-        Sku skuEntity = new SkuImpl();
+        final Sku skuEntity = new SkuImpl();
 
         skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
 

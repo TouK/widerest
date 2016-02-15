@@ -3,7 +3,7 @@ package pl.touk.widerest.api.cart.dto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import lombok.experimental.Builder;
+import lombok.Builder;
 
 @Builder
 @Data

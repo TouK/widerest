@@ -284,7 +284,7 @@ public class ProductController {
 
         product.setDefaultSku(skuConverter.createEntity(productBundleDto.getDefaultSku()));
 
-        product = CatalogUtils.updateProductEntityFromDto(product, productBundleDto);
+        product = productConverter.updateEntity(product, productBundleDto);
 
         ((ProductBundle) product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
 
@@ -931,7 +931,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        final Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
+        final Sku defaultSKU = skuConverter.updateEntity(product.getDefaultSku(), defaultSkuDto);
 
         defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
 
@@ -1210,7 +1210,7 @@ public class ProductController {
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findFirst()
-                .map(e -> CatalogUtils.updateSkuEntityFromDto(e, skuDto))
+                .map(e -> skuConverter.updateEntity(e, skuDto))
                 .map(e -> {
                     e.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
                     return e;

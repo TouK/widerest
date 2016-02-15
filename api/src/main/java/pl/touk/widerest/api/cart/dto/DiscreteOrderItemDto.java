@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Builder;
+import lombok.Builder;
 import org.broadleafcommerce.common.money.Money;
 import org.springframework.hateoas.ResourceSupport;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
