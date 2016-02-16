@@ -1,16 +1,19 @@
 package pl.touk.widerest;
 
-import lombok.extern.slf4j.Slf4j;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import lombok.extern.slf4j.Slf4j;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
-
-import java.io.IOException;
 
 @SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -50,6 +53,38 @@ public class AuthorizationTest extends ApiTestBase {
         whenLoggedIn("site", username, password);
         whenAuthorizationRequestedFor(Scope.CUSTOMER_REGISTERED);
         thenAuthorized();
+    }
+
+    @Test
+    public void shouldAuthorizeMergingCarts() throws IOException {
+        // given
+        whenAuthorizationRequestedFor(Scope.CUSTOMER);
+
+        final String anonymousUserToken = oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken().getValue();
+        createNewOrder(anonymousUserToken);
+
+        cookieStore.clear();
+
+        whenAuthorizationRequestedFor(Scope.CUSTOMER);
+
+        final String username = RandomStringUtils.random(32, "haskellCurry");
+        final String password = "uncurry";
+        final String email = String.format("%s@curry.org", RandomStringUtils.random(32, "haskellCurry"));
+
+        // when
+        whenRegistrationPerformed(username, password, email);
+        whenLoggedIn("site", username, password);
+        whenAuthorizationRequestedFor(Scope.CUSTOMER_REGISTERED);
+
+        final String userToken = oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken().getValue();
+        createNewOrder(userToken);
+
+        oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
+        final String response =  oAuth2RestTemplate.getForObject(ORDERS_COUNT, String.class, serverPort);
+
+        //then
+
+        assertThat(response).isEqualTo("1");
     }
 
     @Test

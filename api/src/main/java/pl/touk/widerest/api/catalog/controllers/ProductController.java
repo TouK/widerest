@@ -1,15 +1,42 @@
 package pl.touk.widerest.api.catalog.controllers;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Stream.empty;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.exception.ServiceException;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.common.service.GenericEntityService;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductBundle;
+import org.broadleafcommerce.core.catalog.domain.ProductBundleImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductOption;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
+import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXrefImpl;
+import org.broadleafcommerce.common.util.BLCSystemProperty;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
@@ -31,9 +58,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
@@ -43,24 +75,18 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.categories.CategoryConverter;
+import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
-import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-
+import java.util.*;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { "application/json", "application/hal+json" })
 @Api(value = "products", description = "Product catalog endpoint")
 public class ProductController {
+
+    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
 
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
@@ -74,15 +100,18 @@ public class ProductController {
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
-    /* Searching related services */
     @Resource(name = "blSearchService")
     protected SearchService searchService;
 
+    /* (mst) For filtering input search query */
     @Resource(name = "blExploitProtectionService")
     protected ExploitProtectionService exploitProtectionService;
 
     @Resource(name = "blGenericEntityService")
     protected GenericEntityService genericEntityService;
+
+    @Resource
+    protected CategoryConverter categoryConverter;
 
     /* GET /products */
     @Transactional
@@ -120,30 +149,32 @@ public class ProductController {
                 cleanedUpQuery = StringUtils.trim(q);
                 cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
             } catch(ServiceException ex) {
-                return ResponseEntity.badRequest().build();
+                return BAD_REQUEST;
             }
 
             final SearchCriteria searchCriteria = new SearchCriteria();
-            searchCriteria.setPage(page);
-            searchCriteria.setPageSize(pageSize);
+            searchCriteria.setPage((page <= 0) ? 1 : page);
+
+            final int maxAllowedPageSize = BLCSystemProperty.resolveIntSystemProperty("web.maxPageSize");
+            final int defaultPageSize = BLCSystemProperty.resolveIntSystemProperty("web.defaultPageSize");
+            searchCriteria.setPageSize((pageSize <= 0) ? defaultPageSize : Math.min(pageSize, maxAllowedPageSize));
+
+            final Map<String, String[]> searchFilterCriteria = new HashMap<>();
+            /* (nst)
+                 'defaultSku.name' -> 'name'
+             */
+            final String[] nameFilters = { };
+            searchFilterCriteria.put("name", nameFilters);
+
+            searchCriteria.setFilterCriteria(searchFilterCriteria);
+
 
             try {
                 final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
-
-                /* (mst) For now, we only return a list of founded products with no additional info */
-//                final ProductSearchResultDto productSearchResultDto = ProductSearchResultDto.builder()
-//                        .totalPages(searchResult.getTotalPages())
-//                        .totalResults(searchResult.getTotalResults())
-//                        .page(searchResult.getPage())
-//                        .pageSize(searchResult.getPageSize())
-//                        .products(Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList()).stream().map(dtoConverters.productEntityToDto).collect(Collectors.toList()))
-//                        .facets(Optional.ofNullable(searchResult.getFacets()).orElse(Collections.emptyList()).stream().map(DtoConverters.searchFacetDTOFacetToDto).collect(Collectors.toList()))
-//                        .build();
-
                 productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
 
             } catch (ServiceException e) {
-                return ResponseEntity.badRequest().build();
+                return BAD_REQUEST;
             }
         } else {
             productsToReturn = catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0);
@@ -152,7 +183,7 @@ public class ProductController {
         return ResponseEntity.ok(productsToReturn.stream()
                                 .filter(CatalogUtils::archivedProductFilter)
                                 .map(dtoConverters.productEntityToDto)
-                                .collect(Collectors.toList()));
+                                .collect(toList()));
     }
 
     @Transactional
@@ -191,7 +222,7 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .filter(e -> e instanceof ProductBundle)
                 .map(dtoConverters.productEntityToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
 
@@ -239,7 +270,6 @@ public class ProductController {
 
         if (hasDuplicates(productBundleDto.getName())) {
             throw new DtoValidationException("Provided bundle already exists");
-//            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
         CatalogUtils.validateSkuPrices(productBundleDto.getDefaultSku());
@@ -254,15 +284,12 @@ public class ProductController {
 
         product.getDefaultSku().setProduct(product);
 
-        final ProductBundle p = (ProductBundle) product;
+        final ProductBundle productBundle = (ProductBundle) product;
 
         ((ProductBundle) product).setSkuBundleItems(productBundleDto.getBundleItems().stream()
                 .filter(x -> catalogService.findSkuById(x.getSkuId()) != null)
                 .map(dtoConverters.bundleItemDtoToSkuBundleItem)
-                .map(e -> {
-                    e.setBundle(p);
-                    return e;
-                })
+                .map(toSkuWithBundle(productBundle))
                 .collect(toList()));
 
 
@@ -273,8 +300,7 @@ public class ProductController {
 
         product = catalogService.saveProduct(product);
 
-
-        HttpHeaders responseHeader = new HttpHeaders();
+        final HttpHeaders responseHeader = new HttpHeaders();
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -284,6 +310,13 @@ public class ProductController {
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
 
 
+    }
+
+    private static Function<SkuBundleItem, SkuBundleItem> toSkuWithBundle(ProductBundle p) {
+        return e -> {
+            e.setBundle(p);
+            return e;
+        };
     }
 
 
@@ -333,27 +366,12 @@ public class ProductController {
                  Otherwise just ignore it.
 
          */
-        if (productDto.getCategoryName() != null && !productDto.getCategoryName().isEmpty()) {
-            Optional<Category> categoryToReference = catalogService.findCategoriesByName(productDto.getCategoryName()).stream()
-                    .filter(CatalogUtils::archivedCategoryFilter)
-                    .findAny();
 
-            if (categoryToReference.isPresent()) {
-                newProduct.setCategory(categoryToReference.get());
-            }
-        }
+        setCategoryIfPresent(productDto, newProduct);
 
         final Product productParam = newProduct;
 
-        newProduct.setProductOptionXrefs(
-                Optional.ofNullable(productDto.getOptions())
-                        .filter(e -> !e.isEmpty())
-                        .map(List::stream)
-                        .map(e -> e.map(x -> generateProductXref(x, productParam)))
-                        .map(e -> e.collect(Collectors.toList()))
-                        .orElse(newProduct.getProductOptionXrefs())
-        );
-
+        setProductOptionXrefs(productDto, newProduct, productParam);
 
         newProduct = catalogService.saveProduct(newProduct);
 
@@ -403,6 +421,27 @@ public class ProductController {
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+    }
+
+    private void setProductOptionXrefs(ProductDto productDto, Product newProduct, Product productParam) {
+        final List<ProductOptionXref> productOptionXrefs = Optional.ofNullable(productDto.getOptions())
+                .filter(e -> !e.isEmpty())
+                .map(List::stream)
+                .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                .map(e -> e.collect(toList()))
+                .orElse(newProduct.getProductOptionXrefs());
+
+        newProduct.setProductOptionXrefs(productOptionXrefs);
+    }
+
+    private void setCategoryIfPresent(ProductDto productDto, Product newProduct) {
+        Optional.ofNullable(productDto.getCategoryName())
+                .filter(name -> !isNullOrEmpty(name))
+                .map(name -> catalogService.findCategoriesByName(name))
+                .map(Collection::stream).orElse(empty())
+                .filter(CatalogUtils::archivedCategoryFilter)
+                .findAny()
+                .ifPresent(newProduct::setCategory);
     }
 
     /* GET /products/count */
@@ -553,11 +592,11 @@ public class ProductController {
             response = Map.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
-            @ApiResponse(code = 404, message = "The specified product does not exist or is marked as archived")
+            @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
     })
     public Map<String, String> getProductByIdAttributes(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId) {
+                @PathVariable(value = "productId") final Long productId) {
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -579,19 +618,18 @@ public class ProductController {
                     "name already exists, it overwrites its value",
             response = Void.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new attribute successfully created"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided")
+            @ApiResponse(code = 201, message = "New attribute successfully created/updated"),
+            @ApiResponse(code = 400, message = "Attribute name and/or attribute value were not provided")
     })
     public ResponseEntity<?> addOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new attribute", required = true)
-                @RequestBody ProductAttributeDto productAttributeDto) {
-
+                @RequestBody final ProductAttributeDto productAttributeDto) {
 
         if(productAttributeDto.getAttributeName() == null || productAttributeDto.getAttributeValue() == null ||
                 productAttributeDto.getAttributeName().isEmpty() || productAttributeDto.getAttributeValue().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
@@ -607,7 +645,11 @@ public class ProductController {
 
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                .build()
+                .toUri()
+        ).build();
     }
 
     @Transactional
@@ -619,32 +661,29 @@ public class ProductController {
             response = Void.class)
     @ApiResponses({
             @ApiResponse(code = 204, message = "Successful removal of the specified attribute"),
-            @ApiResponse(code = 404, message = "The specified product or attribute does not exist")
+            @ApiResponse(code = 404, message = "Specified product or attribute does not exist")
     })
     public ResponseEntity<?> removeOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Name of the attribute", required = true)
-                @PathVariable(value = "attributeName") String attributeName){
+                @PathVariable(value = "attributeName") final String attributeName){
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-
         Optional.ofNullable(product.getProductAttributes().get(attributeName))
                 .orElseThrow(() -> new ResourceNotFoundException("Attribute of name: " + attributeName + " does not exist or is not related to product with ID: " + productId));
 
         product.getProductAttributes().remove(attributeName);
+
         catalogService.saveProduct(product);
 
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
-
-
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
-
 
     /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
 
@@ -671,8 +710,8 @@ public class ProductController {
                 .getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
                 .filter(CatalogUtils::archivedCategoryFilter)
-                .map(DtoConverters.categoryEntityToDto)
-                .collect(Collectors.toList());
+                .map(category -> categoryConverter.createDto(category, true))
+                .collect(toList());
     }
 
     /* GET /products/{id}/categories */
@@ -726,7 +765,7 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .map(dtoConverters.skuEntityToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
 
     }
 
@@ -828,8 +867,8 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
+                .map(Product::getAllSkus)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist")).stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findAny()
                 .map(dtoConverters.skuEntityToDto)
@@ -886,12 +925,12 @@ public class ProductController {
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
+        final Sku defaultSKU = CatalogUtils.updateSkuEntityFromDto(product.getDefaultSku(), defaultSkuDto);
 
         defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
 
         //defaultSKU.setProduct(product);
-        defaultSKU = catalogService.saveSku(defaultSKU);
+        final Sku savedSKU = catalogService.saveSku(defaultSKU);
 
         //product.setDefaultSku(newSkuEntity);
         //catalogService.saveProduct(product);
@@ -901,7 +940,7 @@ public class ProductController {
 
         responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/products/{productId}/skus/{skuId}")
-                .buildAndExpand(productId, defaultSKU.getId())
+                .buildAndExpand(productId, savedSKU.getId())
                 .toUri());
 
         return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
@@ -1123,7 +1162,7 @@ public class ProductController {
         product.setAdditionalSkus(
                 product.getAllSkus().stream()
                         .filter(x -> x.getId().longValue() != skuId)
-                        .collect(Collectors.toList())
+                        .collect(toList())
         );
 
         catalogService.saveProduct(product);
@@ -1161,7 +1200,7 @@ public class ProductController {
 
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .orElseThrow(() -> new ResourceNotFoundException(format("Product with ID: %d does not exist", productId)))
                 .getAllSkus().stream()
                 .filter(x -> x.getId().longValue() == skuId)
                 .findFirst()
@@ -1256,7 +1295,7 @@ public class ProductController {
                 .getSkuMediaXref().entrySet().stream()
                 .map(Map.Entry::getValue)
                 .map(DtoConverters.skuMediaXrefToDto)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     /* GET /products/{productId}/skus/{skuId}/media/{key} */
@@ -1285,7 +1324,7 @@ public class ProductController {
          */
 
 
-        Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
+        final Sku sku = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
@@ -1337,78 +1376,6 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-
-    /* POST /{productId}/skus/{skuId}/media */
-/*
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add media to the product",
-            notes = "Adds a new media to the existing SKU",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "Specified media successfully added"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided"),
-            @ApiResponse(code = 404, message = "The specified product does not exist"),
-            @ApiResponse(code = 409, message = "Media with that key already exists")
-    })
-    public ResponseEntity<?> saveOneMediaForSku(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId,
-            @ApiParam(value = "Description of a new media")
-            @RequestBody SkuMediaDto skuMediaDto) {
-
-        List<String> allowableKeys = Arrays.asList("primary", "alt1", "alt2", "alt3", "alt4", "alt5", "alt6", "alt7", "alt8", "alt9");
-
-        if (skuMediaDto.getKey() == null || !allowableKeys.contains(skuMediaDto.getKey()) || skuMediaDto.getUrl() == null || skuMediaDto.getUrl().isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-
-        Sku mediaSkuEntity = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
-
-        if (mediaSkuEntity.getSkuMediaXref().get(skuMediaDto.getKey()) != null) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
-
-        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(skuMediaDto);
-
-        newSkuMediaXref.setSku(mediaSkuEntity);
-        newSkuMediaXref.setKey(skuMediaDto.getKey());
-
-        mediaSkuEntity.getSkuMediaXref().put(skuMediaDto.getKey(), newSkuMediaXref);
-
-        // (mst) Here is the deal: if the specified SKU does not contain any medias,
-        //       BL's service will return medias associated with Default SKU instead. (from GET endpoint)
-        //
-        //       Therefore, when we add a media to a SKU, that does not contain any, all those
-        //       previously visible (eg: through GET endpoints) medias WILL "disappear".
-        //
-
-        Sku alreadySavedSku = catalogService.saveSku(mediaSkuEntity);
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/products/{productId}/skus/{skuId}/media/{mediaId}")
-                .buildAndExpand(
-                        productId,
-                        skuId,
-                        alreadySavedSku.getSkuMediaXref().get(newSkuMediaXref.getKey()).getMedia().getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
-    }
-*/
-
     /* PUT /{productId}/skus/{skuId}/media/{key} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
@@ -1447,7 +1414,7 @@ public class ProductController {
         Optional.ofNullable(sku.getSkuMediaXref().remove(key))
                 .ifPresent(genericEntityService::remove);
 
-        SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(mediaDto);
+        final SkuMediaXref newSkuMediaXref = DtoConverters.skuMediaDtoToXref.apply(mediaDto);
         newSkuMediaXref.setSku(sku);
         newSkuMediaXref.setKey(key);
         sku.getSkuMediaXref().put(key, newSkuMediaXref);
@@ -1457,64 +1424,18 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    /* PATCH /products/{productId}/skus/{skuId}/media/{mediaId} */
-/*
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}/media/{mediaId}", method = RequestMethod.PATCH)
-    @ApiOperation(
-            value = "Partially update an existing media",
-            notes = "Partially updates an existing media with new details. It does not follow the format specified in RFC yet though",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful update of the specified media"),
-            @ApiResponse(code = 404, message = "The specified product or SKU does not exist")
-    })
-    public ResponseEntity<?> partialUpdateOneMediaForSkuById(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId,
-            @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "mediaId") Long mediaId,
-            @ApiParam(value = "(Partial) Description of an updated media")
-            @RequestBody SkuMediaDto skuMediaDto) {
-
-        Sku skuMediaEntity = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
-
-        // (mst) Do NOT use skuMediaDto.getKey() EVER, even if it is available!
-
-        SkuMediaXref skuMediaXref = skuMediaEntity.getSkuMediaXref().entrySet().stream()
-                .filter(x -> x.getValue().getMedia().getId().longValue() == mediaId)
-                .map(Map.Entry::getValue)
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Media with ID: " + mediaId + " does not exist or is not related to SKU with ID: " + skuId));
-
-        CatalogUtils.partialUpdateMediaEntityFromDto(skuMediaXref.getMedia(), skuMediaDto);
-
-        catalogService.saveSku(skuMediaEntity);
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-*/
-
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 
     private SkuProductOptionValueXref generateXref(SkuProductOptionValueDto skuProductOption, Sku sku, Product product) {
-        ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
+        final ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
                 skuProductOption.getAttributeName(),
                 product))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product option: " + skuProductOption.getAttributeName() + " does not exist in product with ID: " + product.getId()
                 ));
 
-        ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters.getProductOptionValueByNameForProduct(
+        final ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters
+                .getProductOptionValueByNameForProduct(
                 currentProductOption,
                 skuProductOption.getAttributeValue()))
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -1527,7 +1448,8 @@ public class ProductController {
     }
 
     private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
-        ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply(productOptionDto));
+        final ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply
+                (productOptionDto));
         p.getAllowedValues().forEach(x -> x.setProductOption(p));
         p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
         p.setRequired(true);

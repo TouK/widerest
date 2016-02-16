@@ -1,5 +1,21 @@
 package pl.touk.widerest.api;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.i18n.service.ISOService;
@@ -8,7 +24,28 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.common.value.ValueAssignable;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryMediaXref;
+import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.broadleafcommerce.core.catalog.domain.ProductBundle;
+import org.broadleafcommerce.core.catalog.domain.ProductImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductOption;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionValueImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
+import org.broadleafcommerce.core.catalog.domain.SkuImpl;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
@@ -28,8 +65,8 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
-import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Service;
+
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.controllers.CustomerController;
 import pl.touk.widerest.api.cart.controllers.OrderController;
@@ -41,25 +78,19 @@ import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.controllers.CategoryController;
 import pl.touk.widerest.api.catalog.controllers.ProductController;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.catalog.dto.BundleItemDto;
+import pl.touk.widerest.api.catalog.dto.FacetDto;
+import pl.touk.widerest.api.catalog.dto.FacetValueDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
+import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.ProductDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-
-import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+import pl.touk.widerest.api.categories.CategoryController;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
@@ -76,13 +107,9 @@ public class DtoConverters {
     @Resource
     protected ISOService isoService;
 
-    private static Function<ProductAttribute, String> getProductAttributeName = input -> {
-        return input.getValue();
-    };
+    private static Function<ProductAttribute, String> getProductAttributeName = ValueAssignable::getValue;
 
-    private static Function<ProductOptionValue, String> getProductOptionValueName = input -> {
-        return input.getAttributeValue();
-    };
+    private static Function<ProductOptionValue, String> getProductOptionValueName = ProductOptionValue::getAttributeValue;
 
     /******************************** Currency ********************************/
 
@@ -125,9 +152,7 @@ public class DtoConverters {
                         .orElse(localeService.findDefaultLocale().getDefaultCurrency())
                         .getCurrencyCode())
                 .skuAttributes(entity.getSkuAttributes().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> {
-                            return e.getValue().getName();
-                        })))
+                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())))
                 .skuProductOptionValues(entity.getProductOptionValueXrefs().stream()
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueToSkuValueDto)
@@ -194,13 +219,7 @@ public class DtoConverters {
 
     public Function<Product, ProductDto> productEntityToDto = entity -> {
 
-        ProductDto dto = null;
-
-        if (entity instanceof ProductBundle) {
-            dto = new ProductBundleDto();
-        } else {
-            dto = new ProductDto();
-        }
+        final ProductDto dto = entity instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
 
         dto.setName(entity.getName());
 
@@ -286,17 +305,12 @@ public class DtoConverters {
             }
         }
 
-        final ProductDto productDto = dto;
-
-		/* Links to the product's categories */
+        /* Links to the product's categories */
         if (entity.getAllParentCategoryXrefs() != null && !entity.getAllParentCategoryXrefs().isEmpty()) {
             entity.getAllParentCategoryXrefs().stream()
                     .map(CategoryProductXref::getCategory)
                     .filter(CatalogUtils::archivedCategoryFilter)
-                    .forEach(x -> {
-                        productDto.add(linkTo(methodOn(CategoryController.class)
-                                .readOneCategoryById(x.getId())).withRel("category"));
-                    });
+                    .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
         }
 
         dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(entity.getId())).withRel("attributes"));
@@ -317,14 +331,13 @@ public class DtoConverters {
     /******************************** Product Option ********************************/
 
     public static Function <ProductOption, ProductOptionDto> productOptionEntityToDto = entity -> {
-        ProductOptionDto productOptionDto = ProductOptionDto.builder()
+
+        return ProductOptionDto.builder()
                 .name(entity.getAttributeName())
                 .allowedValues(entity.getAllowedValues().stream()
                         .map(DtoConverters.getProductOptionValueName)
                         .collect(toList()))
                 .build();
-
-        return productOptionDto;
     };
 
 
@@ -347,12 +360,10 @@ public class DtoConverters {
     /******************************** Product Option Value ********************************/
 
     public static Function<ProductOptionValue, ProductOptionValueDto> productOptionValueEntityToDto = entity -> {
-        ProductOptionValueDto productOptionValueDto = ProductOptionValueDto.builder()
+        return ProductOptionValueDto.builder()
                 .attributeValue(entity.getAttributeValue())
                 .productOption(DtoConverters.productOptionEntityToDto.apply(entity.getProductOption()))
                 .build();
-
-        return productOptionValueDto;
     };
 
 
@@ -365,74 +376,15 @@ public class DtoConverters {
     };
 
     public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity -> {
-
-        final SkuProductOptionValueDto skuProductOptionValueDto = SkuProductOptionValueDto.builder()
+        return SkuProductOptionValueDto.builder()
                 .attributeName(entity.getProductOption().getAttributeName())
                 .attributeValue(entity.getAttributeValue())
                 .build();
-
-        return skuProductOptionValueDto;
     };
 
     /******************************** Product Option Value ********************************/
 
     /******************************** CATEGORY ********************************/
-
-    public static Function<Category, CategoryDto> categoryEntityToDto = entity -> {
-
-        final CategoryDto dto = CategoryDto.builder()
-                .name(entity.getName())
-                .description(entity.getDescription())
-                .longDescription(entity.getLongDescription())
-                .productsAvailability(Optional.ofNullable(entity.getInventoryType())
-                        .map(InventoryType::getType)
-                        .orElse(null))
-                .attributes(entity.getCategoryAttributesMap().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
-                .build();
-
-
-        dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
-
-        dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getCategoryByIdAvailability(entity.getId())).withRel("availability"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getAllProductsInCategoryCount(entity.getId())).withRel("products-count"));
-
-        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount(null)).withRel("categories-count"));
-
-        final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getSubCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories");
-                })
-                .collect(toList());
-
-        dto.add(subcategoriesLinks);
-
-        final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getCategory)
-                .map(x -> {
-                    return linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories");
-                })
-                .collect(toList());
-
-        dto.add(parentCategoriesLinks);
-
-
-
-        return dto;
-    };
-
-    public static Function<CategoryDto, Category> categoryDtoToEntity = dto -> {
-        final Category categoryEntity = new CategoryImpl();
-
-        return CatalogUtils.updateCategoryEntityFromDto(categoryEntity, dto);
-    };
 
     /******************************** CATEGORY ********************************/
 
@@ -442,30 +394,16 @@ public class DtoConverters {
 
         final Media entity = xref.getMedia();
 
-        final MediaDto mediaDto = MediaDto.builder()
+        return MediaDto.builder()
                 .title(entity.getTitle())
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
                 .tags(entity.getTags())
 //                .key(xref.getKey())
                 .build();
-
-        mediaDto.add(
-                linkTo(
-                        methodOn(CategoryController.class).deleteOneMedia(xref.getCategory().getId(), xref.getKey())
-                ).withSelfRel()
-        );
-
-        mediaDto.add(
-                linkTo(
-                        methodOn(CategoryController.class).getCategoryByIdAvailability(xref.getCategory().getId())
-                ).withRel("category")
-        );
-
-        return mediaDto;
     };
 
-    public static Function<MediaDto, CategoryMediaXref> mediaDtoToCategoryMediaXref = dto -> {
+    public static CategoryMediaXref mediaDtoToCategoryMediaXref(MediaDto dto) {
         CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
         Media media = new MediaImpl();
 
@@ -479,22 +417,13 @@ public class DtoConverters {
 
         final Media entity = xref.getMedia();
 
-        final MediaDto mediaDto = MediaDto.builder()
+        return MediaDto.builder()
                 .title(entity.getTitle())
                 .url(entity.getUrl())
                 .altText(entity.getAltText())
                 .tags(entity.getTags())
 //                .key(xref.getKey())
                 .build();
-
-        mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(xref.getSku().getProduct().getId(),
-                xref.getSku().getId(),
-                xref.getKey())).withSelfRel());
-
-        mediaDto.add(linkTo(methodOn(ProductController.class).getSkuById(xref.getSku().getProduct().getId(),
-                xref.getSku().getId())).withRel("sku"));
-
-        return mediaDto;
     };
 
     /* (mst) Remember to set SKU after this one */
@@ -548,8 +477,7 @@ public class DtoConverters {
         List<String> collectAllowedValues = productOptionValues.stream()
                 .map(getProductOptionValueName)
                 .collect(toList());
-        ProductOptionDto dto = new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
-        return dto;
+        return new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
     };
 
     // experimental
@@ -619,7 +547,8 @@ public class DtoConverters {
     /******************************** ADDRESS ********************************/
 
     public static Function<Address, AddressDto> addressEntityToDto = entity -> {
-        final AddressDto addressDto = AddressDto.builder()
+
+        return AddressDto.builder()
                 .addressLine1(entity.getAddressLine1())
                 .addressLine2(entity.getAddressLine2())
                 .addressLine3(entity.getAddressLine3())
@@ -631,8 +560,6 @@ public class DtoConverters {
                 .countryCode(entity.getIsoCountryAlpha2().getAlpha2())
                 .countrySubdivisionCode(entity.getIsoCountrySubdivision())
                 .build();
-
-        return addressDto;
     };
 
     public Function<AddressDto, Address> addressDtoToEntity = dto -> {
@@ -658,12 +585,11 @@ public class DtoConverters {
     /******************************** CUSTOMERADDRESS ********************************/
 
     public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
-        final CustomerAddressDto customerAddressDto = CustomerAddressDto.builder()
+
+        return CustomerAddressDto.builder()
                 .addressName(entity.getAddressName())
                 .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress()))
                 .build();
-
-        return customerAddressDto;
     };
 
     public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
@@ -690,7 +616,7 @@ public class DtoConverters {
                         .collect(Collectors.toList()))
 //                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(Money.toAmount(entity.getTotal()))
-                .fulfillment(Optional.ofNullable(CartUtils.getFulfilmentOption(entity))
+                .fulfillment(CartUtils.getFulfilmentOption(entity)
                         .map(FulfillmentOption::getLongDescription)
                         .orElse(null))
                 .cartAttributes(Optional.ofNullable(entity.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
@@ -734,16 +660,13 @@ public class DtoConverters {
 
 
     public static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity -> {
-        final CartAttributeDto cartAttributeDto = CartAttributeDto.builder()
+        return CartAttributeDto.builder()
                 .name(entity.getName())
                 .value(entity.getValue())
                 .build();
-
-        return cartAttributeDto;
     };
 
     public static Function<CartAttributeDto, OrderAttribute> orderAttributeDtoToEntity = dto -> {
-
         final OrderAttribute order = new OrderAttributeImpl();
         order.setName(dto.getName());
         order.setValue(dto.getValue());
@@ -758,13 +681,11 @@ public class DtoConverters {
     /******************************** PAYMENTINFO ********************************/
 
     public static Function<OrderPayment, OrderPaymentDto> orderPaymentEntityToDto = entity -> {
-        OrderPaymentDto orderPaymentDto = OrderPaymentDto.builder()
+        return OrderPaymentDto.builder()
                 .amount(entity.getAmount())
                 .billingAddress(DtoConverters.addressEntityToDto.apply(entity.getBillingAddress()))
                 .orderId(entity.getOrder().getId()).paymentId(entity.getId())
                 .referenceNumber(entity.getReferenceNumber()).type(entity.getType().getType()).build();
-
-        return orderPaymentDto;
 
     };
 
@@ -808,16 +729,12 @@ public class DtoConverters {
         return orderItemDto;
     };
     /******************************** DISCRETEORDERITEM ********************************/
-    public static Function<SearchFacetResultDTO, FacetValueDto> searchFacetResultDTOFacetValueToDto = entity -> {
-        final FacetValueDto facetValueDto = FacetValueDto.builder()
-                .value(entity.getValue())
-                .minValue(entity.getMinValue())
-                .maxValue(entity.getMaxValue())
-                .quantity(entity.getQuantity())
-                .build();
-
-        return facetValueDto;
-    };
+    public static Function<SearchFacetResultDTO, FacetValueDto> searchFacetResultDTOFacetValueToDto = entity -> FacetValueDto.builder()
+            .value(entity.getValue())
+            .minValue(entity.getMinValue())
+            .maxValue(entity.getMaxValue())
+            .quantity(entity.getQuantity())
+            .build();
 
     public static Function<SearchFacetDTO, FacetDto> searchFacetDTOFacetToDto = entity -> {
         final FacetDto facetDto = FacetDto.builder()

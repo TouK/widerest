@@ -12,9 +12,6 @@ import org.springframework.hateoas.ResourceSupport;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Created by mst on 31.07.15.
- */
 @Data
 @Builder
 @NoArgsConstructor

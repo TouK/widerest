@@ -14,7 +14,7 @@
 -- i18n standard abbreviations should be used.
 --
 INSERT INTO BLC_CURRENCY(CURRENCY_CODE, FRIENDLY_NAME, DEFAULT_FLAG) VALUES('USD', 'US Dollar', TRUE);
-INSERT INTO BLC_CURRENCY(CURRENCY_CODE, FRIENDLY_NAME, DEFAULT_FLAG) VALUES('PLN', 'Polish zloty', FALSE );
+INSERT INTO BLC_CURRENCY(CURRENCY_CODE, FRIENDLY_NAME, DEFAULT_FLAG) VALUES('PLN', 'Polish zloty', FALSE);
 
 --
 -- Load Locales:  Your site must have at least one Locale with DEFAULT_FLAG set to TRUE

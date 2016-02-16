@@ -1,5 +1,13 @@
 package pl.touk.widerest.security.jwt;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetailsServiceImpl;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
@@ -14,15 +22,9 @@ import org.springframework.security.oauth2.provider.token.UserAuthenticationConv
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @Component
 public class WiderestUserAuthenticationConverter implements UserAuthenticationConverter {
@@ -43,8 +45,9 @@ public class WiderestUserAuthenticationConverter implements UserAuthenticationCo
     protected EntityManager em;
 
     public Map<String, ?> convertUserAuthentication(Authentication authentication) {
-        Map<String, Object> claims = new LinkedHashMap<String, Object>();
-        Object principal = authentication.getPrincipal();
+        final Map<String, Object> claims = new LinkedHashMap<String, Object>();
+        final Object principal = authentication.getPrincipal();
+
         if (principal instanceof AdminUserDetails) {
             claims.put(SUB, BACKOFFICE_SUB_PREFIX + DELIMITER + ((AdminUserDetails) principal).getUsername());
         } else if (principal instanceof CustomerUserDetails){
@@ -60,8 +63,7 @@ public class WiderestUserAuthenticationConverter implements UserAuthenticationCo
         return Optional.ofNullable(claims.get(SUB))
                 .map(String.class::cast)
                 .map(subject -> StringUtils.split(subject, DELIMITER))
-                .map(subject ->
-                        {
+                .map(subject -> {
                             if (siteUserDetailsService != null && SITE_SUB_PREFIX.equals(subject[0])) {
                                 UserDetails userDetails = siteUserDetailsService.loadUserByUsername(String.valueOf(subject[1]));
                                 return new SiteAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
@@ -82,8 +84,9 @@ public class WiderestUserAuthenticationConverter implements UserAuthenticationCo
 
     private Collection<? extends GrantedAuthority> getAuthorities(Map<String, ?> map) {
         if (!map.containsKey(AUTHORITIES)) {
-            return null;
+            return null; // TODO emptyCollection?
         }
+
         Object authorities = map.get(AUTHORITIES);
         if (authorities instanceof String) {
             return AuthorityUtils.commaSeparatedStringToAuthorityList((String) authorities);

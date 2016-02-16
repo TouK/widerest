@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.dto;
+package pl.touk.widerest.api.categories;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -9,9 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.Resource;
-import org.springframework.hateoas.ResourceSupport;
-import org.springframework.hateoas.Resources;
+import pl.touk.widerest.api.catalog.dto.BaseDto;
+import pl.touk.widerest.api.catalog.dto.MediaDto;
 
 import java.util.Map;
 
@@ -22,7 +21,7 @@ import java.util.Map;
 @JsonRootName("category")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Category", description = "Category DTO resource representation")
-public class CategoryDto extends ResourceSupport {
+public class CategoryDto extends BaseDto {
 
     @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;
@@ -46,12 +45,8 @@ public class CategoryDto extends ResourceSupport {
     @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false)
     private Map<String, String> attributes;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 5, value = "List of subcategories for this category", required = false)
-    private Resources<Resource<CategoryDto>> subcategories;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 6, value = "List of medias associated with the SKU", dataType = "java.util.List")
+    @ApiModelProperty(position = 6, value = "List of medias associated with a category")
     private Map<String /*key*/, MediaDto> media;
 
 }

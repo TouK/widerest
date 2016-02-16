@@ -13,9 +13,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
-/**
- * Created by mst on 14.09.15.
- */
 @Slf4j
 @Component
 public class CorsFilter extends OncePerRequestFilter {

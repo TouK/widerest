@@ -1,5 +1,20 @@
 package pl.touk.widerest.api.cart.service;
 
+import static java.lang.String.format;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
@@ -9,7 +24,6 @@ import org.broadleafcommerce.core.order.service.exception.RemoveFromCartExceptio
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
-import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.http.HttpStatus;
@@ -18,22 +32,14 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javaslang.control.Match;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-
-import javax.annotation.Resource;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import java.util.List;
-import java.util.Optional;
 
 
 @Service("wdOrderService")
@@ -53,27 +59,24 @@ public class OrderServiceProxy {
 
     @PostAuthorize("permitAll")
     @Transactional
-    public List<Order> getOrdersByCustomer(UserDetails userDetails) throws CustomerNotFoundException {
-
-        if(userDetails instanceof AdminUserDetails) {
-            return getAllOrders();
-        } else if(userDetails instanceof CustomerUserDetails) {
-            CustomerUserDetails customerUserDetails = (CustomerUserDetails) userDetails;
-            Customer customer = customerService.readCustomerById(customerUserDetails.getId());
-            if (customer == null) {
-                throw new CustomerNotFoundException("Cannot find customer with ID: " + customerUserDetails.getId());
-            }
-            return orderService.findOrdersForCustomer(customer);
-        }
-
-        return null;
+    public List<Order> getOrdersByCustomer(final UserDetails userDetails) throws CustomerNotFoundException {
+        return Match.of(userDetails)
+                .whenType(AdminUserDetails.class).then(this::getAllOrders)
+                .whenType(CustomerUserDetails.class).then(() -> {
+                    final Long id = ((CustomerUserDetails) userDetails).getId();
+                    return Optional.ofNullable(customerService.readCustomerById(id))
+                        .map(c -> orderService.findOrdersForCustomer(c))
+                        .orElseThrow(() -> new CustomerNotFoundException(format("Cannot find customer with ID: %d",
+                                id)));
+        }).otherwise(Collections::emptyList)
+                .get();
     }
 
     @PostAuthorize("hasRole('PERMISSION_ALL_ORDER')")
     @Transactional
     public List<Order> getAllOrders() {
-        CriteriaBuilder builder = this.em.getCriteriaBuilder();
-        CriteriaQuery criteria = builder.createQuery(Order.class);
+        final CriteriaBuilder builder = this.em.getCriteriaBuilder();
+        final CriteriaQuery criteria = builder.createQuery(Order.class);
         Root order = criteria.from(OrderImpl.class);
         criteria.select(order);
         TypedQuery query = this.em.createQuery(criteria);
@@ -83,23 +86,19 @@ public class OrderServiceProxy {
     }
 
     @Transactional
-    public Order getProperCart(UserDetails userDetails, Long orderId) {
-        Order cart = null;
+    public Optional<Order> getProperCart(UserDetails userDetails, Long orderId) {
 
-        if (userDetails instanceof CustomerUserDetails) {
-            cart = getOrderForCustomerById((CustomerUserDetails) userDetails, orderId);
-        } else if (userDetails instanceof AdminUserDetails) {
-            cart = orderService.findOrderById(orderId);
-        }
-
-        return cart;
+        return Match.of(userDetails)
+                .whenType(CustomerUserDetails.class).then(d -> getOrderForCustomerById(d, orderId))
+                .whenType(AdminUserDetails.class).then(() -> orderService.findOrderById(orderId))
+                .toJavaOptional();
     }
 
     @Transactional
     public List<DiscreteOrderItem> getDiscreteOrderItemsFromProperCart(UserDetails userDetails, Long orderId) {
-        return Optional.ofNullable(getProperCart(userDetails, orderId))
-                .orElseThrow(ResourceNotFoundException::new)
-                .getDiscreteOrderItems();
+        return getProperCart(userDetails, orderId)
+                .map(Order::getDiscreteOrderItems)
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     public Order getOrderForCustomerById(CustomerUserDetails customerUserDetails, Long orderId) throws OrderNotFoundException {
@@ -116,10 +115,10 @@ public class OrderServiceProxy {
     public AddressDto getOrderFulfilmentAddress(
            UserDetails userDetails, Long orderId) {
 
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
+        final Order order = getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        return Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentAddress(order))
+        return fulfillmentServiceProxy.getFulfillmentAddress(order)
                 .map(DtoConverters.addressEntityToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
     }
@@ -133,10 +132,10 @@ public class OrderServiceProxy {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        Order cart = Optional.ofNullable(getProperCart(userDetails, orderId))
+        final Order cart = getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        if (cart.getDiscreteOrderItems().stream().filter(x -> x.getId() == itemId).count() != 1) {
+        if (cart.getDiscreteOrderItems().stream().filter(x -> Objects.equals(x.getId(), itemId)).count() != 1) {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
@@ -152,8 +151,8 @@ public class OrderServiceProxy {
     @Transactional
     public ResponseEntity<?> updateSelectedFulfillmentOption
             (UserDetails userDetails, Long orderId, Long fulfillmentOptionId) throws PricingException {
-        Order order = Optional.ofNullable(getProperCart(userDetails, orderId))
-            .orElseThrow(ResourceNotFoundException::new);
+
+        final Order order = getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         if (order.getItemCount() <= 0) {
             throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");

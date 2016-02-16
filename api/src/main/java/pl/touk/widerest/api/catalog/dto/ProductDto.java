@@ -1,9 +1,16 @@
 package pl.touk.widerest.api.catalog.dto;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.hateoas.ResourceSupport;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -11,15 +18,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Builder;
-import org.springframework.hateoas.ResourceSupport;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Created by mst on 06.07.15.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,10 +1,19 @@
 package pl.touk.widerest.swagger;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import static java.util.Collections.singletonList;
+import static springfox.documentation.builders.PathSelectors.regex;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -21,12 +30,6 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.UiConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static springfox.documentation.builders.PathSelectors.regex;
-
 @Configuration
 @EnableSwagger2
 public class SwaggerConfig {
@@ -42,28 +45,24 @@ public class SwaggerConfig {
                 .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
                 .securityContexts(Lists.newArrayList(apiSecurityContext()))
-                .securitySchemes(Lists.newArrayList(apiImplicitScheme()))
-                ;
+                .securitySchemes(Lists.newArrayList(apiImplicitScheme()));
 
     }
 
     private SecurityScheme apiImplicitScheme() {
-        List<AuthorizationScope> authorizationScopes =
-                Arrays.asList(Scope.values()).stream()
-                        .map(scope -> new AuthorizationScope(scope.toString(), scope.toString()))
+        final List<AuthorizationScope> authorizationScopes =
+                Arrays.stream(Scope.values())
+                        .map(s -> new AuthorizationScope(s.toString(), s.toString()))
                         .collect(Collectors.toList());
-        LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
-        GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
+        final LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
+        final GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
+
         return new OAuth(API_REFERENCE, authorizationScopes, Lists.newArrayList(grantType));
     }
 
     private SecurityContext apiSecurityContext() {
         return SecurityContext.builder()
-                .securityReferences(
-                        Lists.newArrayList(
-                                new SecurityReference(API_REFERENCE, new AuthorizationScope[0])
-                        )
-                )
+                .securityReferences(singletonList(new SecurityReference(API_REFERENCE, new AuthorizationScope[0])))
                 .forPaths(PathSelectors.regex("/.*"))
                 .build();
     }
@@ -75,7 +74,7 @@ public class SwaggerConfig {
 
     @Bean
     public ApiInfo apiInfo() {
-        ApiInfo apiInfo = new ApiInfo(
+        return new ApiInfo(
                 "Widerest",
                 "RESTful API for Broadleaf Commerce - an open source eCommerce platform based on the Spring Framework",
                 String.valueOf(getClass().getPackage().getImplementationVersion()),
@@ -84,7 +83,6 @@ public class SwaggerConfig {
                 "Widerest Licence",
                 "license.html"
         );
-        return apiInfo;
     }
 
 

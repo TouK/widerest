@@ -1,5 +1,7 @@
 package pl.touk.widerest.api;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -8,10 +10,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.context.request.WebRequestInterceptor;
 
-import java.util.Optional;
-
 class ChannelInterceptor implements WebRequestInterceptor {
-
 
     @Override
     public void preHandle(WebRequest request) throws Exception {
@@ -23,7 +22,6 @@ class ChannelInterceptor implements WebRequestInterceptor {
                 .map(oAuth2Request -> oAuth2Request.getClientId())
                 .map(clientId -> StringUtils.substringAfter(clientId, "."))
                 .ifPresent(RequestUtils::setRequestChannel);
-
     }
 
     @Override

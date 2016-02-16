@@ -1,5 +1,9 @@
 package pl.touk.widerest.api.cart.service;
 
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
@@ -8,12 +12,11 @@ import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.service.CountryService;
 import org.springframework.stereotype.Service;
+
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.NoFulfillmentOptionException;
 import pl.touk.widerest.api.cart.exceptions.NoShippingAddressException;
 import pl.touk.widerest.api.cart.exceptions.OrderValidationException;
-
-import javax.annotation.Resource;
 
 @Service("wdOrderValidationService")
 public class OrderValidationService {
@@ -75,22 +78,20 @@ public class OrderValidationService {
     }
 
     private void validateFulfillmentAddresses(Order order) {
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
+        final Address address = Optional.ofNullable(fulfillmentGroupService.getFirstShippableFulfillmentGroup(order))
+                .map(FulfillmentGroup::getAddress)
+                .orElseThrow(() -> new NoShippingAddressException(
+                        String.format("Shipping address for order with ID: %d has not been provided", order.getId())));
 
-        if(fulfillmentGroup != null && fulfillmentGroup.getAddress() == null) {
-            throw new NoShippingAddressException("Shipping address for order with ID: " + order.getId() + " has not been provided");
-        }
-
-        validateCustomerDataInAddress(fulfillmentGroup.getAddress());
+        validateCustomerDataInAddress(address);
     }
 
 
     private void validateFulfillmentOption(Order order) throws OrderValidationException {
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
-
-        if(fulfillmentGroup != null && fulfillmentGroup.getFulfillmentOption() != null) {
-            throw new NoFulfillmentOptionException("FulfillmentOption for order with ID: " + order.getId() + " has not been provided");
-        }
+        Optional.ofNullable(fulfillmentGroupService.getFirstShippableFulfillmentGroup(order))
+                .map(FulfillmentGroup::getFulfillmentOption)
+                .orElseThrow(() -> new NoFulfillmentOptionException("FulfillmentOption for order with ID: " + order
+                        .getId() + " has not been provided"));
     }
 
 }

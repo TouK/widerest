@@ -1,56 +1,35 @@
 package pl.touk.widerest.api.cart;
 
+import static org.broadleafcommerce.core.order.service.type.FulfillmentType.DIGITAL;
+import static org.broadleafcommerce.core.order.service.type.FulfillmentType.GIFT_CARD;
+import static org.broadleafcommerce.core.order.service.type.FulfillmentType.PHYSICAL_PICKUP;
+
+import java.util.Arrays;
+import java.util.Optional;
+
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 
-import java.util.List;
-import java.util.Optional;
+import lombok.experimental.UtilityClass;
 
-/**
- * Created by mst on 31.07.15.
- */
+@UtilityClass
 public class CartUtils {
 
-    public static FulfillmentOption getFulfilmentOption(Order order) {
-        return Optional.ofNullable(getFirstShippableFulfilmentGroup(order))
-                .map(FulfillmentGroup::getFulfillmentOption)
-                .orElse(null);
-
-        /*
-         FulfillmentGroup fulfillmentGroup = getFirstShippableFulfillmentGroup(order);
-        return fulfillmentGroup != null ? fulfillmentGroup.getFulfillmentOption() : null;
-         */
+    public static Optional<FulfillmentOption> getFulfilmentOption(Order order) {
+        return getFirstShippableFulfilmentGroup(order)
+                .map(FulfillmentGroup::getFulfillmentOption);
     }
 
-    public static FulfillmentGroup getFirstShippableFulfilmentGroup(Order order) {
-
-        /*
+    public static Optional<FulfillmentGroup> getFirstShippableFulfilmentGroup(Order order) {
         return order.getFulfillmentGroups().stream()
-                .map(FulfillmentGroup::getType)
-                .filter(CartUtils::isShippable)
-                .findFirst()
-                .
-*/
-        List<FulfillmentGroup> fulfillmentGroups = order.getFulfillmentGroups();
-        if (fulfillmentGroups != null) {
-            for (FulfillmentGroup fulfillmentGroup : fulfillmentGroups) {
-                if (isShippable(fulfillmentGroup.getType())) {
-                    return fulfillmentGroup;
-                }
-            }
-        }
-        return null;
-
+                .filter(group -> isShippable(group.getType()))
+                .findFirst();
     }
 
     private static boolean isShippable(FulfillmentType fulfillmentType) {
-        if (FulfillmentType.GIFT_CARD.equals(fulfillmentType) || FulfillmentType.DIGITAL.equals(fulfillmentType) ||
-                FulfillmentType.PHYSICAL_PICKUP.equals(fulfillmentType)) {
-            return false;
-        }
-        return true;
+        return !Arrays.asList(GIFT_CARD, DIGITAL, PHYSICAL_PICKUP).contains(fulfillmentType);
     }
 }
 
