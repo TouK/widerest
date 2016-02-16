@@ -15,6 +15,12 @@
     <packaging>pom</packaging>
     <name>widerest</name>
     <organization><name>TouK</name><url>http://touk.pl</url></organization>
+    
+    <scm>
+        <connection>git@gitlab.touk.pl:touk-oss/widerest.git</connection>
+        <developerConnection>scm:git:git@gitlab.touk.pl:touk-oss/widerest.git</developerConnection>
+        <url>http://gitlab.touk.pl/touk-oss/widerest</url>
+    </scm>
 
     <distributionManagement>
         <repository>
