@@ -18,6 +18,7 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.orders.OrderConverter;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -35,6 +36,9 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
 
     @Resource
     SendwithusService sendwithusService;
+
+    @Resource
+    private OrderConverter orderConverter;
 
     CamelContext camelContext;
 
@@ -73,7 +77,7 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
 
     private void sendOrderToHook(String hookUrl, Order order) throws JsonProcessingException, SendWithUsException {
 
-        OrderDto dto = DtoConverters.orderEntityToDto.apply(order);
+        final OrderDto dto = orderConverter.createDto(order, false);
 
         UriComponents hookUriComponents = UriComponentsBuilder.fromUriString(hookUrl).build();
 

@@ -29,7 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.controllers.OrderController;
+import pl.touk.widerest.api.cart.customers.AddressConverter;
+import pl.touk.widerest.api.cart.orders.OrderController;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
@@ -50,6 +51,9 @@ public class FulfilmentServiceProxy {
 
     @Resource(name = "blOrderService")
     private OrderService orderService;
+
+    @Resource
+    private AddressConverter addressConverter;
 
     public Map<? extends FulfillmentOption, Money> getFulfillmentOptionsWithPricesAvailableForProductsInOrder(Order cart) throws FulfillmentPriceException {
         FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(cart);
@@ -119,7 +123,7 @@ public class FulfilmentServiceProxy {
 
         if(fulfillmentGroup != null) {
             if(fulfillmentGroup.getAddress() != null) {
-                fulfillmentDto.setAddress(DtoConverters.addressEntityToDto.apply(fulfillmentGroup.getAddress()));
+                fulfillmentDto.setAddress(addressConverter.createDto(fulfillmentGroup.getAddress(), false));
             }
 
             if(fulfillmentGroup.getFulfillmentOption() != null) {

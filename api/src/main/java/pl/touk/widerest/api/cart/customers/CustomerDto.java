@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.dto;
+package pl.touk.widerest.api.cart.customers;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.hateoas.ResourceSupport;
+import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
 
 import java.util.List;
 import java.util.Locale;

@@ -2,7 +2,6 @@ package pl.touk.widerest.api;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -19,15 +18,12 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.i18n.service.ISOService;
-import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
-import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.common.value.ValueAssignable;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -39,29 +35,18 @@ import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
-import org.broadleafcommerce.profile.core.domain.Address;
-import org.broadleafcommerce.profile.core.domain.AddressImpl;
-import org.broadleafcommerce.profile.core.domain.Customer;
-import org.broadleafcommerce.profile.core.domain.CustomerAddress;
-import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
-import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.springframework.stereotype.Service;
 
 import pl.touk.widerest.api.cart.CartUtils;
-import pl.touk.widerest.api.cart.controllers.CustomerController;
-import pl.touk.widerest.api.cart.controllers.OrderController;
-import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.customers.CustomerController;
+import pl.touk.widerest.api.cart.orders.OrderController;
 import pl.touk.widerest.api.cart.dto.CartAttributeDto;
-import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
-import pl.touk.widerest.api.cart.dto.CustomerDto;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
-import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.*;
-import pl.touk.widerest.api.products.ProductController;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
@@ -303,163 +288,163 @@ public class DtoConverters {
     /******************************** Product Option Xref ********************************/
 
     /******************************** CUSTOMER ********************************/
-    public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
+//    public static Function<Customer, CustomerDto> customerEntityToDto = entity -> {
+//
+//        final CustomerDto customerDto = CustomerDto.builder()
+//                .customerId(entity.getId())
+//                .firstName(entity.getFirstName())
+//                .lastName(entity.getLastName())
+//                .deactivated(entity.isDeactivated())
+//                .addresses(entity.getCustomerAddresses().stream()
+//                        .map(DtoConverters.customerAddressEntityToDto)
+//                        .collect(Collectors.toList()))
+//                .username(entity.getUsername())
+////                disabled due to security reasons
+////                .passwordHash(entity.getPassword())
+//                .registered(entity.isRegistered())
+//                .email(entity.getEmailAddress())
+//                .build();
+//
+//        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(null, entity.getId().toString())).withSelfRel());
+//        customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, entity.getId().toString())).withRel("authorization"));
+//
+//
+//        return customerDto;
+//    };
 
-        final CustomerDto customerDto = CustomerDto.builder()
-                .customerId(entity.getId())
-                .firstName(entity.getFirstName())
-                .lastName(entity.getLastName())
-                .deactivated(entity.isDeactivated())
-                .addresses(entity.getCustomerAddresses().stream()
-                        .map(DtoConverters.customerAddressEntityToDto)
-                        .collect(Collectors.toList()))
-                .username(entity.getUsername())
-//                disabled due to security reasons
-//                .passwordHash(entity.getPassword())
-                .registered(entity.isRegistered())
-                .email(entity.getEmailAddress())
-                .build();
-
-        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(null, entity.getId().toString())).withSelfRel());
-        customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, entity.getId().toString())).withRel("authorization"));
-
-
-        return customerDto;
-    };
-
-    public Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
-
-        final Customer customerEntity = new CustomerImpl();
-
-        customerEntity.setId(dto.getCustomerId());
-        customerEntity.setFirstName(dto.getFirstName());
-        customerEntity.setLastName(dto.getLastName());
-        customerEntity.setRegistered(dto.getRegistered());
-        customerEntity.setUsername(dto.getUsername());
-        customerEntity.setPassword(dto.getPasswordHash());
-        customerEntity.setEmailAddress(dto.getEmail());
-        customerEntity.setCustomerAddresses(dto.getAddresses().stream()
-                .map(this.customerAddressDtoToEntity)
-                .collect(Collectors.toList()));
-
-        return customerEntity;
-    };
+//    public Function<CustomerDto, Customer> customerDtoToEntity = dto -> {
+//
+//        final Customer customerEntity = new CustomerImpl();
+//
+//        customerEntity.setId(dto.getCustomerId());
+//        customerEntity.setFirstName(dto.getFirstName());
+//        customerEntity.setLastName(dto.getLastName());
+//        customerEntity.setRegistered(dto.getRegistered());
+//        customerEntity.setUsername(dto.getUsername());
+//        customerEntity.setPassword(dto.getPasswordHash());
+//        customerEntity.setEmailAddress(dto.getEmail());
+//        customerEntity.setCustomerAddresses(dto.getAddresses().stream()
+//                .map(this.customerAddressDtoToEntity)
+//                .collect(Collectors.toList()));
+//
+//        return customerEntity;
+//    };
 
     /******************************** CUSTOMER ********************************/
 
     /******************************** ADDRESS ********************************/
 
-    public static Function<Address, AddressDto> addressEntityToDto = entity -> {
+//    public static Function<Address, AddressDto> addressEntityToDto = entity -> {
+//
+//        return AddressDto.builder()
+//                .addressLine1(entity.getAddressLine1())
+//                .addressLine2(entity.getAddressLine2())
+//                .addressLine3(entity.getAddressLine3())
+//                .firstName(entity.getFirstName())
+//                .lastName(entity.getLastName())
+//                .city(entity.getCity())
+//                .postalCode(entity.getPostalCode())
+//                .companyName(entity.getCompanyName())
+//                .countryCode(entity.getIsoCountryAlpha2().getAlpha2())
+//                .countrySubdivisionCode(entity.getIsoCountrySubdivision())
+//                .build();
+//    };
 
-        return AddressDto.builder()
-                .addressLine1(entity.getAddressLine1())
-                .addressLine2(entity.getAddressLine2())
-                .addressLine3(entity.getAddressLine3())
-                .firstName(entity.getFirstName())
-                .lastName(entity.getLastName())
-                .city(entity.getCity())
-                .postalCode(entity.getPostalCode())
-                .companyName(entity.getCompanyName())
-                .countryCode(entity.getIsoCountryAlpha2().getAlpha2())
-                .countrySubdivisionCode(entity.getIsoCountrySubdivision())
-                .build();
-    };
-
-    public Function<AddressDto, Address> addressDtoToEntity = dto -> {
-        final Address addressEntity = new AddressImpl();
-
-        addressEntity.setAddressLine1(dto.getAddressLine1());
-        addressEntity.setAddressLine2(dto.getAddressLine2());
-        addressEntity.setAddressLine3(dto.getAddressLine3());
-        addressEntity.setFirstName(dto.getFirstName());
-        addressEntity.setLastName(dto.getLastName());
-        addressEntity.setCity(dto.getCity());
-        addressEntity.setPostalCode(dto.getPostalCode());
-        addressEntity.setCompanyName(dto.getCompanyName());
-        addressEntity.setCounty(dto.getCountrySubdivisionCode());
-        addressEntity.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(dto.getCountryCode()));
-
-
-        return addressEntity;
-    };
+//    public Function<AddressDto, Address> addressDtoToEntity = dto -> {
+//        final Address addressEntity = new AddressImpl();
+//
+//        addressEntity.setAddressLine1(dto.getAddressLine1());
+//        addressEntity.setAddressLine2(dto.getAddressLine2());
+//        addressEntity.setAddressLine3(dto.getAddressLine3());
+//        addressEntity.setFirstName(dto.getFirstName());
+//        addressEntity.setLastName(dto.getLastName());
+//        addressEntity.setCity(dto.getCity());
+//        addressEntity.setPostalCode(dto.getPostalCode());
+//        addressEntity.setCompanyName(dto.getCompanyName());
+//        addressEntity.setCounty(dto.getCountrySubdivisionCode());
+//        addressEntity.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(dto.getCountryCode()));
+//
+//
+//        return addressEntity;
+//    };
 
     /******************************** ADDRESS ********************************/
 
     /******************************** CUSTOMERADDRESS ********************************/
 
-    public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
+//    public static Function<CustomerAddress, CustomerAddressDto> customerAddressEntityToDto = entity -> {
+//
+//        return CustomerAddressDto.builder()
+//                .addressName(entity.getAddressName())
+//                .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress()))
+//                .build();
+//    };
 
-        return CustomerAddressDto.builder()
-                .addressName(entity.getAddressName())
-                .addressDto(DtoConverters.addressEntityToDto.apply(entity.getAddress()))
-                .build();
-    };
-
-    public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
-        final CustomerAddress customerAddress = new CustomerAddressImpl();
-
-        customerAddress.setAddress(this.addressDtoToEntity.apply(dto.getAddressDto()));
-        customerAddress.setAddressName(dto.getAddressName());
-
-        return customerAddress;
-    };
+//    public Function<CustomerAddressDto, CustomerAddress> customerAddressDtoToEntity = dto -> {
+//        final CustomerAddress customerAddress = new CustomerAddressImpl();
+//
+//        customerAddress.setAddress(this.addressDtoToEntity.apply(dto.getAddressDto()));
+//        customerAddress.setAddressName(dto.getAddressName());
+//
+//        return customerAddress;
+//    };
 
     /******************************** CUSTOMERADDRESS ********************************/
 
     /******************************** ORDER ********************************/
-    public static Function<Order, OrderDto> orderEntityToDto = entity -> {
-        final OrderDto orderDto = OrderDto.builder()
-                .orderId(entity.getId())
-                .orderNumber(entity.getOrderNumber())
-                .status(entity.getStatus().getType())
-                .orderPaymentDto(entity
-                        .getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList()))
-                .orderItems(entity.getDiscreteOrderItems().stream()
-                        .map(DtoConverters.discreteOrderItemEntityToDto)
-                        .collect(Collectors.toList()))
-//                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
-                .totalPrice(Money.toAmount(entity.getTotal()))
-                .fulfillment(CartUtils.getFulfilmentOption(entity)
-                        .map(FulfillmentOption::getLongDescription)
-                        .orElse(null))
-                .cartAttributes(Optional.ofNullable(entity.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                        .map(Map.Entry::getValue)
-                        .map(DtoConverters.orderAttributeEntityToDto)
-                        .collect(toList()))
-                .build();
+//    public static Function<Order, OrderDto> orderEntityToDto = entity -> {
+//        final OrderDto orderDto = OrderDto.builder()
+//                .orderId(entity.getId())
+//                .orderNumber(entity.getOrderNumber())
+//                .status(entity.getStatus().getType())
+//                .orderPaymentDto(entity
+//                        .getPayments().stream().map(DtoConverters.orderPaymentEntityToDto).collect(Collectors.toList()))
+//                .orderItems(entity.getDiscreteOrderItems().stream()
+//                        .map(DtoConverters.discreteOrderItemEntityToDto)
+//                        .collect(Collectors.toList()))
+////                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+//                .totalPrice(Money.toAmount(entity.getTotal()))
+//                .fulfillment(CartUtils.getFulfilmentOption(entity)
+//                        .map(FulfillmentOption::getLongDescription)
+//                        .orElse(null))
+//                .cartAttributes(Optional.ofNullable(entity.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+//                        .map(Map.Entry::getValue)
+//                        .map(DtoConverters.orderAttributeEntityToDto)
+//                        .collect(toList()))
+//                .build();
+//
+//        orderDto.add(linkTo(
+//                methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(entity.getCustomer().getId()))
+//        ).withRel("customer"));
+//
+//        orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
+//
+//        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
+//
+//        /* link to items placed in an order */
+//        orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, entity.getId())).withRel("items"));
+//
+//        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, entity.getId())).withRel("items-count"));
+//
+//        /* link to fulfillment */
+//        orderDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, entity.getId())).withRel("fulfillment"));
+//
+//        orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, entity.getId())).withRel("status"));
+//
+//        return orderDto;
+//    };
 
-        orderDto.add(linkTo(
-                methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(entity.getCustomer().getId()))
-        ).withRel("customer"));
-
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, entity.getId())).withSelfRel());
-
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
-
-        /* link to items placed in an order */
-        orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, entity.getId())).withRel("items"));
-
-        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, entity.getId())).withRel("items-count"));
-
-        /* link to fulfillment */
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, entity.getId())).withRel("fulfillment"));
-
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, entity.getId())).withRel("status"));
-
-        return orderDto;
-    };
-
-    public Function<OrderDto, Order> orderDtoToEntity = dto -> {
-        final Order orderEntity = new OrderImpl();
-
-        orderEntity.setId(dto.getOrderId());
-        orderEntity.setOrderNumber(dto.getOrderNumber());
-        orderEntity.setStatus(OrderStatus.getInstance(dto.getStatus()));
-        orderEntity.setPayments(dto.getOrderPaymentDto().stream().map(this.orderPaymentDtoToEntity)
-                .collect(Collectors.toList()));
-
-        return orderEntity;
-    };
+//    public Function<OrderDto, Order> orderDtoToEntity = dto -> {
+//        final Order orderEntity = new OrderImpl();
+//
+//        orderEntity.setId(dto.getOrderId());
+//        orderEntity.setOrderNumber(dto.getOrderNumber());
+//        orderEntity.setStatus(OrderStatus.getInstance(dto.getStatus()));
+//        orderEntity.setPayments(dto.getOrderPaymentDto().stream().map(this.orderPaymentDtoToEntity)
+//                .collect(Collectors.toList()));
+//
+//        return orderEntity;
+//    };
 
 
     public static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity -> {
@@ -483,27 +468,27 @@ public class DtoConverters {
 
     /******************************** PAYMENTINFO ********************************/
 
-    public static Function<OrderPayment, OrderPaymentDto> orderPaymentEntityToDto = entity -> {
-        return OrderPaymentDto.builder()
-                .amount(entity.getAmount())
-                .billingAddress(DtoConverters.addressEntityToDto.apply(entity.getBillingAddress()))
-                .orderId(entity.getOrder().getId()).paymentId(entity.getId())
-                .referenceNumber(entity.getReferenceNumber()).type(entity.getType().getType()).build();
+//    public static Function<OrderPayment, OrderPaymentDto> orderPaymentEntityToDto = entity -> {
+//        return OrderPaymentDto.builder()
+//                .amount(entity.getAmount())
+//                .billingAddress(DtoConverters.addressEntityToDto.apply(entity.getBillingAddress()))
+//                .orderId(entity.getOrder().getId()).paymentId(entity.getId())
+//                .referenceNumber(entity.getReferenceNumber()).type(entity.getType().getType()).build();
+//
+//    };
 
-    };
-
-    public Function<OrderPaymentDto, OrderPayment> orderPaymentDtoToEntity = dto -> {
-        OrderPayment orderPayment = new OrderPaymentImpl();
-
-        orderPayment.setId(dto.getOrderId());
-        orderPayment.setAmount(dto.getAmount());
-        orderPayment.setBillingAddress(this.addressDtoToEntity.apply(dto.getBillingAddress()));
-        orderPayment.setReferenceNumber(dto.getReferenceNumber());
-        orderPayment.setType(PaymentType.getInstance(dto.getType()));
-
-        return orderPayment;
-
-    };
+//    public Function<OrderPaymentDto, OrderPayment> orderPaymentDtoToEntity = dto -> {
+//        OrderPayment orderPayment = new OrderPaymentImpl();
+//
+//        orderPayment.setId(dto.getOrderId());
+//        orderPayment.setAmount(dto.getAmount());
+//        orderPayment.setBillingAddress(this.addressDtoToEntity.apply(dto.getBillingAddress()));
+//        orderPayment.setReferenceNumber(dto.getReferenceNumber());
+//        orderPayment.setType(PaymentType.getInstance(dto.getType()));
+//
+//        return orderPayment;
+//
+//    };
 
     /******************************** PAYMENTINFO ********************************/
 

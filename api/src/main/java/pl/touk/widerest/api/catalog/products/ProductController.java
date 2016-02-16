@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.products;
+package pl.touk.widerest.api.catalog.products;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
@@ -63,8 +63,8 @@ import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.categories.CategoryConverter;
-import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.catalog.categories.CategoryConverter;
+import pl.touk.widerest.api.catalog.categories.CategoryDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import java.util.*;
@@ -274,9 +274,14 @@ public class ProductController {
             throw new DtoValidationException("Provided bundle already exists");
         }
 
-        CatalogUtils.validateSkuPrices(productBundleDto.getSalePrice(), productBundleDto.getSalePrice());
+        CatalogUtils.validateSkuPrices(productBundleDto.getBundleSalePrice(), productBundleDto.getBundleRetailPrice());
 
         Product product = new ProductBundleImpl();
+
+        //product.setDefaultSku(dtoConverters.skuDtoToEntity.apply(productBundleDto.getDefaultSku()));
+
+        final Sku bundleDefaultSku = new SkuImpl();
+        product.setDefaultSku(bundleDefaultSku);
 
         // TODO:
 //        product.setDefaultSku(skuConverter.createEntity(productBundleDto.getDefaultSku()));
@@ -297,21 +302,18 @@ public class ProductController {
 
 
         if (((ProductBundle) product).getSkuBundleItems().size() != productBundleDto.getBundleItems().size()) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
 
         product = catalogService.saveProduct(product);
 
-        final HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(product.getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
-
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(product.getId())
+                        .toUri()
+        ).build();
 
     }
 
@@ -363,10 +365,6 @@ public class ProductController {
 //        }
 
         Product newProduct = productConverter.createEntity(productDto);
-
-        // TODO: create default SKU
-
-
 
 
         newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);

@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
@@ -56,9 +55,9 @@ import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.catalog.categories.CategoryDto;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
@@ -102,7 +101,6 @@ public abstract class ApiTestBase {
     public static final String CATEGORY_AVAILABILITY_BY_ID_URL = CATEGORY_BY_ID_URL + "/availability";
     public static final String SUBCATEGORY_IN_CATEGORY_BY_ID_URL = CATEGORY_BY_ID_URL + "/subcategories";
     public static final String ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL = SUBCATEGORY_IN_CATEGORY_BY_ID_URL + "?href=";
-
 
     /* Products */
     public static final String PRODUCTS_URL = API_BASE_URL + "/products";
@@ -208,6 +206,26 @@ public abstract class ApiTestBase {
         return new AnnotationRelProvider();
     }
 
+//    private MappingJackson2HttpMessageConverter getHalConverter() {
+//        final RelProvider defaultRelProvider = getDefaultRelProvider();
+//        final RelProvider annotationRelProvider = getAnnotationRelProvider();
+//
+//        final OrderAwarePluginRegistry<RelProvider, Class<?>> relProviderPluginRegistry = OrderAwarePluginRegistry
+//                .create(Arrays.asList(defaultRelProvider, annotationRelProvider));
+//
+//        final DelegatingRelProvider delegatingRelProvider = new DelegatingRelProvider(relProviderPluginRegistry);
+//
+//        final ObjectMapper halObjectMapper = new ObjectMapper();
+//        halObjectMapper.registerModule(new Jackson2HalModule());
+//        halObjectMapper
+//                .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null, null));
+//
+//        final MappingJackson2HttpMessageConverter halConverter = new MappingJackson2HttpMessageConverter();
+//        halConverter.setSupportedMediaTypes(ImmutableList.of(new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), new MediaType(" * ", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), MediaTypes.HAL_JSON));
+//        halConverter.setObjectMapper(halObjectMapper);
+//        return halConverter;
+//    }
+
     private MappingJackson2HttpMessageConverter getHalConverter() {
         final RelProvider defaultRelProvider = getDefaultRelProvider();
         final RelProvider annotationRelProvider = getAnnotationRelProvider();
@@ -223,10 +241,16 @@ public abstract class ApiTestBase {
                 .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null, null));
 
         final MappingJackson2HttpMessageConverter halConverter = new MappingJackson2HttpMessageConverter();
-        halConverter.setSupportedMediaTypes(ImmutableList.of(new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), new MediaType(" * ", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), MediaTypes.HAL_JSON));
+        halConverter.setSupportedMediaTypes(ImmutableList.of(
+                new MediaType("application", "hal+json"),
+                new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET),
+                new MediaType("*", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET)
+            )
+        );
         halConverter.setObjectMapper(halObjectMapper);
         return halConverter;
     }
+
 
     protected long getIdFromLocationUrl(final String locationUrl) {
         if(locationUrl != null && org.apache.commons.lang.StringUtils.isNotEmpty(locationUrl)) {

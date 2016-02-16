@@ -25,10 +25,10 @@ import pl.touk.widerest.api.catalog.dto.BundleItemDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
-import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.catalog.categories.CategoryDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
@@ -90,8 +90,8 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
     }
 
-    @Ignore("considering allowing duplicate names")
     @Test
+    @Ignore("considering allowing duplicate names")
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         // when: adding the same (new) product twice
         final long currentProductCount = getRemoteTotalProductsCount();
@@ -438,14 +438,17 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore("Links returned in HAL have a different format than those returned in plain JSON")
     public void attemptingToRemoveDefaultSkuCausesExceptionTest() {
         // when: creating a new test product and then trying to delete its default SKU
         final ResponseEntity<?> responseEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         final long productId = getIdFromEntity(responseEntity);
 
         final ResponseEntity<ProductDto> receivedProductEntity =
-                restTemplate.getForEntity(PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId);
 
         final Link defaultSkuLink = receivedProductEntity.getBody().getLink("default-sku");
 
@@ -589,7 +592,6 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore("Links returned in HAL have a different format than those returned in plain JSON")
     public void creatingProductBundleSavesPotentialSavingsProperlyTest() {
         // when: creating a bundle out of two products with a given prices
         final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
@@ -601,8 +603,26 @@ public class ProductControllerTest extends ApiTestBase {
         final long productId1 = getIdFromEntity(responseEntityProduct1);
         final long productId2 = getIdFromEntity(responseEntityProduct2);
 
-        final ProductDto remoteTestProductByIdDto1 = getRemoteTestProductByIdDto(productId1);
-        final ProductDto remoteTestProductByIdDto2 = getRemoteTestProductByIdDto(productId2);
+        final ResponseEntity<ProductDto> receivedProduct1Entity =
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId1);
+
+        assertThat(receivedProduct1Entity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        final ResponseEntity<ProductDto> receivedProduct2Entity =
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId2);
+
+        assertThat(receivedProduct2Entity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        final ProductDto remoteTestProductByIdDto1 = receivedProduct1Entity.getBody();
+        final ProductDto remoteTestProductByIdDto2 = receivedProduct2Entity.getBody();
 
         final long defaultSkuId1 = getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
         final long defaultSkuId2 = getIdFromLocationUrl(remoteTestProductByIdDto2.getLink("default-sku").getHref());
@@ -654,7 +674,6 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
-    @Ignore("Links returned in HAL have a different format than those returned in plain JSON")
     public void creatingABundleFromNonExistingSkusThrowsExceptionTest() {
         // when: creating a bundle with any of its SKU ids refering to a non existing SKU
         final long NON_EXISTING_SKU_ID = 9999999;
@@ -663,7 +682,16 @@ public class ProductControllerTest extends ApiTestBase {
         final ResponseEntity<?> responseEntityProduct1 = addNewTestProduct(testProductDto1);
         final long productId1 = getIdFromEntity(responseEntityProduct1);
 
-        final ProductDto remoteTestProductByIdDto1 = getRemoteTestProductByIdDto(productId1);
+        final ResponseEntity<ProductDto> receivedProductEntity =
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId1);
+
+        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        final ProductDto remoteTestProductByIdDto1 = receivedProductEntity.getBody();
 
         final long defaultSkuId1 = getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
 

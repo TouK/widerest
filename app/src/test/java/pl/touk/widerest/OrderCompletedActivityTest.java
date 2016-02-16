@@ -26,7 +26,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.orders.OrderConverter;
 
+import javax.annotation.Resource;
 import javax.mail.internet.MimeMessage;
 import java.util.Optional;
 
@@ -53,6 +55,9 @@ public class OrderCompletedActivityTest {
 
     @InjectMocks
     private OrderCompletedActivity orderCompletedActivity = new OrderCompletedActivity();
+
+    @Resource
+    private OrderConverter orderConverter;
 
     @Before
     public void before() throws Exception {
@@ -103,7 +108,7 @@ public class OrderCompletedActivityTest {
 
         assertThat(
                 StringUtils.chomp(messageBody),
-                Matchers.equalTo(objectMapper.writeValueAsString(DtoConverters.orderEntityToDto.apply(order)))
+                Matchers.equalTo(objectMapper.writeValueAsString(orderConverter.createDto(order, false)))
         );
 
     }

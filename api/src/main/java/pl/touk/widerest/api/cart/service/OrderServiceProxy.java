@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javaslang.control.Match;
 import pl.touk.widerest.api.DtoConverters;
+import pl.touk.widerest.api.cart.customers.AddressConverter;
 import pl.touk.widerest.api.cart.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
@@ -53,6 +54,9 @@ public class OrderServiceProxy {
 
     @Resource(name = "wdfulfilmentService")
     FulfilmentServiceProxy fulfillmentServiceProxy;
+
+    @Resource
+    private AddressConverter addressConverter;
 
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
@@ -119,7 +123,7 @@ public class OrderServiceProxy {
                 .orElseThrow(ResourceNotFoundException::new);
 
         return fulfillmentServiceProxy.getFulfillmentAddress(order)
-                .map(DtoConverters.addressEntityToDto)
+                .map(address -> addressConverter.createDto(address, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
     }
 

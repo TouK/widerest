@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.products;
+package pl.touk.widerest.api.catalog.products;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
-import org.springframework.hateoas.ResourceSupport;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;

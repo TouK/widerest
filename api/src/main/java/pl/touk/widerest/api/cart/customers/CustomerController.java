@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.controllers;
+package pl.touk.widerest.api.cart.customers;
 
 
 import static com.jasongoodwin.monads.Try.ofFailable;
@@ -7,7 +7,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
-import static pl.touk.widerest.api.DtoConverters.customerEntityToDto;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +56,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
-import pl.touk.widerest.api.cart.dto.CustomerDto;
+import pl.touk.widerest.api.cart.customers.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
@@ -96,6 +95,9 @@ public class CustomerController {
     @Autowired
     ResourceServerTokenServices tokenServices;
 
+    @Resource
+    private CustomerConverter customerConverter;
+
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
@@ -107,7 +109,7 @@ public class CustomerController {
         return ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))
                 .map(customerService::readCustomerById)
-                .map(customerEntityToDto)
+                .map(customer -> customerConverter.createDto(customer, false))
                 .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
                 .orElseThrow(CustomerNotFoundException::new);
     }
@@ -160,10 +162,11 @@ public class CustomerController {
     public List<CustomerDto> readAllCustomers(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
         return Match.of(userDetails)
                 .whenType(AdminUserDetails.class).then(() -> customerServiceProxy.getAllCustomers().stream()
-                        .map(customerEntityToDto)
+                        .map(customer -> customerConverter.createDto(customer, false))
                         .collect(Collectors.toList()))
                 .whenType(CustomerUserDetails.class).then(() -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
-                            .map(id -> customerEntityToDto.apply(id))
+                            //.map(id -> customerEntityToDto.apply(id))
+                            .map(id -> customerConverter.createDto(id, false))
                             .map(Collections::singletonList)
                             .orElse(emptyList()))
                 .otherwise(Collections::emptyList)

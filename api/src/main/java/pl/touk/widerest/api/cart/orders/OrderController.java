@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.controllers;
+package pl.touk.widerest.api.cart.orders;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -133,6 +133,9 @@ public class OrderController {
     @Resource
     private AnonymousUserDetailsService anonymousUserDetailsService;
 
+    @Resource
+    private OrderConverter orderConverter;
+
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
     /* GET /orders */
@@ -153,7 +156,7 @@ public class OrderController {
             @RequestParam(value = "status", required = false) String status) {
 
         return orderServiceProxy.getOrdersByCustomer(userDetails).stream()
-                .map(DtoConverters.orderEntityToDto)
+                .map(order -> orderConverter.createDto(order, false))
                 .filter(x -> status == null || x.getStatus().equals(status))
                 .collect(toList());
     }
@@ -175,8 +178,8 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId) {
 
-        return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
-
+        return orderConverter.createDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null), false);
+        //return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 
     /* POST /orders */
@@ -211,16 +214,14 @@ public class OrderController {
             cart.setName(channel);
         }
 
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(cart.getId())
-                .toUri());
-
         Try.ofFailable(() -> orderService.save(cart, true)).onFailure(LOG::error);
 
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(cart.getId())
+                        .toUri()
+        ).build();
     }
 
     /* DELETE /orders/ */
@@ -294,20 +295,18 @@ public class OrderController {
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
-        final HttpHeaders responseHeaders = new HttpHeaders();
-
-        responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(
-                        (cart.getDiscreteOrderItems().stream()
-                                .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
-                                .findAny()
-                                .map(DiscreteOrderItem::getId)
-                                .orElseThrow(ResourceNotFoundException::new))
-                )
-                .toUri());
-
-        return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(
+                                (cart.getDiscreteOrderItems().stream()
+                                        .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
+                                        .findAny()
+                                        .map(DiscreteOrderItem::getId)
+                                        .orElseThrow(ResourceNotFoundException::new))
+                        )
+                        .toUri()
+        ).build();
     }
 
     /* POST /orders/{orderId}/items */
@@ -445,7 +444,7 @@ public class OrderController {
                 .orElseThrow(ResourceNotFoundException::new)
                 .getItemCount();
 
-        return new ResponseEntity<>(itemsInOrderCount, HttpStatus.OK);
+        return ResponseEntity.ok(itemsInOrderCount);
     }
 
     @Transactional
@@ -459,7 +458,8 @@ public class OrderController {
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
 
         final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
-        return new ResponseEntity<>(ordersCount, HttpStatus.OK);
+
+        return ResponseEntity.ok(ordersCount);
     }
 
     /* GET /orders/{orderId}/status */
@@ -658,11 +658,11 @@ public class OrderController {
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest().build().toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .build()
+                        .toUri()
+        ).build();
     }
 
 

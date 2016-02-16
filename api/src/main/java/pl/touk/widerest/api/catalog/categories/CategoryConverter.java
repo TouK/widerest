@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.categories;
+package pl.touk.widerest.api.catalog.categories;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -15,10 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryXref;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
@@ -28,7 +25,7 @@ import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.products.MediaConverter;
+import pl.touk.widerest.api.catalog.products.MediaConverter;
 
 import javax.annotation.Resource;
 
@@ -137,9 +134,10 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                             categoryMediaXref.setCategory(categoryEntity);
                             categoryMediaXref.setKey(mediaDtoEntry.getKey());
 
-                            final Media skuMedia = new MediaImpl();
-                            mediaConverter.updateEntity(skuMedia, mediaDtoEntry.getValue());
+                            final Media categoryMedia = new MediaImpl();
+                            mediaConverter.updateEntity(categoryMedia, mediaDtoEntry.getValue());
 
+                            categoryMediaXref.setMedia(categoryMedia);
 
 //                            CatalogUtils.updateMediaEntityFromDto(categoryMediaXref, mediaDtoEntry.getValue());
                             return categoryMediaXref;
@@ -149,6 +147,54 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         categoryEntity.getCategoryMediaXref().putAll(mediaXrefs);
 
         return categoryEntity;
+    }
+
+    @Override
+    public Category partialUpdateEntity(final Category category, final CategoryDto categoryDto) {
+
+        if (categoryDto.getName() != null) {
+            category.setName(categoryDto.getName());
+        }
+
+        if (categoryDto.getDescription() != null) {
+            category.setDescription(categoryDto.getDescription());
+        }
+
+        if (categoryDto.getLongDescription() != null) {
+            category.setLongDescription(categoryDto.getLongDescription());
+        }
+
+        if(categoryDto.getProductsAvailability() != null) {
+            category.setInventoryType(CatalogUtils.getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));;
+        }
+
+        if(categoryDto.getAttributes() != null) {
+            category.getCategoryAttributesMap().clear();
+            category.getCategoryAttributesMap().putAll(
+                    Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                            .collect(toMap(Map.Entry::getKey, valueExtractor(category))));
+        }
+
+        if(categoryDto.getMedia() != null) {
+            category.getCategoryMediaXref().clear();
+            category.getCategoryMediaXref().putAll(
+                    categoryDto.getMedia().entrySet().stream()
+                        .collect(toMap(Map.Entry::getKey, mediaDtoEntry -> {
+                            final CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
+                            categoryMediaXref.setCategory(category);
+                            categoryMediaXref.setKey(mediaDtoEntry.getKey());
+
+                            final Media categoryMedia = new MediaImpl();
+                            mediaConverter.updateEntity(categoryMedia, mediaDtoEntry.getValue());
+
+                            categoryMediaXref.setMedia(categoryMedia);
+
+                            return categoryMediaXref;
+                        }))
+            );
+        }
+
+        return category;
     }
 
 }

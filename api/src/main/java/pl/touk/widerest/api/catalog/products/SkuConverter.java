@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.products;
+package pl.touk.widerest.api.catalog.products;
 
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
@@ -10,7 +10,6 @@ import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
@@ -152,6 +151,11 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
         }
 
         return sku;
+    }
+
+    @Override
+    public Sku partialUpdateEntity(final Sku sku, final SkuDto skuDto) {
+        throw new UnsupportedOperationException();
     }
 
     private Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {

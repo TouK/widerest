@@ -5,13 +5,10 @@ import static java.util.stream.Collectors.toMap;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
-import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -21,11 +18,9 @@ import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 
-import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
-import pl.touk.widerest.api.categories.CategoryDto;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 
 public class CatalogUtils {
 
@@ -39,40 +34,40 @@ public class CatalogUtils {
         return ((Status) category).getArchived() == 'N';
     }
 
-    public static InventoryType getInventoryTypeByAvailability(String availability) {
+    public static InventoryType getInventoryTypeByAvailability(final String availability) {
         final InventoryType inventoryType = InventoryType.getInstance(availability);
         return (inventoryType != null) ? inventoryType : InventoryType.ALWAYS_AVAILABLE;
     }
 
 
-    public static Category partialUpdateCategoryEntityFromDto(
-            Category categoryEntity, CategoryDto categoryDto) {
-
-        if (categoryDto.getName() != null) {
-            categoryEntity.setName(categoryDto.getName());
-        }
-
-        if (categoryDto.getDescription() != null) {
-            categoryEntity.setDescription(categoryDto.getDescription());
-        }
-
-        if (categoryDto.getLongDescription() != null) {
-            categoryEntity.setLongDescription(categoryDto.getLongDescription());
-        }
-
-        if(categoryDto.getProductsAvailability() != null) {
-            categoryEntity.setInventoryType(getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));;
-        }
-
-        if(categoryDto.getAttributes() != null) {
-            categoryEntity.getCategoryAttributesMap().clear();
-            categoryEntity.getCategoryAttributesMap().putAll(
-                    Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                            .collect(toMap(Map.Entry::getKey, valueExtractor(categoryEntity))));
-        }
-
-        return categoryEntity;
-    }
+//    public static Category partialUpdateCategoryEntityFromDto(
+//            Category categoryEntity, CategoryDto categoryDto) {
+//
+//        if (categoryDto.getName() != null) {
+//            categoryEntity.setName(categoryDto.getName());
+//        }
+//
+//        if (categoryDto.getDescription() != null) {
+//            categoryEntity.setDescription(categoryDto.getDescription());
+//        }
+//
+//        if (categoryDto.getLongDescription() != null) {
+//            categoryEntity.setLongDescription(categoryDto.getLongDescription());
+//        }
+//
+//        if(categoryDto.getProductsAvailability() != null) {
+//            categoryEntity.setInventoryType(getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));;
+//        }
+//
+//        if(categoryDto.getAttributes() != null) {
+//            categoryEntity.getCategoryAttributesMap().clear();
+//            categoryEntity.getCategoryAttributesMap().putAll(
+//                    Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+//                            .collect(toMap(Map.Entry::getKey, valueExtractor(categoryEntity))));
+//        }
+//
+//        return categoryEntity;
+//    }
 
     public static Function<Map.Entry<String, String>, CategoryAttribute> valueExtractor(Category categoryEntity) {
         return e -> {
@@ -182,26 +177,26 @@ public class CatalogUtils {
 //        return mediaEntity;
 //    }
 
-    public static Media partialUpdateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
-
-        if(mediaDto.getTitle() != null) {
-            mediaEntity.setTitle(mediaDto.getTitle());
-        }
-
-        if(mediaDto.getTags() != null) {
-            mediaEntity.setTags(mediaDto.getTags());
-        }
-
-        if(mediaDto.getAltText() != null) {
-            mediaEntity.setAltText(mediaDto.getAltText());
-        }
-
-        if(mediaDto.getUrl() != null) {
-            mediaEntity.setUrl(mediaDto.getUrl());
-        }
-
-        return mediaEntity;
-    }
+//    public static Media partialUpdateMediaEntityFromDto(Media mediaEntity, MediaDto mediaDto) {
+//
+//        if(mediaDto.getTitle() != null) {
+//            mediaEntity.setTitle(mediaDto.getTitle());
+//        }
+//
+//        if(mediaDto.getTags() != null) {
+//            mediaEntity.setTags(mediaDto.getTags());
+//        }
+//
+//        if(mediaDto.getAltText() != null) {
+//            mediaEntity.setAltText(mediaDto.getAltText());
+//        }
+//
+//        if(mediaDto.getUrl() != null) {
+//            mediaEntity.setUrl(mediaDto.getUrl());
+//        }
+//
+//        return mediaEntity;
+//    }
 
 //    public static Product updateProductEntityFromDto(Product productEntity, ProductDto productDto) {
 //        productEntity.setName(productDto.getName());

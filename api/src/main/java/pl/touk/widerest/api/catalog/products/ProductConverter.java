@@ -1,7 +1,6 @@
-package pl.touk.widerest.api.products;
+package pl.touk.widerest.api.catalog.products;
 
 import org.broadleafcommerce.common.locale.service.LocaleService;
-import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
@@ -14,15 +13,12 @@ import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
-import pl.touk.widerest.api.categories.CategoryController;
+import pl.touk.widerest.api.catalog.categories.CategoryController;
 
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -228,6 +224,11 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         }
 
         return product;
+    }
+
+    @Override
+    public Product partialUpdateEntity(final Product product, final ProductDto productDto) {
+        throw new UnsupportedOperationException();
     }
 
 

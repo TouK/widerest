@@ -23,9 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
-import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.catalog.categories.CategoryDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;

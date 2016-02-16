@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.categories;
+package pl.touk.widerest.api.catalog.categories;
 
 
 import java.net.MalformedURLException;
@@ -42,10 +42,10 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.ProductDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.products.ProductConverter;
+import pl.touk.widerest.api.catalog.products.ProductConverter;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 @RestController

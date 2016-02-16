@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.categories;
+package pl.touk.widerest.api.catalog.categories;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

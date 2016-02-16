@@ -8,4 +8,6 @@ public interface Converter<Entity, Dto> {
 
     Entity updateEntity(final Entity entity, final Dto dto);
 
+    Entity partialUpdateEntity(final Entity entity, final Dto dto);
+
 }

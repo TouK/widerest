@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.products;
+package pl.touk.widerest.api.catalog.products;
 
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
@@ -7,7 +7,6 @@ import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Component
 public class MediaConverter implements Converter<Media, MediaDto> {
@@ -33,6 +32,27 @@ public class MediaConverter implements Converter<Media, MediaDto> {
         media.setTags(mediaDto.getTags());
         media.setAltText(mediaDto.getAltText());
         media.setUrl(mediaDto.getUrl());
+
+        return media;
+    }
+
+    @Override
+    public Media partialUpdateEntity(final Media media, final MediaDto mediaDto) {
+        if(mediaDto.getTitle() != null) {
+            media.setTitle(mediaDto.getTitle());
+        }
+
+        if(mediaDto.getTags() != null) {
+            media.setTags(mediaDto.getTags());
+        }
+
+        if(mediaDto.getAltText() != null) {
+            media.setAltText(mediaDto.getAltText());
+        }
+
+        if(mediaDto.getUrl() != null) {
+            media.setUrl(mediaDto.getUrl());
+        }
 
         return media;
     }

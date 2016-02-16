@@ -38,7 +38,7 @@ public class OrderDto extends ResourceSupport {
     @ApiModelProperty(position = 2, value = "Shipping address for the order", required = true, dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
     private AddressDto shippingAddress;
 
-//    @ApiModelProperty(position = 3, value = "Customer information", required = true, dataType = "pl.touk.widerest.api.cart.dto.CustomerDto")
+//    @ApiModelProperty(position = 3, value = "Customer information", required = true, dataType = "pl.touk.widerest.api.cart.customers.CustomerDto")
 //    private CustomerDto customer;
 
     @ApiModelProperty(position = 4, value = "Items belonging to the order", dataType = "java.util.List")
