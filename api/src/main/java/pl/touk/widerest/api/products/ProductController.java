@@ -366,6 +366,9 @@ public class ProductController {
 
         // TODO: create default SKU
 
+
+
+
         newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
         //newProduct.getDefaultSku().setInventoryType(InventoryType.getInstance(productDto.getDefaultSku().getAvailability()));

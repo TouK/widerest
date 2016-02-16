@@ -13,15 +13,19 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.categories.CategoryController;
 
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -58,11 +62,10 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setSkuAttributes(productDefaultSku.getSkuAttributes().entrySet().stream()
                                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())));
 
-        // skuproductoptionvalues
-
-        // skumedia
-
-        // embedd media
+        dto.setSkuProductOptionValues(productDefaultSku.getProductOptionValueXrefs().stream()
+                                .map(SkuProductOptionValueXref::getProductOptionValue)
+                                .map(DtoConverters.productOptionValueToSkuValueDto)
+                                .collect(toSet()));
 
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)));
@@ -194,6 +197,28 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
         product.setUrl(productDto.getUrl());
+
+
+//        product.getDefaultSku().setSalePrice(new Money(productDto.getSalePrice()));
+//
+//        if(productDto.getRetailPrice() != null) {
+//            product.getDefaultSku().setRetailPrice(new Money(productDto.getRetailPrice()));
+//        } else {
+//            product.getDefaultSku().setRetailPrice(new Money(productDto.getSalePrice()));
+//        }
+//
+//        if(productDto.getAvailability() != null && InventoryType.getInstance(productDto.getAvailability()) != null) {
+//            product.getDefaultSku().setInventoryType(InventoryType.getInstance(productDto.getAvailability()));
+//        } else {
+//
+//        }
+
+        // f(product) -> defaultSku
+        // updateEntity(product.getDefaultSku(), defaultSku)
+
+
+        skuConverter.updateEntity(product.getDefaultSku(), DtoConverters.productDtoToDefaultSkuDto.apply(productDto));
+
 
        /* List<Sku> s;
 

@@ -2,6 +2,7 @@ package pl.touk.widerest.api;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -18,27 +19,15 @@ import javax.annotation.Resource;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.i18n.service.ISOService;
+import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.common.value.ValueAssignable;
-import org.broadleafcommerce.core.catalog.domain.CategoryMediaXref;
-import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
-import org.broadleafcommerce.core.catalog.domain.ProductOption;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionValueImpl;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionXref;
-import org.broadleafcommerce.core.catalog.domain.ProductOptionXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.Sku;
-import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
-import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
-import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -69,15 +58,10 @@ import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.dto.*;
 import pl.touk.widerest.api.products.ProductController;
-import pl.touk.widerest.api.catalog.dto.BundleItemDto;
-import pl.touk.widerest.api.catalog.dto.FacetDto;
-import pl.touk.widerest.api.catalog.dto.FacetValueDto;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionValueDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.products.ProductDto;
 
 @Service("wdDtoConverters")
 public class DtoConverters {
@@ -569,4 +553,21 @@ public class DtoConverters {
     };
 
 
+    public static Function<ProductDto, SkuDto> productDtoToDefaultSkuDto = productDto -> {
+          return SkuDto.builder()
+                  .name(productDto.getName())
+                  .description(productDto.getDescription())
+                  .salePrice(productDto.getSalePrice())
+                  .retailPrice(productDto.getRetailPrice())
+                  .quantityAvailable(productDto.getQuantityAvailable())
+                  .availability(productDto.getAvailability())
+                  .taxCode(productDto.getTaxCode())
+                  .activeStartDate(productDto.getValidFrom())
+                  .activeEndDate(productDto.getValidTo())
+                  .currencyCode(productDto.getCurrencyCode())
+                  .skuAttributes(productDto.getSkuAttributes())
+                  .skuProductOptionValues(productDto.getSkuProductOptionValues())
+                  .skuMedia(productDto.getSkuMedia())
+                  .build();
+    };
 }

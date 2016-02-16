@@ -134,14 +134,15 @@ public class DtoTestFactory {
     public static ProductDto getTestProductWithDefaultSKUandCategory(DtoTestType dtoTestType) {
         switch(dtoTestType) {
             case NEXT:
-                ProductDto p = nextTestProduct();
+                final ProductDto p = nextTestProduct();
+                updateNextTestDefaultSku(p);
                 //p.setDefaultSku(nextTestDefaultSku());
                 p.setCategoryName(nextTestCategory().getName());
                 return p;
             case SAME: {
                 if (fullProductDto == null) {
                     fullProductDto = testProduct();
-                  //  fullProductDto.setDefaultSku(getTestDefaultSku());
+                    updateTestDefaultSku(fullProductDto);
                     fullProductDto.setCategoryName(testCategory().getName());
                 }
                 return fullProductDto;
@@ -156,13 +157,16 @@ public class DtoTestFactory {
 
         switch(dtoTestType) {
             case NEXT:
-                ProductDto p = nextTestProduct();
-                //p.setDefaultSku(nextTestDefaultSku());
+                final ProductDto p = nextTestProduct();
+                p.setValidFrom(defaultActiveStartDate);
+                p.setTaxCode("Product's default Tax Code");
+                p.setQuantityAvailable(99);
+                p.setSalePrice(new BigDecimal("39.99"));
                 return p;
             case SAME: {
                 if(defaultProductWithDefaultSKU == null) {
                     defaultProductWithDefaultSKU = testProduct();
-                    //defaultProductWithDefaultSKU.setDefaultSku(getTestDefaultSku());
+                    updateTestDefaultSku(defaultProductWithDefaultSKU);
                 }
                 return defaultProductWithDefaultSKU;
             }
@@ -205,6 +209,7 @@ public class DtoTestFactory {
         productBundleDto.setManufacturer("Test Bundle Manufacturer" + productCounter);
         productBundleDto.setModel("Test Bundle Model" + productCounter);
         productBundleDto.setOfferMessage("Test Bundle Offer Message" + productCounter);
+
         //productBundleDto.setDefaultSku(nextTestDefaultSku());
         productBundleDto.setOptions(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))));
         productBundleDto.setValidFrom(defaultActiveStartDate);
@@ -230,34 +235,56 @@ public class DtoTestFactory {
         return defaultProductWithoutSku;
     }
 
-    public static SkuDto getTestDefaultSku() {
-        if(newSkuDto == null) {
-            newSkuDto = SkuDto.builder()
-                    .description(TEST_DEFAULT_SKU_DESC)
-                    .name(TEST_PRODUCT_DEFAULT_NAME)
-                    .salePrice(new BigDecimal("39.99"))
-                    .quantityAvailable(99)
-                    .taxCode("DefaultSKU Tax Code")
-                    .activeStartDate(defaultActiveStartDate)
-                    .build();
-        }
-        return newSkuDto;
+//    public static SkuDto getTestDefaultSku() {
+//        if(newSkuDto == null) {
+//            newSkuDto = SkuDto.builder()
+//                    .description(TEST_DEFAULT_SKU_DESC)
+//                    .name(TEST_PRODUCT_DEFAULT_NAME)
+//                    .salePrice(new BigDecimal("39.99"))
+//                    .quantityAvailable(99)
+//                    .taxCode("DefaultSKU Tax Code")
+//                    .activeStartDate(defaultActiveStartDate)
+//                    .build();
+//        }
+//        return newSkuDto;
+//    }
+
+    public static void updateTestDefaultSku(final ProductDto productDto) {
+        productDto.setName(TEST_PRODUCT_DEFAULT_NAME);
+        productDto.setDescription(TEST_DEFAULT_SKU_DESC);
+        productDto.setValidFrom(defaultActiveStartDate);
+        productDto.setSalePrice(new BigDecimal("39.99"));
+        productDto.setQuantityAvailable(99);
+        productDto.setTaxCode("DefaultSKU Tax Code");
+
     }
 
-    private static SkuDto nextTestDefaultSku() {
-        SkuDto skuDto = SkuDto.builder()
-                .description(TEST_DEFAULT_SKU_DESC + skuCounter)
-                .name(TEST_PRODUCT_DEFAULT_NAME)
-                .salePrice(new BigDecimal("39.99"))
-                .quantityAvailable(99)
-                .taxCode("DefaultSKU Tax Code")
-                .activeStartDate(defaultActiveStartDate)
-                .build();
+//    private static SkuDto nextTestDefaultSku() {
+//        SkuDto skuDto = SkuDto.builder()
+//                .description(TEST_DEFAULT_SKU_DESC + skuCounter)
+//                .name(TEST_PRODUCT_DEFAULT_NAME)
+//                .salePrice(new BigDecimal("39.99"))
+//                .quantityAvailable(99)
+//                .taxCode("DefaultSKU Tax Code")
+//                .activeStartDate(defaultActiveStartDate)
+//                .build();
+//
+//
+//        skuCounter++;
+//
+//        return skuDto;
+//    }
 
+    private static void updateNextTestDefaultSku(final ProductDto productDto) {
+
+        productDto.setName(TEST_PRODUCT_DEFAULT_NAME);
+        productDto.setDescription(TEST_DEFAULT_SKU_DESC + skuCounter);
+        productDto.setValidFrom(defaultActiveStartDate);
+        productDto.setSalePrice(new BigDecimal("39.99"));
+        productDto.setQuantityAvailable(99);
+        productDto.setTaxCode("DefaultSKU Tax Code");
 
         skuCounter++;
-
-        return skuDto;
     }
 
     private static SkuDto testAdditionalSku() {

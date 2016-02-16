@@ -65,11 +65,10 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 5, value = "List of available options for the product. Used for creating/generating SKUs", dataType = "java.util.List")
     private List<ProductOptionDto> options;
 
-//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-//    @ApiModelProperty(position = 6, value = "Default SKU associated with the product", required = true, dataType = "pl.touk.widerest.api.catalog.dto.SkuDto")
-//    private SkuDto defaultSku;
+
 
     // ------------------- Replaces defaultSku
+
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 6, value = "Default sale price of this product", required = true, dataType = "java.math.BigDecimal")
     private BigDecimal salePrice;
@@ -104,7 +103,6 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 12, value = "Default attributes associated with this product")
     private Map<String, String> skuAttributes;
 
-    // ????
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 13, value = "A set of selected product's option values", dataType = "java.util.Set")
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
@@ -114,18 +112,6 @@ public class ProductDto extends BaseDto {
     private Map<String /*key*/, MediaDto> skuMedia;
 
     // ------------------- Replaces defaultSku
-
-
-
-
-
-
-
-
-
-
-
-
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 15, value = "List of all additional SKUs for the product", dataType = "java.util.List")

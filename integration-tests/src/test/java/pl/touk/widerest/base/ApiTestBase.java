@@ -162,38 +162,9 @@ public abstract class ApiTestBase {
     private final List<HttpMessageConverter<?>> httpMessageConverters = new ArrayList<>();
     private RestTemplate hateoasRestTemplate;
 
-    private HttpHeaders httpJsonRequestHeaders;
-    private HttpEntity<String> httpJsonRequestEntity;
 
-    private HttpHeaders httpXmlRequestHeaders;
-    private HttpEntity<String> httpXmlRequestEntity;
-
-    public HttpEntity<String> getHttpJsonRequestEntity() {
-        if(httpJsonRequestHeaders == null) {
-            httpJsonRequestHeaders = new HttpHeaders();
-            httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        }
-
-        if(httpJsonRequestEntity == null) {
-            httpJsonRequestEntity= new HttpEntity<>(httpJsonRequestHeaders);
-        }
-
-        return httpJsonRequestEntity;
-    }
-
-    public HttpEntity<String> getHttpXmlRequestEntity() {
-        if(httpXmlRequestHeaders == null) {
-            httpXmlRequestHeaders = new HttpHeaders();
-            httpXmlRequestHeaders.set("Accept", MediaType.APPLICATION_XML_VALUE);
-        }
-
-        if(httpXmlRequestEntity == null) {
-            httpXmlRequestEntity= new HttpEntity<>(httpXmlRequestHeaders);
-        }
-
-        return httpXmlRequestEntity;
-    }
-
+    /* (mst) Http Request 'Accept' Format to be used while testing */
+    protected final TestHttpRequestEntity testHttpRequestEntity = new HalHttpRequestEntity();
 
 
     @Before
@@ -307,7 +278,7 @@ public abstract class ApiTestBase {
 
     protected long getRemoteTotalProductsCount() {
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
+                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort);
 
         assertNotNull(remoteCountEntity);
 
@@ -327,7 +298,7 @@ public abstract class ApiTestBase {
     protected long getRemoteTotalSkusForProductCount(final long productId) {
 
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
+                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort, productId);
 
         assertNotNull(remoteCountEntity);
 
@@ -336,7 +307,7 @@ public abstract class ApiTestBase {
 
     protected long getRemoteTotalCategoriesForProductCount(final long productId) {
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
-                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, productId);
+                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort, productId);
 
         assertNotNull(remoteCountEntity);
 
@@ -454,7 +425,7 @@ public abstract class ApiTestBase {
 
     protected void removeRemoteTestProduct() {
         final ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
-                HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto[].class, serverPort);
+                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto[].class, serverPort);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 

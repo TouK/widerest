@@ -96,16 +96,15 @@ public class CatalogTest extends ApiTestBase {
         // then: 2b) product's default SKU should have proper values
         final ResponseEntity<SkuDto> receivedSkuEntity = restTemplate.exchange(
                 PRODUCT_BY_ID_SKUS_DEFAULT, HttpMethod.GET,
-                getHttpJsonRequestEntity(), SkuDto.class, serverPort, testProductId1);
+                testHttpRequestEntity.getTestHttpRequestEntity(), SkuDto.class, serverPort, testProductId1);
 
         assertThat(receivedSkuEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         final SkuDto receivedSkuDto = receivedSkuEntity.getBody();
-        final SkuDto defaultTestSku = DtoTestFactory.getTestDefaultSku();
 
-        assertThat(receivedSkuDto.getName(), containsString(defaultTestSku.getName()));
-        assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(defaultTestSku.getQuantityAvailable()));
-        assertThat(receivedSkuDto.getActiveStartDate(), equalTo(defaultTestSku.getActiveStartDate()));
+        assertThat(receivedSkuDto.getName(), containsString(productDto.getName()));
+        assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
+        assertThat(receivedSkuDto.getActiveStartDate(), equalTo(productDto.getValidFrom()));
 
         // when: 3) adding another product without category
         final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
@@ -207,7 +206,7 @@ public class CatalogTest extends ApiTestBase {
             // then: 4a) product's categories number should decrease (by 1) on each category deletion
             receivedProductEntity = restTemplate.exchange(
                     PRODUCT_BY_ID_URL,
-                    HttpMethod.GET, getHttpJsonRequestEntity(), ProductDto.class, serverPort, testProductId);
+                    HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, testProductId);
 
             assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
             assertThat(getRemoteTotalCategoriesForProductCount(testProductId), equalTo(TEST_CATEGORIES_COUNT - (i + 1)));
