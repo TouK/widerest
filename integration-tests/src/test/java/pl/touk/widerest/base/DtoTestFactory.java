@@ -158,10 +158,7 @@ public class DtoTestFactory {
         switch(dtoTestType) {
             case NEXT:
                 final ProductDto p = nextTestProduct();
-                p.setValidFrom(defaultActiveStartDate);
-                p.setTaxCode("Product's default Tax Code");
-                p.setQuantityAvailable(99);
-                p.setSalePrice(new BigDecimal("39.99"));
+                updateNextTestDefaultSku(p);
                 return p;
             case SAME: {
                 if(defaultProductWithDefaultSKU == null) {

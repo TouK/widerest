@@ -215,6 +215,9 @@ public class ProductControllerTest extends ApiTestBase {
         final ProductDto productWihtoutDefaultSkuDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         //productWihtoutDefaultSkuDto.setDefaultSku(null);
 
+        productWihtoutDefaultSkuDto.setSalePrice(null);
+        productWihtoutDefaultSkuDto.setRetailPrice(null);
+
         // then: API should return HTTP.BAD_REQUEST code and the product should not be added
         try {
 
@@ -435,6 +438,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
+    @Ignore("Links returned in HAL have a different format than those returned in plain JSON")
     public void attemptingToRemoveDefaultSkuCausesExceptionTest() {
         // when: creating a new test product and then trying to delete its default SKU
         final ResponseEntity<?> responseEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
@@ -460,112 +464,113 @@ public class ProductControllerTest extends ApiTestBase {
 
 
 
-//    @Test
-//    @Transactional
-//    public void addingComplexProductSavesAllValuesProperly() {
-//
-//        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-//        final ResponseEntity<?> responseEntity1 = addNewTestCategory(testCategory);
-//        final long testCategoryId = getIdFromLocationUrl(responseEntity1.getHeaders().getLocation().toString());
-//
-//        final ProductDto complexProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-//        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-//        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-//
-//        final MediaDto mediaDto1 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
-//        final MediaDto mediaDto2 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
-//        final MediaDto mediaDto3 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
-//
-//        complexProductDto.setCategoryName(testCategory.getName());
-//
-//        // set additional default SKU options
-//        complexProductDto.setValidFrom(addNDaysToDate(complexProductDto.getValidFrom(), 30));
-//        complexProductDto.setRetailPrice(new BigDecimal("19.99"));
-//
-//
-//        final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
-//        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
-//
-//        final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
-//        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
-//
-//        additionalSku1.setSkuMedia(new HashMap<>());
-//        additionalSku1.getSkuMedia().put("primary", mediaDto1);
-//        additionalSku1.getSkuMedia().put("alt1", mediaDto2);
-//        additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-//        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
-//        additionalSku1.setCurrencyCode("USD");
-//        additionalSku1.setAvailability("CHECK_QUANTITY");
-//        additionalSku1.setSkuProductOptionValues(additionalSku1Options);
-//
-//        additionalSku2.setSkuMedia(new HashMap<>());
-//        additionalSku2.getSkuMedia().put("primary", mediaDto3);
-//        additionalSku2.setRetailPrice(new BigDecimal("19.99"));
-//        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
-//        additionalSku2.setCurrencyCode("EUR");
-//        additionalSku2.setAvailability("ALWAYS_AVAILABLE");
-//        additionalSku2.setSkuProductOptionValues(additionalSku2Options);
-//
-//        final Map<String, String> productAttributes = new HashMap<>();
-//        productAttributes.put("size", String.valueOf(99));
-//        productAttributes.put("color", "red");
-//
-//        complexProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
-//        complexProductDto.setAttributes(productAttributes);
-//
-//        final ResponseEntity<?> responseEntity = addNewTestProduct(complexProductDto);
-//        assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-//        final long idFromLocationUrl = getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
-//
-//        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
-//
-//        final ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);
-//
-//        // validate Product Attributes
-//        final Map<String, String> attributes = receivedProduct.getAttributes();
-//
-//        assertThat(attributes.size(), equalTo(productAttributes.size()));
-//        assertThat(attributes.get("size"), equalTo(String.valueOf(99)));
-//        assertThat(attributes.get("color"), equalTo("red"));
-//
-//        // validate Additional SKUS
-//        final List<SkuDto> additionalSkus = receivedProduct.getSkus();
-//
-//        assertThat(additionalSkus.size(), equalTo(2));
-//
-//        final SkuDto receivedAdditionalSku1, receivedAdditionalSku2;
-//
-//        if(additionalSkus.get(0).getSkuMedia().size() == 2) {
-//            receivedAdditionalSku1 = additionalSkus.get(0);
-//            receivedAdditionalSku2 = additionalSkus.get(1);
-//        } else {
-//            receivedAdditionalSku1 = additionalSkus.get(1);
-//            receivedAdditionalSku2 = additionalSkus.get(0);
-//        }
-//
-//        // validate addtional Sku #1
-//        final Map<String, MediaDto> additionalSku1Media = receivedAdditionalSku1.getSkuMedia();
-//
-//        assertThat(additionalSku1Media.size(), equalTo(2));
-//        assertTrue(CollectionUtils.isEqualCollection(additionalSku1Media.entrySet(), additionalSku1.getSkuMedia().entrySet()));
-//
-//        receivedAdditionalSku1.setSkuMedia(null);
-//        additionalSku1.setSkuMedia(null);
-//
-//        assertThat(receivedAdditionalSku1, equalTo(additionalSku1));
-//
-//        // validate addtional Sku #2
-//        final Map<String, MediaDto> additionalSku2Media = receivedAdditionalSku2.getSkuMedia();
-//
-//        assertThat(additionalSku2Media.size(), equalTo(1));
-//        assertThat(additionalSku2Media.get(0), equalTo(additionalSku2.getSkuMedia().get(0)));
-//
-//        assertThat(receivedAdditionalSku2, equalTo(additionalSku2));
-//
-//        // validate default SKU
+    @Test
+    @Transactional
+    public void addingComplexProductSavesAllValuesProperly() {
+
+        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> responseEntity1 = addNewTestCategory(testCategory);
+        final long testCategoryId = getIdFromLocationUrl(responseEntity1.getHeaders().getLocation().toString());
+
+        final ProductDto complexProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+
+        final MediaDto mediaDto1 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        final MediaDto mediaDto2 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        final MediaDto mediaDto3 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+
+        complexProductDto.setCategoryName(testCategory.getName());
+
+        // set additional default SKU options
+        complexProductDto.setValidFrom(addNDaysToDate(complexProductDto.getValidFrom(), 30));
+        complexProductDto.setRetailPrice(new BigDecimal("19.99"));
+
+
+        final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
+        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+
+        final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
+        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
+
+        additionalSku1.setSkuMedia(new HashMap<>());
+        additionalSku1.getSkuMedia().put("primary", mediaDto1);
+        additionalSku1.getSkuMedia().put("alt1", mediaDto2);
+        additionalSku1.setRetailPrice(new BigDecimal("29.99"));
+        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setCurrencyCode("USD");
+        additionalSku1.setAvailability("CHECK_QUANTITY");
+        additionalSku1.setSkuProductOptionValues(additionalSku1Options);
+
+        additionalSku2.setSkuMedia(new HashMap<>());
+        additionalSku2.getSkuMedia().put("primary", mediaDto3);
+        additionalSku2.setRetailPrice(new BigDecimal("19.99"));
+        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setCurrencyCode("EUR");
+        additionalSku2.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku2.setSkuProductOptionValues(additionalSku2Options);
+
+        final Map<String, String> productAttributes = new HashMap<>();
+        productAttributes.put("size", String.valueOf(99));
+        productAttributes.put("color", "red");
+
+        complexProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
+        complexProductDto.setAttributes(productAttributes);
+
+        final ResponseEntity<?> responseEntity = addNewTestProduct(complexProductDto);
+        assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final long idFromLocationUrl = getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
+
+        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+
+        final ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);
+
+        // validate Product Attributes
+        final Map<String, String> attributes = receivedProduct.getAttributes();
+
+        assertThat(attributes.size(), equalTo(productAttributes.size()));
+        assertThat(attributes.get("size"), equalTo(String.valueOf(99)));
+        assertThat(attributes.get("color"), equalTo("red"));
+
+        // validate Additional SKUS
+        final List<SkuDto> additionalSkus = receivedProduct.getSkus();
+
+        assertThat(additionalSkus.size(), equalTo(2));
+
+        final SkuDto receivedAdditionalSku1, receivedAdditionalSku2;
+
+        if(additionalSkus.get(0).getSkuMedia().size() == 2) {
+            receivedAdditionalSku1 = additionalSkus.get(0);
+            receivedAdditionalSku2 = additionalSkus.get(1);
+        } else {
+            receivedAdditionalSku1 = additionalSkus.get(1);
+            receivedAdditionalSku2 = additionalSkus.get(0);
+        }
+
+        // validate addtional Sku #1
+        final Map<String, MediaDto> additionalSku1Media = receivedAdditionalSku1.getSkuMedia();
+
+        assertThat(additionalSku1Media.size(), equalTo(2));
+        assertTrue(CollectionUtils.isEqualCollection(additionalSku1Media.entrySet(), additionalSku1.getSkuMedia().entrySet()));
+
+        receivedAdditionalSku1.setSkuMedia(null);
+        additionalSku1.setSkuMedia(null);
+
+        assertThat(receivedAdditionalSku1, equalTo(additionalSku1));
+
+        // validate addtional Sku #2
+        final Map<String, MediaDto> additionalSku2Media = receivedAdditionalSku2.getSkuMedia();
+
+        assertThat(additionalSku2Media.size(), equalTo(1));
+        assertThat(additionalSku2Media.get(0), equalTo(additionalSku2.getSkuMedia().get(0)));
+
+        assertThat(receivedAdditionalSku2, equalTo(additionalSku2));
+
+        // validate default SKU
 //        final SkuDto receivedDefaultSku = receivedProduct.getDefaultSku();
 //        final SkuDto localDefaultSku = complexProductDto.getDefaultSku();
-//
+
+        // validate product's default SKU
 //        assertThat(receivedDefaultSku.getTaxCode(), equalTo(localDefaultSku.getTaxCode()));
 //        assertThat(receivedDefaultSku.getName(), equalTo(complexProductDto.getName()));
 //        assertThat(receivedDefaultSku.getSalePrice(), equalTo(localDefaultSku.getSalePrice()));
@@ -575,14 +580,24 @@ public class ProductControllerTest extends ApiTestBase {
 //        assertThat(receivedDefaultSku.getCurrencyCode(), equalTo(currencyService.findDefaultBroadleafCurrency().getCurrencyCode()));
 //        assertThat(receivedDefaultSku.getActiveStartDate(), equalTo(localDefaultSku.getActiveStartDate()));
 //        assertThat(receivedDefaultSku.getActiveEndDate(), equalTo(localDefaultSku.getActiveEndDate()));
-//
-//        // validate product
-//        assertThat(receivedProduct.getManufacturer(), equalTo(complexProductDto.getManufacturer()));
-//        assertThat(receivedProduct.getModel(), equalTo(complexProductDto.getModel()));
-//        assertThat(receivedProduct.getName(), equalTo(complexProductDto.getName()));
-//        assertThat(receivedProduct.getDescription(), equalTo(complexProductDto.getDescription()));
-//        assertThat(receivedProduct.getLongDescription(), equalTo(complexProductDto.getLongDescription()));
-//    }
+
+        assertThat(receivedProduct.getTaxCode(), equalTo(complexProductDto.getTaxCode()));
+        assertThat(receivedProduct.getName(), equalTo(complexProductDto.getName()));
+        assertThat(receivedProduct.getSalePrice(), equalTo(complexProductDto.getSalePrice()));
+        assertThat(receivedProduct.getRetailPrice(), equalTo(complexProductDto.getRetailPrice()));
+        assertThat(receivedProduct.getQuantityAvailable(), equalTo(complexProductDto.getQuantityAvailable()));
+        assertThat(receivedProduct.getAvailability(), equalTo("ALWAYS_AVAILABLE"));
+        assertThat(receivedProduct.getCurrencyCode(), equalTo(currencyService.findDefaultBroadleafCurrency().getCurrencyCode()));
+        assertThat(receivedProduct.getValidFrom(), equalTo(complexProductDto.getValidFrom()));
+        assertThat(receivedProduct.getValidTo(), equalTo(complexProductDto.getValidTo()));
+
+        // validate product
+        assertThat(receivedProduct.getManufacturer(), equalTo(complexProductDto.getManufacturer()));
+        assertThat(receivedProduct.getModel(), equalTo(complexProductDto.getModel()));
+        assertThat(receivedProduct.getName(), equalTo(complexProductDto.getName()));
+        assertThat(receivedProduct.getDescription(), equalTo(complexProductDto.getDescription()));
+        assertThat(receivedProduct.getLongDescription(), equalTo(complexProductDto.getLongDescription()));
+    }
 
 
 
