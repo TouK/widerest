@@ -97,9 +97,11 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         final List<SkuDto> additionalSkus = product.getAdditionalSkus().stream()
                 .map(sku -> skuConverter.createDto(sku, false)).collect(toList());
 
-        if(!CollectionUtils.isEmpty(additionalSkus)) {
-            dto.add(new EmbeddedResource("skus", additionalSkus));
-        }
+        dto.setSkus(additionalSkus);
+
+//        if(!CollectionUtils.isEmpty(additionalSkus)) {
+//            dto.add(new EmbeddedResource("skus", additionalSkus));
+//        }
 
         //dto.setSkus(product.getAdditionalSkus().stream().map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
 

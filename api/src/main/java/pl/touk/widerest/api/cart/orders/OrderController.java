@@ -382,26 +382,26 @@ public class OrderController {
         cart = orderService.save(cart, false);
 
 
-        HttpHeaders responseHeaders = new HttpHeaders();
-
         if (!isBundleBeingAdded) {
-            responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                    .path("/{id}")
-                    .buildAndExpand(
-                            (cart.getDiscreteOrderItems().stream()
-                                    .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
-                                    .findAny()
-                                    .map(DiscreteOrderItem::getId)
-                                    .orElseThrow(ResourceNotFoundException::new))
-                    )
-                    .toUri());
+            return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(
+                                (cart.getDiscreteOrderItems().stream()
+                                        .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
+                                        .findAny()
+                                        .map(DiscreteOrderItem::getId)
+                                        .orElseThrow(ResourceNotFoundException::new))
+                        )
+                        .toUri()
+            ).build();
         } else {
-            responseHeaders.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
+            return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
                     .build()
-                    .toUri());
+                    .toUri()
+            ).build();
         }
-
-        return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
     }
 
     /* GET /orders/items/ */

@@ -388,7 +388,7 @@ public class OrderControllerTest extends ApiTestBase {
                 requestEntity, HttpHeaders.class, serverPort, 10L, 10L);
         HttpEntity<Integer> quantityEntity = new HttpEntity<>(100, httpJsonRequestHeaders);
         adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/quantity", HttpMethod.PUT,
-                quantityEntity, HttpHeaders.class, serverPort, 10L, 10L);
+                testHttpRequestEntity.getTestHttpRequestEntity(), HttpHeaders.class, serverPort, 10L, 10L);
 
 
         // Given anonymous user
@@ -470,19 +470,29 @@ public class OrderControllerTest extends ApiTestBase {
     @Test
     public void creatingNewProductAndAddingItToOrderSavesAllValuesCorrectlyTest() throws URISyntaxException {
 
-        ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-
+        final ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
+        final ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = getIdFromEntity(newProductResponseEntity);
 
 
-        ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+        //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+
+        final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId);
+
+        assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+
         ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
         long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 
@@ -525,8 +535,16 @@ public class OrderControllerTest extends ApiTestBase {
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = getIdFromEntity(newProductResponseEntity);
 
+        final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
+                hateoasRestTemplate().exchange(
+                        PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        testHttpRequestEntity.getTestHttpRequestEntity(),
+                        ProductDto.class, serverPort, productId);
 
-        ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+        assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
         ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
         long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 

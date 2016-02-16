@@ -547,26 +547,26 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
-    /* PATCH /products/{id} */
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}", method = RequestMethod.PATCH)
-    @ApiOperation(
-            value = "Partially update an existing product",
-            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet though",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful update of the specified product"),
-            @ApiResponse(code = 404, message = "The specified product does not exist"),
-            @ApiResponse(code = 409, message = "Product with that name already exists")
-    })
-    public ResponseEntity<?> partialUpdateOneProduct(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "(Partial) Description of an updated product", required = true)
-            @RequestBody ProductDto productDto) {
-        throw new ResourceNotFoundException("Implement me, dammit!");
-    }
+//    /* PATCH /products/{id} */
+//    @Transactional
+//    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+//    @RequestMapping(value = "/{productId}", method = RequestMethod.PATCH)
+//    @ApiOperation(
+//            value = "Partially update an existing product",
+//            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet though",
+//            response = Void.class)
+//    @ApiResponses({
+//            @ApiResponse(code = 200, message = "Successful update of the specified product"),
+//            @ApiResponse(code = 404, message = "The specified product does not exist"),
+//            @ApiResponse(code = 409, message = "Product with that name already exists")
+//    })
+//    public ResponseEntity<?> partialUpdateOneProduct(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//            @PathVariable(value = "productId") Long productId,
+//            @ApiParam(value = "(Partial) Description of an updated product", required = true)
+//            @RequestBody ProductDto productDto) {
+//        throw new ResourceNotFoundException("Implement me, dammit!");
+//    }
 
     /* DELETE /products/{id} */
     @Transactional
@@ -856,14 +856,12 @@ public class ProductController {
         product.setAdditionalSkus(allProductsSkus);
         catalogService.saveProduct(product);
 
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/products/{productId}/skus/{skuId}")
-                .buildAndExpand(productId, newSkuEntity.getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/products/{productId}/skus/{skuId}")
+                        .buildAndExpand(productId, newSkuEntity.getId())
+                        .toUri()
+        ).build();
     }
 
     /* GET /products/{productId}/skus/{skuId} */
@@ -955,15 +953,12 @@ public class ProductController {
         //product.setDefaultSku(newSkuEntity);
         //catalogService.saveProduct(product);
 
-
-        HttpHeaders responseHeader = new HttpHeaders();
-
-        responseHeader.setLocation(ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/products/{productId}/skus/{skuId}")
-                .buildAndExpand(productId, savedSKU.getId())
-                .toUri());
-
-        return new ResponseEntity<>(responseHeader, HttpStatus.CREATED);
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/products/{productId}/skus/{skuId}")
+                        .buildAndExpand(productId, savedSKU.getId())
+                        .toUri()
+        ).build();
     }
 
 
@@ -1023,7 +1018,7 @@ public class ProductController {
                     .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
                     .getQuantityAvailable();
 
-        return new ResponseEntity<>(skuQuantity, HttpStatus.OK);
+        return ResponseEntity.ok(skuQuantity);
     }
 
     /* PUT /products/{productId}/skus/{skuId}/quantity */
@@ -1062,7 +1057,7 @@ public class ProductController {
                 .map(catalogService::saveSku)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
     /* PUT /products/{productId}/skus/{skuId}/availability */
@@ -1101,7 +1096,7 @@ public class ProductController {
                 .map(catalogService::saveSku)
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
     /* GET /products/{productId}/skus/{skuId}/availability */
@@ -1136,8 +1131,7 @@ public class ProductController {
                 .map(InventoryType::getType)
                 .orElse(CatalogUtils.EMPTY_STRING);
 
-        return new ResponseEntity<>(skuAvailability, HttpStatus.OK);
-
+        return ResponseEntity.ok(skuAvailability);
     }
 
     /* DELETE /products/{productId}/skus/{id} */
@@ -1186,7 +1180,7 @@ public class ProductController {
         );
 
         catalogService.saveProduct(product);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -1234,7 +1228,7 @@ public class ProductController {
                         "Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
                 ));
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
     /* PATCH /products/{productId}/skus/{skuId} */
@@ -1277,7 +1271,7 @@ public class ProductController {
                         "Cannot update SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
                 ));
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
     /* ---------------------------- SKUs ENDPOINTS ---------------------------- */
@@ -1395,7 +1389,7 @@ public class ProductController {
         catalogService.saveSku(sku);
         genericEntityService.remove(removed);
 
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     /* PUT /{productId}/skus/{skuId}/media/{key} */
@@ -1447,7 +1441,7 @@ public class ProductController {
 
         catalogService.saveSku(sku);
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
