@@ -32,7 +32,7 @@ public class CurrencyControllerTest extends ApiTestBase {
         whenLoggedIn("backoffice","admin", "admin");
         whenAuthorizationRequestedFor(Scope.STAFF);
 
-        final ResponseEntity<BroadleafCurrencyImpl> result = oAuth2RestTemplate.getForEntity(GET_DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
+        final ResponseEntity<BroadleafCurrencyImpl> result = oAuth2RestTemplate.getForEntity(DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
         final BroadleafCurrency currency = result.getBody();
 
         assertTrue(result.getStatusCode().is2xxSuccessful());
@@ -46,9 +46,9 @@ public class CurrencyControllerTest extends ApiTestBase {
 
         final String SETTING_VALUE = "pln";
 
-        oAuth2RestTemplate.put(SET_DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+        oAuth2RestTemplate.put(DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
 
-        final ResponseEntity<BroadleafCurrencyImpl> receivedSettingEntity = oAuth2RestTemplate.getForEntity(GET_DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
+        final ResponseEntity<BroadleafCurrencyImpl> receivedSettingEntity = oAuth2RestTemplate.getForEntity(DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
 
         Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
         assertThat(receivedSettingEntity.getBody().getCurrencyCode(), equalTo(SETTING_VALUE.toUpperCase()));
@@ -62,6 +62,6 @@ public class CurrencyControllerTest extends ApiTestBase {
 
         final String SETTING_VALUE = "this_is_definitely_not_a_currency";
 
-        oAuth2RestTemplate.put(SET_DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+        oAuth2RestTemplate.put(DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
     }
 }
