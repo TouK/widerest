@@ -566,21 +566,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         assertThat(receivedAdditionalSku2, equalTo(additionalSku2));
 
-        // validate default SKU
-//        final SkuDto receivedDefaultSku = receivedProduct.getDefaultSku();
-//        final SkuDto localDefaultSku = complexProductDto.getDefaultSku();
-
         // validate product's default SKU
-//        assertThat(receivedDefaultSku.getTaxCode(), equalTo(localDefaultSku.getTaxCode()));
-//        assertThat(receivedDefaultSku.getName(), equalTo(complexProductDto.getName()));
-//        assertThat(receivedDefaultSku.getSalePrice(), equalTo(localDefaultSku.getSalePrice()));
-//        assertThat(receivedDefaultSku.getRetailPrice(), equalTo(localDefaultSku.getRetailPrice()));
-//        assertThat(receivedDefaultSku.getQuantityAvailable(), equalTo(localDefaultSku.getQuantityAvailable()));
-//        assertThat(receivedDefaultSku.getAvailability(), equalTo("ALWAYS_AVAILABLE"));
-//        assertThat(receivedDefaultSku.getCurrencyCode(), equalTo(currencyService.findDefaultBroadleafCurrency().getCurrencyCode()));
-//        assertThat(receivedDefaultSku.getActiveStartDate(), equalTo(localDefaultSku.getActiveStartDate()));
-//        assertThat(receivedDefaultSku.getActiveEndDate(), equalTo(localDefaultSku.getActiveEndDate()));
-
         assertThat(receivedProduct.getTaxCode(), equalTo(complexProductDto.getTaxCode()));
         assertThat(receivedProduct.getName(), equalTo(complexProductDto.getName()));
         assertThat(receivedProduct.getSalePrice(), equalTo(complexProductDto.getSalePrice()));
