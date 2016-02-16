@@ -13,6 +13,7 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.categories.CategoryController;
 
@@ -89,14 +90,19 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setValidFrom(Optional.ofNullable(product.getActiveStartDate()).orElse(null));
         dto.setValidTo(Optional.ofNullable(product.getActiveEndDate()).orElse(null));
 
-		/* (Map<String, String>) */
         dto.setAttributes(product.getProductAttributes().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
 
         dto.setOptions(product.getProductOptionXrefs().stream().map(DtoConverters.productOptionXrefToDto).collect(toList()));
 
+        final List<SkuDto> additionalSkus = product.getAdditionalSkus().stream()
+                .map(sku -> skuConverter.createDto(sku, false)).collect(toList());
 
-        dto.setSkus(product.getAdditionalSkus().stream().map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
+        if(!CollectionUtils.isEmpty(additionalSkus)) {
+            dto.add(new EmbeddedResource("skus", additionalSkus));
+        }
+
+        //dto.setSkus(product.getAdditionalSkus().stream().map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
 
 
 		/* TODO: (mst) Implement Possible Bundles */
@@ -175,9 +181,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         final Sku defaultSku = new SkuImpl();
         product.setDefaultSku(defaultSku);
 
-        // TODO:
-        //product.setDefaultSku(skuConverter.createEntity(productDto.getDefaultSku()));
-
         return updateEntity(product, productDto);
     }
 
@@ -197,25 +200,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
         product.setUrl(productDto.getUrl());
-
-
-//        product.getDefaultSku().setSalePrice(new Money(productDto.getSalePrice()));
-//
-//        if(productDto.getRetailPrice() != null) {
-//            product.getDefaultSku().setRetailPrice(new Money(productDto.getRetailPrice()));
-//        } else {
-//            product.getDefaultSku().setRetailPrice(new Money(productDto.getSalePrice()));
-//        }
-//
-//        if(productDto.getAvailability() != null && InventoryType.getInstance(productDto.getAvailability()) != null) {
-//            product.getDefaultSku().setInventoryType(InventoryType.getInstance(productDto.getAvailability()));
-//        } else {
-//
-//        }
-
-        // f(product) -> defaultSku
-        // updateEntity(product.getDefaultSku(), defaultSku)
-
 
         skuConverter.updateEntity(product.getDefaultSku(), DtoConverters.productDtoToDefaultSkuDto.apply(productDto));
 

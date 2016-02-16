@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
 @Component
 public class MediaConverter implements Converter<Media, MediaDto> {
     @Override

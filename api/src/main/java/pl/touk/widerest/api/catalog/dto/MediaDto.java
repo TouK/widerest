@@ -19,7 +19,7 @@ import lombok.Builder;
 @JsonRootName("media")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Media", description = "Media DTO resource representation")
-public class MediaDto {
+public class MediaDto extends BaseDto {
 
     @ApiModelProperty(position = 0, value = "Title of the media", required = true, dataType = "java.lang.String")
     private String title;
