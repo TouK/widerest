@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.categories;
+package pl.touk.widerest.api.catalog.categories.converters;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -19,13 +19,16 @@ import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.products.MediaConverter;
+import pl.touk.widerest.api.catalog.categories.CategoryController;
+import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
+import pl.touk.widerest.api.catalog.products.converters.MediaConverter;
 
 import javax.annotation.Resource;
 
@@ -50,7 +53,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 .build();
 
 
-        dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 
         dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
 

@@ -1,9 +1,13 @@
-package pl.touk.widerest.api.cart.customers;
+package pl.touk.widerest.api.cart.customers.converters;
 
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerImpl;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
+import pl.touk.widerest.api.cart.customers.CustomerController;
+import pl.touk.widerest.api.cart.customers.converters.CustomerAddressConverter;
+import pl.touk.widerest.api.cart.customers.dto.CustomerDto;
 
 import javax.annotation.Resource;
 import java.util.stream.Collectors;
@@ -34,7 +38,7 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
                 .email(customer.getEmailAddress())
                 .build();
 
-        customerDto.add(linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
+        customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
         customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, customer.getId().toString())).withRel("authorization"));
 
         return customerDto;

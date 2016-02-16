@@ -28,8 +28,7 @@ import org.broadleafcommerce.profile.core.domain.Address;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.customers.AddressConverter;
+import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
 import pl.touk.widerest.api.cart.orders.OrderController;
 import pl.touk.widerest.api.cart.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;

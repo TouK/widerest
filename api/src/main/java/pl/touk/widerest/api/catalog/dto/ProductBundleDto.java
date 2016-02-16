@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import pl.touk.widerest.api.catalog.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 
 import java.math.BigDecimal;
 import java.util.List;

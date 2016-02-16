@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.customers;
+package pl.touk.widerest.api.cart.customers.dto;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,8 +10,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.hateoas.ResourceSupport;
-import pl.touk.widerest.api.cart.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.CustomerAddressDto;
 
 import java.util.List;
 import java.util.Locale;
@@ -58,10 +56,10 @@ public class CustomerDto extends ResourceSupport {
     
     /* customer attributes */
 
-    @ApiModelProperty(position = 6, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
+    @ApiModelProperty(position = 6, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.cart.customers.dto.AddressDto")
     private AddressDto correspondenceAddress;
 
-    @ApiModelProperty(position = 7, value = "Customer's residence address", dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
+    @ApiModelProperty(position = 7, value = "Customer's residence address", dataType = "pl.touk.widerest.api.cart.customers.dto.AddressDto")
     private AddressDto residenceAddress;
 
     private List<CustomerAddressDto> addresses;

@@ -1,12 +1,12 @@
-package pl.touk.widerest.api.cart.orders;
+package pl.touk.widerest.api.cart.orders.converters;
 
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
-import pl.touk.widerest.api.cart.customers.AddressConverter;
-import pl.touk.widerest.api.cart.dto.OrderPaymentDto;
+import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
+import pl.touk.widerest.api.cart.orders.dto.OrderPaymentDto;
 
 import javax.annotation.Resource;
 

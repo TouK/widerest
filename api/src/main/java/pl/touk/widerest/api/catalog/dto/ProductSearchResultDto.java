@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import pl.touk.widerest.api.catalog.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.products;
+package pl.touk.widerest.api.catalog.products.dto;
 
 import java.math.BigDecimal;
 import java.util.Date;

@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.products;
+package pl.touk.widerest.api.catalog.products.converters;
 
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;

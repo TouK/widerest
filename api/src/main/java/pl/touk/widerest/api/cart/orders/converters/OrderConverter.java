@@ -1,16 +1,18 @@
-package pl.touk.widerest.api.cart.orders;
+package pl.touk.widerest.api.cart.orders.converters;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.customers.CustomerController;
-import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.orders.dto.OrderDto;
+import pl.touk.widerest.api.cart.orders.OrderController;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -54,7 +56,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                 methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
         ).withRel("customer"));
 
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderById(null, order.getId())).withSelfRel());
+        orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId())).withSelfRel());
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
 

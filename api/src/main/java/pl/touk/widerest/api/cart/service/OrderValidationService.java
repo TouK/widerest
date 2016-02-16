@@ -13,7 +13,7 @@ import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.service.CountryService;
 import org.springframework.stereotype.Service;
 
-import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.NoFulfillmentOptionException;
 import pl.touk.widerest.api.cart.exceptions.NoShippingAddressException;
 import pl.touk.widerest.api.cart.exceptions.OrderValidationException;

@@ -16,9 +16,8 @@ import org.broadleafcommerce.core.workflow.ProcessContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.dto.OrderDto;
-import pl.touk.widerest.api.cart.orders.OrderConverter;
+import pl.touk.widerest.api.cart.orders.dto.OrderDto;
+import pl.touk.widerest.api.cart.orders.converters.OrderConverter;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

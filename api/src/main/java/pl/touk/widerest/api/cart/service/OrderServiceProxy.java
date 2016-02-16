@@ -34,9 +34,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javaslang.control.Match;
-import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.customers.AddressConverter;
-import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
+import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.OrderNotFoundException;

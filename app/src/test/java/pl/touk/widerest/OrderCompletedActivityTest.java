@@ -25,8 +25,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.cart.orders.OrderConverter;
+import pl.touk.widerest.api.cart.orders.converters.OrderConverter;
 
 import javax.annotation.Resource;
 import javax.mail.internet.MimeMessage;

@@ -9,14 +9,14 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 
-import pl.touk.widerest.api.cart.dto.OrderDto;
+import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
-import pl.touk.widerest.api.catalog.categories.CategoryDto;
+import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 
 public class DtoTestFactory {
 

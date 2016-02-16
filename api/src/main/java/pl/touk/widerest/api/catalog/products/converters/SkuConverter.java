@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.products;
+package pl.touk.widerest.api.catalog.products.converters;
 
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
@@ -7,11 +7,13 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.catalog.products.ProductController;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -66,7 +68,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
                 .build();
 
-        dto.add(linkTo(methodOn(ProductController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
                 .withSelfRel());
 
         dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId()))

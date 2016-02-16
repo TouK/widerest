@@ -18,9 +18,9 @@ import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 
-import pl.touk.widerest.api.catalog.dto.SkuDto;
+import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
-import pl.touk.widerest.api.catalog.products.ProductDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 
 public class CatalogUtils {
 

@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.customers;
+package pl.touk.widerest.api.cart.customers.converters;
 
 
 import org.broadleafcommerce.common.i18n.service.ISOService;
@@ -6,7 +6,7 @@ import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
-import pl.touk.widerest.api.cart.dto.AddressDto;
+import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 
 import javax.annotation.Resource;
 

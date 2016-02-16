@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.dto;
+package pl.touk.widerest.api.cart.orders.dto;
 
 
 import java.math.BigDecimal;
@@ -16,6 +16,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+import pl.touk.widerest.api.cart.customers.dto.AddressDto;
+import pl.touk.widerest.api.cart.dto.CartAttributeDto;
+import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 
 @Data
 @Builder
@@ -35,10 +38,10 @@ public class OrderDto extends ResourceSupport {
     @ApiModelProperty(position = 1, value = "Status of the order", required = true, dataType = "java.lang.String")
     private String status;
 
-    @ApiModelProperty(position = 2, value = "Shipping address for the order", required = true, dataType = "pl.touk.widerest.api.cart.dto.AddressDto")
+    @ApiModelProperty(position = 2, value = "Shipping address for the order", required = true, dataType = "pl.touk.widerest.api.cart.customers.dto.AddressDto")
     private AddressDto shippingAddress;
 
-//    @ApiModelProperty(position = 3, value = "Customer information", required = true, dataType = "pl.touk.widerest.api.cart.customers.CustomerDto")
+//    @ApiModelProperty(position = 3, value = "Customer information", required = true, dataType = "pl.touk.widerest.api.cart.customers.dto.CustomerDto")
 //    private CustomerDto customer;
 
     @ApiModelProperty(position = 4, value = "Items belonging to the order", dataType = "java.util.List")
