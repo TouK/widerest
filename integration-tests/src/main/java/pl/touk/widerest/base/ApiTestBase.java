@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
@@ -49,9 +48,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.multitenancy.MultiTenancyConfig;
-import pl.touk.widerest.Application;
-import pl.touk.widerest.api.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
@@ -60,7 +56,6 @@ import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.catalog.dto.SkuDto;
 import pl.touk.widerest.api.categories.CategoryDto;
-import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
@@ -83,7 +78,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-@SpringApplicationConfiguration(classes = Application.class, initializers = BroadleafApplicationContextInitializer.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
 @WebIntegrationTest({
         "server.port:0", "auth0.domain:false", "management.port:0"
 })
@@ -128,15 +123,13 @@ public abstract class ApiTestBase {
 
     /* PayPal */
     public static final String SYSTEM_PROPERTIES_URL = API_BASE_URL + "/settings";
-    public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
-    public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
 
     /* Customer */
     public static final String CUSTOMERS_URL = API_BASE_URL + "/customers";
 
     public static final String LOGIN_URL = "http://localhost:{port}/login";
 
-    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&scope=customer&response_type=token&redirect_uri=/";
+    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=default&scope=customer&response_type=token&redirect_uri=/";
 
 
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
@@ -211,7 +204,7 @@ public abstract class ApiTestBase {
         final ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
         resourceDetails.setGrantType("password");
         resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-        resourceDetails.setClientId(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER);
+        resourceDetails.setClientId("default");
         resourceDetails.setScope(Arrays.asList("staff"));
         resourceDetails.setUsername("backoffice/admin");
         resourceDetails.setPassword("admin");

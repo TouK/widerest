@@ -14,8 +14,23 @@
     <dependencies>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-app</artifactId>
+            <artifactId>widerest-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>pl.touk.widerest</groupId>
+            <artifactId>widerest-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>pl.touk.widerest</groupId>
+            <artifactId>widerest-boot</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
 
         <dependency>

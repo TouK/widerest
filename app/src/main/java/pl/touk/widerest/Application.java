@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import pl.touk.widerest.api.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.api.settings.SettingsConsumer;
 import pl.touk.widerest.api.settings.SettingsService;
+import pl.touk.widerest.boot.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import java.util.Set;
@@ -45,9 +45,25 @@ public class Application extends WebMvcConfigurerAdapter {
         };
     }
 
+    public static class ContextInitializer extends BroadleafApplicationContextInitializer {
+        public ContextInitializer() {
+            super(
+                    "classpath:/bl-open-admin-contentClient-applicationContext.xml\n" +
+                    "classpath:/bl-open-admin-contentCreator-applicationContext.xml\n" +
+                    "classpath:/bl-cms-contentClient-applicationContext.xml\n" +
+                    "classpath:/bl-common-applicationContext.xml\n" +
+                    //"classpath*:/blc-config/site/bl-*-applicationContext.xml\n" +
+                    "classpath:/applicationContext.xml\n" +
+                    "classpath:/applicationContext-sendwithus.xml\n" +
+                    "classpath:/applicationContext-paypal.xml\n" +
+                    "classpath:/applicationContext-security.xml\n"
+            );
+        }
+    }
+
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class)
-                .initializers(new BroadleafApplicationContextInitializer())
+                .initializers(new ContextInitializer())
                 .run(args);
     }
 

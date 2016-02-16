@@ -11,6 +11,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.paypal.gateway.PayPalSession;
 
 import java.net.URISyntaxException;
 
@@ -18,8 +19,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
 public class PayPalCredentialsTest extends ApiTestBase {
+
+    public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
+    public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
 
     @Test
     public void shouldSetCredentialsBeSameWithReturned() throws URISyntaxException {

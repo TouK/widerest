@@ -1,14 +1,13 @@
-package pl.touk.widerest.api;
-
-import java.util.Arrays;
-
-import javax.servlet.Filter;
+package pl.touk.widerest.boot;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.Filter;
+import java.util.Arrays;
 
 @Component
 public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {

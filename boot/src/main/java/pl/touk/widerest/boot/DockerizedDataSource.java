@@ -1,4 +1,4 @@
-package pl.touk.widerest;
+package pl.touk.widerest.boot;
 
 import com.google.common.collect.Lists;
 import com.spotify.docker.client.DefaultDockerClient;

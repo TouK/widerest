@@ -16,10 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
-import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.dto.ProductDto;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.Application;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
 

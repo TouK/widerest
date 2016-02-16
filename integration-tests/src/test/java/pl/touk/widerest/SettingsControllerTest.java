@@ -8,9 +8,12 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import pl.touk.widerest.api.settings.SettingsConsumer;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.Application;
 import pl.touk.widerest.security.oauth2.Scope;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -22,23 +25,25 @@ import static org.junit.Assert.assertThat;
 @SpringApplicationConfiguration(classes = Application.class)
 public class SettingsControllerTest extends ApiTestBase {
 
+    @Resource
+    protected SettingsConsumer settingsConsumer;
+
     @Test
     public void shouldSetAKnownPropertyTest() throws IOException {
 
         whenLoggedIn("backoffice", "admin", "admin");
         whenAuthorizationRequestedFor(Scope.STAFF);
 
-        final String SETTING_NAME = "paypalClientId";
-        final String SETTING_VALUE = "value";
+        final String propertyKey = settingsConsumer.getHandledProperties().iterator().next();
+        final String propertyValue = "value";
 
 
-        oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, SETTING_VALUE, serverPort, SETTING_NAME);
+        oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, propertyValue, serverPort, propertyKey);
 
-        final ResponseEntity<String> receivedSettingEntity = oAuth2RestTemplate.getForEntity(SETTINGS_BY_NAME_URL, String.class, serverPort, SETTING_NAME);
+        final ResponseEntity<String> receivedSettingEntity = oAuth2RestTemplate.getForEntity(SETTINGS_BY_NAME_URL, String.class, serverPort, propertyKey);
 
         Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
-        assertThat(receivedSettingEntity.getBody(), equalTo(SETTING_VALUE));
+        assertThat(receivedSettingEntity.getBody(), equalTo(propertyValue));
     }
-
 
 }

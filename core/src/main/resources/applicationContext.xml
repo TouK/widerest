@@ -69,22 +69,7 @@
         <property name="targetRef" value="blPaymentGatewayConfigurationServices"/>
     </bean-->
     <!-- /End DemoSite NullPaymentGateway Config -->
-    <bean class="pl.touk.widerest.paypal.gateway.PayPalPaymentGatewayType"/>
-
     <bean id="blFulfillmentGroupService" class="org.broadleafcommerce.core.order.service.FulfillmentGroupServiceImpl" />
-
-
-    <bean id="mySampleConfigurationServices" class="org.springframework.beans.factory.config.ListFactoryBean">
-        <property name="sourceList">
-            <list>
-                <ref bean="payPalGatewayConfigurationService"/>
-            </list>
-        </property>
-    </bean>
-    <bean class="org.broadleafcommerce.common.extensibility.context.merge.LateStageMergeBeanPostProcessor">
-        <property name="collectionRef" value="mySampleConfigurationServices"/>
-        <property name="targetRef" value="blPaymentGatewayConfigurationServices"/>
-    </bean>
 
     <bean name="blInventoryService" class="pl.touk.widerest.ext.InventoryServiceImpl"/>
     <bean p:order="2000" id="blCheckAddAvailabilityActivity" class="pl.touk.widerest.ext.CheckAvailabilityActivity"/>
@@ -256,18 +241,6 @@
             </map>
         </property>
     </bean>
-
-    <bean id="blCheckoutWorkflow" class="org.broadleafcommerce.core.workflow.SequenceProcessor">
-        <property name="activities">
-            <list>
-                <bean class="pl.touk.widerest.OrderCompletedActivity">
-                    <property name="order" value="99999" />
-                </bean>
-            </list>
-        </property>
-    </bean>
-
-
 
     <tx:annotation-driven transaction-manager="blTransactionManager"/>
 

@@ -314,5 +314,6 @@
         <module>paypal</module>
         <module>app</module>
         <module>integration-tests</module>
+        <module>boot</module>
     </modules>
 </project>

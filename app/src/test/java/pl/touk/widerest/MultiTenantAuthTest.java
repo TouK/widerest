@@ -1,16 +1,19 @@
 package pl.touk.widerest;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.AccessTokenProvider;
@@ -26,21 +29,28 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.security.oauth2.common.exceptions.UserDeniedAuthorizationException;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import pl.touk.multitenancy.TenantHeaderRequestFilter;
 import pl.touk.multitenancy.TenantRequest;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @Slf4j
 public class MultiTenantAuthTest extends ApiTestBase {
 
+    @Value("${local.server.port}")
+    protected String serverPort;
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    protected final RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
 
     @Test
     public void shouldNotMixAuthorizationsBetweenTenants() {
@@ -88,7 +98,7 @@ public class MultiTenantAuthTest extends ApiTestBase {
 
         // when the first tenant's resource called
         headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant1Identifier);
-        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+        responseEntity = tenant1RestTemplate.exchange("http://localhost:{port}" + ResourceServerConfig.API_PATH + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
 
         // then it is ok
         Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
@@ -98,7 +108,7 @@ public class MultiTenantAuthTest extends ApiTestBase {
 
         // when the second tenant's resource called
         headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant2Identifier);
-        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+        responseEntity = tenant1RestTemplate.exchange("http://localhost:{port}" + ResourceServerConfig.API_PATH + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
 
     }
 

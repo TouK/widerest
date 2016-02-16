@@ -16,7 +16,7 @@ import java.util.Set;
 @Component
 public class SettingsService {
 
-    @Autowired
+    @Autowired(required = false)
     Collection<SettingsConsumer> handlers;
 
     @Getter
@@ -27,10 +27,14 @@ public class SettingsService {
 
     @PostConstruct
     public void init() {
-        handlers.stream().forEach(h -> {
-            availableSystemPropertyNames.addAll(h.getHandledProperties());
-            h.setSettingsService(this);
-        });
+        Optional.ofNullable(handlers)
+                .map(Collection::stream)
+                .ifPresent(handlers ->
+                        handlers.forEach(h -> {
+                            availableSystemPropertyNames.addAll(h.getHandledProperties());
+                            h.setSettingsService(this);
+                        })
+                );
     }
 
     public Optional<String> getProperty(String name) {
