@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.core.AnnotationRelProvider;
@@ -141,6 +140,8 @@ public abstract class ApiTestBase {
 
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
+
+    public static final String DEFAULT_CURRENCY_URL = API_BASE_URL + "/currency";
 
     @PersistenceContext(unitName="blPU")
     protected EntityManager em;
