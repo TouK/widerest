@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class, inheritInitializers = false)
 @RunWith(SpringJUnit4ClassRunner.class)
 @Slf4j
 public class MultiTenantAuthTest extends ApiTestBase {
