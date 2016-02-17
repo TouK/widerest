@@ -1158,9 +1158,9 @@ public class ProductController {
     })
     public ResponseEntity<Integer> getSkuByIdQuantity(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-                @PathVariable(value = "skuId") Long skuId) {
+                @PathVariable(value = "skuId") final Long skuId) {
 
 
         final int skuQuantity = Optional.ofNullable(catalogService.findProductById(productId))
@@ -1196,8 +1196,6 @@ public class ProductController {
             @ApiParam(value = "Quantity of a specific SKU")
             @RequestBody int quantity)
     {
-         /* TODO: (mst) Inventory Service??? */
-
         Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
@@ -1446,14 +1444,14 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of media details", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public List<MediaDto> getMediaBySkuId(
+    public Resources<MediaDto> getMediaBySkuId(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId) {
-
-
-        return Optional.ofNullable(catalogService.findProductById(productId))
+                @PathVariable(value = "skuId") final Long skuId
+    ) {
+        return new Resources<>(
+                Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
@@ -1462,9 +1460,13 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId))
                 .getSkuMediaXref().entrySet().stream()
                 .map(Map.Entry::getValue)
-                .map(SkuMediaXref::getMedia)
-                .map(media -> mediaConverter.createDto(media, true))
-                .collect(toList());
+                .map(skuMediaXref -> {
+                    final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true);
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(productId, skuId)).withSelfRel());
+                    return mediaDto;
+                })
+                .collect(toList())
+        );
     }
 
     /* GET /products/{productId}/skus/{skuId}/media/{key} */
@@ -1503,7 +1505,11 @@ public class ProductController {
 
         return Optional.ofNullable(sku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
-                .map(media -> mediaConverter.createDto(media, false))
+                .map(media -> {
+                    final MediaDto mediaDto = mediaConverter.createDto(media, false);
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(productId, skuId, key)).withSelfRel());
+                    return mediaDto;
+                })
                 .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " for this sku"));
     }
 
