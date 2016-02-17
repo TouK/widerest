@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 
 import com.google.common.collect.Lists;
@@ -43,7 +44,8 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo)
                 .select().paths(regex("/v1/.*")).build()
                 .consumes(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
-                .produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
+                //.produces(Sets.newHashSet(MediaType.APPLICATION_JSON_VALUE))
+                .produces(Sets.newHashSet(MediaTypes.HAL_JSON_VALUE))
                 .securityContexts(Lists.newArrayList(apiSecurityContext()))
                 .securitySchemes(Lists.newArrayList(apiImplicitScheme()));
 

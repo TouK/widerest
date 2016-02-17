@@ -77,7 +77,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/products", produces = { MediaTypes.HAL_JSON_VALUE })
-@Api(value = "products", description = "Product catalog endpoint")
+@Api(value = "products", description = "Product catalog endpoint", produces = MediaTypes.HAL_JSON_VALUE)
 public class ProductController {
 
 //    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
@@ -115,7 +115,7 @@ public class ProductController {
     @Resource
     protected MediaConverter mediaConverter;
 
-//    /* GET /products */
+    /* GET /products */
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(method = RequestMethod.GET)
@@ -123,23 +123,24 @@ public class ProductController {
             value = "List all products",
             notes = "Gets a list of all available products in the catalog",
             response = ProductDto.class,
-            responseContainer = "List")
+            responseContainer = "List"
+    )
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of products list", response = ProductDto.class, responseContainer = "List"),
             @ApiResponse(code = 400, message = "Invalid query text")
     })
     public ResponseEntity<Resources<ProductDto>> getAllProducts(
             @ApiParam(value = "Amount of products to be returned")
-            @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit,
+                @RequestParam(value = "limit", required = false, defaultValue = "100") final Integer limit,
             @ApiParam(value = "Offset which to  start returning products from")
-            @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+                @RequestParam(value = "offset", required = false, defaultValue = "0") final Integer offset,
             @ApiParam(value = "Search query text")
-            @RequestParam(value = "q", required = false) String q,
+                @RequestParam(value = "q", required = false) final String q,
             @ApiParam(value = "Amount of items per page (applies only to searching)")
-            @RequestParam(value = "pageSize", defaultValue = "15") Integer pageSize,
+                @RequestParam(value = "pageSize", defaultValue = "15") final Integer pageSize,
             @ApiParam(value = "Page number to return (applies only to searching)")
-            @RequestParam(value = "page", defaultValue = "1") Integer page) {
-
+                @RequestParam(value = "page", defaultValue = "1") final Integer page
+    ) {
 
         List<Product> productsToReturn;
 
