@@ -65,14 +65,14 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         // when: adding a new product without a specified category
-        final long currentProductsCount = getRemoteTotalProductsCount();
+        final long currentProductsCount = getLocalTotalProductsCount();
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
         final ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
         final long productId = getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
+        assertThat(getLocalTotalProductsCount(), equalTo(currentProductsCount + 1));
 
         final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
                 PRODUCT_BY_ID_URL,
@@ -94,7 +94,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Ignore("considering allowing duplicate names")
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         // when: adding the same (new) product twice
-        final long currentProductCount = getRemoteTotalProductsCount();
+        final long currentProductCount = getLocalTotalProductsCount();
         final ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
         final ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -105,7 +105,7 @@ public class ProductControllerTest extends ApiTestBase {
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertTrue(httpClientException.getStatusCode().is4xxClientError());
-            assertThat(getRemoteTotalProductsCount(), equalTo(currentProductCount + 1));
+            assertThat(getLocalTotalProductsCount(), equalTo(currentProductCount + 1));
         }
 
     }
@@ -113,13 +113,13 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void successfullyDeletingNewlyCreatedProductTest() {
         // when: adding a new product and then deleting it
-        final long currentProductsCount = getRemoteTotalProductsCount();
+        final long currentProductsCount = getLocalTotalProductsCount();
         final ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
         final ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
         final long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount + 1));
+        assertThat(getLocalTotalProductsCount(), equalTo(currentProductsCount + 1));
 
         oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString());
 
@@ -133,7 +133,7 @@ public class ProductControllerTest extends ApiTestBase {
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
         }
 
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentProductsCount));
+        assertThat(getLocalTotalProductsCount(), equalTo(currentProductsCount));
     }
 
     @Test
@@ -143,13 +143,13 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
-        final long currentGlobalProductsCount = getRemoteTotalProductsCount();
+        final long currentGlobalProductsCount = getLocalTotalProductsCount();
         final  ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
         // then: no new product gets created
-        assertThat(getRemoteTotalProductsCount(), equalTo(currentGlobalProductsCount));
+        assertThat(getLocalTotalProductsCount(), equalTo(currentGlobalProductsCount));
     }
 
     @Test
@@ -211,7 +211,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void addingNewProductWihoutDefaultSKUCausesExceptionTest() {
         // when: adding a new product without default SKu
-        final long currentProductsCount = getRemoteTotalProductsCount();
+        final long currentProductsCount = getLocalTotalProductsCount();
         final ProductDto productWihtoutDefaultSkuDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         //productWihtoutDefaultSkuDto.setDefaultSku(null);
 
@@ -225,7 +225,7 @@ public class ProductControllerTest extends ApiTestBase {
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.BAD_REQUEST));
-            assertThat(currentProductsCount, equalTo(getRemoteTotalProductsCount()));
+            assertThat(currentProductsCount, equalTo(getLocalTotalProductsCount()));
         }
     }
 
@@ -239,10 +239,14 @@ public class ProductControllerTest extends ApiTestBase {
 
         final String createdProductUrlString = addedProductEntity.getHeaders().getLocation().toString();
         final long productId = getIdFromLocationUrl(createdProductUrlString);
-        assertThat(getRemoteTotalSkusForProductCount(productId), equalTo(1L));
+        assertThat(getLocalTotalSkusForProductCount(productId), equalTo(1L));
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-        addNewTestSKUToProduct(productId, additionalSkuDto);
+        final ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
+        assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        em.clear();
+
         // then: total number of SKUs for that product should increase
         assertThat(getLocalTotalSkusForProductCount(productId), equalTo(2L));
     }
@@ -592,6 +596,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
+    @Ignore("Commented out Bundle endpoints for now")
     public void creatingProductBundleSavesPotentialSavingsProperlyTest() {
         // when: creating a bundle out of two products with a given prices
         final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
@@ -674,6 +679,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
     @Test
+    @Ignore("Commented out Bundle endpoints for now")
     public void creatingABundleFromNonExistingSkusThrowsExceptionTest() {
         // when: creating a bundle with any of its SKU ids refering to a non existing SKU
         final long NON_EXISTING_SKU_ID = 9999999;
