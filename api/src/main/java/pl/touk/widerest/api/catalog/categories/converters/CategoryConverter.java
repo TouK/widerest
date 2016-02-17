@@ -38,6 +38,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
     @Resource
     protected MediaConverter mediaConverter;
 
+
     @Override
     public CategoryDto createDto(Category entity, boolean embed) {
         final CategoryDto dto = CategoryDto.builder()
@@ -49,7 +50,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                         .orElse(null))
                 .attributes(entity.getCategoryAttributesMap().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> DtoConverters.categoryMediaXrefToDto.apply(e.getValue()))))
+                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia(), false))))
                 .build();
 
 

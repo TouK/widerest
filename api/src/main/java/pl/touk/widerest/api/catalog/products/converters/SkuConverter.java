@@ -1,6 +1,5 @@
 package pl.touk.widerest.api.catalog.products.converters;
 
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
@@ -12,14 +11,12 @@ import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
-import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.api.catalog.products.ProductController;
 
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -37,6 +34,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
     @Resource
     protected MediaConverter mediaConverter;
+
+    @Resource(name = "wdDtoConverters")
+    protected DtoConverters dtoConverters;
     
     @Override
     public SkuDto createDto(final Sku sku, final boolean embed) {
@@ -87,7 +87,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     public Sku createEntity(final SkuDto skuDto) {
         final Sku skuEntity = new SkuImpl();
 
-        skuEntity.setCurrency(currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
+        skuEntity.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
 
         return updateEntity(skuEntity, skuDto);
     }
@@ -156,22 +156,4 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
         throw new UnsupportedOperationException();
     }
 
-    private Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
-        BroadleafCurrency skuCurrency = null;
-
-        if(currencyCode == null || currencyCode.isEmpty()) {
-            skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
-        } else {
-            skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
-
-            if (skuCurrency == null) {
-//                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
-//                newBLCurrency.setCurrencyCode(currencyCode);
-//                skuCurrency = blCurrencyService.save(newBLCurrency);
-                throw new ResourceNotFoundException("Invalid currency code.");
-            }
-
-        }
-        return skuCurrency;
-    };
 }

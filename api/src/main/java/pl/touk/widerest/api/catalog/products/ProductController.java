@@ -338,35 +338,16 @@ public class ProductController {
             response = Void.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "A new product successfully created"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided - validation exception"),
             @ApiResponse(code = 409, message = "Product already exists")
     })
     public ResponseEntity<?> addOneProduct(
             @ApiParam(value = "Description of a new product", required = true)
             @RequestBody ProductDto productDto) {
 
-        /* (mst) every new Product has to have at least a DefaultSKU and a name */
-
-        try {
-            CatalogUtils.validateProductDto(productDto);
-        } catch (final DtoValidationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-
-//        if (productDto.getName() == null || productDto.getName().isEmpty() || productDto.getDefaultSku() == null) {
-//            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-//        }
-
-//        if (!productDto.getName().equals(productDto.getDefaultSku().getName())) {
-//            productDto.getDefaultSku().setName(productDto.getName());
-//        }
-
-//        if (hasDuplicates(productDto.getName())) {
-//            throw new DtoValidationException("Provided bundle already exists");
-//        }
+        CatalogUtils.validateProductDto(productDto);
 
         Product newProduct = productConverter.createEntity(productDto);
-
 
         newProduct.getDefaultSku().setInventoryType(InventoryType.ALWAYS_AVAILABLE);
 
@@ -377,7 +358,6 @@ public class ProductController {
                  Otherwise just ignore it.
 
          */
-
         setCategoryIfPresent(productDto, newProduct);
 
         final Product productParam = newProduct;
@@ -386,10 +366,9 @@ public class ProductController {
 
         newProduct = catalogService.saveProduct(newProduct);
 
-
         if (productDto.getSkus() != null && !productDto.getSkus().isEmpty()) {
 
-            List<Sku> savedSkus = new ArrayList<>();
+            final List<Sku> savedSkus = new ArrayList<>();
             savedSkus.addAll(newProduct.getAllSkus());
 
             for (SkuDto skuDto : productDto.getSkus()) {

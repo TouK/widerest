@@ -16,8 +16,8 @@ import pl.touk.widerest.api.BaseDto;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonRootName("media")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Media", description = "Media DTO resource representation")
 public class MediaDto extends BaseDto {
@@ -35,8 +35,4 @@ public class MediaDto extends BaseDto {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 3, value = "Tags describing the media", dataType = "java.lang.String")
     private String tags;
-
-//    @ApiModelProperty(position = 4, value = "Key of the media", required = true, dataType = "java.lang.String")/*,
-//            allowableValues = "[\"primary\", \"alt1\", \"alt2\", \"alt3\", \"alt4\", \"alt5\", \"alt6\", \"alt7\", \"alt8\", \"alt9\"]")*/
-//    private String key;
 }

@@ -69,6 +69,7 @@ import javaslang.control.Match;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
+import pl.touk.widerest.api.cart.orders.converters.DiscreteOrderItemConverter;
 import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
@@ -135,6 +136,9 @@ public class OrderController {
 
     @Resource
     private OrderConverter orderConverter;
+
+    @Resource
+    private DiscreteOrderItemConverter discreteOrderItemConverter;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
@@ -422,7 +426,7 @@ public class OrderController {
             @PathVariable(value = "orderId") Long orderId) {
 
         return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
-                .map(DtoConverters.discreteOrderItemEntityToDto)
+                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
                 .collect(toList());
 
     }
@@ -538,7 +542,7 @@ public class OrderController {
         return orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new)
                 .getDiscreteOrderItems().stream()
                 .filter(x -> Objects.equals(x.getId(), itemId)).findAny()
-                .map(DtoConverters.discreteOrderItemEntityToDto)
+                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find the item in card with ID: " + itemId));
 
     }

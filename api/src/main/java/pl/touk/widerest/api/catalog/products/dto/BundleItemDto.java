@@ -27,5 +27,4 @@ public class BundleItemDto extends ResourceSupport {
 
     @ApiModelProperty(position = 2, value = "Sale price for this item when selling as part of a bundle", required = true, dataType = "java.math.BigDecimal")
     private BigDecimal salePrice;
-
 }

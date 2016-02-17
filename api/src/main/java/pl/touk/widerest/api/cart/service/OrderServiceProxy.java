@@ -52,7 +52,7 @@ public class OrderServiceProxy {
     private CustomerService customerService;
 
     @Resource(name = "wdfulfilmentService")
-    FulfilmentServiceProxy fulfillmentServiceProxy;
+    private FulfilmentServiceProxy fulfillmentServiceProxy;
 
     @Resource
     private AddressConverter addressConverter;
@@ -142,12 +142,13 @@ public class OrderServiceProxy {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
-        OrderItemRequestDTO orderItemRequestDto = new OrderItemRequestDTO();
+        final OrderItemRequestDTO orderItemRequestDto = new OrderItemRequestDTO();
         orderItemRequestDto.setQuantity(quantity);
         orderItemRequestDto.setOrderItemId(itemId);
 
-
         orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
+
+
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

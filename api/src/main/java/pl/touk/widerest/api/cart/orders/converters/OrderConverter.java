@@ -30,6 +30,9 @@ public class OrderConverter implements Converter<Order, OrderDto> {
     @Resource
     private OrderPaymentConverter orderPaymentConverter;
 
+    @Resource
+    private DiscreteOrderItemConverter discreteOrderItemConverter;
+
     @Override
     public OrderDto createDto(final Order order, final boolean embed) {
         final OrderDto orderDto = OrderDto.builder()
@@ -39,7 +42,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                 .orderPaymentDto(order.getPayments().stream()
                         .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, false)).collect(Collectors.toList()))
                 .orderItems(order.getDiscreteOrderItems().stream()
-                        .map(DtoConverters.discreteOrderItemEntityToDto)
+                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
                         .collect(Collectors.toList()))
 //                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(Money.toAmount(order.getTotal()))

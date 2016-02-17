@@ -6,6 +6,7 @@ import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
@@ -89,33 +90,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         dto.setSkus(product.getAdditionalSkus().stream()
                 .map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
-
-
-		/* TODO: (mst) Implement Possible Bundles */
-
-		/*
-		 * Collection<ProductBundle> possibleBundles = Lists.transform(
-		 * ((VirginSkuImpl) defaultSku).getSkuBundleItems(), new
-		 * Function<SkuBundleItem, ProductBundle>() {
-		 *
-		 * @Nullable
-		 *
-		 * @Override public ProductBundle apply(@Nullable SkuBundleItem input) {
-		 * return input.getBundle(); } } ); possibleBundles =
-		 * Collections2.filter( possibleBundles, new Predicate<ProductBundle>()
-		 * {
-		 *
-		 * @Override public boolean apply(@Nullable ProductBundle input) {
-		 * return ((VirginSku) input.getDefaultSku()).getDefaultProductBundle()
-		 * == null; } } );
-		 * dto.setPossibleBundles(Lists.newArrayList(Iterables.transform(
-		 * possibleBundles, new Function<ProductBundle, Long>() {
-		 *
-		 * @Nullable
-		 *
-		 * @Override public Long apply(@Nullable ProductBundle input) { return
-		 * input.getId(); } } )));
-		 */
 
         if (dto instanceof ProductBundleDto) {
             ProductBundle productBundle = (ProductBundle) product;

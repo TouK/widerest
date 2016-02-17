@@ -42,10 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
@@ -56,7 +53,6 @@ public class ProductControllerTest extends ApiTestBase {
 
     @Before
     public void initProductTests() {
-        //serverPort = String.valueOf(8080);
         cleanupProductTests();
     }
 
@@ -68,6 +64,21 @@ public class ProductControllerTest extends ApiTestBase {
         final long currentProductsCount = getLocalTotalProductsCount();
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+
+        final MediaDto mediaDto1 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        final MediaDto mediaDto2 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+        final MediaDto mediaDto3 = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
+
+
+        productDto.setRetailPrice(BigDecimal.valueOf(99.33f));
+        productDto.setCurrencyCode(null);
+
+        productDto.setSkuMedia(new HashMap<>());
+        productDto.getSkuMedia().put("primary", mediaDto1);
+        productDto.getSkuMedia().put("alt1", mediaDto2);
+        productDto.getSkuMedia().put("alt2", mediaDto3);
+
+
         final ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
         final long productId = getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
@@ -84,10 +95,28 @@ public class ProductControllerTest extends ApiTestBase {
 
         // then: all of the provided product values should have been saved/set correctly
         assertThat(receivedProductDto.getName(), equalTo(productDto.getName()));
+        assertThat(receivedProductDto.getLongDescription(), equalTo(productDto.getLongDescription()));
         assertThat(receivedProductDto.getDescription(), equalTo(productDto.getDescription()));
+        assertNull(receivedProductDto.getCategoryName());
+        assertThat(receivedProductDto.getTaxCode(), equalTo(productDto.getTaxCode()));
+        assertNotNull(receivedProductDto.getCurrencyCode());
         assertThat(receivedProductDto.getModel(), equalTo(productDto.getModel()));
+        assertThat(receivedProductDto.getManufacturer(), equalTo(productDto.getManufacturer()));
+        assertThat(receivedProductDto.getValidFrom(), equalTo(productDto.getValidFrom()));
         assertThat(receivedProductDto.getSalePrice().longValue(), equalTo(productDto.getSalePrice().longValue()));
         assertThat(receivedProductDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
+        assertThat(receivedProductDto.getRetailPrice().longValue(), equalTo(productDto.getRetailPrice().longValue()));
+
+
+        final Map<String, MediaDto> receivedDefaultSkuMediaDto = receivedProductDto.getSkuMedia();
+        assertThat(receivedDefaultSkuMediaDto.size(), equalTo(3));
+
+        assertThat(receivedDefaultSkuMediaDto.get("primary").getTitle(), equalTo(mediaDto1.getTitle()));
+        assertThat(receivedDefaultSkuMediaDto.get("primary").getUrl(), equalTo(mediaDto1.getUrl()));
+        assertThat(receivedDefaultSkuMediaDto.get("alt1").getTitle(), equalTo(mediaDto2.getTitle()));
+        assertThat(receivedDefaultSkuMediaDto.get("alt1").getUrl(), equalTo(mediaDto2.getUrl()));
+        assertThat(receivedDefaultSkuMediaDto.get("alt2").getTitle(), equalTo(mediaDto3.getTitle()));
+        assertThat(receivedDefaultSkuMediaDto.get("alt2").getUrl(), equalTo(mediaDto3.getUrl()));
     }
 
     @Test

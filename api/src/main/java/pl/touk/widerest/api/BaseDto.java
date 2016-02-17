@@ -9,14 +9,14 @@ import java.util.List;
 
 public class BaseDto extends ResourceSupport {
 
-    @ApiModelProperty(hidden = true)
     @Override
+    @ApiModelProperty(hidden = true)
     public List<Link> getLinks() {
         return super.getLinks();
     }
 
-    @ApiModelProperty(hidden = true)
     @Override
+    @ApiModelProperty(hidden = true)
     public List<EmbeddedResource> getEmbeddedResources() {
         return super.getEmbeddedResources();
     }
