@@ -893,72 +893,214 @@ public class ProductController {
                 .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
     }
 
-    /* GET /products/{productId}/skus/default */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Get default SKU details",
-            notes = "Gets details of a default SKU belonging to a specified product",
-            response = SkuDto.class
-    )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
-            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
-    })
-    public SkuDto getDefaultSkuByProductId(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId) {
-
-        return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .map(Product::getDefaultSku)
-                .map(sku -> skuConverter.createDto(sku, false))
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-    }
+//    /* GET /products/{productId}/skus/default */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get default SKU details",
+//            notes = "Gets details of a default SKU belonging to a specified product",
+//            response = SkuDto.class
+//    )
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of SKU details"),
+//            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+//    })
+//    public SkuDto getDefaultSkuByProductId(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//        return Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .map(Product::getDefaultSku)
+//                .map(sku -> skuConverter.createDto(sku, false))
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+//    }
 
     /* PUT /products/{productId}/skus/default */
+//    @Transactional
+//    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+//    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.PUT)
+//    @ApiOperation(
+//            value = "Update default SKU",
+//            notes = "Updates an existing default SKU with new details",
+//            response = SkuDto.class
+//    )
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 201, message = "Successful replace of default SKU details"),
+//            @ApiResponse(code = 404, message = "The specified Product does not exist"),
+//            @ApiResponse(code = 409, message = "Sku validation error")
+//    })
+//    public ResponseEntity<?> changeDefaultSkuByProductId(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//            @PathVariable(value = "productId") Long productId,
+//            @ApiParam(value = "Description of a new default SKU", required = true)
+//            @RequestBody SkuDto defaultSkuDto) {
+//
+//        CatalogUtils.validateSkuPrices(defaultSkuDto.getSalePrice(), defaultSkuDto.getRetailPrice());
+//
+//        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+//
+//        final Sku defaultSKU = skuConverter.updateEntity(product.getDefaultSku(), defaultSkuDto);
+//
+//        defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
+//
+//        //defaultSKU.setProduct(product);
+//        final Sku savedSKU = catalogService.saveSku(defaultSKU);
+//
+//        //product.setDefaultSku(newSkuEntity);
+//        //catalogService.saveProduct(product);
+//
+//        return ResponseEntity.created(
+//                ServletUriComponentsBuilder.fromCurrentRequest()
+//                        .path("/products/{productId}/skus/{skuId}")
+//                        .buildAndExpand(productId, savedSKU.getId())
+//                        .toUri()
+//        ).build();
+//    }
+
+
+    /* GET /products/{productId}/media */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/default", method = RequestMethod.PUT)
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/media", method = RequestMethod.GET)
     @ApiOperation(
-            value = "Update default SKU",
-            notes = "Updates an existing default SKU with new details",
-            response = SkuDto.class
+            value = "List default SKU's media",
+            notes = "Gets a list of all medias belonging to a specified product's default SKU",
+            response = MediaDto.class,
+            responseContainer = "List"
     )
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful replace of default SKU details"),
-            @ApiResponse(code = 404, message = "The specified Product does not exist"),
-            @ApiResponse(code = 409, message = "Sku validation error")
+            @ApiResponse(code = 200, message = "Successful retrieval of media details", responseContainer = "List"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public ResponseEntity<?> changeDefaultSkuByProductId(
+    public List<MediaDto> getProductDefaultSkuMedias(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
-            @ApiParam(value = "Description of a new default SKU", required = true)
-            @RequestBody SkuDto defaultSkuDto) {
-
-        CatalogUtils.validateSkuPrices(defaultSkuDto.getSalePrice(), defaultSkuDto.getRetailPrice());
-
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
+            @PathVariable(value = "productId") final Long productId
+    ) {
+        return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getDefaultSku()
+                .getSkuMediaXref().entrySet().stream()
+                .map(Map.Entry::getValue)
+                .map(SkuMediaXref::getMedia)
+                .map(media -> mediaConverter.createDto(media, true))
+                .collect(toList());
+    }
 
-        final Sku defaultSKU = skuConverter.updateEntity(product.getDefaultSku(), defaultSkuDto);
+    /* GET /products/{productId}/media/{key} */
+    @Transactional
+    @PreAuthorize("permitAll")
+    @RequestMapping(value = "/{productId}/media/{key}", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Get a single media details",
+            notes = "Gets details of a particular media belonging to a specified product's default SKU",
+            response = MediaDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of media details"),
+            @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
+    })
+    public MediaDto getProductDefaultSkuMedia(
+            @ApiParam(value = "ID of a specific product", required = true)
+            @PathVariable(value = "productId") final Long productId,
+            @ApiParam(value = "ID of a specific media", required = true)
+            @PathVariable(value = "key") final String key
+    ) {
 
-        defaultSKU.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(defaultSkuDto.getCurrencyCode()));
+        final Sku productDefaultSku = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getDefaultSku();
 
-        //defaultSKU.setProduct(product);
-        final Sku savedSKU = catalogService.saveSku(defaultSKU);
+        return Optional.ofNullable(productDefaultSku.getSkuMediaXref().get(key))
+                .map(SkuMediaXref::getMedia)
+                .map(media -> mediaConverter.createDto(media, false))
+                .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " exists for this product"));
+    }
 
-        //product.setDefaultSku(newSkuEntity);
-        //catalogService.saveProduct(product);
+    /* DELETE /products/{productId}/media/{key} */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/media/key", method = RequestMethod.DELETE)
+    @ApiOperation(
+            value = "Delete an existing media",
+            notes = "Removes a specific media related to the specified SKU",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "Successful removal of the specified media"),
+            @ApiResponse(code = 404, message = "The specified media, SKU or product does not exist")
+    })
+    public ResponseEntity<?> deleteOneMediaForSkuById(
+            @ApiParam(value = "ID of a specific product", required = true)
+            @PathVariable(value = "productId") final Long productId,
+            @ApiParam(value = "ID of a specific media", required = true)
+            @PathVariable(value = "key") final String key
+    ) {
 
-        return ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/products/{productId}/skus/{skuId}")
-                        .buildAndExpand(productId, savedSKU.getId())
-                        .toUri()
-        ).build();
+        final Sku productDefaultSku = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getDefaultSku();
+
+        final SkuMediaXref skuMediaXrefToBeRemoved = Optional.ofNullable(productDefaultSku.getSkuMediaXref().remove(key))
+                .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + "for this sku"));
+
+        genericEntityService.remove(skuMediaXrefToBeRemoved);
+        catalogService.saveSku(productDefaultSku);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /* PUT /{productId}/skus/{skuId}/media/{key} */
+    @Transactional
+    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @RequestMapping(value = "/{productId}/media/{key}", method = RequestMethod.PUT)
+    @ApiOperation(
+            value = "Create new or update existing media",
+            notes = "Updates an existing media with new details. If the media does not exist, it creates it!",
+            response = Void.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successful update of the specified media"),
+            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+            @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
+    })
+    public ResponseEntity<?> updateOneMediaForSkuById(
+            @ApiParam(value = "ID of a specific product", required = true)
+                @PathVariable(value = "productId") final Long productId,
+            @ApiParam(value = "ID of a specific media", required = true)
+                @PathVariable(value = "key") final String key,
+            @ApiParam(value = "(Full) Description of an updated media")
+                @RequestBody final MediaDto mediaDto
+    ) {
+
+        if (mediaDto.getUrl() == null || mediaDto.getUrl().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        final Sku productDefaultSku = Optional.ofNullable(catalogService.findProductById(productId))
+                .filter(CatalogUtils::archivedProductFilter)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+                .getDefaultSku();
+
+        Optional.ofNullable(productDefaultSku.getSkuMediaXref().remove(key))
+                .ifPresent(genericEntityService::remove);
+
+
+        final Media mediaEntity = mediaConverter.createEntity(mediaDto);
+
+        final SkuMediaXref newSkuMediaXref = new SkuMediaXrefImpl();
+        newSkuMediaXref.setMedia(mediaEntity);
+        newSkuMediaXref.setSku(productDefaultSku);
+        newSkuMediaXref.setKey(key);
+        productDefaultSku .getSkuMediaXref().put(key, newSkuMediaXref);
+
+        catalogService.saveSku(productDefaultSku );
+
+        return ResponseEntity.ok().build();
     }
 
 
