@@ -184,7 +184,9 @@ public class ProductController {
                 new Resources<>(productsToReturn.stream()
                                 .filter(CatalogUtils::archivedProductFilter)
                                 .map(product -> productConverter.createDto(product, false))
-                                .collect(toList())
+                                .collect(toList()),
+
+                        linkTo(methodOn(getClass()).getAllProducts(limit, offset, q, pageSize, page)).withSelfRel()
                 )
         );
     }
@@ -973,7 +975,9 @@ public class ProductController {
                     mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, skuMediaXref.getKey())).withSelfRel());
                     return mediaDto;
                 })
-                .collect(toList())
+                .collect(toList()),
+
+                linkTo(methodOn(getClass()).getProductDefaultSkuMedias(productId)).withSelfRel()
         );
     }
 
@@ -1444,7 +1448,9 @@ public class ProductController {
                     mediaDto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(productId, skuId)).withSelfRel());
                     return mediaDto;
                 })
-                .collect(toList())
+                .collect(toList()),
+
+                linkTo(methodOn(getClass()).getMediaBySkuId(productId, skuId)).withSelfRel()
         );
     }
 

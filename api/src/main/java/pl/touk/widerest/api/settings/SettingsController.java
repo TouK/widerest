@@ -59,10 +59,11 @@ public class SettingsController {
             @ApiResponse(code = 404, message = "There is no system property for the key")
     })
     public Resources<PropertyDto> listAll() {
-        return new Resources(
+        return new Resources<>(
                 settingsService.getAvailableSystemPropertyNames().stream()
                         .map(name -> propertyConverter.createDto(name, false))
                         .collect(Collectors.toList()),
+
                 linkTo(methodOn(getClass()).listAll()).withSelfRel()
         );
 
