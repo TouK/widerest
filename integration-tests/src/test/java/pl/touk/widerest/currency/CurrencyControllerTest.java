@@ -6,14 +6,12 @@ import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
 import pl.touk.widerest.api.catalog.exceptions.CurrencyNotFoundException;
 import pl.touk.widerest.base.ApiTestBase;
-import pl.touk.widerest.base.Application;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import java.io.IOException;
@@ -24,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringApplicationConfiguration(classes = Application.class)
 public class CurrencyControllerTest extends ApiTestBase {
 
     @Test
@@ -44,7 +41,7 @@ public class CurrencyControllerTest extends ApiTestBase {
         whenLoggedIn("backoffice", "admin", "admin");
         whenAuthorizationRequestedFor(Scope.STAFF);
 
-        final String SETTING_VALUE = "pln";
+        final String SETTING_VALUE = "eur";
 
         oAuth2RestTemplate.put(DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
 

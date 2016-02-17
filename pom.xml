@@ -179,12 +179,6 @@
 
             <dependency>
                 <groupId>pl.touk</groupId>
-                <artifactId>spring-boot-multitenancy</artifactId>
-                <version>0.1.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>pl.touk</groupId>
                 <artifactId>throwing-function</artifactId>
                 <version>1.2</version>
             </dependency>
@@ -193,12 +187,6 @@
                 <groupId>org.springframework.security.oauth</groupId>
                 <artifactId>spring-security-oauth2</artifactId>
                 <version>2.0.7.RELEASE</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.auth0</groupId>
-                <artifactId>spring-security-auth0</artifactId>
-                <version>0.2</version>
             </dependency>
 
             <dependency>
@@ -242,54 +230,10 @@
             </dependency>
 
             <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>jquery</artifactId>
-                <version>2.1.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>html5shiv</artifactId>
-                <version>3.7.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>respond</artifactId>
-                <version>1.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>webjars-locator</artifactId>
-                <version>0.26</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.paypal.sdk</groupId>
-                <artifactId>rest-api-sdk</artifactId>
-                <version>1.2.5</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>9.4-1202-jdbc42</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-client</artifactId>
                 <classifier>shaded</classifier>
                 <version>2.7.7</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.liquibase</groupId>
-                <artifactId>liquibase-core</artifactId>
-                <version>3.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.mattbertolini</groupId>
-                <artifactId>liquibase-slf4j</artifactId>
-                <version>1.2.1</version>
             </dependency>
 
             <dependency>
@@ -302,11 +246,6 @@
                 <groupId>org.atteo</groupId>
                 <artifactId>evo-inflector</artifactId>
                 <version>1.2.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.cloudinary</groupId>
-                <artifactId>cloudinary-http44</artifactId>
-                <version>1.2.2</version>
             </dependency>
 
             <dependency>
@@ -322,7 +261,6 @@
         <module>blc-deps</module>
         <module>core</module>
         <module>api</module>
-        <module>paypal</module>
         <module>app</module>
         <module>integration-tests</module>
         <module>boot</module>

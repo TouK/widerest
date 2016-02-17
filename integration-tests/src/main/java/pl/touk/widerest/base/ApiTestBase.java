@@ -48,6 +48,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.dto.OrderDto;
 import pl.touk.widerest.api.cart.dto.OrderItemDto;
@@ -80,7 +81,7 @@ import static org.junit.Assert.assertThat;
 
 @SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
 @WebIntegrationTest({
-        "server.port:0", "auth0.domain:false", "management.port:0"
+        "server.port:0"
 })
 public abstract class ApiTestBase {
 
