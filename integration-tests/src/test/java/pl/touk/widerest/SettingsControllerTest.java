@@ -15,6 +15,7 @@ import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.Collection;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -26,15 +27,15 @@ import static org.junit.Assert.assertThat;
 public class SettingsControllerTest extends ApiTestBase {
 
     @Resource
-    protected SettingsConsumer settingsConsumer;
+    protected Collection<SettingsConsumer> settingsConsumers;
 
     @Test
-    public void shouldSetAKnownPropertyTest() throws IOException {
+    public void  shouldSetAKnownPropertyTest() throws IOException {
 
         whenLoggedIn("backoffice", "admin", "admin");
         whenAuthorizationRequestedFor(Scope.STAFF);
 
-        final String propertyKey = settingsConsumer.getHandledProperties().iterator().next();
+        final String propertyKey = settingsConsumers.iterator().next().getHandledProperties().iterator().next();
         final String propertyValue = "value";
 
 

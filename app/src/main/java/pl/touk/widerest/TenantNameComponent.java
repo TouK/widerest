@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.tenant;
+package pl.touk.widerest;
 
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Controller;

@@ -11,9 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
-import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.exceptions.CurrencyNotFoundException;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.Application;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import java.io.IOException;
