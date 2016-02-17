@@ -135,8 +135,17 @@ public abstract class ApiTestBase {
     public static final String SETTINGS_URL = API_BASE_URL + "/settings";
     public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
 
+    public static final String DEFAULT_CURRENCY_URL = API_BASE_URL + "/currency";
+
     @PersistenceContext(unitName="blPU")
     protected EntityManager em;
+
+    public static final String PICTURE_UPLOAD_TOKEN_URL = API_BASE_URL + "/pictureUpload/requestToken";
+
+    public static final String GET_DEFAULT_CURRENCY_URL = API_BASE_URL + "/currency";
+
+    public static final String SET_DEFAULT_CURRENCY_URL = API_BASE_URL + "/currency/set/";
+
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
