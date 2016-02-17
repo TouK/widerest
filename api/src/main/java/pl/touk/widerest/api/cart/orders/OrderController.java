@@ -44,6 +44,8 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -89,8 +91,8 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 @RestController
-@RequestMapping(ResourceServerConfig.API_PATH + "/orders")
-@Api(value = "orders", description = "Order management endpoint")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/orders", produces = { MediaTypes.HAL_JSON_VALUE })
+@Api(value = "orders", description = "Order management endpoint", produces = MediaTypes.HAL_JSON_VALUE)
 public class OrderController {
 
     private static final Log LOG = LogFactory.getLog(OrderController.class);
@@ -118,9 +120,6 @@ public class OrderController {
 
     @Resource(name = "wdOrderValidationService")
     private OrderValidationService orderValidationService;
-
-    @Resource(name = "blInventoryService")
-    private InventoryService inventoryService;
 
     @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
     private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
@@ -154,15 +153,17 @@ public class OrderController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of orders list", responseContainer = "List")
     })
-    public List<OrderDto> getOrders(
+    public Resources<OrderDto> getOrders(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "Status to be used to filter orders")
             @RequestParam(value = "status", required = false) String status) {
 
-        return orderServiceProxy.getOrdersByCustomer(userDetails).stream()
+        return new Resources<>(
+                orderServiceProxy.getOrdersByCustomer(userDetails).stream()
                 .map(order -> orderConverter.createDto(order, false))
                 .filter(x -> status == null || x.getStatus().equals(status))
-                .collect(toList());
+                .collect(toList())
+        );
     }
 
     /* GET /orders/{orderId} */
@@ -420,51 +421,53 @@ public class OrderController {
             @ApiResponse(code = 201, message = "Successful retrieval of all items in a given category", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified order does not exist")
     })
-    public List<DiscreteOrderItemDto> getAllItemsInOrder(
+    public Resources<DiscreteOrderItemDto> getAllItemsInOrder(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId) {
 
-        return orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
+        return new Resources<>(
+                orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
                 .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
-                .collect(toList());
+                .collect(toList())
+        );
 
     }
 
     /* GET /orders/{orderId}/items/count */
-    @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count all items in the order",
-            notes = "Gets a number of all items placed already in the specified order",
-            response = Integer.class)
-    public ResponseEntity<Integer> getItemsCountByOrderId(
-            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
-            @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "id") Long orderId) {
-
-        final int itemsInOrderCount = orderServiceProxy.getProperCart(userDetails, orderId)
-                .orElseThrow(ResourceNotFoundException::new)
-                .getItemCount();
-
-        return ResponseEntity.ok(itemsInOrderCount);
-    }
-
-    @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count all orders",
-            notes = "Get a number of all active orders",
-            response = Integer.class)
-    public ResponseEntity<String> getOrdersCount(
-            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
-
-        final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
-
-        return ResponseEntity.ok(ordersCount);
-    }
+//    @Transactional
+//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Count all items in the order",
+//            notes = "Gets a number of all items placed already in the specified order",
+//            response = Integer.class)
+//    public ResponseEntity<Integer> getItemsCountByOrderId(
+//            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+//            @ApiParam(value = "ID of a specific order", required = true)
+//            @PathVariable(value = "id") Long orderId) {
+//
+//        final int itemsInOrderCount = orderServiceProxy.getProperCart(userDetails, orderId)
+//                .orElseThrow(ResourceNotFoundException::new)
+//                .getItemCount();
+//
+//        return ResponseEntity.ok(itemsInOrderCount);
+//    }
+//
+//    @Transactional
+//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @RequestMapping(value = "/count", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Count all orders",
+//            notes = "Get a number of all active orders",
+//            response = Integer.class)
+//    public ResponseEntity<String> getOrdersCount(
+//            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
+//
+//        return ResponseEntity.ok(ordersCount);
+//    }
 
     /* GET /orders/{orderId}/status */
     @Transactional
