@@ -90,9 +90,6 @@ public class ProductController {
     @Resource(name = "blInventoryService")
     protected InventoryService inventoryService;
 
-    @Resource(name = "blRatingService")
-    protected RatingService ratingService;
-
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
 
@@ -258,70 +255,70 @@ public class ProductController {
     }
 
 
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/bundles", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Add a new bundle",
-            notes = "Adds a new bundle to the catalog. Returns an URL to the newly created " +
-                    "bundle in the Location field of the HTTP response header",
-            response = Void.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "A new bundle successfully created"),
-            @ApiResponse(code = 400, message = "Not enough data has been provided"),
-            @ApiResponse(code = 409, message = "Bundle already exists or provided SKUs do not exist")
-    })
-    public ResponseEntity<?> createNewBundle(
-            @ApiParam(value = "Description of a new bundle", required = true)
-            @RequestBody ProductBundleDto productBundleDto) {
-
-
-        if (hasDuplicates(productBundleDto.getName())) {
-            throw new DtoValidationException("Provided bundle already exists");
-        }
-
-        CatalogUtils.validateSkuPrices(productBundleDto.getBundleSalePrice(), productBundleDto.getBundleRetailPrice());
-
-        Product product = new ProductBundleImpl();
-
-        //product.setDefaultSku(dtoConverters.skuDtoToEntity.apply(productBundleDto.getDefaultSku()));
-
-        final Sku bundleDefaultSku = new SkuImpl();
-        product.setDefaultSku(bundleDefaultSku);
-
-        // TODO:
-//        product.setDefaultSku(skuConverter.createEntity(productBundleDto.getDefaultSku()));
-
-        product = productConverter.updateEntity(product, productBundleDto);
-
-        ((ProductBundle) product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
-
-        product.getDefaultSku().setProduct(product);
-
-        final ProductBundle productBundle = (ProductBundle) product;
-
-        ((ProductBundle) product).setSkuBundleItems(productBundleDto.getBundleItems().stream()
-                .filter(x -> catalogService.findSkuById(x.getSkuId()) != null)
-                .map(dtoConverters.bundleItemDtoToSkuBundleItem)
-                .map(toSkuWithBundle(productBundle))
-                .collect(toList()));
-
-
-        if (((ProductBundle) product).getSkuBundleItems().size() != productBundleDto.getBundleItems().size()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-
-
-        product = catalogService.saveProduct(product);
-
-        return ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/{id}")
-                        .buildAndExpand(product.getId())
-                        .toUri()
-        ).build();
-
-    }
+//    @Transactional
+//    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+//    @RequestMapping(value = "/bundles", method = RequestMethod.POST)
+//    @ApiOperation(
+//            value = "Add a new bundle",
+//            notes = "Adds a new bundle to the catalog. Returns an URL to the newly created " +
+//                    "bundle in the Location field of the HTTP response header",
+//            response = Void.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 201, message = "A new bundle successfully created"),
+//            @ApiResponse(code = 400, message = "Not enough data has been provided"),
+//            @ApiResponse(code = 409, message = "Bundle already exists or provided SKUs do not exist")
+//    })
+//    public ResponseEntity<?> createNewBundle(
+//            @ApiParam(value = "Description of a new bundle", required = true)
+//            @RequestBody ProductBundleDto productBundleDto) {
+//
+//
+//        if (hasDuplicates(productBundleDto.getName())) {
+//            throw new DtoValidationException("Provided bundle already exists");
+//        }
+//
+//        CatalogUtils.validateSkuPrices(productBundleDto.getBundleSalePrice(), productBundleDto.getBundleRetailPrice());
+//
+//        Product product = new ProductBundleImpl();
+//
+//        //product.setDefaultSku(dtoConverters.skuDtoToEntity.apply(productBundleDto.getDefaultSku()));
+//
+//        final Sku bundleDefaultSku = new SkuImpl();
+//        product.setDefaultSku(bundleDefaultSku);
+//
+//        // TODO:
+////        product.setDefaultSku(skuConverter.createEntity(productBundleDto.getDefaultSku()));
+//
+//        product = productConverter.updateEntity(product, productBundleDto);
+//
+//        ((ProductBundle) product).setPricingModel(ProductBundlePricingModelType.BUNDLE);
+//
+//        product.getDefaultSku().setProduct(product);
+//
+//        final ProductBundle productBundle = (ProductBundle) product;
+//
+//        ((ProductBundle) product).setSkuBundleItems(productBundleDto.getBundleItems().stream()
+//                .filter(x -> catalogService.findSkuById(x.getSkuId()) != null)
+//                .map(dtoConverters.bundleItemDtoToSkuBundleItem)
+//                .map(toSkuWithBundle(productBundle))
+//                .collect(toList()));
+//
+//
+//        if (((ProductBundle) product).getSkuBundleItems().size() != productBundleDto.getBundleItems().size()) {
+//            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+//        }
+//
+//
+//        product = catalogService.saveProduct(product);
+//
+//        return ResponseEntity.created(
+//                ServletUriComponentsBuilder.fromCurrentRequest()
+//                        .path("/{id}")
+//                        .buildAndExpand(product.getId())
+//                        .toUri()
+//        ).build();
+//
+//    }
 
     private static Function<SkuBundleItem, SkuBundleItem> toSkuWithBundle(ProductBundle p) {
         return e -> {
@@ -457,23 +454,27 @@ public class ProductController {
                 .ifPresent(newProduct::setCategory);
     }
 
-    /* GET /products/count */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count all products",
-            notes = "Gets a number of all available products",
-            response = Long.class
-    )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of products count")
-    })
-    public Long getAllProductsCount() {
-        return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
-    }
+//    /* GET /products/count */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/count", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Count all products",
+//            notes = "Gets a number of all available products",
+//            response = Long.class
+//    )
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of products count")
+//    })
+//    public Long getAllProductsCount() {
+//
+//        return genericEntityService.readCountGenericEntity(Product.class);
+//
+//
+////        return catalogService.findAllProducts().stream()
+////                .filter(CatalogUtils::archivedProductFilter)
+////                .count();
+//    }
 
     /* GET /products/{id} */
     @Transactional
@@ -734,30 +735,30 @@ public class ProductController {
         return new Resources<>(productCategories);
     }
 
-    /* GET /products/{id}/categories */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/categories/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count product's categories",
-            notes = "Gets a number of categories, specified product belongs to",
-            response = Long.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
-    })
-    public Long getCategoriesByProductCount(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId) {
-
-        return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllParentCategoryXrefs().stream()
-                .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
-    }
+//    /* GET /products/{id}/categories */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/{productId}/categories/count", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Count product's categories",
+//            notes = "Gets a number of categories, specified product belongs to",
+//            response = Long.class)
+//    @ApiResponses({
+//            @ApiResponse(code = 200, message = "Successful retrieval of product's categories"),
+//            @ApiResponse(code = 404, message = "The specified product does not exist")
+//    })
+//    public Long getCategoriesByProductCount(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//            @PathVariable(value = "productId") Long productId) {
+//
+//        return Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+//                .getAllParentCategoryXrefs().stream()
+//                .map(CategoryProductXref::getCategory)
+//                .filter(CatalogUtils::archivedCategoryFilter)
+//                .count();
+//    }
     /* ---------------------------- CATEGORIES ENDPOINTS ---------------------------- */
 
     /* ---------------------------- SKUs ENDPOINTS ---------------------------- */
@@ -1116,32 +1117,32 @@ public class ProductController {
     }
 
 
-    /* GET /skus/count */
-    @Transactional
-    @PreAuthorize("permitAll")
-    @RequestMapping(value = "/{productId}/skus/count", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Count all SKUs",
-            notes = "Gets a number of all SKUs related to the specific product",
-            response = Long.class
-    )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful retrieval of SKU count"),
-            @ApiResponse(code = 404, message = "The specified product does not exist")
-    })
-    public ResponseEntity<Long> getSkusCountByProductId(
-            @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") final Long productId) {
-
-
-        final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .count();
-
-        return ResponseEntity.ok(skusCount);
-    }
+//    /* GET /skus/count */
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/{productId}/skus/count", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Count all SKUs",
+//            notes = "Gets a number of all SKUs related to the specific product",
+//            response = Long.class
+//    )
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of SKU count"),
+//            @ApiResponse(code = 404, message = "The specified product does not exist")
+//    })
+//    public ResponseEntity<Long> getSkusCountByProductId(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//            @PathVariable(value = "productId") final Long productId) {
+//
+//
+//        final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
+//                .getAllSkus().stream()
+//                .count();
+//
+//        return ResponseEntity.ok(skusCount);
+//    }
 
     /* GET /products/{productId}/skus/{skuId}/quantity */
     @Transactional
@@ -1160,7 +1161,8 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-                @PathVariable(value = "skuId") final Long skuId) {
+                @PathVariable(value = "skuId") final Long skuId
+    ) {
 
 
         final int skuQuantity = Optional.ofNullable(catalogService.findProductById(productId))
