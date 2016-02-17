@@ -5,6 +5,8 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.empty;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -976,19 +978,25 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of media details", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public List<MediaDto> getProductDefaultSkuMedias(
+    public Resources<MediaDto> getProductDefaultSkuMedias(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId
     ) {
-        return Optional.ofNullable(catalogService.findProductById(productId))
+
+        return new Resources<>(
+                Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getDefaultSku()
                 .getSkuMediaXref().entrySet().stream()
                 .map(Map.Entry::getValue)
-                .map(SkuMediaXref::getMedia)
-                .map(media -> mediaConverter.createDto(media, true))
-                .collect(toList());
+                .map(skuMediaXref -> {
+                    final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true);
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, skuMediaXref.getKey())).withSelfRel());
+                    return mediaDto;
+                })
+                .collect(toList())
+        );
     }
 
     /* GET /products/{productId}/media/{key} */
@@ -1018,7 +1026,11 @@ public class ProductController {
 
         return Optional.ofNullable(productDefaultSku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
-                .map(media -> mediaConverter.createDto(media, false))
+                .map(media -> {
+                    final MediaDto mediaDto = mediaConverter.createDto(media, false);
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, key)).withSelfRel());
+                    return mediaDto;
+                })
                 .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " exists for this product"));
     }
 
