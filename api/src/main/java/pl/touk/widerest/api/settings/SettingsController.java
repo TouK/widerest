@@ -28,6 +28,8 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.Data;
+import pl.touk.widerest.api.settings.converters.PropertyConverter;
+import pl.touk.widerest.api.settings.dto.PropertyDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -42,15 +44,8 @@ public class SettingsController {
     @javax.annotation.Resource
     protected SettingsService settingsService;
 
-    @Builder
-    @Data
-    public static class Property {
-        private String name;
-
-        private Object value;
-
-    }
-
+    @javax.annotation.Resource
+    protected PropertyConverter propertyConverter;
 
     @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(method = RequestMethod.GET)
@@ -63,22 +58,10 @@ public class SettingsController {
             @ApiResponse(code = 204, message = "Value for the key hasn't been set yet"),
             @ApiResponse(code = 404, message = "There is no system property for the key")
     })
-    public Resources listAll() {
-
-
+    public Resources<PropertyDto> listAll() {
         return new Resources(
                 settingsService.getAvailableSystemPropertyNames().stream()
-                        .map(name ->
-                                        Property.builder()
-                                                .name(name)
-                                                .value(
-                                                        Optional.ofNullable(systemPropertiesDao.readSystemPropertyByName(name))
-                                                                .map(SystemProperty::getValue)
-                                                                .orElse(null)
-                                                )
-                                                .build()
-                        )
-                        .map(dto -> new Resource(dto, linkTo(methodOn(getClass()).getValue(dto.getName())).withSelfRel()))
+                        .map(name -> propertyConverter.createDto(name, false))
                         .collect(Collectors.toList()),
                 linkTo(methodOn(getClass()).listAll()).withSelfRel()
         );
