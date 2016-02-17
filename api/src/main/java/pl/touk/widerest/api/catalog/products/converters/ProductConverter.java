@@ -4,22 +4,18 @@ import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
+import pl.touk.widerest.api.catalog.products.dto.MediaDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductBundleDto;
 import pl.touk.widerest.api.catalog.categories.CategoryController;
 import pl.touk.widerest.api.catalog.products.ProductController;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 
 import javax.annotation.Resource;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 

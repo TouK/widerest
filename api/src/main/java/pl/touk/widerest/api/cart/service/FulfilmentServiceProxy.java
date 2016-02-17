@@ -30,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
 import pl.touk.widerest.api.cart.orders.OrderController;
-import pl.touk.widerest.api.cart.dto.FulfillmentDto;
-import pl.touk.widerest.api.cart.dto.FulfillmentOptionDto;
+import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
+import pl.touk.widerest.api.cart.orders.dto.FulfillmentOptionDto;
 import pl.touk.widerest.api.cart.exceptions.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.exceptions.UnknownFulfillmentOptionException;

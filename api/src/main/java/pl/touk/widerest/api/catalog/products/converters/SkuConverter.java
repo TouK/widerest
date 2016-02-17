@@ -7,25 +7,20 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.api.catalog.products.ProductController;
 
 import javax.annotation.Resource;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;

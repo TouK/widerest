@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.dto;
+package pl.touk.widerest.api.cart.orders.dto;
 
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.broadleafcommerce.common.money.Money;
 import org.springframework.hateoas.ResourceSupport;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductOptionDto;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class DiscreteOrderItemDto extends ResourceSupport {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 2, value = "Product Options related to this item",
-            dataType = "pl.touk.widerest.api.catalog.dto.ProductOptionDto")
+            dataType = "pl.touk.widerest.api.catalog.products.dto.ProductOptionDto")
     private ProductOptionDto options;
 
     @ApiModelProperty(position = 3, value = "Total price for this item", required = true, dataType = "java.math.BigDecimal")

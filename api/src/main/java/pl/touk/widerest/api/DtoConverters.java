@@ -29,12 +29,10 @@ import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
 import org.springframework.stereotype.Service;
 
 import pl.touk.widerest.api.cart.orders.OrderController;
-import pl.touk.widerest.api.cart.dto.CartAttributeDto;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.cart.orders.dto.CartAttributeDto;
+import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
+import pl.touk.widerest.api.catalog.products.dto.*;
 
 @Service("wdDtoConverters")
 public class DtoConverters {

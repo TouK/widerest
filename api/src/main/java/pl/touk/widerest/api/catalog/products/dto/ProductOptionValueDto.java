@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.dto;
+package pl.touk.widerest.api.catalog.products.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -15,7 +15,7 @@ import lombok.Builder;
 public class ProductOptionValueDto {
 
     @ApiModelProperty(position = 0, value = "Product Option description", required = true,
-            dataType = "pl.touk.widerest.api.catalog.dto.ProductOptionDto")
+            dataType = "pl.touk.widerest.api.catalog.products.dto.ProductOptionDto")
     private ProductOptionDto productOption;
 
     @ApiModelProperty(position = 1, value = "Attribute value for the specified product option", required = true, dataType = "java.lang.String")

@@ -17,8 +17,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
-import pl.touk.widerest.api.cart.dto.CartAttributeDto;
-import pl.touk.widerest.api.cart.dto.DiscreteOrderItemDto;
 
 @Data
 @Builder

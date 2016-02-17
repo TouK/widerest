@@ -27,17 +27,14 @@ import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.common.util.BLCSystemProperty;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.catalog.service.type.ProductBundlePricingModelType;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.broadleafcommerce.core.rating.service.RatingService;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -57,12 +54,12 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.ProductAttributeDto;
-import pl.touk.widerest.api.catalog.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.dto.ProductOptionDto;
+import pl.touk.widerest.api.catalog.products.dto.MediaDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductBundleDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductOptionDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.api.catalog.categories.converters.CategoryConverter;
@@ -816,7 +813,7 @@ public class ProductController {
 
         if (skuDto.getName() == null || skuDto.getName().isEmpty() || skuDto.getQuantityAvailable() == null
                 || skuDto.getActiveStartDate() == null || skuDto.getSalePrice() == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
 
         CatalogUtils.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
@@ -831,7 +828,7 @@ public class ProductController {
         if (product.getProductOptionXrefs() != null && !product.getProductOptionXrefs().isEmpty()) {
             if (skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty() ||
                     skuDto.getSkuProductOptionValues().size() != product.getProductOptionXrefs().size()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return ResponseEntity.badRequest().build();
             }
         }
 

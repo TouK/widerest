@@ -17,7 +17,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import pl.touk.widerest.api.catalog.dto.*;
+import pl.touk.widerest.api.BaseDto;
 
 @Data
 @Builder

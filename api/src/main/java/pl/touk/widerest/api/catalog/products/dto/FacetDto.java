@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.dto;
+package pl.touk.widerest.api.catalog.products.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

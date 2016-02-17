@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.catalog.dto;
+package pl.touk.widerest.api;
 
 import io.swagger.annotations.ApiModelProperty;
 import org.springframework.hateoas.EmbeddedResource;

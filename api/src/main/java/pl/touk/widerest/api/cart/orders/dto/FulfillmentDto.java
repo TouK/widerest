@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.dto;
+package pl.touk.widerest.api.cart.orders.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,6 +34,6 @@ public class FulfillmentDto extends ResourceSupport {
     private Long selectedOptionId;
 
     @ApiModelProperty(position = 3, value = "Available options for fulfillment", required = true,
-            dataType = "pl.touk.widerest.api.cart.dto.FulfillmentOptionDto")
+            dataType = "pl.touk.widerest.api.cart.orders.dto.FulfillmentOptionDto")
     private List<FulfillmentOptionDto> options;
 }

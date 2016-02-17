@@ -1,4 +1,5 @@
-package pl.touk.widerest.api.catalog.dto;
+package pl.touk.widerest.api.cart.orders.dto;
+
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -11,12 +12,12 @@ import lombok.Builder;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel(value = "Product Attribute", description = "Product Attribute DTO resource representation")
-public class ProductAttributeDto {
+@ApiModel(value = "Cart Attribute", description = "Cart Attribute DTO resource description")
+public class CartAttributeDto {
 
     @ApiModelProperty(position = 0, value = "Name of the attribute", required = true, dataType = "java.lang.String")
-    private String attributeName;
+    private String name;
 
     @ApiModelProperty(position = 1, value = "Value of the attribute", required = true, dataType = "java.lang.String")
-    private String attributeValue;
+    private String value;
 }

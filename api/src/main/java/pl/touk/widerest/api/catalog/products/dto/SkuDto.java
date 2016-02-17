@@ -10,9 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
-import pl.touk.widerest.api.catalog.dto.BaseDto;
-import pl.touk.widerest.api.catalog.dto.MediaDto;
-import pl.touk.widerest.api.catalog.dto.SkuProductOptionValueDto;
+import pl.touk.widerest.api.BaseDto;
 
 import java.math.BigDecimal;
 import java.util.Date;

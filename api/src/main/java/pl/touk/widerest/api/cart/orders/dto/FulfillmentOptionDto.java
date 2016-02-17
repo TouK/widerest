@@ -1,4 +1,4 @@
-package pl.touk.widerest.api.cart.dto;
+package pl.touk.widerest.api.cart.orders.dto;
 
 import java.math.BigDecimal;
 
