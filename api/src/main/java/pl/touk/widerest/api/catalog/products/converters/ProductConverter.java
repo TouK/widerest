@@ -70,10 +70,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)));
 
-        if(!CollectionUtils.isEmpty(defaultSkuMedias)) {
-            dto.add(new EmbeddedResource("medias", defaultSkuMedias));
-        }
-
+        dto.setSkuMedia(defaultSkuMedias);
 
         dto.setCategoryName(Optional.ofNullable(product.getCategory()).map(Category::getName).orElse(""));
 
@@ -94,16 +91,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         dto.setOptions(product.getProductOptionXrefs().stream().map(DtoConverters.productOptionXrefToDto).collect(toList()));
 
-        final List<SkuDto> additionalSkus = product.getAdditionalSkus().stream()
-                .map(sku -> skuConverter.createDto(sku, false)).collect(toList());
-
-        dto.setSkus(additionalSkus);
-
-//        if(!CollectionUtils.isEmpty(additionalSkus)) {
-//            dto.add(new EmbeddedResource("skus", additionalSkus));
-//        }
-
-        //dto.setSkus(product.getAdditionalSkus().stream().map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
+        dto.setSkus(product.getAdditionalSkus().stream()
+                .map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
 
 
 		/* TODO: (mst) Implement Possible Bundles */

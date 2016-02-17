@@ -381,14 +381,17 @@ public class OrderControllerTest extends ApiTestBase {
         // assuming that there is product with id 10 and skuId 10
         HttpEntity<String> requestEntity =  new HttpEntity<>("CHECK_QUANTITY");
         HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
-        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+//        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+//        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+//
+        httpJsonRequestHeaders.set("Accept", "application/hal+json");
+        httpJsonRequestHeaders.set("Content-Type", "application/hal+json");
 
         adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/availability", HttpMethod.PUT,
                 requestEntity, HttpHeaders.class, serverPort, 10L, 10L);
         HttpEntity<Integer> quantityEntity = new HttpEntity<>(100, httpJsonRequestHeaders);
         adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/quantity", HttpMethod.PUT,
-                testHttpRequestEntity.getTestHttpRequestEntity(), HttpHeaders.class, serverPort, 10L, 10L);
+                quantityEntity, HttpHeaders.class, serverPort, 10L, 10L);
 
 
         // Given anonymous user
