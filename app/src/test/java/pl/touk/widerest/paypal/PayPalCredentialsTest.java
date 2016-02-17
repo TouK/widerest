@@ -19,7 +19,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class, inheritInitializers = false)
 public class PayPalCredentialsTest extends ApiTestBase {
 
     public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;

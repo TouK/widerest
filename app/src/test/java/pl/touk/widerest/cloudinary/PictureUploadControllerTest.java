@@ -21,7 +21,7 @@ import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class, inheritInitializers = false)
 public class PictureUploadControllerTest extends ApiTestBase {
 
     @Test
