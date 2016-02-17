@@ -33,6 +33,7 @@ import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
@@ -181,7 +182,8 @@ public class ProductController {
         }
 
         return ResponseEntity.ok(
-                new Resources<>(productsToReturn.stream()
+                new Resources<>(
+                        productsToReturn.stream()
                                 .filter(CatalogUtils::archivedProductFilter)
                                 .map(product -> productConverter.createDto(product, false))
                                 .collect(toList()),
@@ -581,6 +583,31 @@ public class ProductController {
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 
+//    @Transactional
+//    @PreAuthorize("permitAll")
+//    @RequestMapping(value = "/{productId}/attributes", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get a single product attributes",
+//            notes = "Gets a map of attributes of a single product specified by its ID",
+//            response = Map.class)
+//    @ApiResponses({
+//            @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
+//            @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
+//    })
+//    public Map<String, String> getProductByIdAttributes(
+//            @ApiParam(value = "ID of a specific product", required = true)
+//                @PathVariable(value = "productId") final Long productId) {
+//
+//        final Product product = Optional.ofNullable(catalogService.findProductById(productId))
+//                .filter(CatalogUtils::archivedProductFilter)
+//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+//
+//        return Optional.ofNullable(product.getProductAttributes())
+//                .orElse(Collections.emptyMap())
+//                .entrySet().stream()
+//                    .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+//    }
+
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/attributes", method = RequestMethod.GET)
@@ -592,20 +619,34 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
             @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
     })
-    public Map<String, String> getProductByIdAttributes(
+    public Resources<ProductAttributeDto> getProductByIdAttributes(
             @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") final Long productId) {
+            @PathVariable(value = "productId") final Long productId) {
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
-        return Optional.ofNullable(product.getProductAttributes())
-                .orElse(Collections.emptyMap())
-                .entrySet().stream()
-                    .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-    }
+        return new Resources<>(
+                Optional.ofNullable(product.getProductAttributes())
+                        .orElse(Collections.emptyMap())
+                        .entrySet().stream()
+                        .map(productAttributeEntry -> {
+                            final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()
+                                    .attributeName(productAttributeEntry.getKey())
+                                    .attributeValue(productAttributeEntry.getValue().toString())
+                                    .build();
 
+                            /* (mst) TODO: Change to /attributes/{attributeName} if it gets implemented */
+                            productAttributeDto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(productId)).withSelfRel());
+
+                            return productAttributeDto;
+                        })
+                        .collect(toList()),
+
+                linkTo(methodOn(getClass()).getProductByIdAttributes(productId)).withSelfRel()
+        );
+    }
 
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
@@ -711,7 +752,10 @@ public class ProductController {
                 .map(category -> categoryConverter.createDto(category, true))
                 .collect(toList());
 
-        return new Resources<>(productCategories);
+        return new Resources<>(
+                productCategories,
+                linkTo(methodOn(getClass()).readCategoriesByProduct(productId)).withSelfRel()
+        );
     }
 
 //    /* GET /products/{id}/categories */
@@ -1445,7 +1489,7 @@ public class ProductController {
                 .map(Map.Entry::getValue)
                 .map(skuMediaXref -> {
                     final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true);
-                    mediaDto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(productId, skuId)).withSelfRel());
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(productId, skuId, skuMediaXref.getKey())).withSelfRel());
                     return mediaDto;
                 })
                 .collect(toList()),
