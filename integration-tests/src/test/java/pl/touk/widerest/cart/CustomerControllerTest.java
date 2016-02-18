@@ -7,6 +7,7 @@ import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -69,10 +70,10 @@ public class CustomerControllerTest extends ApiTestBase {
         public CustomerBehaviour() {
         }
 
-        public void whenUserTriesToRegister(String name, String password, String email) {
+        public void whenUserTriesToRegister(final String name, final String password, final String email) {
             RestTemplate restTemplate = userCredentials.getKey();
             String token = userCredentials.getValue();
-            httpRequestHeader.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+            httpRequestHeader.set("Accept", MediaTypes.HAL_JSON_VALUE);
             httpRequestHeader.set("Authorization", "Bearer " + token);
 
             MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
@@ -94,9 +95,9 @@ public class CustomerControllerTest extends ApiTestBase {
         public CustomerExpectations() {
         }
 
-        public void userShouldBeRegistered(String username, String password, String email) {
+        public void userShouldBeRegistered(final String username, final String password, final String email) {
             // Read user details server-side
-            Customer remoteCustomer =
+            final Customer remoteCustomer =
                 customerService.readCustomerByUsername(username);
 
             assertTrue(remoteCustomer.isRegistered());
