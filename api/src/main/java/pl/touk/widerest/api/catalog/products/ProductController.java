@@ -583,31 +583,6 @@ public class ProductController {
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
 
-//    @Transactional
-//    @PreAuthorize("permitAll")
-//    @RequestMapping(value = "/{productId}/attributes", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Get a single product attributes",
-//            notes = "Gets a map of attributes of a single product specified by its ID",
-//            response = Map.class)
-//    @ApiResponses({
-//            @ApiResponse(code = 200, message = "Successful retrieval of product attributes", response = Map.class),
-//            @ApiResponse(code = 404, message = "Specified product does not exist or is marked as archived")
-//    })
-//    public Map<String, String> getProductByIdAttributes(
-//            @ApiParam(value = "ID of a specific product", required = true)
-//                @PathVariable(value = "productId") final Long productId) {
-//
-//        final Product product = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
-//                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-//
-//        return Optional.ofNullable(product.getProductAttributes())
-//                .orElse(Collections.emptyMap())
-//                .entrySet().stream()
-//                    .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-//    }
-
     @Transactional
     @PreAuthorize("permitAll")
     @RequestMapping(value = "/{productId}/attributes", method = RequestMethod.GET)

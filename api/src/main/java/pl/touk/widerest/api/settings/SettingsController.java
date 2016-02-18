@@ -106,9 +106,9 @@ public class SettingsController {
             @ApiResponse(code = 404, message = "There is no system property for the key")
     })
     public ResponseEntity setValue(
-            @ApiParam @PathVariable("key") String key,
-            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
-            @ApiParam @RequestBody String value
+            @ApiParam @PathVariable("key") final String key,
+            @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
+            @ApiParam @RequestBody final String value
     ) {
 
         return Optional.of(key)

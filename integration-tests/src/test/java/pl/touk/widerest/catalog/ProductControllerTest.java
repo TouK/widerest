@@ -9,7 +9,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -757,7 +759,6 @@ public class ProductControllerTest extends ApiTestBase {
     }
 
     /* Product Attributes Tests */
-
     @Test
     public void addingSameAttributeWithAnotherValueUpdatesPreviousValueTest() {
         // when: adding an attribute to a product and then adding it once again but with a different value
@@ -786,10 +787,18 @@ public class ProductControllerTest extends ApiTestBase {
         assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
 
         // then: the "original" attribute's value gets updated
-        final Map<String, String> receivedAttributes = restTemplate.getForObject(PRODUCT_BY_ID_ATTRIBUTES_URL, Map.class, serverPort, productId);
+        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
+                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
 
-        assertThat(receivedAttributes.size(), equalTo(1));
-        assertThat(receivedAttributes.get("Range"), equalTo("Short"));
+        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
+        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
+
+        final ProductAttributeDto receivedProductAttributeDto = receivedProductAttributeEntity.getBody().getContent().iterator().next();
+
+        assertThat(receivedProductAttributeDto.getAttributeName(), equalTo(productAttributeDto2.getAttributeName()));
+        assertThat(receivedProductAttributeDto.getAttributeValue(), equalTo(productAttributeDto2.getAttributeValue()));
     }
 
     @Test
@@ -809,6 +818,13 @@ public class ProductControllerTest extends ApiTestBase {
 
         assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
 
+        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity1 =
+                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+
+        assertThat(receivedProductAttributeEntity1.getStatusCode(), equalTo(HttpStatus.OK));
+
+        assertThat(receivedProductAttributeEntity1.getBody().getContent().size(), equalTo(1));
+
         oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
 
         // then: the attribute no longer exists
@@ -819,9 +835,14 @@ public class ProductControllerTest extends ApiTestBase {
             assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
         }
 
-        final Map<String, String> receivedAttributes = restTemplate.getForObject(PRODUCT_BY_ID_ATTRIBUTES_URL, Map.class, serverPort, productId);
 
-        assertThat(receivedAttributes.size(), equalTo(0));
+        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity2 =
+                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+
+        assertThat(receivedProductAttributeEntity2.getStatusCode(), equalTo(HttpStatus.OK));
+
+        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
+        assertThat(receivedProductAttributeEntity2.getBody().getContent().size(), equalTo(0));
     }
 
 

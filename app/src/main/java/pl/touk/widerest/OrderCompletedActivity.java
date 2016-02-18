@@ -13,6 +13,8 @@ import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.workflow.BaseActivity;
 import org.broadleafcommerce.core.workflow.ProcessContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.http.MediaType;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,6 +27,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 import java.util.Optional;
 
+@Configurable
 public class OrderCompletedActivity extends BaseActivity<ProcessContext<CheckoutSeed>> {
 
     @Resource
@@ -36,7 +39,6 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
     @Resource
     SendwithusService sendwithusService;
 
-    @Resource
     private OrderConverter orderConverter;
 
     CamelContext camelContext;
@@ -49,6 +51,8 @@ public class OrderCompletedActivity extends BaseActivity<ProcessContext<Checkout
         camelContext.start();
         template = new DefaultProducerTemplate(camelContext);
         template.start();
+
+        orderConverter = new OrderConverter();
     }
 
     @PreDestroy

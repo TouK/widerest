@@ -103,7 +103,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
         }
 
-		/* HATEOAS links */
         dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
 
         if (product.getDefaultSku() != null) {
@@ -117,6 +116,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                 if (!additionalSku.equals(product.getDefaultSku())) {
                     dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), additionalSku.getId()))
                             .withRel("skus"));
+
+                    //dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(product.getId(), additionalSku.getId())).withRel("medias"));
+
                 }
             }
         }
@@ -130,6 +132,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         }
 
         dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(product.getId())).withRel("attributes"));
+
+        dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
 
         return dto;
     }

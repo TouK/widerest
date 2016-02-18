@@ -55,7 +55,6 @@ public class OrderCompletedActivityTest {
     @InjectMocks
     private OrderCompletedActivity orderCompletedActivity = new OrderCompletedActivity();
 
-    @Resource
     private OrderConverter orderConverter;
 
     @Before
@@ -64,6 +63,8 @@ public class OrderCompletedActivityTest {
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        orderConverter = new OrderConverter();
     }
 
     @After
