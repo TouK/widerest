@@ -7,6 +7,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -28,6 +30,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.MultiValueMap;
 import pl.touk.multitenancy.TenantHeaderRequestFilter;
 import pl.touk.multitenancy.TenantRequest;
+import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.base.ApiTestBase;
 
 import java.util.Arrays;
@@ -83,12 +86,16 @@ public class MultiTenantAuthTest extends ApiTestBase {
                                 .collect(Collectors.toList())
                 ));
 
-        ResponseEntity<List> responseEntity;
+        //ResponseEntity<List> responseEntity;
         HttpHeaders headers = new HttpHeaders();
 
         // when the first tenant's resource called
         headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant1Identifier);
-        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+
+        final ResponseEntity<Resources<OrderDto>> responseEntity =
+                tenant1RestTemplate.exchange(ORDERS_URL, HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+//        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
 
         // then it is ok
         Assert.assertTrue(responseEntity.getStatusCode().is2xxSuccessful());
@@ -98,7 +105,10 @@ public class MultiTenantAuthTest extends ApiTestBase {
 
         // when the second tenant's resource called
         headers.set(TenantHeaderRequestFilter.TENANT_TOKEN_HEADER, tenant2Identifier);
-        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+//        responseEntity = tenant1RestTemplate.exchange(API_BASE_URL + "/orders", HttpMethod.GET, new HttpEntity<>(headers), List.class, serverPort);
+
+        final ResponseEntity<Resources<OrderDto>> responseEntity2 =
+                tenant1RestTemplate.exchange(ORDERS_URL, HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
     }
 

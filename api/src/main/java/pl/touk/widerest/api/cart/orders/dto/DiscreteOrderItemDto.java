@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.orders.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -21,6 +22,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("orderItem")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Discrete Order Item", description = "Discrete Order Item DTO resource description")
 public class DiscreteOrderItemDto extends ResourceSupport {

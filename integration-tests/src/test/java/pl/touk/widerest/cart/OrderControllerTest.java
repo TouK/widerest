@@ -22,6 +22,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -41,6 +44,7 @@ import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemOptionDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
@@ -55,7 +59,6 @@ public class OrderControllerTest extends ApiTestBase {
 
     @Before
     public void initTests() {
-        //serverPort = String.valueOf(8080);
     }
 
     @Test
@@ -85,7 +88,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When PUT /orders/{orderId}/items/{itemId}/quantity
         HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         HttpEntity httpRequestEntity = new HttpEntity(10L, requestHeaders);
@@ -124,7 +127,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When POST /orders/{orderId}/fulfillment/address
         HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         HttpEntity httpRequestEntity = new HttpEntity(addressDto, requestHeaders);
@@ -209,7 +212,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When sending DELETE message
         HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
         ResponseEntity<HttpHeaders> response = restTemplate.exchange(ORDERS_URL + "/" + orderId,
@@ -336,10 +339,16 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When user added order
         String orderLocation = anonymousOrderHeaders.getHeaders().getLocation().toASCIIString();
-        ResponseEntity<OrderDto[]> allOrders =
-                adminRestTemplate.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
 
-        OrderDto goodOne = new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
+        final ResponseEntity<Resources<OrderDto>> allOrders =
+                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+        assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
+
+//        ResponseEntity<OrderDto[]> allOrders =
+//                adminRestTemplate.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
+
+        OrderDto goodOne = new ArrayList<>(allOrders.getBody().getContent()).stream()
                 .filter(x -> x.getLink("self").toString().contains(orderLocation))
                 .findAny()
                 .orElse(null);
@@ -347,11 +356,16 @@ public class OrderControllerTest extends ApiTestBase {
         // Then admin should see it
         assertNotNull(goodOne);
 
-        ResponseEntity<OrderDto[]> allSecondOrders =
-                restTemplate1.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
+        final ResponseEntity<Resources<OrderDto>> allSecondOrders =
+                restTemplate1.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+        assertThat(allSecondOrders.getStatusCode(), equalTo(HttpStatus.OK));
+
+//        ResponseEntity<OrderDto[]> allSecondOrders =
+//                restTemplate1.getForEntity(ORDERS_URL, OrderDto[].class, serverPort);
 
         // Then the other user can't access it
-        assert(new ArrayList<>(Arrays.asList(allSecondOrders.getBody())).isEmpty());
+        assert(new ArrayList<>(allSecondOrders.getBody().getContent()).isEmpty());
 
 
         // When checking orders amount
@@ -441,7 +455,7 @@ public class OrderControllerTest extends ApiTestBase {
         addressDto.setCountryCode("USA");
 
         HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
-        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpJsonRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         httpJsonRequestHeaders.set("Authorization", "Bearer "+ accessToken);
         HttpEntity<AddressDto> addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
@@ -631,7 +645,7 @@ public class OrderControllerTest extends ApiTestBase {
         orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
 
         final HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
 
@@ -701,7 +715,7 @@ public class OrderControllerTest extends ApiTestBase {
         orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
 
         final HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
 

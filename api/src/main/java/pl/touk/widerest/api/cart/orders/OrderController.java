@@ -169,7 +169,7 @@ public class OrderController {
     /* GET /orders/{orderId} */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get an order by ID",
             notes = "Gets details of a single order, specified by its ID",
@@ -435,39 +435,39 @@ public class OrderController {
     }
 
     /* GET /orders/{orderId}/items/count */
-//    @Transactional
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-//    @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Count all items in the order",
-//            notes = "Gets a number of all items placed already in the specified order",
-//            response = Integer.class)
-//    public ResponseEntity<Integer> getItemsCountByOrderId(
-//            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
-//            @ApiParam(value = "ID of a specific order", required = true)
-//            @PathVariable(value = "id") Long orderId) {
-//
-//        final int itemsInOrderCount = orderServiceProxy.getProperCart(userDetails, orderId)
-//                .orElseThrow(ResourceNotFoundException::new)
-//                .getItemCount();
-//
-//        return ResponseEntity.ok(itemsInOrderCount);
-//    }
-//
-//    @Transactional
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-//    @RequestMapping(value = "/count", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Count all orders",
-//            notes = "Get a number of all active orders",
-//            response = Integer.class)
-//    public ResponseEntity<String> getOrdersCount(
-//            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
-//
-//        final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
-//
-//        return ResponseEntity.ok(ordersCount);
-//    }
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all items in the order",
+            notes = "Gets a number of all items placed already in the specified order",
+            response = Integer.class)
+    public ResponseEntity<Integer> getItemsCountByOrderId(
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+            @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "id") Long orderId) {
+
+        final int itemsInOrderCount = orderServiceProxy.getProperCart(userDetails, orderId)
+                .orElseThrow(ResourceNotFoundException::new)
+                .getItemCount();
+
+        return ResponseEntity.ok(itemsInOrderCount);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/count", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Count all orders",
+            notes = "Get a number of all active orders",
+            response = Integer.class)
+    public ResponseEntity<String> getOrdersCount(
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
+
+        final String ordersCount = Long.toString(orderServiceProxy.getOrdersByCustomer(userDetails).stream().count());
+
+        return ResponseEntity.ok(ordersCount);
+    }
 
     /* GET /orders/{orderId}/status */
     @Transactional
@@ -525,7 +525,7 @@ public class OrderController {
     /* GET /orders/items/{itemId} */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get details of an item",
             notes = "Gets a description of a specified item in a given order",

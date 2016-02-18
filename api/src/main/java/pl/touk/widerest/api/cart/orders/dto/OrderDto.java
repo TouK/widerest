@@ -4,6 +4,7 @@ package pl.touk.widerest.api.cart.orders.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import org.springframework.hateoas.ResourceSupport;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,6 +23,7 @@ import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("order")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Order", description = "Order DTO resource representation")
 public class OrderDto extends ResourceSupport {

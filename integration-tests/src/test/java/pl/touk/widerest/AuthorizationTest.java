@@ -1,6 +1,6 @@
 package pl.touk.widerest;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 
@@ -80,11 +80,10 @@ public class AuthorizationTest extends ApiTestBase {
         createNewOrder(userToken);
 
         oAuth2RestTemplate.postForObject(CUSTOMERS_URL + "/merge", anonymousUserToken, String.class, serverPort);
-        final String response =  oAuth2RestTemplate.getForObject(ORDERS_COUNT, String.class, serverPort);
+        final Long responseCount =  oAuth2RestTemplate.getForObject(ORDERS_COUNT, Long.class, serverPort);
 
         //then
-
-        assertThat(response).isEqualTo("1");
+        assertThat(responseCount, equalTo(1L));
     }
 
     @Test

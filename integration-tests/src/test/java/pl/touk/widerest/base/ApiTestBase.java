@@ -21,7 +21,10 @@ import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
+import org.springframework.hateoas.Resources;
 import org.springframework.hateoas.core.AnnotationRelProvider;
 import org.springframework.hateoas.core.DefaultRelProvider;
 import org.springframework.hateoas.core.DelegatingRelProvider;
@@ -55,6 +58,7 @@ import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.products.dto.MediaDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
@@ -205,26 +209,6 @@ public abstract class ApiTestBase {
     private AnnotationRelProvider getAnnotationRelProvider() {
         return new AnnotationRelProvider();
     }
-
-//    private MappingJackson2HttpMessageConverter getHalConverter() {
-//        final RelProvider defaultRelProvider = getDefaultRelProvider();
-//        final RelProvider annotationRelProvider = getAnnotationRelProvider();
-//
-//        final OrderAwarePluginRegistry<RelProvider, Class<?>> relProviderPluginRegistry = OrderAwarePluginRegistry
-//                .create(Arrays.asList(defaultRelProvider, annotationRelProvider));
-//
-//        final DelegatingRelProvider delegatingRelProvider = new DelegatingRelProvider(relProviderPluginRegistry);
-//
-//        final ObjectMapper halObjectMapper = new ObjectMapper();
-//        halObjectMapper.registerModule(new Jackson2HalModule());
-//        halObjectMapper
-//                .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null, null));
-//
-//        final MappingJackson2HttpMessageConverter halConverter = new MappingJackson2HttpMessageConverter();
-//        halConverter.setSupportedMediaTypes(ImmutableList.of(new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), new MediaType(" * ", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET), MediaTypes.HAL_JSON));
-//        halConverter.setObjectMapper(halObjectMapper);
-//        return halConverter;
-//    }
 
     private MappingJackson2HttpMessageConverter getHalConverter() {
         final RelProvider defaultRelProvider = getDefaultRelProvider();
@@ -516,8 +500,15 @@ public abstract class ApiTestBase {
         return requestHeaders;
     }
 
+    protected HttpHeaders prepareHalHttpHeadersWithToken(final String token) {
+        final HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        requestHeaders.set("Authorization", "Bearer " + token);
+        return requestHeaders;
+    }
+
     protected HttpEntity<?> getProperEntity(final String token) {
-        return new HttpEntity<>(prepareJsonHttpHeadersWithToken(token));
+        return new HttpEntity<>(prepareHalHttpHeadersWithToken(token));
     }
 
 
@@ -553,7 +544,7 @@ public abstract class ApiTestBase {
     protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(final RestTemplate restTemplate, final String token,
                                                               final Integer orderId, final Integer orderItemId) {
 
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
         return restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
@@ -564,13 +555,13 @@ public abstract class ApiTestBase {
         template.setQuantity(quantity);
         template.setSkuId(skuId);
 
-        final HttpEntity<OrderItemDto> httpRequestEntity = new HttpEntity(template, prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity<OrderItemDto> httpRequestEntity = new HttpEntity(template, prepareHalHttpHeadersWithToken(token));
 
         return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
     protected long getRemoteTotalOrdersCountValue(final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ORDERS_COUNT,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
@@ -580,13 +571,24 @@ public abstract class ApiTestBase {
         return remoteCountEntity.getBody();
     }
 
-
     protected Boolean givenOrderIdIsCancelled(final String adminToken, final Long orderId) {
         final HttpEntity<?> adminHttpEntity = getProperEntity(adminToken);
-        final ResponseEntity<OrderDto[]> allOrders =
-                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
+//        final ResponseEntity<OrderDto[]> allOrders =
+//                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
 
-        return new ArrayList<>(Arrays.asList(allOrders.getBody())).stream()
+        final ResponseEntity<Resources<OrderDto>> allOrders =
+                oAuth2AdminRestTemplate().exchange(ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+        // then: the "original" attribute's value gets updated
+//        final ResponseEntity<Resources<OrderDto>> receivedProductAttributeEntity =
+//                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+//
+//        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
+//
+//        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
+//        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
+
+        return new ArrayList<>(allOrders.getBody().getContent()).stream()
                 .filter(x -> x.getOrderId() == orderId)
                 .findAny()
                 .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
@@ -594,7 +596,7 @@ public abstract class ApiTestBase {
     }
 
     protected Integer getRemoteItemsInOrderCount(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
         final HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/count",
                 HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
@@ -603,16 +605,18 @@ public abstract class ApiTestBase {
     }
 
     protected List<DiscreteOrderItemDto> getItemsFromCart(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
-        final HttpEntity<DiscreteOrderItemDto[]> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items",
-                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto[].class, serverPort);
+        final ResponseEntity<Resources<DiscreteOrderItemDto>> receivedProductAttributeEntity =
+                restTemplateForHalJsonHandling.exchange(ORDERS_URL+"/"+orderId+"/items", HttpMethod.GET, httpRequestEntity, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}, serverPort);
 
-        return new ArrayList<>(Arrays.asList(response.getBody()));
+        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        return new ArrayList<>(receivedProductAttributeEntity.getBody().getContent());
     }
 
     protected DiscreteOrderItemDto getItemDetailsFromCart(final Integer orderId, final Long itemId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
         final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items/"+itemId,
                 HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort);
@@ -620,8 +624,8 @@ public abstract class ApiTestBase {
         return response.getBody();
     }
 
-    protected OrderStatus getOrderStatus(Integer orderId, String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareJsonHttpHeadersWithToken(token));
+    protected OrderStatus getOrderStatus(final Integer orderId, final String token) {
+        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
 
         final HttpEntity<OrderStatus> response = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/status",
                 HttpMethod.GET, httpRequestEntity, OrderStatus.class, serverPort);
