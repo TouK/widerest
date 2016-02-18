@@ -44,7 +44,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
     }
 
     protected int loadBeanDefinitions(XmlBeanDefinitionReader reader, ImportProcessor importProcessor) throws BeansException, IOException {
-        final int standardLocationTypes = StandardConfigLocations.SERVICECONTEXTTYPE;
+        final int standardLocationTypes = StandardConfigLocations.APPCONTEXTTYPE;
 
         final ResourceInputStream[] filteredSources = Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
                 .map(location -> {
