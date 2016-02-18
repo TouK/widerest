@@ -6,6 +6,8 @@ import static java.lang.Long.parseLong;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
 
 import java.util.Collections;
@@ -27,6 +29,8 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -68,8 +72,8 @@ import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.annotations.ApiIgnore;
 
 @RestController
-@RequestMapping(value = ResourceServerConfig.API_PATH + "/customers")
-@Api(value = "customers", description = "Customer management endpoint")
+@RequestMapping(value = ResourceServerConfig.API_PATH + "/customers", produces = { MediaTypes.HAL_JSON_VALUE })
+@Api(value = "customers", description = "Customer management endpoint", produces = MediaTypes.HAL_JSON_VALUE)
 public class CustomerController {
 
     @Resource(name="blCustomerService")
@@ -160,8 +164,8 @@ public class CustomerController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of customers list", response = CustomerDto.class, responseContainer = "List")
     })
-    public List<CustomerDto> readAllCustomers(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
-        return Match.of(userDetails)
+    public Resources<CustomerDto> readAllCustomers(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
+        final List<CustomerDto> allCustomers = Match.of(userDetails)
                 .whenType(AdminUserDetails.class).then(() -> customerServiceProxy.getAllCustomers().stream()
                         .map(customer -> customerConverter.createDto(customer, false))
                         .collect(Collectors.toList()))
@@ -172,6 +176,11 @@ public class CustomerController {
                             .orElse(emptyList()))
                 .otherwise(Collections::emptyList)
                 .get();
+
+        return new Resources<>(
+                allCustomers,
+                linkTo(methodOn(getClass()).readAllCustomers(null)).withSelfRel()
+        );
     }
 
     @Transactional

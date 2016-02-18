@@ -33,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -208,7 +209,7 @@ public class OrderControllerTest extends ApiTestBase {
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
         RestTemplate restTemplate = firstUser.getKey();
         String accessToken = firstUser.getValue();
-        Integer orderId = createNewOrder(accessToken);
+        long orderId = createNewOrder(accessToken);
 
         // When sending DELETE message
         HttpHeaders requestHeaders = new HttpHeaders();
@@ -223,9 +224,21 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Then the cart shouldn't exist
         //assertNull(orderService.findOrderById(Long.valueOf(orderId)));
-        Pair<?, String> adminUser = generateAdminUser();
-        String adminToken = adminUser.getValue();
-        assertFalse(givenOrderIdIsCancelled(adminToken, orderId.longValue()));
+        Pair<OAuth2RestTemplate, String> adminUser = generateAdminUser();
+        final OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
+
+        final ResponseEntity<Resources<OrderDto>> allOrders =
+                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+        assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
+
+        final boolean result = new ArrayList<>(allOrders.getBody().getContent()).stream()
+                .filter(x -> x.getOrderId() == orderId)
+                .findAny()
+                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                .orElse(false);
+
+        assertFalse(result);
     }
 
     @Test
@@ -307,6 +320,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void OrderAccessTest() throws URISyntaxException {
 
         // Given 2 anonymous users
@@ -319,8 +333,9 @@ public class OrderControllerTest extends ApiTestBase {
         String accessSecondAnonymousToken = secondUser.getValue();
 
         // Given admin user
-        Pair<OAuth2RestTemplate, String> adminUser = generateAdminUser();
-        OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
+        Pair<RestTemplate, String> adminUser = generateAdminUser();
+        //OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
+        RestTemplate adminRestTemplate = adminUser.getKey();
         String accessLoggedToken = adminUser.getValue();
 
         // When receiving tokens
@@ -334,14 +349,21 @@ public class OrderControllerTest extends ApiTestBase {
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
                 restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class, serverPort);
 
+        em.clear();
+
         // Then it should succeed
         assert(anonymousOrderHeaders.getStatusCode().is2xxSuccessful());
 
         // When user added order
         String orderLocation = anonymousOrderHeaders.getHeaders().getLocation().toASCIIString();
 
+        em.clear();
+
+        Pair<OAuth2RestTemplate, String> adminUser2 = generateAdminUser();
+        final OAuth2RestTemplate adminRestTemplate2 = adminUser2.getKey();
+
         final ResponseEntity<Resources<OrderDto>> allOrders =
-                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+                adminRestTemplate2.exchange(ORDERS_URL, HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.broadleafcommerce.common.money.Money;
 import org.springframework.hateoas.ResourceSupport;
+import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductOptionDto;
 
 import java.math.BigDecimal;
@@ -25,7 +26,7 @@ import java.util.Map;
 @JsonRootName("orderItem")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Discrete Order Item", description = "Discrete Order Item DTO resource description")
-public class DiscreteOrderItemDto extends ResourceSupport {
+public class DiscreteOrderItemDto extends BaseDto {
 
     /* TODO: (mst) ID should probably be removed, I kept it because there were few tests that use it */
     @ApiModelProperty

@@ -2,6 +2,8 @@ package pl.touk.widerest.api.cart.orders;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -162,7 +164,9 @@ public class OrderController {
                 orderServiceProxy.getOrdersByCustomer(userDetails).stream()
                 .map(order -> orderConverter.createDto(order, false))
                 .filter(x -> status == null || x.getStatus().equals(status))
-                .collect(toList())
+                .collect(toList()),
+
+                linkTo(methodOn(getClass()).getOrders(null, status)).withSelfRel()
         );
     }
 

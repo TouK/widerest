@@ -2,6 +2,7 @@ package pl.touk.widerest.api.cart.customers.dto;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.hateoas.ResourceSupport;
+import pl.touk.widerest.api.BaseDto;
 
 import java.util.List;
 import java.util.Locale;
@@ -19,9 +21,10 @@ import java.util.Locale;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("customer")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Customer", description = "Customer DTO resource description")
-public class CustomerDto extends ResourceSupport {
+public class CustomerDto extends BaseDto {
 
     @JsonIgnore
     private Long customerId;

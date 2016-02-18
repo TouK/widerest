@@ -1,18 +1,19 @@
 package pl.touk.widerest.api.cart.orders.dto;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
+import pl.touk.widerest.api.BaseDto;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonRootName("payment")
+@EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Payment", description = "Payment request details")
-public class PaymentDto {
+public class PaymentDto extends BaseDto {
 
     @ApiModelProperty
     private String provider;

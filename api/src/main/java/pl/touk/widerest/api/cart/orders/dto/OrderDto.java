@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 
 @Data
@@ -26,7 +27,7 @@ import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 @JsonRootName("order")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Order", description = "Order DTO resource representation")
-public class OrderDto extends ResourceSupport {
+public class OrderDto extends BaseDto {
 
     @JsonIgnore
     private Long orderId;

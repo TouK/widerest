@@ -1,21 +1,25 @@
 package pl.touk.widerest.api.cart.orders.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+import lombok.*;
 import org.broadleafcommerce.common.money.Money;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-import lombok.Builder;
+import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
-
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonRootName("orderPayment")
+@EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Order Payment", description = "Order Payment DTO resource description")
-public class OrderPaymentDto {
+public class OrderPaymentDto extends BaseDto {
 
     @JsonIgnore
     private Long orderId;
