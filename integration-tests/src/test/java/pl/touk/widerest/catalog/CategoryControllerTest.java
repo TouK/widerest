@@ -52,7 +52,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final long categoryId = addNewTestCategory();
 
         // then: newly created category does not contain any products
-        assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(0L));
+        assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(categoryId), equalTo(0L));
     }
 
     @Test
@@ -70,17 +70,17 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(newProductInTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         // then: the number of products in that category equals 1
-        assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(1L));
+        assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(categoryId), equalTo(1L));
     }
 
     @Test
     public void addingNewCategoryIncreasesTotalCategoriesCountTest() {
         // when: creating a new category
-        final long currentCategoriesCount = getLocalTotalCategoriesCount();
+        final long currentCategoriesCount = apiTestCatalogLocal.getTotalCategoriesCount();
         final long newCategoryId = addNewTestCategory();
 
         // then: total categories number increases by 1
-        assertThat(getLocalTotalCategoriesCount(), equalTo(currentCategoriesCount + 1));
+        assertThat(apiTestCatalogLocal.getTotalCategoriesCount(), equalTo(currentCategoriesCount + 1));
     }
 
     @Test
@@ -92,7 +92,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         addNewTestCategory(categoryDto);
 
-        final long currentCategoryCount = getLocalTotalCategoriesCount();
+        final long currentCategoryCount = apiTestCatalogLocal.getTotalCategoriesCount();
 
         try {
             // when: 2) adding the same category again
@@ -102,7 +102,7 @@ public class CategoryControllerTest extends ApiTestBase {
             // then: API should return HTTP.CONFLICT code and the total number of categories should
             //       not change
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
-            assertThat(getLocalTotalCategoriesCount(), equalTo(currentCategoryCount));
+            assertThat(apiTestCatalogLocal.getTotalCategoriesCount(), equalTo(currentCategoryCount));
         }
     }
 
@@ -115,7 +115,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(receivedCategoriesEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-        assertThat((long) receivedCategoriesEntity.getBody().getContent().size(), equalTo(getLocalTotalCategoriesCount()));
+        assertThat((long) receivedCategoriesEntity.getBody().getContent().size(), equalTo(apiTestCatalogLocal.getTotalCategoriesCount()));
     }
 
     @Test
@@ -212,7 +212,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertTrue(addNewCategoryResponse.getStatusCode() == HttpStatus.CREATED);
 
         final String createdCategoryLocationUri = addNewCategoryResponse.getHeaders().getLocation().toString();
-        final long currentCategoriesCount = getLocalTotalCategoriesCount();
+        final long currentCategoriesCount = apiTestCatalogLocal.getTotalCategoriesCount();
 
         // when: 2) modifying the newly created category
         categoryDto.setDescription("ModifiedTestCategoryDescription");
@@ -222,7 +222,7 @@ public class CategoryControllerTest extends ApiTestBase {
         oAuth2AdminRestTemplate().put(createdCategoryLocationUri, categoryDto, serverPort);
 
         // then: no new category should be created
-        assertThat(getLocalTotalCategoriesCount(), equalTo(currentCategoriesCount));
+        assertThat(apiTestCatalogLocal.getTotalCategoriesCount(), equalTo(currentCategoriesCount));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
         // then: 1) the number of products in added category is equal to 0 (by default)
-        final long currentProductsInCategoryRemoteCount = getLocalTotalProductsInCategoryCount(testCategoryId);
+        final long currentProductsInCategoryRemoteCount = apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId);
         assertThat(currentProductsInCategoryRemoteCount, equalTo(0L));
 
         // when: 2) adding a new product to newly created category
@@ -275,14 +275,14 @@ public class CategoryControllerTest extends ApiTestBase {
         em.clear();
 
         // then: 2) total number of products in that category increases by 1
-        assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
+        assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
     }
 
     @Test
     @Transactional
     public void deletingCategoryDoesNotRemoveProductPreviouslyAssociatedWithItTest() {
         // when: 1) creating a new category and inserting a new product into it
-        final long currentTotalProductsCount = getLocalTotalProductsCount();
+        final long currentTotalProductsCount = apiTestCatalogLocal.getTotalProductsCount();
 
         final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
         final ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
@@ -296,7 +296,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final ResponseEntity<?> newProductInTestCategoryEntity = addNewTestProduct(productDto);
         assertThat(newProductInTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        assertThat(getLocalTotalProductsInCategoryCount(categoryId), equalTo(1L));
+        assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(categoryId), equalTo(1L));
 
         // when: 1) deleting the newly created category
         oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, categoryId);
@@ -309,21 +309,21 @@ public class CategoryControllerTest extends ApiTestBase {
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
         }
 
-        assertThat(getLocalTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
+        assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
     }
 
 
 /*
     @Test
     public void partialUpdateCategoryDescriptionAndCheckIfOtherValuesPreserveTest() {
-        long currentTotalCategoriesCount = getLocalTotalCategoriesCount();
+        long currentTotalCategoriesCount = apiTestCatalogLocal.getTotalCategoriesCount();
 
         CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
 
         ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
 
         assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        assertThat(getLocalTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + 1));
+        assertThat(apiTestCatalogLocal.getTotalCategoriesCount(), equalTo(currentTotalCategoriesCount + 1));
 
         long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 

@@ -18,6 +18,7 @@ import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Before;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
@@ -167,6 +168,12 @@ public abstract class ApiTestBase {
     /* (mst) Http Request 'Accept' Format to be used while testing */
     protected final TestHttpRequestEntity testHttpRequestEntity = new HalHttpRequestEntity();
 
+    @Autowired
+    protected ApiTestCatalogLocal apiTestCatalogLocal;
+
+    @Autowired
+    protected ApiTestCatalogRemote apiTestCatalogRemote;
+
 
     @Before
     public void clearSession() {
@@ -250,41 +257,6 @@ public abstract class ApiTestBase {
     }
 
 
-    /* ---------------- TEST HELPER/COMMON METHODS ---------------- */
-//    public long getRemoteTotalCategoriesCount() {
-//        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
-//                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort);
-//
-//        assertNotNull(remoteCountEntity);
-//
-//        return remoteCountEntity.getBody();
-//    }
-
-    public long getLocalTotalCategoriesCount() {
-        return catalogService.findAllCategories().stream()
-                .filter(entity -> ((Status) entity).getArchived() == 'N')
-                .count();
-    }
-
-//    protected long getRemoteTotalProductsInCategoryCount(long categoryId) {
-//
-//        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_IN_CATEGORY_COUNT_URL,
-//                HttpMethod.GET, getHttpJsonRequestEntity(), Long.class, serverPort, categoryId);
-//
-//        assertNotNull(remoteCountEntity);
-//
-//        return remoteCountEntity.getBody();
-//    }
-
-    protected long getLocalTotalProductsInCategoryCount(final long categoryId) {
-        return catalogService.findCategoryById(categoryId).getAllProductXrefs().stream()
-                .map(CategoryProductXref::getProduct)
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
-    }
-
-
-
     protected long getRemoteTotalProductsCount() {
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
                 HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort);
@@ -292,12 +264,6 @@ public abstract class ApiTestBase {
         assertNotNull(remoteCountEntity);
 
         return remoteCountEntity.getBody();
-    }
-
-    protected long getLocalTotalProductsCount() {
-        return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils::archivedProductFilter)
-                .count();
     }
 
     protected long getLocalTotalSkus() {
