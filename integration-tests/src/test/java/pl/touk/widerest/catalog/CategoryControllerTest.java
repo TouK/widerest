@@ -106,7 +106,7 @@ public class CategoryControllerTest extends ApiTestBase {
     }
 
     @Test
-    @Ignore("This test is probably useless")
+    //@Ignore("This test is probably useless")
     public void numberOfRemotelyRetrievedCategoriesEqualsLocalyStoredCountTest() {
         // when: retrieving all categories
         final ResponseEntity<Resources<CategoryDto>> receivedCategoriesEntity =

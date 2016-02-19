@@ -193,6 +193,21 @@ public abstract class ApiTestBase {
         return oAuth2RestTemplate;
     }
 
+    protected OAuth2RestTemplate oAuth2AdminHalRestTemplate() {
+
+        final ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
+        resourceDetails.setGrantType("password");
+        resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
+        resourceDetails.setClientId(MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER);
+        resourceDetails.setScope(Arrays.asList("staff"));
+        resourceDetails.setUsername("backoffice/admin");
+        resourceDetails.setPassword("admin");
+
+        final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
+        oAuth2RestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+        return oAuth2RestTemplate;
+    }
+
     protected RestTemplate hateoasRestTemplate() {
         if(hateoasRestTemplate == null) {
             httpMessageConverters.add(getHalConverter());
@@ -536,7 +551,7 @@ public abstract class ApiTestBase {
     }
 
     protected Pair generateAdminUser() throws URISyntaxException {
-        final OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
+        final OAuth2RestTemplate adminRestTemplate = oAuth2AdminHalRestTemplate();
         final URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
         return Pair.of(adminRestTemplate, strapToken(adminUri));
     }
@@ -578,15 +593,6 @@ public abstract class ApiTestBase {
 
         final ResponseEntity<Resources<OrderDto>> allOrders =
                 oAuth2AdminRestTemplate().exchange(ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
-
-        // then: the "original" attribute's value gets updated
-//        final ResponseEntity<Resources<OrderDto>> receivedProductAttributeEntity =
-//                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
-//
-//        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
-//
-//        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-//        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
 
         return new ArrayList<>(allOrders.getBody().getContent()).stream()
                 .filter(x -> x.getOrderId() == orderId)

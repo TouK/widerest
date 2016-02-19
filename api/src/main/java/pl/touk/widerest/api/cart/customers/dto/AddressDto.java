@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+import pl.touk.widerest.api.BaseDto;
 
 @Data
 @Builder
@@ -15,7 +16,7 @@ import lombok.Builder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Address", description = "Address DTO resource representation")
-public class AddressDto {
+public class AddressDto extends BaseDto {
 
     @ApiModelProperty(position = 0, value = "First name of the customer", required = true)
     private String firstName;

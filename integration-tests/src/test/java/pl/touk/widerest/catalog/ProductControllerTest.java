@@ -461,7 +461,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
-        // then: all of the specified attributes should be saved correctly
+        // then: all of the specified attributes should be saved correctly (via /product/{id} endpoint)
         final ResponseEntity<ProductDto> receivedProductEntity = getRemoteTestProductByIdEntity(idFromLocationUrl);
 
         final Map<String, String> attributes = receivedProductEntity.getBody().getAttributes();
@@ -469,6 +469,15 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(attributes.get("size"), equalTo(String.valueOf(99)));
         assertThat(attributes.get("color"), equalTo("red"));
         assertThat(attributes.get("length"), equalTo(String.valueOf(12.222)));
+
+        // then: all of the specified attributes should be saved correctly (via /product/{id}/attributes endpoint)
+        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
+                restTemplateForHalJsonHandling.exchange(
+                        PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, idFromLocationUrl);
+
+        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
+        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(3));
     }
 
 

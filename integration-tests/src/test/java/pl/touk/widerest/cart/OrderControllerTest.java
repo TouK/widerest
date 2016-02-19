@@ -10,13 +10,11 @@ import static org.junit.Assert.fail;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
+import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +50,7 @@ import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
+import pl.touk.widerest.base.MappingHalJackson2HttpMessageConverter;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -77,6 +76,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void shouldChangeOrderItemQuantity() throws URISyntaxException {
         // Given anonymous user with one item in order
         Pair<RestTemplate, String> user = generateAnonymousUser();
@@ -107,6 +107,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void shouldReturnFulfillmentAddressAndOption() throws URISyntaxException {
         // Given anonymous user with order with 1 item
         Pair<RestTemplate, String> user = generateAnonymousUser();
@@ -172,6 +173,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void CreateEmptyOrderTest() throws URISyntaxException {
         // Given anonymous user
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -188,6 +190,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void CheckOrderStatusTest() throws URISyntaxException {
         // Given anonymous user and cart
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -203,6 +206,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void AnonymousCreateAndDeleteOrder() throws URISyntaxException {
 
         // Given anonymous user and created cart
@@ -210,6 +214,9 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate restTemplate = firstUser.getKey();
         String accessToken = firstUser.getValue();
         long orderId = createNewOrder(accessToken);
+
+        em.clear();
+
 
         // When sending DELETE message
         HttpHeaders requestHeaders = new HttpHeaders();
@@ -222,6 +229,8 @@ public class OrderControllerTest extends ApiTestBase {
         // Then the status code should be 200
         assert(response.getStatusCode().value() == 200);
 
+        em.clear();
+
         // Then the cart shouldn't exist
         //assertNull(orderService.findOrderById(Long.valueOf(orderId)));
         Pair<OAuth2RestTemplate, String> adminUser = generateAdminUser();
@@ -232,16 +241,15 @@ public class OrderControllerTest extends ApiTestBase {
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
-        final boolean result = new ArrayList<>(allOrders.getBody().getContent()).stream()
+        assertFalse(new ArrayList<>(allOrders.getBody().getContent()).stream()
                 .filter(x -> x.getOrderId() == orderId)
                 .findAny()
                 .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
-                .orElse(false);
-
-        assertFalse(result);
+                .orElse(false));
     }
 
     @Test
+    @Transactional
     public void AccessingItemsFromOrderTest() throws URISyntaxException {
         // Given anonymous user and cart
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -278,6 +286,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void AnonymousUserAddingItemsToCartTest() throws URISyntaxException {
 
         // Given an anonymous user/token
@@ -324,22 +333,24 @@ public class OrderControllerTest extends ApiTestBase {
     public void OrderAccessTest() throws URISyntaxException {
 
         // Given 2 anonymous users
-        Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getKey();
-        String accessFirstAnonymousToken = firstUser.getValue();
+        final Pair<RestTemplate, String> firstUser = generateAnonymousUser();
+        final RestTemplate restTemplate = firstUser.getKey();
+        restTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+        final String accessFirstAnonymousToken = firstUser.getValue();
 
-        Pair<RestTemplate, String> secondUser = generateAnonymousUser();
-        RestTemplate restTemplate1 = secondUser.getKey();
-        String accessSecondAnonymousToken = secondUser.getValue();
+        final Pair<RestTemplate, String> secondUser = generateAnonymousUser();
+        final RestTemplate restTemplate1 = secondUser.getKey();
+        restTemplate1.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+        final String accessSecondAnonymousToken = secondUser.getValue();
 
         // Given admin user
-        Pair<RestTemplate, String> adminUser = generateAdminUser();
-        //OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
-        RestTemplate adminRestTemplate = adminUser.getKey();
-        String accessLoggedToken = adminUser.getValue();
+        final Pair<OAuth2RestTemplate, String> adminUser = generateAdminUser();
+        final OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
+        final String accessLoggedToken = adminUser.getValue();
 
         // When receiving tokens
         // Then they should be different
+        assertFalse(accessFirstAnonymousToken.equals(accessSecondAnonymousToken));
         assertFalse(accessFirstAnonymousToken.equals(accessLoggedToken));
         assertFalse(accessSecondAnonymousToken.equals(accessLoggedToken));
 
@@ -357,13 +368,9 @@ public class OrderControllerTest extends ApiTestBase {
         // When user added order
         String orderLocation = anonymousOrderHeaders.getHeaders().getLocation().toASCIIString();
 
-        em.clear();
-
-        Pair<OAuth2RestTemplate, String> adminUser2 = generateAdminUser();
-        final OAuth2RestTemplate adminRestTemplate2 = adminUser2.getKey();
-
         final ResponseEntity<Resources<OrderDto>> allOrders =
-                adminRestTemplate2.exchange(ORDERS_URL, HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -379,7 +386,8 @@ public class OrderControllerTest extends ApiTestBase {
         assertNotNull(goodOne);
 
         final ResponseEntity<Resources<OrderDto>> allSecondOrders =
-                restTemplate1.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+                restTemplate1.exchange(ORDERS_URL, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allSecondOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -403,11 +411,25 @@ public class OrderControllerTest extends ApiTestBase {
         adminRestTemplate.delete(orderLocation);
 
         // Then it should exist anymore
-        assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
+//        assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
+
+        final ResponseEntity<Resources<OrderDto>> allOrders3 =
+                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+
+        assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
+
+        assertFalse(new ArrayList<>(allOrders3.getBody().getContent()).stream()
+                        .filter(x -> x.getOrderId() == goodOne.getOrderId())
+                        .findAny()
+                        .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                        .orElse(false)
+        );
 
     }
 
     @Test
+    @Transactional
     public void shouldNotModifyOrderItemQuantity() throws URISyntaxException {
         // Given admin
         Pair<OAuth2RestTemplate, String> adminCredentials = generateAdminUser();
@@ -417,10 +439,8 @@ public class OrderControllerTest extends ApiTestBase {
         // assuming that there is product with id 10 and skuId 10
         HttpEntity<String> requestEntity =  new HttpEntity<>("CHECK_QUANTITY");
         HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
-//        httpJsonRequestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-//        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-//
-        httpJsonRequestHeaders.set("Accept", "application/hal+json");
+
+        httpJsonRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         httpJsonRequestHeaders.set("Content-Type", "application/hal+json");
 
         adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/availability", HttpMethod.PUT,
@@ -458,6 +478,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void shouldNotAcceptInvalidCountryNameInAddress() throws URISyntaxException {
         // Given anonymous user with 1 item in order
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -507,6 +528,7 @@ public class OrderControllerTest extends ApiTestBase {
 
 
     @Test
+    @Transactional
     public void creatingNewProductAndAddingItToOrderSavesAllValuesCorrectlyTest() throws URISyntaxException {
 
         final ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
@@ -553,6 +575,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void addingSkusWithNotEnoughQuantityAvailableThrowsAnExceptionTest() throws URISyntaxException {
 
 
@@ -561,8 +584,6 @@ public class OrderControllerTest extends ApiTestBase {
         ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
         SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-
-
 
         additionalSkuDto.setQuantityAvailable(TEST_QUANTITY);
         additionalSkuDto.setAvailability("CHECK_QUANTITY");
@@ -612,6 +633,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void shouldAddItemToOrderByProductOptionsTest() throws URISyntaxException {
         /* (mst) Prepare a single product with 2 'options' assigned to different SKUs */
         final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
@@ -684,6 +706,7 @@ public class OrderControllerTest extends ApiTestBase {
     }
 
     @Test
+    @Transactional
     public void shouldAddItemToOrderByProductOptions2Test() throws URISyntaxException {
         /* (mst) Prepare a single product with 2 'options' assigned to different SKUs */
         final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);

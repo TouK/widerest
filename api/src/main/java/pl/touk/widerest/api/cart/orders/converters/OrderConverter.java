@@ -39,7 +39,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
-                .orderPaymentDto(order.getPayments().stream()
+                .orderPayment(order.getPayments().stream()
                         .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, false)).collect(Collectors.toList()))
                 .orderItems(order.getDiscreteOrderItems().stream()
                         .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
@@ -87,7 +87,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         order.setId(orderDto.getOrderId());
         order.setOrderNumber(orderDto.getOrderNumber());
         order.setStatus(OrderStatus.getInstance(orderDto.getStatus()));
-        order.setPayments(orderDto.getOrderPaymentDto().stream().map(orderPaymentConverter::createEntity)
+        order.setPayments(orderDto.getOrderPayment().stream().map(orderPaymentConverter::createEntity)
                 .collect(Collectors.toList()));
 
         return order;

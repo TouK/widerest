@@ -29,7 +29,6 @@ import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 @ApiModel(value = "Order", description = "Order DTO resource representation")
 public class OrderDto extends BaseDto {
 
-    @JsonIgnore
     private Long orderId;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -58,7 +57,7 @@ public class OrderDto extends BaseDto {
     /* TODO: (mst) what is this!? */
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 7, value = "", dataType = "java.util.List")
-    private List<OrderPaymentDto> orderPaymentDto;
+    private List<OrderPaymentDto> orderPayment;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 8, value = "Name of the fulfillment", dataType = "java.lang.String")

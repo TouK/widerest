@@ -162,9 +162,9 @@ public class OrderController {
 
         return new Resources<>(
                 orderServiceProxy.getOrdersByCustomer(userDetails).stream()
-                .map(order -> orderConverter.createDto(order, false))
-                .filter(x -> status == null || x.getStatus().equals(status))
-                .collect(toList()),
+                        .map(order -> orderConverter.createDto(order, false))
+                        .filter(x -> status == null || x.getStatus().equals(status))
+                        .collect(toList()),
 
                 linkTo(methodOn(getClass()).getOrders(null, status)).withSelfRel()
         );
