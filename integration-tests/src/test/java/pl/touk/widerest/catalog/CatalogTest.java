@@ -32,6 +32,7 @@ import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.api.settings.dto.PropertyDto;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.ApiTestUtils;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
 
@@ -75,7 +76,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testCategoryId = getIdFromEntity(remoteAddCategoryEntity);
+        final long testCategoryId = ApiTestUtils.getIdFromEntity(remoteAddCategoryEntity);
 
         // then: 1) the new category should not have any products
         final long currentProductsInCategoryRemoteCount = getLocalTotalProductsInCategoryCount(testCategoryId);
@@ -89,7 +90,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testProductId1 = getIdFromEntity(remoteAddProduct1Entity);
+        final long testProductId1 = ApiTestUtils.getIdFromEntity(remoteAddProduct1Entity);
 
         em.clear();
 
@@ -127,7 +128,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testProductId2 = getIdFromEntity(remoteAddProduct2Entity);
+        final long testProductId2 = ApiTestUtils.getIdFromEntity(remoteAddProduct2Entity);
 
         // then: 3) total number of products should increase BUT the number of products in test category should remain unchanged
         assertThat(getLocalTotalProductsCount(), equalTo(currentGlobalProductCount + 2));
@@ -179,7 +180,7 @@ public class CatalogTest extends ApiTestBase {
 
             assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-            newCategoriesIds.add(getIdFromEntity(remoteAddCategoryEntity));
+            newCategoriesIds.add(ApiTestUtils.getIdFromEntity(remoteAddCategoryEntity));
         }
 
         // then: 1) total number of categories should increase by TEST_CATEGORIES_COUNT and all of the categories
@@ -201,7 +202,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getLocalTotalProductsCount(), equalTo(currentTotalProductsCount + 1));
 
-        final long testProductId = getIdFromEntity(remoteAddProduct1Entity);
+        final long testProductId = ApiTestUtils.getIdFromEntity(remoteAddProduct1Entity);
 
         // when: 3) inserting test product into all TEST_CATEGORIES_COUNT categories
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
@@ -247,7 +248,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
-        final long testCategoryId = getIdFromEntity(remoteAddCategoryEntity);
+        final long testCategoryId = ApiTestUtils.getIdFromEntity(remoteAddCategoryEntity);
 
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
@@ -256,7 +257,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getLocalTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
 
-        final long testProductId = getIdFromEntity(remoteAddProduct1Entity);
+        final long testProductId = ApiTestUtils.getIdFromEntity(remoteAddProduct1Entity);
 
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
@@ -325,7 +326,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(getLocalTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
 
-        final long testCategoryId = getIdFromEntity(newCategoryEntity);
+        final long testCategoryId = ApiTestUtils.getIdFromEntity(newCategoryEntity);
 
         // when: 2) creating and inserting PRODUCT_COUNT products into test category
         ProductDto productDto;
@@ -363,7 +364,7 @@ public class CatalogTest extends ApiTestBase {
         final ResponseEntity<?> newCategoryEntity = addNewTestCategory(testCategory);
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testCategoryId = getIdFromEntity(newCategoryEntity);
+        final long testCategoryId = ApiTestUtils.getIdFromEntity(newCategoryEntity);
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
         productDto.setCategoryName(testCategory.getName());
@@ -372,7 +373,7 @@ public class CatalogTest extends ApiTestBase {
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testProductId1 = getIdFromEntity(remoteAddProduct1Entity);
+        final long testProductId1 = ApiTestUtils.getIdFromEntity(remoteAddProduct1Entity);
 
         // then: 1) Total number of products in test category equals 1
         assertThat(getLocalTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
@@ -403,11 +404,11 @@ public class CatalogTest extends ApiTestBase {
         // when: 1) adding 2 test categories and 3 test products
         final ResponseEntity<?> newCategoryEntity1 = addNewTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
         assertThat(newCategoryEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long testCategoryId1 = getIdFromEntity(newCategoryEntity1);
+        final long testCategoryId1 = ApiTestUtils.getIdFromEntity(newCategoryEntity1);
 
         final ResponseEntity<?> newCategoryEntity2 = addNewTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
         assertThat(newCategoryEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long testCategoryId2 = getIdFromEntity(newCategoryEntity2);
+        final long testCategoryId2 = ApiTestUtils.getIdFromEntity(newCategoryEntity2);
 
         final List<Long> newProductsIds = new ArrayList<>();
 
@@ -418,7 +419,7 @@ public class CatalogTest extends ApiTestBase {
 
             assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-            newProductsIds.add(getIdFromEntity(remoteAddProductEntity));
+            newProductsIds.add(ApiTestUtils.getIdFromEntity(remoteAddProductEntity));
         }
 
         // then: 1) both categories do not "include" any of the test products yet

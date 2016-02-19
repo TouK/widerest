@@ -20,6 +20,7 @@ import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.ApiTestUtils;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
 
@@ -61,7 +62,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
         final ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
         assertThat(newCategoryResponseHeaders.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long categoryId = getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
+        final long categoryId = ApiTestUtils.getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         productDto.setCategoryName(categoryDto.getName());
@@ -259,7 +260,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final ResponseEntity<?> remoteAddCategoryEntity = addNewTestCategory(categoryDto);
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
         // then: 1) the number of products in added category is equal to 0 (by default)
         final long currentProductsInCategoryRemoteCount = getLocalTotalProductsInCategoryCount(testCategoryId);
@@ -287,7 +288,7 @@ public class CategoryControllerTest extends ApiTestBase {
         final ResponseEntity<?> newCategoryResponseHeaders = addNewTestCategory(categoryDto);
         assertThat(newCategoryResponseHeaders.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long categoryId = getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
+        final long categoryId = ApiTestUtils.getIdFromLocationUrl(newCategoryResponseHeaders.getHeaders().getLocation().toString());
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         productDto.setCategoryName(categoryDto.getName());
@@ -376,7 +377,7 @@ public class CategoryControllerTest extends ApiTestBase {
         categoryDto.setProductsAvailability("dasdadasda");
         final ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
         assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
         final ResponseEntity<CategoryDto> receivedCategoryEntity =
                 restTemplateForHalJsonHandling.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
@@ -459,7 +460,7 @@ public class CategoryControllerTest extends ApiTestBase {
 
         final ResponseEntity<CategoryDto> remoteAddCategoryEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestBase.CATEGORIES_URL, categoryDto, null, serverPort);
         assertTrue(remoteAddCategoryEntity.getStatusCode() == HttpStatus.CREATED);
-        final long testCategoryId = getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
+        final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(remoteAddCategoryEntity.getHeaders().getLocation().toString());
 
         // then: category attributes have been set properly
         final ResponseEntity<CategoryDto> receivedCategoryEntity =
@@ -495,7 +496,7 @@ public class CategoryControllerTest extends ApiTestBase {
         subcategoryDto.setDescription("This is a subcategory description");
 
         final ResponseEntity<?> subcategoryResponseEntity = addNewTestCategory(subcategoryDto);
-        final long testSubcategoryId = getIdFromLocationUrl(subcategoryResponseEntity.getHeaders().getLocation().toString());
+        final long testSubcategoryId = ApiTestUtils.getIdFromLocationUrl(subcategoryResponseEntity.getHeaders().getLocation().toString());
 
         final ResponseEntity<?> addSubcategoryResponseEntity = addCategoryToCategoryReference(testCategoryId, testSubcategoryId);
 
@@ -534,10 +535,10 @@ public class CategoryControllerTest extends ApiTestBase {
          */
 
         /* Build the category tree */
-        final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
-        final long rootSubcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
-        final long childSubcategory1Id = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
-        final long childSubcategory2Id = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long rootCategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long rootSubcategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long childSubcategory1Id = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long childSubcategory2Id = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
 
         addCategoryToCategoryReference(rootCategoryId, rootSubcategoryId);
         addCategoryToCategoryReference(rootSubcategoryId, childSubcategory1Id);
@@ -571,8 +572,8 @@ public class CategoryControllerTest extends ApiTestBase {
     @Test
     public void shouldThrowExceptionWhenAddingTheSameSubcategoryTwiceTest() {
         // when: 1) adding a new category with a new subcategory
-        final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
-        final long subcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long rootCategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long subcategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
 
 
         final ResponseEntity<?> addSubcategoryResponseEntity = addCategoryToCategoryReference(rootCategoryId, subcategoryId);
@@ -598,8 +599,8 @@ public class CategoryControllerTest extends ApiTestBase {
     @Test
     public void shouldRemoveAllReferencesInTheParentCategoryAfterDeletingItsSubcategoryTest() {
         // when: 1) adding a new test category with a new subcategory
-        final long rootCategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
-        final long subcategoryId = getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long rootCategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
+        final long subcategoryId = ApiTestUtils.getIdFromLocationUrl(addNewTestCategory(DtoTestType.NEXT).getHeaders().getLocation().toString());
 
         final ResponseEntity<?> addSubcategoryResponseEntity = addCategoryToCategoryReference(rootCategoryId, subcategoryId);
 

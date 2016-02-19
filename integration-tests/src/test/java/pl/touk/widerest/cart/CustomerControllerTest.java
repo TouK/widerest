@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.base.ApiTestBase;
+import pl.touk.widerest.base.ApiTestUtils;
 
 import javax.annotation.Resource;
 import java.net.URI;
@@ -112,7 +113,7 @@ public class CustomerControllerTest extends ApiTestBase {
     private void givenAnonymousUser() throws URISyntaxException {
         RestTemplate restTemplate = new RestTemplate();
         URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
-        userCredentials = Pair.of(restTemplate, strapToken(FirstResponseUri));
+        userCredentials = Pair.of(restTemplate, ApiTestUtils.strapTokenFromURI(FirstResponseUri));
     }
 
 

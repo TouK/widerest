@@ -47,10 +47,7 @@ import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
-import pl.touk.widerest.base.ApiTestBase;
-import pl.touk.widerest.base.DtoTestFactory;
-import pl.touk.widerest.base.DtoTestType;
-import pl.touk.widerest.base.MappingHalJackson2HttpMessageConverter;
+import pl.touk.widerest.base.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -71,7 +68,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Then the token should be generated
         assertNotNull(FirstResponseUri);
-        assertFalse(strapToken(FirstResponseUri).equals(""));
+        assertFalse(ApiTestUtils.strapTokenFromURI(FirstResponseUri).equals(""));
 
     }
 
@@ -186,7 +183,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // Then it shouldn't be null and its ID must be > 0
         assertNotNull(anonymousOrderHeaders);
-        assert(strapSufixId(anonymousOrderHeaders.getHeaders().getLocation().toString()) > 0);
+        assert(ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString()) > 0);
     }
 
     @Test
@@ -319,7 +316,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When I remove the last added item
         ResponseEntity<HttpHeaders> itemRemovalResponse =
-                deleteRemoveOrderItem(restTemplate, accessToken, orderId, strapSufixId(itemAddResponse.getHeaders().getLocation().toString()));
+                deleteRemoveOrderItem(restTemplate, accessToken, orderId, ApiTestUtils.strapSuffixId(itemAddResponse.getHeaders().getLocation().toString()));
 
         // Then I should receive 200 status code
         assert(itemRemovalResponse.getStatusCode().value() == 200);
@@ -535,11 +532,11 @@ public class OrderControllerTest extends ApiTestBase {
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
-        testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
+        testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
         final ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId = getIdFromEntity(newProductResponseEntity);
+        long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
 
         //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
@@ -555,7 +552,7 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
-        long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+        long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 
 
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -569,7 +566,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        long addedItemId = getIdFromEntity(itemAddResponse);
+        long addedItemId = ApiTestUtils.getIdFromEntity(itemAddResponse);
 
         getItemDetailsFromCart(orderId, addedItemId, accessToken);
     }
@@ -589,11 +586,11 @@ public class OrderControllerTest extends ApiTestBase {
         additionalSkuDto.setAvailability("CHECK_QUANTITY");
 
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
-        testProductDto.setValidTo(addNDaysToDate(testProductDto.getValidFrom(), 10));
+        testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
         ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        long productId = getIdFromEntity(newProductResponseEntity);
+        long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
         final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
                 hateoasRestTemplate().exchange(
@@ -606,7 +603,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
         ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
-        long skuId = getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+        long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 
 
         Pair<RestTemplate, String> firstUser = generateAnonymousUser();
@@ -627,7 +624,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        long addedItemId = getIdFromEntity(itemAddResponse);
+        long addedItemId = ApiTestUtils.getIdFromEntity(itemAddResponse);
 
         getItemDetailsFromCart(orderId, addedItemId, accessToken);
     }
@@ -643,7 +640,7 @@ public class OrderControllerTest extends ApiTestBase {
 //        newProductDto.getDefaultSku().setActiveEndDate(addNDaysToDate(newProductDto .getDefaultSku().getActiveStartDate(), 30));
 //        newProductDto.getDefaultSku().setRetailPrice(new BigDecimal("19.99"));
 //
-        newProductDto.setValidFrom(addNDaysToDate(newProductDto.getValidFrom(), 30));
+        newProductDto.setValidFrom(ApiTestUtils.addNDaysToDate(newProductDto.getValidFrom(), 30));
         newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
@@ -653,13 +650,13 @@ public class OrderControllerTest extends ApiTestBase {
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("ALWAYS_AVAILABLE");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
         additionalSku2.setRetailPrice(new BigDecimal("49.99"));
-        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
         additionalSku2.setCurrencyCode("USD");
         additionalSku2.setAvailability("ALWAYS_AVAILABLE");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);
@@ -713,7 +710,7 @@ public class OrderControllerTest extends ApiTestBase {
         final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        newProductDto.setValidTo(addNDaysToDate(newProductDto.getValidFrom(), 30));
+        newProductDto.setValidTo(ApiTestUtils.addNDaysToDate(newProductDto.getValidFrom(), 30));
         newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
@@ -723,13 +720,13 @@ public class OrderControllerTest extends ApiTestBase {
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-        additionalSku1.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("ALWAYS_AVAILABLE");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
         additionalSku2.setRetailPrice(new BigDecimal("49.99"));
-        additionalSku2.setActiveEndDate(addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
         additionalSku2.setCurrencyCode("USD");
         additionalSku2.setAvailability("ALWAYS_AVAILABLE");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);

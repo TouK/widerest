@@ -58,7 +58,6 @@ import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.products.dto.MediaDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
@@ -251,19 +250,6 @@ public abstract class ApiTestBase {
     }
 
 
-    protected long getIdFromLocationUrl(final String locationUrl) {
-        if(locationUrl != null && org.apache.commons.lang.StringUtils.isNotEmpty(locationUrl)) {
-            return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
-        } else {
-            return -1;
-        }
-
-    }
-
-    protected long getIdFromEntity(final ResponseEntity responseEntity) {
-        return getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
-    }
-
     /* ---------------- TEST HELPER/COMMON METHODS ---------------- */
 //    public long getRemoteTotalCategoriesCount() {
 //        HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_COUNT_URL,
@@ -366,7 +352,7 @@ public abstract class ApiTestBase {
     protected long addNewTestCategory() {
         final ResponseEntity<?> newTestCategoryEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
         assertThat(newTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        return getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
+        return ApiTestUtils.getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
     }
 
     protected void addOrUpdateNewTestSkuMediaToProductSku(final long productId, final long skuId, final String key, final MediaDto mediaDto) {
@@ -476,37 +462,6 @@ public abstract class ApiTestBase {
                .forEach(catalogService::removeSku);
     }
 
-      /* --------------------------------  CLEANUP METHODS -------------------------------- */
-
-
-    /* --------------------------------  HELPER METHODS -------------------------------- */
-
-    protected String getAccessTokenFromLocationUrl(final String locationUrl) throws URISyntaxException {
-        final String accessTokenUrl = locationUrl.replace("#", "?");
-        final List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
-
-        return authorizationParams.stream()
-                .filter(x -> x.getName().equals("access_token"))
-                .collect(Collectors.toList()).get(0).getValue();
-    }
-
-    protected Date addNDaysToDate(final Date date, final int N) {
-        final Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.add(Calendar.DATE, N);
-        return cal.getTime();
-    }
-
-    protected String strapToken(final URI response) throws URISyntaxException {
-        final String authorizationUrl = response.toString().replaceFirst("#", "?");
-        final List<NameValuePair> authParams = URLEncodedUtils.parse(new URI(authorizationUrl), "UTF-8");
-
-        return authParams.stream()
-                .filter(x -> x.getName().equals("access_token"))
-                .findFirst()
-                .map(NameValuePair::getValue)
-                .orElse(null);
-    }
 
     protected HttpHeaders prepareJsonHttpHeadersWithToken(final String token) {
         final HttpHeaders requestHeaders = new HttpHeaders();
@@ -529,31 +484,24 @@ public abstract class ApiTestBase {
 
     /* --------------------------------  ORDER METHODS -------------------------------- */
 
-    private final HttpHeaders httpRequestHeader = new HttpHeaders();
 
     protected Integer createNewOrder(final String token) {
         final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
                 restTemplate.postForEntity(ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
 
-        return strapSufixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
-    }
-
-    protected Integer strapSufixId(final String url) {
-        // Assuming it is */df/ab/{sufix}
-        final String[] tab = StringUtils.split(url, "/");
-        return Integer.parseInt(tab[tab.length - 1]);
+        return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
     protected Pair generateAnonymousUser() throws URISyntaxException {
         final RestTemplate restTemplate = new RestTemplate();
         final URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
-        return Pair.of(restTemplate, strapToken(FirstResponseUri));
+        return Pair.of(restTemplate, ApiTestUtils.strapTokenFromURI(FirstResponseUri));
     }
 
     protected Pair generateAdminUser() throws URISyntaxException {
         final OAuth2RestTemplate adminRestTemplate = oAuth2AdminHalRestTemplate();
         final URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
-        return Pair.of(adminRestTemplate, strapToken(adminUri));
+        return Pair.of(adminRestTemplate, ApiTestUtils.strapTokenFromURI(adminUri));
     }
 
     protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(final RestTemplate restTemplate, final String token,
