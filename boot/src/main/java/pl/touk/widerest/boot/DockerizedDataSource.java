@@ -31,8 +31,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-//@ConditionalOnProperty(prefix = "spring.datasource", name = "url", havingValue = "false", matchIfMissing = true)
-//@Component("dataSource")
 @Slf4j
 public class DockerizedDataSource extends DelegatingDataSource {
 

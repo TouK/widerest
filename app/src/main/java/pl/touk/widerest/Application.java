@@ -10,6 +10,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import pl.touk.widerest.api.settings.SettingsConsumer;
 import pl.touk.widerest.api.settings.SettingsService;
 import pl.touk.widerest.boot.BroadleafApplicationContextInitializer;
+import pl.touk.widerest.boot.BroadleafBeansPostProcessor;
+import pl.touk.widerest.boot.ReorderedHttpMessageConverters;
 import springfox.documentation.swagger.web.ApiKeyVehicle;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 
@@ -43,6 +45,17 @@ public class Application extends WebMvcConfigurerAdapter {
                 " "
         );
     }
+
+    @Bean
+    static public BroadleafBeansPostProcessor broadleafBeansPostProcessor() {
+        return new BroadleafBeansPostProcessor();
+    }
+
+    @Bean
+    public ReorderedHttpMessageConverters httpMessageConverters() {
+        return new ReorderedHttpMessageConverters();
+    }
+
 
     @Bean
     public SettingsConsumer samplePropertyConsumer() {

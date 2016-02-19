@@ -1,9 +1,8 @@
 package pl.touk.widerest.boot;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.broadleafcommerce.common.extensibility.context.MergeApplicationContextXmlConfigResource;
 import org.broadleafcommerce.common.extensibility.context.ResourceInputStream;
 import org.broadleafcommerce.common.extensibility.context.StandardConfigLocations;
@@ -30,9 +29,8 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
+@Slf4j
 public class BroadleafApplicationContextInitializer implements ApplicationContextInitializer<GenericApplicationContext> {
-
-    private static final Log LOG = LogFactory.getLog(BroadleafApplicationContextInitializer.class);
 
     private String patchLocation;
 
@@ -90,7 +88,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         List<ResourceInputStream> resolverList = new ArrayList<ResourceInputStream>();
 
         if (ArrayUtils.isEmpty(resources)) {
-            LOG.warn(
+            log.warn(
                     "Unable to use automatic applicationContext loading. To avoid this, upgrade your poms to reference the latest versions of all modules.");
             return resolverList;
         }
@@ -128,7 +126,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         try {
             loadBeanDefinitions(reader, importProcessor);
         } catch (IOException e) {
-            LOG.error(e);
+            log.error("Error while merging bean defininitions", e);
         }
     }
 }
