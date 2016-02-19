@@ -3,6 +3,7 @@ package pl.touk.widerest.security.config;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetailsServiceImpl;
 import org.broadleafcommerce.profile.core.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,7 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.PrefixBasedAuthenticationManager;
@@ -21,7 +21,9 @@ import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.authentication.TokenTypeSelectedAuthenticationProvider;
 import pl.touk.widerest.security.authentication.UsertypeFormLoginConfigurer;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Collection;
 
 @Configuration
 @EnableWebMvcSecurity
@@ -31,38 +33,50 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         super(false);
     }
 
-    @Autowired
-    private AdminUserDetailsServiceImpl backofficeUserDetailsService;
+    @Configuration
+    @ConditionalOnBean(AdminUserDetailsServiceImpl.class)
+    public static class BackofficeAuthenticationConfig {
 
-    @Autowired
-    private PasswordEncoder blAdminPasswordEncoder;
+        @Autowired
+        private AdminUserDetailsServiceImpl backofficeUserDetailsService;
 
-    @Bean
-    public AuthenticationProvider backofficeAuthenticationProvider() {
-        DaoAuthenticationProvider provider = new TokenTypeSelectedAuthenticationProvider<>(BackofficeAuthenticationToken.class);
-        provider.setUserDetailsService(backofficeUserDetailsService);
-        provider.setPasswordEncoder(blAdminPasswordEncoder);
-        return provider;
+        @Autowired
+        private PasswordEncoder blAdminPasswordEncoder;
+
+        @Bean
+        public AuthenticationProvider backofficeAuthenticationProvider() {
+            DaoAuthenticationProvider provider = new TokenTypeSelectedAuthenticationProvider<>(BackofficeAuthenticationToken.class);
+            provider.setUserDetailsService(backofficeUserDetailsService);
+            provider.setPasswordEncoder(blAdminPasswordEncoder);
+            return provider;
+        }
     }
 
-    @Autowired
-    private UserDetailsServiceImpl siteUserDetailsService;
+    @Configuration
+    @ConditionalOnBean(UserDetailsServiceImpl.class)
+    public static class SiteAuthenticationConfig {
 
-    @Autowired
-    private PasswordEncoder blPasswordEncoder;
+        @Autowired
+        private UserDetailsServiceImpl siteUserDetailsService;
 
-    @Bean
-    public AuthenticationProvider siteAuthenticationProvider() {
-        DaoAuthenticationProvider provider = new TokenTypeSelectedAuthenticationProvider<>(SiteAuthenticationToken.class);
-        provider.setUserDetailsService(siteUserDetailsService);
-        provider.setPasswordEncoder(blPasswordEncoder);
-        return provider;
+        @Autowired
+        private PasswordEncoder blPasswordEncoder;
+
+        @Bean
+        public AuthenticationProvider siteAuthenticationProvider() {
+            DaoAuthenticationProvider provider = new TokenTypeSelectedAuthenticationProvider<>(SiteAuthenticationToken.class);
+            provider.setUserDetailsService(siteUserDetailsService);
+            provider.setPasswordEncoder(blPasswordEncoder);
+            return provider;
+        }
     }
+
+    @Resource
+    Collection<AuthenticationProvider> authenticationProviders;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(backofficeAuthenticationProvider())
-                .authenticationProvider(siteAuthenticationProvider());
+        authenticationProviders.stream().forEach(auth::authenticationProvider);
     }
 
     @Override
