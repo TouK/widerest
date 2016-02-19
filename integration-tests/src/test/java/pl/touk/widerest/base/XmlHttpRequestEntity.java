@@ -8,5 +8,4 @@ public class XmlHttpRequestEntity extends TestHttpRequestEntity {
         super();
         httpRequestHeaders.set("Accept", MediaType.APPLICATION_XML_VALUE);
     }
-
 }

@@ -65,6 +65,7 @@ import pl.touk.widerest.api.cart.customers.dto.CustomerDto;
 import pl.touk.widerest.api.cart.exceptions.CustomerNotFoundException;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.config.ResourceServerConfig;
@@ -98,58 +99,10 @@ public class CustomerController {
     private AuthorizationServerEndpointsConfiguration authorizationServerEndpointsConfiguration;
 
     @Autowired
-    ResourceServerTokenServices tokenServices;
+    private ResourceServerTokenServices tokenServices;
 
     @Resource
     private CustomerConverter customerConverter;
-
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @ApiOperation(value = "Get a single customer details", response = CustomerDto.class)
-    public ResponseEntity<CustomerDto> readOneCustomer(
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
-    ) {
-        return ofNullable(customerId)
-                .map(toCustomerId(customerUserDetails, customerId))
-                .map(customerService::readCustomerById)
-                .map(customer -> customerConverter.createDto(customer, false))
-                .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
-                .orElseThrow(CustomerNotFoundException::new);
-    }
-
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
-    @RequestMapping(value = "/{id}/email", method = RequestMethod.PUT)
-    @ApiOperation(value = "Update customer's email")
-    public void updateCustomerEmail(
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId,
-            @RequestBody String email
-    ) {
-        Optional.ofNullable(customerId)
-                .map(toCustomerId(customerUserDetails, customerId))
-                .map(customerService::readCustomerById)
-                .map(toCustomerWithEmail(email))
-                .orElseThrow(CustomerNotFoundException::new);
-    }
-
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
-    @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
-    @ApiOperation(value = "Update customer's email", response = String.class)
-    public ResponseEntity createAuthorizationCode(
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @ApiParam(value = "ID of a customer") @PathVariable(value = "id") String customerId
-    ) {
-        return ofNullable(customerId)
-                .map(toCustomerId(customerUserDetails, customerId))
-                .map(customerService::readCustomerById)
-                .map(this::generateCode)
-                .map(ResponseEntity::ok)
-                .orElseThrow(CustomerNotFoundException::new);
-    }
-
 
 
     @Transactional
@@ -157,7 +110,8 @@ public class CustomerController {
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
-            notes = "Gets a list of all currently active customers",
+            notes = "Gets a list of all active customers if the currently logged in user has admin rights. Otherwise, it simply" +
+                    " returns details of a currently logged in customer",
             response = CustomerDto.class,
             responseContainer = "List"
     )
@@ -170,10 +124,10 @@ public class CustomerController {
                         .map(customer -> customerConverter.createDto(customer, false))
                         .collect(Collectors.toList()))
                 .whenType(CustomerUserDetails.class).then(() -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
-                            //.map(id -> customerEntityToDto.apply(id))
-                            .map(id -> customerConverter.createDto(id, false))
-                            .map(Collections::singletonList)
-                            .orElse(emptyList()))
+                        //.map(id -> customerEntityToDto.apply(id))
+                        .map(id -> customerConverter.createDto(id, false))
+                        .map(Collections::singletonList)
+                        .orElse(emptyList()))
                 .otherwise(Collections::emptyList)
                 .get();
 
@@ -184,16 +138,98 @@ public class CustomerController {
     }
 
     @Transactional
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
+    @ApiOperation(
+            value = "Get single customer details",
+            notes = "Retrieves single customer details",
+            response = CustomerDto.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of product", response = ProductDto.class),
+            @ApiResponse(code = 404, message = "The specified customer does not exist")
+    })
+    public ResponseEntity<CustomerDto> readOneCustomer(
+            @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
+            @ApiParam(value = "ID of a customer", required = true)
+                @PathVariable(value = "id") final String customerId
+    ) {
+        return ofNullable(customerId)
+                .map(toCustomerId(customerUserDetails, customerId))
+                .map(customerService::readCustomerById)
+                .map(customer -> customerConverter.createDto(customer, false))
+                .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
+                .orElseThrow(CustomerNotFoundException::new);
+    }
+
+    @Transactional
+    @RequestMapping(value = "/{id}/email", method = RequestMethod.PUT)
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
+    @ApiOperation(
+            value = "Update customer's email",
+            notes = "Updates customer's email address",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Customer's email has been successfully updated", response = Void.class),
+            @ApiResponse(code = 404, message = "The specified customer does not exist")
+    })
+    public void updateCustomerEmail(
+            @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
+            @ApiParam(value = "ID of a customer", required = true)
+                @PathVariable(value = "id") final String customerId,
+            @RequestBody String email
+    ) {
+        Optional.ofNullable(customerId)
+                .map(toCustomerId(customerUserDetails, customerId))
+                .map(customerService::readCustomerById)
+                .map(toCustomerWithEmail(email))
+                .orElseThrow(CustomerNotFoundException::new);
+    }
+
+    @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
+    @ApiOperation(
+            value = "Create an authorization code",
+            notes = "Creates a new authorization code for a specified customer",
+            response = String.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Authorization code for the specified customer has been created", response = String.class),
+            @ApiResponse(code = 404, message = "The specified customer does not exist")
+    })
+    public ResponseEntity createAuthorizationCode(
+            @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
+            @ApiParam(value = "ID of a customer", required = true)
+                @PathVariable(value = "id") final String customerId
+    ) {
+        return ofNullable(customerId)
+                .map(toCustomerId(customerUserDetails, customerId))
+                .map(customerService::readCustomerById)
+                .map(this::generateCode)
+                .map(ResponseEntity::ok)
+                .orElseThrow(CustomerNotFoundException::new);
+    }
+
+
+    @Transactional
     @RequestMapping(value = "/register", method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Register a new customer",
+            notes = "Registers a new customer with provided credentials",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "New customer successfully registered", response = Void.class),
+            @ApiResponse(code = 404, message = "Specified customer already exists or provided credentials (email, username) are already taken")
+    })
     public void registerCustomer(
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @RequestParam String username,
-            @RequestParam String password,
-            @RequestParam String passwordConfirm,
-            @RequestParam String email
+            @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
+            @RequestParam final String username,
+            @RequestParam final String password,
+            @RequestParam final String passwordConfirm,
+            @RequestParam final String email
     )  {
         // Assuming user already has token
-
         ofNullable(customerUserDetails.getId())
                 .map(customerService::readCustomerById)
                 .filter(c -> !c.isRegistered())
@@ -212,13 +248,21 @@ public class CustomerController {
         customer.setEmailAddress(email);
 
         customerService.registerCustomer(customer, password, passwordConfirm);
-
     }
 
     @Transactional
     @RequestMapping(value = "/merge", method = RequestMethod.POST)
-    public void mergeWithAnonymous(@ApiIgnore @AuthenticationPrincipal CustomerUserDetails userDetails,
-                                   @RequestBody final String anonymousToken) throws RemoveFromCartException, PricingException {
+    @ApiOperation(
+            value = "Merge carts",
+            notes = "Merges anonymous cart with a logged in customer's cart",
+            response = Void.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Carts have been successfully merged", response = Void.class)
+    })
+    public void mergeWithAnonymous(
+            @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails userDetails,
+            @RequestBody final String anonymousToken) throws RemoveFromCartException, PricingException {
 
         final Customer loggedUser = customerService.readCustomerById(userDetails.getId());
         final CustomerUserDetails anonymousUserDetails = (CustomerUserDetails) tokenServices.loadAuthentication
