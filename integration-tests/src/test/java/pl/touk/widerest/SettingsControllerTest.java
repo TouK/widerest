@@ -16,6 +16,8 @@ import java.io.IOException;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static pl.touk.widerest.base.ApiTestUrls.SETTINGS_BY_NAME_URL;
+
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)

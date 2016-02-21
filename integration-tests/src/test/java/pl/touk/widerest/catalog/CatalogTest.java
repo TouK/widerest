@@ -27,10 +27,7 @@ import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
-import pl.touk.widerest.base.ApiTestBase;
-import pl.touk.widerest.base.ApiTestUtils;
-import pl.touk.widerest.base.DtoTestFactory;
-import pl.touk.widerest.base.DtoTestType;
+import pl.touk.widerest.base.*;
 
 @SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -97,7 +94,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
 
         final ResponseEntity<ProductDto> receivedProductEntity = hateoasRestTemplate().exchange(
-                PRODUCT_BY_ID_URL, HttpMethod.GET,
+                ApiTestUrls.PRODUCT_BY_ID_URL, HttpMethod.GET,
                 testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, testProductId1);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -131,8 +128,8 @@ public class CatalogTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(currentProductsInCategoryRemoteCount + 1));
 
         // when: 4) removing both products from catalog
-        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId1, serverPort);
-        oAuth2AdminRestTemplate().delete(PRODUCTS_URL + "/" + testProductId2, serverPort);
+        oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCTS_URL + "/" + testProductId1, serverPort);
+        oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCTS_URL + "/" + testProductId2, serverPort);
 
         em.clear();
 
@@ -143,7 +140,7 @@ public class CatalogTest extends ApiTestBase {
 
 
         // when: 5) removing test category from catalog
-        oAuth2AdminRestTemplate().delete(CATEGORIES_URL + "/" + testCategoryId, serverPort);
+        oAuth2AdminRestTemplate().delete(ApiTestUrls.CATEGORIES_URL + "/" + testCategoryId, serverPort);
 
         // then: 5) the total number of categories should decrease by 1
         em.clear();
@@ -212,13 +209,13 @@ public class CatalogTest extends ApiTestBase {
 
         // when: 4) deleting each of TEST_CATEGORIES_COUNT categories
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            oAuth2AdminRestTemplate().delete(CATEGORY_BY_ID_URL, serverPort, newCategoriesIds.get(i));
+            oAuth2AdminRestTemplate().delete(ApiTestUrls.CATEGORY_BY_ID_URL, serverPort, newCategoriesIds.get(i));
 
             em.clear();
 
             // then: 4a) product's categories number should decrease (by 1) on each category deletion
             receivedProductEntity = restTemplate.exchange(
-                    PRODUCT_BY_ID_URL,
+                    ApiTestUrls.PRODUCT_BY_ID_URL,
                     HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, testProductId);
 
             assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -276,7 +273,7 @@ public class CatalogTest extends ApiTestBase {
 
         for(int i = 0; i < TEST_SKUS_COUNT; i++) {
             oAuth2AdminRestTemplate().postForEntity(
-                    PRODUCT_BY_ID_SKUS,
+                    ApiTestUrls.PRODUCT_BY_ID_SKUS,
                     DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT),
                     null,
                     serverPort,
@@ -289,7 +286,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(testProductId), equalTo(currentSkusForProductCount + TEST_SKUS_COUNT));
 
         // when: 3) deleting test product
-        oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_URL, serverPort, testProductId);
+        oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_URL, serverPort, testProductId);
 
         em.clear();
 
@@ -298,7 +295,7 @@ public class CatalogTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentGlobalProductCount));
 
         final ResponseEntity<CategoryDto> receivedCategoryEntity =
-                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
+                restTemplate.getForEntity(ApiTestUrls.CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, testCategoryId);
 
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -386,7 +383,7 @@ public class CatalogTest extends ApiTestBase {
         categoryAttributes.put("length", String.valueOf(12.222));
         testCategory.setAttributes(categoryAttributes);
 
-        oAuth2AdminRestTemplate().put(CATEGORY_BY_ID_URL, testCategory, serverPort, testCategoryId);
+        oAuth2AdminRestTemplate().put(ApiTestUrls.CATEGORY_BY_ID_URL, testCategory, serverPort, testCategoryId);
 
         // then: 2) modification does not change category's products
         assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(1L));

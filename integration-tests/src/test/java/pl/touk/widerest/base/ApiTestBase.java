@@ -84,58 +84,6 @@ import static org.junit.Assert.assertThat;
 })
 public abstract class ApiTestBase {
 
-    public static final String API_BASE_URL = "http://localhost:{port}/v1";
-
-    /* Categories */
-    public static final String CATEGORIES_URL = API_BASE_URL + "/categories";
-    public static final String CATEGORIES_FLAT_URL = API_BASE_URL + "/categories?flat=true";
-    public static final String CATEGORY_BY_ID_URL = CATEGORIES_URL + "/{categoryId}";
-    public static final String CATEGORIES_COUNT_URL = CATEGORIES_URL + "/count";
-    public static final String PRODUCTS_IN_CATEGORY_URL = CATEGORIES_URL + "/{categoryId}/products";
-    public static final String PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "/{productId}";
-    public static final String ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL = PRODUCTS_IN_CATEGORY_URL + "?href=";
-    public static final String PRODUCTS_IN_CATEGORY_COUNT_URL = PRODUCTS_IN_CATEGORY_URL + "/count";
-    public static final String CATEGORY_AVAILABILITY_BY_ID_URL = CATEGORY_BY_ID_URL + "/availability";
-    public static final String SUBCATEGORY_IN_CATEGORY_BY_ID_URL = CATEGORY_BY_ID_URL + "/subcategories";
-    public static final String ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL = SUBCATEGORY_IN_CATEGORY_BY_ID_URL + "?href=";
-
-    /* Products */
-    public static final String PRODUCTS_URL = API_BASE_URL + "/products";
-    public static final String PRODUCT_BY_ID_URL = PRODUCTS_URL + "/{productId}";
-    public static final String PRODUCTS_COUNT_URL = PRODUCTS_URL + "/count";
-    public static final String PRODUCT_BY_ID_SKUS = PRODUCTS_URL + "/{productId}/skus";
-    public static final String PRODUCT_BY_ID_SKU_BY_ID = PRODUCT_BY_ID_SKUS + "/{skuId}";
-    public static final String PRODUCT_BY_ID_SKUS_DEFAULT = PRODUCT_BY_ID_SKUS + "/default";
-    public static final String CATEGORIES_BY_PRODUCT_BY_ID_COUNT = PRODUCT_BY_ID_URL + "/categories/count";
-    public static final String SKUS_COUNT_URL = PRODUCT_BY_ID_SKUS + "/count";
-    public static final String MEDIA_BY_KEY_URL = PRODUCT_BY_ID_SKU_BY_ID + "/media/{key}";
-    public static final String BUNDLES_URL = PRODUCTS_URL + "/bundles";
-    public static final String BUNDLE_BU_ID_URL = BUNDLES_URL + "/{bundleId}";
-    public static final String PRODUCT_BY_ID_ATTRIBUTES_URL = PRODUCT_BY_ID_URL + "/attributes";
-    public static final String PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL = PRODUCT_BY_ID_ATTRIBUTES_URL + "/{attributeName}";
-
-    /* Orders */
-    public static final String ORDERS_URL = API_BASE_URL + "/orders";
-    public static final String ORDER_BY_ID_URL = ORDERS_URL + "{orderId}";
-    public static final String ORDERS_COUNT = ORDERS_URL+"/count";
-    public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
-
-    /* PayPal */
-    public static final String SYSTEM_PROPERTIES_URL = API_BASE_URL + "/settings";
-    public static final String PAYPAL_CREDENTIALS_ID_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.CLIENT_ID;
-    public static final String PAYPAL_CREDENTIALS_SECRET_URL = SYSTEM_PROPERTIES_URL + "/" + PayPalSession.SECRET;
-
-    /* Customer */
-    public static final String CUSTOMERS_URL = API_BASE_URL + "/customers";
-
-    public static final String LOGIN_URL = "http://localhost:{port}/login";
-
-    public static final String OAUTH_AUTHORIZATION = "http://localhost:{port}/oauth/authorize?client_id=" + MultiTenancyConfig.DEFAULT_TENANT_IDENTIFIER + "&scope=customer&response_type=token&redirect_uri=/";
-
-
-    public static final String SETTINGS_URL = API_BASE_URL + "/settings";
-    public static final String SETTINGS_BY_NAME_URL = SETTINGS_URL + "/{settingName}";
-
     @PersistenceContext(unitName="blPU")
     protected EntityManager em;
 
@@ -266,13 +214,9 @@ public abstract class ApiTestBase {
         return ApiTestUtils.getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
     }
 
-    protected void addOrUpdateNewTestSkuMediaToProductSku(final long productId, final long skuId, final String key, final MediaDto mediaDto) {
-        oAuth2AdminRestTemplate().put(MEDIA_BY_KEY_URL, mediaDto, serverPort, productId, skuId, key);
-    }
-
     protected ResponseEntity<CategoryDto> getRemoteTestCategoryByIdEntity(final long categoryId) {
         final ResponseEntity<CategoryDto> receivedCategoryEntity =
-                restTemplate.getForEntity(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
+                restTemplate.getForEntity(ApiTestUrls.CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
 
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -282,7 +226,7 @@ public abstract class ApiTestBase {
 
     protected ResponseEntity<ProductDto> getRemoteTestProductByIdEntity(final long productId) {
         final ResponseEntity<ProductDto> receivedProductEntity =
-                restTemplate.getForEntity(PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
+                restTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
         return receivedProductEntity;
@@ -290,10 +234,6 @@ public abstract class ApiTestBase {
 
     protected ProductDto getRemoteTestProductByIdDto(final long productId) {
         return getRemoteTestProductByIdEntity(productId).getBody();
-    }
-
-    protected ResponseEntity<?> addNewTestSKUToProduct(final long productId, final SkuDto skuDto) {
-        return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
     /* --------------------------------  CLEANUP METHODS -------------------------------- */
@@ -323,20 +263,20 @@ public abstract class ApiTestBase {
 
     protected Integer createNewOrder(final String token) {
         final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
+                restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
 
         return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
     protected Pair generateAnonymousUser() throws URISyntaxException {
         final RestTemplate restTemplate = new RestTemplate();
-        final URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
+        final URI FirstResponseUri = restTemplate.postForLocation(ApiTestUrls.OAUTH_AUTHORIZATION, null, serverPort);
         return Pair.of(restTemplate, ApiTestUtils.strapTokenFromURI(FirstResponseUri));
     }
 
     protected Pair generateAdminUser() throws URISyntaxException {
         final OAuth2RestTemplate adminRestTemplate = oAuth2AdminHalRestTemplate();
-        final URI adminUri = adminRestTemplate.postForLocation(LOGIN_URL, null, serverPort);
+        final URI adminUri = adminRestTemplate.postForLocation(ApiTestUrls.LOGIN_URL, null, serverPort);
         return Pair.of(adminRestTemplate, ApiTestUtils.strapTokenFromURI(adminUri));
     }
 
@@ -345,7 +285,7 @@ public abstract class ApiTestBase {
 
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
-        return restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
+        return restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
@@ -362,7 +302,7 @@ public abstract class ApiTestBase {
     protected long getRemoteTotalOrdersCountValue(final String token) {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
-        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ORDERS_COUNT,
+        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ApiTestUrls.ORDERS_COUNT,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
 
         assertNotNull(remoteCountEntity);
@@ -376,7 +316,7 @@ public abstract class ApiTestBase {
 //                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
 
         final ResponseEntity<Resources<OrderDto>> allOrders =
-                oAuth2AdminRestTemplate().exchange(ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+                oAuth2AdminRestTemplate().exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         return new ArrayList<>(allOrders.getBody().getContent()).stream()
                 .filter(x -> x.getOrderId() == orderId)
@@ -388,7 +328,7 @@ public abstract class ApiTestBase {
     protected Integer getRemoteItemsInOrderCount(final Integer orderId, final String token) {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
-        final HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/count",
+        final HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/items/count",
                 HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
 
         return remoteCountEntity.getBody();
@@ -398,7 +338,7 @@ public abstract class ApiTestBase {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final ResponseEntity<Resources<DiscreteOrderItemDto>> receivedProductAttributeEntity =
-                restTemplateForHalJsonHandling.exchange(ORDERS_URL+"/"+orderId+"/items", HttpMethod.GET, httpRequestEntity, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}, serverPort);
+                restTemplateForHalJsonHandling.exchange(ApiTestUrls.ORDERS_URL+"/"+orderId+"/items", HttpMethod.GET, httpRequestEntity, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}, serverPort);
 
         assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -408,7 +348,7 @@ public abstract class ApiTestBase {
     protected DiscreteOrderItemDto getItemDetailsFromCart(final Integer orderId, final Long itemId, final String token) {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
-        final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items/"+itemId,
+        final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ApiTestUrls.ORDERS_URL+"/"+orderId+"/items/"+itemId,
                 HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort);
 
         return response.getBody();
@@ -417,7 +357,7 @@ public abstract class ApiTestBase {
     protected OrderStatus getOrderStatus(final Integer orderId, final String token) {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
-        final HttpEntity<OrderStatus> response = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/status",
+        final HttpEntity<OrderStatus> response = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/status",
                 HttpMethod.GET, httpRequestEntity, OrderStatus.class, serverPort);
 
         return response.getBody();
@@ -431,7 +371,7 @@ public abstract class ApiTestBase {
         map.add("password", password);
         map.add("passwordConfirm", password);
         final HttpEntity requestEntity = new HttpEntity(map, new HttpHeaders());
-        oAuth2RestTemplate.postForEntity(API_BASE_URL + "/customers/register", requestEntity, HttpHeaders.class, serverPort);
+        oAuth2RestTemplate.postForEntity(ApiTestUrls.API_BASE_URL + "/customers/register", requestEntity, HttpHeaders.class, serverPort);
     }
 
     protected void whenLoggedIn(final String usertype, final String username, final String password) throws IOException {

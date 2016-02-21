@@ -64,7 +64,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When I send POST request
         RestTemplate restTemplate = new RestTemplate();
-        URI FirstResponseUri = restTemplate.postForLocation(OAUTH_AUTHORIZATION, null, serverPort);
+        URI FirstResponseUri = restTemplate.postForLocation(ApiTestUrls.OAUTH_AUTHORIZATION, null, serverPort);
 
         // Then the token should be generated
         assertNotNull(FirstResponseUri);
@@ -80,7 +80,7 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate restTemplate = user.getKey();
         String accessToken = user.getValue();
         Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
+        String orderUrl = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
         ResponseEntity<HttpHeaders> orderItemResponse =
                 addItemToOrder(10, 5, orderUrl+"/items", accessToken, restTemplate);
 
@@ -111,7 +111,7 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate restTemplate = user.getKey();
         String accessToken = user.getValue();
         Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
+        String orderUrl = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
         addItemToOrder(10, 5, orderUrl+"/items", accessToken, restTemplate);
 
         // Given address and fulfillment option
@@ -179,7 +179,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When POSTing to create an order
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, getProperEntity(accessToken), HttpHeaders.class, serverPort);
+                restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, getProperEntity(accessToken), HttpHeaders.class, serverPort);
 
         // Then it shouldn't be null and its ID must be > 0
         assertNotNull(anonymousOrderHeaders);
@@ -220,7 +220,7 @@ public class OrderControllerTest extends ApiTestBase {
         requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         HttpEntity httpRequestEntity = new HttpEntity(null, requestHeaders);
-        ResponseEntity<HttpHeaders> response = restTemplate.exchange(ORDERS_URL + "/" + orderId,
+        ResponseEntity<HttpHeaders> response = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId,
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
 
         // Then the status code should be 200
@@ -234,7 +234,7 @@ public class OrderControllerTest extends ApiTestBase {
         final OAuth2RestTemplate adminRestTemplate = adminUser.getKey();
 
         final ResponseEntity<Resources<OrderDto>> allOrders =
-                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
+                adminRestTemplate.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -253,7 +253,7 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate restTemplate = firstUser.getKey();
         String accessToken = firstUser.getValue();
         Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ORDERS_URL+"/"+orderId;
+        String orderUrl = ApiTestUrls.ORDERS_URL+"/"+orderId;
 
         // Given items added to cart
         ArrayList<Long> skuIds = new ArrayList<>();
@@ -297,17 +297,17 @@ public class OrderControllerTest extends ApiTestBase {
 
         // When I add 3 different items to order
         ResponseEntity<HttpHeaders> itemAddResponse =
-                addItemToOrder(10, 5, ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
+                addItemToOrder(10, 5, ApiTestUrls.ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
         // Then 1st item should be added (amount: 5)
         assert(itemAddResponse.getStatusCode().value() == 201);
 
         itemAddResponse =
-                addItemToOrder(11, 3, ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
+                addItemToOrder(11, 3, ApiTestUrls.ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
         // Then 2nd item should be added (amount: 3)
         assert(itemAddResponse.getStatusCode().value() == 201);
 
         itemAddResponse =
-                addItemToOrder(12, 4, ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
+                addItemToOrder(12, 4, ApiTestUrls.ORDERS_URL+"/"+orderId+"/items", accessToken, restTemplate);
         // Then 3rd item should be added (amount: 4)
         assert(itemAddResponse.getStatusCode().value() == 201);
 
@@ -355,7 +355,7 @@ public class OrderControllerTest extends ApiTestBase {
         // When creating order for 1st user
         HttpEntity<?> anonymousFirstHttpEntity = getProperEntity(accessFirstAnonymousToken);
         ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class, serverPort);
+                restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, anonymousFirstHttpEntity, HttpHeaders.class, serverPort);
 
         em.clear();
 
@@ -366,7 +366,7 @@ public class OrderControllerTest extends ApiTestBase {
         String orderLocation = anonymousOrderHeaders.getHeaders().getLocation().toASCIIString();
 
         final ResponseEntity<Resources<OrderDto>> allOrders =
-                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null,
+                adminRestTemplate.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null,
                         new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
@@ -383,7 +383,7 @@ public class OrderControllerTest extends ApiTestBase {
         assertNotNull(goodOne);
 
         final ResponseEntity<Resources<OrderDto>> allSecondOrders =
-                restTemplate1.exchange(ORDERS_URL, HttpMethod.GET, null,
+                restTemplate1.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null,
                         new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allSecondOrders.getStatusCode(), equalTo(HttpStatus.OK));
@@ -411,7 +411,7 @@ public class OrderControllerTest extends ApiTestBase {
 //        assertFalse(givenOrderIdIsCancelled(accessLoggedToken, goodOne.getOrderId()));
 
         final ResponseEntity<Resources<OrderDto>> allOrders3 =
-                adminRestTemplate.exchange(ORDERS_URL, HttpMethod.GET, null,
+                adminRestTemplate.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null,
                         new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
@@ -440,10 +440,10 @@ public class OrderControllerTest extends ApiTestBase {
         httpJsonRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
         httpJsonRequestHeaders.set("Content-Type", "application/hal+json");
 
-        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/availability", HttpMethod.PUT,
+        adminRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID + "/availability", HttpMethod.PUT,
                 requestEntity, HttpHeaders.class, serverPort, 10L, 10L);
         HttpEntity<Integer> quantityEntity = new HttpEntity<>(100, httpJsonRequestHeaders);
-        adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID + "/quantity", HttpMethod.PUT,
+        adminRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID + "/quantity", HttpMethod.PUT,
                 quantityEntity, HttpHeaders.class, serverPort, 10L, 10L);
 
 
@@ -452,7 +452,7 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate userRestTemplate = userCredentials.getKey();
         String userAccessToken = userCredentials.getValue();
         Integer orderId = createNewOrder(userAccessToken);
-        String orderUrl = ORDERS_URL+"/"+orderId;
+        String orderUrl = ApiTestUrls.ORDERS_URL+"/"+orderId;
 
         // When adding item with not too big quantity
         ResponseEntity<HttpHeaders> itemAddResponse =
@@ -482,7 +482,7 @@ public class OrderControllerTest extends ApiTestBase {
         RestTemplate restTemplate = firstUser.getKey();
         String accessToken = firstUser.getValue();
         Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ORDERS_URL+"/"+orderId;
+        String orderUrl = ApiTestUrls.ORDERS_URL+"/"+orderId;
         addItemToOrder(10, 10, orderUrl+"/items", accessToken, restTemplate);
 
         // When sending wrong address
@@ -543,7 +543,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId);
@@ -562,7 +562,7 @@ public class OrderControllerTest extends ApiTestBase {
         Integer orderId = createNewOrder(accessToken);
 
         ResponseEntity<HttpHeaders> itemAddResponse =
-                addItemToOrder(skuId, 2, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
+                addItemToOrder(skuId, 2, ApiTestUrls.ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
 
         assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -594,7 +594,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId);
@@ -613,14 +613,14 @@ public class OrderControllerTest extends ApiTestBase {
         Integer orderId = createNewOrder(accessToken);
 
         try {
-            addItemToOrder(skuId, TEST_QUANTITY + 2, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
+            addItemToOrder(skuId, TEST_QUANTITY + 2, ApiTestUrls.ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
             fail();
         } catch(HttpStatusCodeException httpStatusCodeException) {
             assertTrue(httpStatusCodeException.getStatusCode().is5xxServerError());
         }
 
         // this should add correctly
-        final ResponseEntity<HttpHeaders> itemAddResponse = addItemToOrder(skuId, TEST_QUANTITY, ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
+        final ResponseEntity<HttpHeaders> itemAddResponse = addItemToOrder(skuId, TEST_QUANTITY, ApiTestUrls.ORDERS_URL + "/" + orderId + "/items", accessToken, restTemplate);
 
         assertThat(itemAddResponse.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -690,7 +690,7 @@ public class OrderControllerTest extends ApiTestBase {
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
 
-        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
 
         assertThat(placeOrderResponseEntity .getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -761,7 +761,7 @@ public class OrderControllerTest extends ApiTestBase {
         requestHeaders.set("Authorization", "Bearer " + accessToken);
         final HttpEntity httpRequestEntity = new HttpEntity(orderItemDto, requestHeaders);
 
-        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
 
         assertThat(placeOrderResponseEntity .getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -779,7 +779,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         final HttpEntity httpRequestEntity2 = new HttpEntity(orderItemDto2, requestHeaders);
 
-        final ResponseEntity<HttpHeaders> placeOrderResponseEntity2 = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity2, HttpHeaders.class, serverPort);
+        final ResponseEntity<HttpHeaders> placeOrderResponseEntity2 = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/itemsp", HttpMethod.POST, httpRequestEntity2, HttpHeaders.class, serverPort);
 
         assertThat(placeOrderResponseEntity2 .getStatusCode(), equalTo(HttpStatus.CREATED));
 

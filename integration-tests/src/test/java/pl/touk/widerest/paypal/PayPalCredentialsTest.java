@@ -17,6 +17,9 @@ import java.net.URISyntaxException;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static pl.touk.widerest.base.ApiTestUrls.PAYPAL_CREDENTIALS_ID_URL;
+import static pl.touk.widerest.base.ApiTestUrls.PAYPAL_CREDENTIALS_SECRET_URL;
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class PayPalCredentialsTest extends ApiTestBase {

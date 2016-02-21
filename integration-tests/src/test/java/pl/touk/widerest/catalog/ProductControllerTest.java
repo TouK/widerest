@@ -31,10 +31,7 @@ import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
-import pl.touk.widerest.base.ApiTestBase;
-import pl.touk.widerest.base.ApiTestUtils;
-import pl.touk.widerest.base.DtoTestFactory;
-import pl.touk.widerest.base.DtoTestType;
+import pl.touk.widerest.base.*;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -89,7 +86,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentProductsCount + 1));
 
         final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
-                PRODUCT_BY_ID_URL,
+                ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -158,7 +155,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         // then: the deleted product should no longer exist (HTTP code returned by API => 404)
         try {
-            restTemplate.exchange(PRODUCT_BY_ID_URL,
+            restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                     HttpMethod.GET,
                     testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, productId);
             fail();
@@ -179,7 +176,7 @@ public class ProductControllerTest extends ApiTestBase {
         final long currentGlobalProductsCount = apiTestCatalogLocal.getTotalProductsCount();
         final  ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
+        oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
         // then: no new product gets created
         assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentGlobalProductsCount));
@@ -194,10 +191,10 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
+        oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
 
         // then: the modified fields get updated in test product
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
                 testHttpRequestEntity.getTestHttpRequestEntity(),
                 ProductDto.class, serverPort, productId);
@@ -229,7 +226,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         // then: API should return HTTP.CONFLICT
         try {
-            oAuth2AdminRestTemplate().put(PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
+            oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
             fail();
         } catch(HttpClientErrorException httpCleintErrorException) {
             assertThat(httpCleintErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
@@ -275,7 +272,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(productId), equalTo(1L));
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-        final ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
+        final ResponseEntity<?> addedAdditionalSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, additionalSkuDto);
         assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         em.clear();
@@ -300,7 +297,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        final ResponseEntity<?> addedSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
+        final ResponseEntity<?> addedSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, additionalSkuDto);
         assertThat(addedSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long skuId = ApiTestUtils.getIdFromLocationUrl(addedSkuEntity.getHeaders().getLocation().toString());
 
@@ -312,14 +309,14 @@ public class ProductControllerTest extends ApiTestBase {
         adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
         try {
-            adminRestTemplate.exchange(PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
+            adminRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
                     requestEntity, Void.class, serverPort, productId, skuId);
         } catch(RestClientException ex) {
             System.out.println(ex.getMessage() + ex.getCause() + ex.getLocalizedMessage() + ex.getStackTrace());
         }
 
         final ResponseEntity<SkuDto> receivedSkuEntity =
-                restTemplate.getForEntity(PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
+                restTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
                         serverPort, productId, skuId);
 
         assertThat(receivedSkuEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -347,7 +344,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
                 testHttpRequestEntity.getTestHttpRequestEntity(),
                 ProductDto.class, serverPort, productId);
@@ -374,7 +371,7 @@ public class ProductControllerTest extends ApiTestBase {
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
         // then: default SKU's name should be chosen far a product name
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(PRODUCT_BY_ID_URL,
+        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
                 testHttpRequestEntity.getTestHttpRequestEntity(),
                 ProductDto.class, serverPort, productId);
@@ -391,13 +388,13 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
-        final ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
+        final ResponseEntity<?> addedAdditionalSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
         assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long skuId = ApiTestUtils.getIdFromLocationUrl(addedAdditionalSkuEntity.getHeaders().getLocation().toString());
 
         final MediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
 
-        addOrUpdateNewTestSkuMediaToProductSku(productId, skuId, "alt1", testSkuMedia);
+        apiTestCatalogManager.addTestMediaToSku(productId, skuId, "alt1", testSkuMedia);
 
         // then: Media object gets added properly
         final SkuMediaXref skuMediaXref = catalogService.findSkuById(skuId).getSkuMediaXref().get("alt1");
@@ -475,7 +472,7 @@ public class ProductControllerTest extends ApiTestBase {
         // then: all of the specified attributes should be saved correctly (via /product/{id}/attributes endpoint)
         final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
                 restTemplateForHalJsonHandling.exchange(
-                        PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null,
+                        ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null,
                         new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, idFromLocationUrl);
 
         assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -491,7 +488,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> receivedProductEntity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId);
@@ -504,7 +501,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         // then: API should not allow to do that and return 4xx error
         try {
-            oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_SKU_BY_ID, serverPort, productId, defaultSkuId);
+            oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, serverPort, productId, defaultSkuId);
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
@@ -652,7 +649,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> receivedProduct1Entity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId1);
@@ -661,7 +658,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> receivedProduct2Entity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId2);
@@ -691,14 +688,14 @@ public class ProductControllerTest extends ApiTestBase {
 
         testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
 
-        final ResponseEntity<?> objectResponseEntity = oAuth2AdminRestTemplate().postForEntity(BUNDLES_URL, testBundle, null, serverPort);
+        final ResponseEntity<?> objectResponseEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
 
         assertThat(objectResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         final long testBundleId = ApiTestUtils.getIdFromEntity(objectResponseEntity);
 
         final ResponseEntity<ProductBundleDto> receivedBundleEntity =
-                restTemplate.getForEntity(BUNDLE_BU_ID_URL, ProductBundleDto.class, serverPort, testBundleId);
+                restTemplate.getForEntity(ApiTestUrls.BUNDLE_BU_ID_URL, ProductBundleDto.class, serverPort, testBundleId);
 
         assertThat(receivedBundleEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -732,7 +729,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final ResponseEntity<ProductDto> receivedProductEntity =
                 hateoasRestTemplate().exchange(
-                        PRODUCT_BY_ID_URL,
+                        ApiTestUrls.PRODUCT_BY_ID_URL,
                         HttpMethod.GET,
                         testHttpRequestEntity.getTestHttpRequestEntity(),
                         ProductDto.class, serverPort, productId1);
@@ -761,7 +758,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         // then: API should return HTTP.CONFLICT code
         try {
-            oAuth2AdminRestTemplate().postForEntity(BUNDLES_URL, testBundle, null, serverPort);
+            oAuth2AdminRestTemplate().postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
@@ -788,18 +785,18 @@ public class ProductControllerTest extends ApiTestBase {
                 .build();
 
         final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
+                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
 
         assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
 
         final ResponseEntity<?> attributeDtoEntity2 = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
+                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
 
         assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
 
         // then: the "original" attribute's value gets updated
         final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
-                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
 
         assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -825,22 +822,22 @@ public class ProductControllerTest extends ApiTestBase {
                 .build();
 
         final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
-                PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
+                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
 
         assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
 
         final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity1 =
-                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
 
         assertThat(receivedProductAttributeEntity1.getStatusCode(), equalTo(HttpStatus.OK));
 
         assertThat(receivedProductAttributeEntity1.getBody().getContent().size(), equalTo(1));
 
-        oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+        oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
 
         // then: the attribute no longer exists
         try {
-            oAuth2AdminRestTemplate().delete(PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+            oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
             fail();
         } catch(HttpClientErrorException httpClientErrorException) {
             assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
@@ -848,7 +845,7 @@ public class ProductControllerTest extends ApiTestBase {
 
 
         final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity2 =
-                restTemplateForHalJsonHandling.exchange(PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
 
         assertThat(receivedProductAttributeEntity2.getStatusCode(), equalTo(HttpStatus.OK));
 

@@ -13,6 +13,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import lombok.extern.slf4j.Slf4j;
 import pl.touk.widerest.base.ApiTestBase;
+import static pl.touk.widerest.base.ApiTestUrls.ORDERS_COUNT;
+import static pl.touk.widerest.base.ApiTestUrls.CUSTOMERS_URL;
 import pl.touk.widerest.security.oauth2.Scope;
 
 @SpringApplicationConfiguration(classes = Application.class)

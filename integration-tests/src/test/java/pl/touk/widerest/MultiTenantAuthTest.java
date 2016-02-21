@@ -34,8 +34,9 @@ import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.base.ApiTestBase;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
+
+import static pl.touk.widerest.base.ApiTestUrls.ORDERS_URL;
 
 @SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
