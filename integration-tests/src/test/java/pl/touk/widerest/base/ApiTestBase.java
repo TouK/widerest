@@ -3,18 +3,13 @@ package pl.touk.widerest.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.broadleafcommerce.common.persistence.Status;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Before;
@@ -66,6 +61,7 @@ import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -74,12 +70,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -174,6 +167,15 @@ public abstract class ApiTestBase {
     @Autowired
     protected ApiTestCatalogRemote apiTestCatalogRemote;
 
+    protected ApiTestCatalogOperations apiTestCatalogManager;
+
+    @Autowired
+    protected HttpHeadersWithTokenFactory httpHeadersWithTokenFactory;
+
+    @PostConstruct
+    public void init() {
+        apiTestCatalogManager = new ApiTestCatalogManager(serverPort);
+    }
 
     @Before
     public void clearSession() {
@@ -257,66 +259,9 @@ public abstract class ApiTestBase {
     }
 
 
-    protected long getRemoteTotalProductsCount() {
-        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(PRODUCTS_COUNT_URL,
-                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
-    protected long getLocalTotalSkus() {
-        return catalogService.findAllSkus().stream().count();
-    }
-
-    protected long getRemoteTotalSkusForProductCount(final long productId) {
-
-        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(SKUS_COUNT_URL,
-                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
-    protected long getRemoteTotalCategoriesForProductCount(final long productId) {
-        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(CATEGORIES_BY_PRODUCT_BY_ID_COUNT,
-                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), Long.class, serverPort, productId);
-
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
-    }
-
-    protected long getLocalTotalCategoriesForProductCount(final long productId) {
-        return catalogService.findProductById(productId)
-                .getAllParentCategoryXrefs().stream()
-                .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils::archivedCategoryFilter)
-                .count();
-    }
-
-
-    protected long getLocalTotalSkusForProductCount(final long productId) {
-        return catalogService.findProductById(productId).getAllSkus().stream().count();
-    }
-
-
-    protected ResponseEntity<?> addNewTestCategory(final DtoTestType dtoTestType) throws HttpClientErrorException {
-        return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(dtoTestType), null, serverPort);
-    }
-
-    protected ResponseEntity<?> addNewTestCategory(final CategoryDto categoryDto) throws HttpClientErrorException {
-        return oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, categoryDto, null, serverPort);
-    }
-
-    protected ResponseEntity<?> addNewTestProduct(final ProductDto productDto) {
-        return oAuth2AdminRestTemplate().postForEntity(PRODUCTS_URL, productDto, null, serverPort);
-    }
-
     protected long addNewTestCategory() {
-        final ResponseEntity<?> newTestCategoryEntity = oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
+        final ResponseEntity<?> newTestCategoryEntity = apiTestCatalogManager.addTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
+                //oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
         assertThat(newTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         return ApiTestUtils.getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
     }
@@ -332,10 +277,6 @@ public abstract class ApiTestBase {
         assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         return receivedCategoryEntity;
-    }
-
-    protected CategoryDto getRemoteTestCategoryByIdDto(final long categoryId) {
-        return getRemoteTestCategoryByIdEntity(categoryId).getBody();
     }
 
 
@@ -355,61 +296,13 @@ public abstract class ApiTestBase {
         return oAuth2AdminRestTemplate().postForEntity(PRODUCT_BY_ID_SKUS, skuDto, null, serverPort, productId);
     }
 
-    protected ResponseEntity<?> addCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
-        return oAuth2AdminRestTemplate().postForEntity(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL, null, null,
-                serverPort, rootCategoryId, serverPort, childCategoryId);
-    }
-
-    protected void removeCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
-        oAuth2AdminRestTemplate().delete(ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
-                serverPort, rootCategoryId, serverPort, childCategoryId);
-    }
-
-    protected ResponseEntity<?> addProductToCategoryReference(final long categoryId, final long productId) {
-        return oAuth2AdminRestTemplate().postForEntity(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, null, null, serverPort, categoryId, serverPort, productId);
-    }
-
-    protected void removeProductToCategoryReference(final long categoryId, final long productId) {
-        oAuth2AdminRestTemplate().delete(ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + PRODUCT_BY_ID_URL, serverPort, categoryId, serverPort, productId);
-    }
-
     /* --------------------------------  CLEANUP METHODS -------------------------------- */
-
-    protected void removeRemoteTestCategories() {
-
-        final ResponseEntity<CategoryDto[]> receivedCategoriesEntity =
-                restTemplate.getForEntity(CATEGORIES_URL, CategoryDto[].class, serverPort);
-
-        assertThat(receivedCategoriesEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        Arrays.asList(receivedCategoriesEntity.getBody()).stream()
-                .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
-                .map(x -> {
-                    oAuth2AdminRestTemplate().delete(x.getId().getHref());
-                    return x;
-                });
-    }
 
     protected void removeLocalTestCategories() {
         catalogService.findAllCategories().stream()
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
                 .forEach(catalogService::removeCategory);
-    }
-
-
-    protected void removeRemoteTestProduct() {
-        final ResponseEntity<ProductDto[]> receivedProductEntity = hateoasRestTemplate().exchange(PRODUCTS_URL,
-                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto[].class, serverPort);
-
-        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        Arrays.asList(receivedProductEntity.getBody()).stream()
-                .filter(x -> x.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME))
-                .map(x -> {
-                    oAuth2AdminRestTemplate().delete(x.getId().getHref());
-                    return x;
-                });
     }
 
 
@@ -420,31 +313,8 @@ public abstract class ApiTestBase {
                 .forEach(catalogService::removeProduct);
     }
 
-
-    protected void removeLocalTestSkus() {
-       catalogService.findAllSkus().stream()
-               .filter(x -> ((x.getName().contains(DtoTestFactory.TEST_ADDITIONAL_SKU_NAME) ||
-                            x.getName().contains("Sku"))))
-               .forEach(catalogService::removeSku);
-    }
-
-
-    protected HttpHeaders prepareJsonHttpHeadersWithToken(final String token) {
-        final HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        requestHeaders.set("Authorization", "Bearer " + token);
-        return requestHeaders;
-    }
-
-    protected HttpHeaders prepareHalHttpHeadersWithToken(final String token) {
-        final HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        requestHeaders.set("Authorization", "Bearer " + token);
-        return requestHeaders;
-    }
-
     protected HttpEntity<?> getProperEntity(final String token) {
-        return new HttpEntity<>(prepareHalHttpHeadersWithToken(token));
+        return new HttpEntity<>(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
     }
 
 
@@ -473,7 +343,7 @@ public abstract class ApiTestBase {
     protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(final RestTemplate restTemplate, final String token,
                                                               final Integer orderId, final Integer orderItemId) {
 
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         return restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
@@ -484,13 +354,13 @@ public abstract class ApiTestBase {
         template.setQuantity(quantity);
         template.setSkuId(skuId);
 
-        final HttpEntity<OrderItemDto> httpRequestEntity = new HttpEntity(template, prepareHalHttpHeadersWithToken(token));
+        final HttpEntity<OrderItemDto> httpRequestEntity = new HttpEntity(template, httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
     protected long getRemoteTotalOrdersCountValue(final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ORDERS_COUNT,
                 HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
@@ -516,7 +386,7 @@ public abstract class ApiTestBase {
     }
 
     protected Integer getRemoteItemsInOrderCount(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/items/count",
                 HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
@@ -525,7 +395,7 @@ public abstract class ApiTestBase {
     }
 
     protected List<DiscreteOrderItemDto> getItemsFromCart(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final ResponseEntity<Resources<DiscreteOrderItemDto>> receivedProductAttributeEntity =
                 restTemplateForHalJsonHandling.exchange(ORDERS_URL+"/"+orderId+"/items", HttpMethod.GET, httpRequestEntity, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}, serverPort);
@@ -536,7 +406,7 @@ public abstract class ApiTestBase {
     }
 
     protected DiscreteOrderItemDto getItemDetailsFromCart(final Integer orderId, final Long itemId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ORDERS_URL+"/"+orderId+"/items/"+itemId,
                 HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort);
@@ -545,7 +415,7 @@ public abstract class ApiTestBase {
     }
 
     protected OrderStatus getOrderStatus(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(prepareHalHttpHeadersWithToken(token));
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 
         final HttpEntity<OrderStatus> response = restTemplate.exchange(ORDERS_URL + "/" + orderId + "/status",
                 HttpMethod.GET, httpRequestEntity, OrderStatus.class, serverPort);

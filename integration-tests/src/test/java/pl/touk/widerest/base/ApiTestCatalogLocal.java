@@ -29,11 +29,30 @@ public class ApiTestCatalogLocal implements ApiTestCatalog {
     }
 
     @Override
+    public long getTotalSkusCount() {
+        return catalogService.findAllSkus().stream().count();
+    }
+
+    @Override
     public long getTotalProductsInCategoryCount(final long categoryId) {
         return catalogService.findCategoryById(categoryId).getAllProductXrefs().stream()
                     .map(CategoryProductXref::getProduct)
                     .filter(CatalogUtils::archivedProductFilter)
                     .count();
+    }
+
+    @Override
+    public long getTotalCategoriesForProductCount(final long productId) {
+        return catalogService.findProductById(productId).getAllParentCategoryXrefs().stream()
+                    .map(CategoryProductXref::getCategory)
+                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .count();
+    }
+
+    @Override
+    public long getTotalSkusForProductCount(final long productId) {
+        return catalogService.findProductById(productId).getAllSkus().stream()
+                .count();
     }
 
 

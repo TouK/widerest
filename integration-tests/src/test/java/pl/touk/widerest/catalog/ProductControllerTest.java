@@ -82,7 +82,7 @@ public class ProductControllerTest extends ApiTestBase {
         productDto.getSkuMedia().put("alt2", mediaDto3);
 
 
-        final ResponseEntity<?> remoteAddProductEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> remoteAddProductEntity = apiTestCatalogManager.addTestProduct(productDto);
         final long productId = ApiTestUtils.getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -128,12 +128,13 @@ public class ProductControllerTest extends ApiTestBase {
         // when: adding the same (new) product twice
         final long currentProductCount = apiTestCatalogLocal.getTotalProductsCount();
         final ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-        final ResponseEntity<?> retEntity = addNewTestProduct(testProduct);
+        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(testProduct);
+        
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         // then: API should return 4xx code and only one copy of the product should be saved
         try {
-            addNewTestProduct(testProduct);
+            apiTestCatalogManager.addTestProduct(testProduct);
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertTrue(httpClientException.getStatusCode().is4xxClientError());
@@ -147,7 +148,7 @@ public class ProductControllerTest extends ApiTestBase {
         // when: adding a new product and then deleting it
         final long currentProductsCount = apiTestCatalogLocal.getTotalProductsCount();
         final ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-        final ResponseEntity<?> retEntity = addNewTestProduct(defaultProduct);
+        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(defaultProduct);
         final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -171,7 +172,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() {
         // when: adding a new product and then modifying its values
-        final ResponseEntity<?> retEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
@@ -187,7 +188,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void modifyingExistingProductDoesActuallyModifyItsValuesTest() {
         // when: adding a test new product and then modifying its values
-        final ResponseEntity<?> retEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
@@ -217,11 +218,11 @@ public class ProductControllerTest extends ApiTestBase {
         final ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<?> retEntity1 = addNewTestProduct(productDto1);
+        final ResponseEntity<?> retEntity1 = apiTestCatalogManager.addTestProduct(productDto1);
         assertThat(retEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId1 = ApiTestUtils.getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
 
-        final ResponseEntity<?> retEntity2 = addNewTestProduct(productDto2);
+        final ResponseEntity<?> retEntity2 = apiTestCatalogManager.addTestProduct(productDto2);
         assertThat(retEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         productDto1.setName(productDto2.getName());
@@ -253,7 +254,7 @@ public class ProductControllerTest extends ApiTestBase {
         // then: API should return HTTP.BAD_REQUEST code and the product should not be added
         try {
 
-            addNewTestProduct(productWihtoutDefaultSkuDto);
+            apiTestCatalogManager.addTestProduct(productWihtoutDefaultSkuDto);
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.BAD_REQUEST));
@@ -266,12 +267,12 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingNewSkuAfterCreatingProductWithDefaultSkuIncreasesSkusCountForThatProductTest() {
         // when: adding new SKU to a product
         final ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
+        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productWithDefaultSKU);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         final String createdProductUrlString = addedProductEntity.getHeaders().getLocation().toString();
         final long productId = ApiTestUtils.getIdFromLocationUrl(createdProductUrlString);
-        assertThat(getLocalTotalSkusForProductCount(productId), equalTo(1L));
+        assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(productId), equalTo(1L));
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         final ResponseEntity<?> addedAdditionalSkuEntity = addNewTestSKUToProduct(productId, additionalSkuDto);
@@ -280,7 +281,7 @@ public class ProductControllerTest extends ApiTestBase {
         em.clear();
 
         // then: total number of SKUs for that product should increase
-        assertThat(getLocalTotalSkusForProductCount(productId), equalTo(2L));
+        assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(productId), equalTo(2L));
     }
 
     @Test
@@ -293,7 +294,7 @@ public class ProductControllerTest extends ApiTestBase {
         // when: modifying certain values (via PATCH) of SKU
         final ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<?> addedProductEntity = addNewTestProduct(productWithDefaultSKU);
+        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productWithDefaultSKU);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
@@ -342,7 +343,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         productDto.setCurrencyCode(null);
 
-        final ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productDto);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
@@ -368,7 +369,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         productDto.setName(newProductName);
 
-        final ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productDto);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
@@ -386,7 +387,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Transactional
     public void addingNewSkuMediaInsertsAllValuesCorrectlyTest() {
         // when: creating new product with 1 Media Object
-        final ResponseEntity<?> addedProductEntity = addNewTestProduct(DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT));
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
@@ -411,7 +412,7 @@ public class ProductControllerTest extends ApiTestBase {
 //    @Test
 //    public void addingNewSkuMediaWithInvalidOrNoKeyCausesAnException() {
 //        ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-//        ResponseEntity<?> addedProductEntity = addNewTestProduct(productDto);
+//        ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productDto);
 //        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 //        long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 //
@@ -458,7 +459,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         testProductWithoutDefaultCategory.setAttributes(productAttributes);
 
-        final ResponseEntity<?> responseEntity = addNewTestProduct(testProductWithoutDefaultCategory);
+        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(testProductWithoutDefaultCategory);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
@@ -485,7 +486,7 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     public void attemptingToRemoveDefaultSkuCausesExceptionTest() {
         // when: creating a new test product and then trying to delete its default SKU
-        final ResponseEntity<?> responseEntity = addNewTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
         final long productId = ApiTestUtils.getIdFromEntity(responseEntity);
 
         final ResponseEntity<ProductDto> receivedProductEntity =
@@ -517,7 +518,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingComplexProductSavesAllValuesProperly() {
 
         final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> responseEntity1 = addNewTestCategory(testCategory);
+        final ResponseEntity<?> responseEntity1 = apiTestCatalogManager.addTestCategory(testCategory);
         final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(responseEntity1.getHeaders().getLocation().toString());
 
         final ProductDto complexProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
@@ -565,7 +566,7 @@ public class ProductControllerTest extends ApiTestBase {
         complexProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
         complexProductDto.setAttributes(productAttributes);
 
-        final ResponseEntity<?> responseEntity = addNewTestProduct(complexProductDto);
+        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(complexProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
@@ -643,8 +644,8 @@ public class ProductControllerTest extends ApiTestBase {
         final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         final ProductDto testProductDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<?> responseEntityProduct1 = addNewTestProduct(testProductDto1);
-        final ResponseEntity<?> responseEntityProduct2 = addNewTestProduct(testProductDto2);
+        final ResponseEntity<?> responseEntityProduct1 = apiTestCatalogManager.addTestProduct(testProductDto1);
+        final ResponseEntity<?> responseEntityProduct2 = apiTestCatalogManager.addTestProduct(testProductDto2);
 
         final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
         final long productId2 = ApiTestUtils.getIdFromEntity(responseEntityProduct2);
@@ -726,7 +727,7 @@ public class ProductControllerTest extends ApiTestBase {
         final long NON_EXISTING_SKU_ID = 9999999;
 
         final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> responseEntityProduct1 = addNewTestProduct(testProductDto1);
+        final ResponseEntity<?> responseEntityProduct1 = apiTestCatalogManager.addTestProduct(testProductDto1);
         final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
 
         final ResponseEntity<ProductDto> receivedProductEntity =
@@ -773,7 +774,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingSameAttributeWithAnotherValueUpdatesPreviousValueTest() {
         // when: adding an attribute to a product and then adding it once again but with a different value
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> productResponseEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> productResponseEntity = apiTestCatalogManager.addTestProduct(productDto);
         final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
 
         final ProductAttributeDto productAttributeDto1 = ProductAttributeDto.builder()
@@ -815,7 +816,7 @@ public class ProductControllerTest extends ApiTestBase {
     public void addingAttributeAndRemovingItWorksAsExpectedTest() {
         // when: adding an attribute to a product and then deleting it
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> productResponseEntity = addNewTestProduct(productDto);
+        final ResponseEntity<?> productResponseEntity = apiTestCatalogManager.addTestProduct(productDto);
         final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
 
         final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()

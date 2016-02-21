@@ -534,7 +534,7 @@ public class OrderControllerTest extends ApiTestBase {
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        final ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
+        final ResponseEntity<?> newProductResponseEntity = apiTestCatalogManager.addTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
@@ -588,7 +588,7 @@ public class OrderControllerTest extends ApiTestBase {
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        ResponseEntity<?> newProductResponseEntity = addNewTestProduct(testProductDto);
+        ResponseEntity<?> newProductResponseEntity = apiTestCatalogManager.addTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
@@ -663,7 +663,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = addNewTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
@@ -733,7 +733,7 @@ public class OrderControllerTest extends ApiTestBase {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = addNewTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
