@@ -1,8 +1,10 @@
 package pl.touk.widerest.api.catalog;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.http.ResponseEntity;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.products.dto.MediaDto;
+import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 
@@ -52,6 +54,15 @@ public class CatalogValidators {
         }
 
         CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
+    }
+
+    public static void validateProductAttributeDto(final ProductAttributeDto productAttributeDto) throws DtoValidationException {
+
+        if(StringUtils.isEmpty(productAttributeDto.getAttributeName()) ||
+                StringUtils.isEmpty(productAttributeDto.getAttributeValue())) {
+            throw new DtoValidationException("Product Attribute has to have a Name and a Value set");
+        }
+
     }
 
 }
