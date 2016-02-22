@@ -5,12 +5,14 @@ import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
+import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.cart.CartUtils;
 import pl.touk.widerest.api.cart.customers.CustomerController;
+import pl.touk.widerest.api.cart.customers.converters.CustomerConverter;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.OrderController;
 
@@ -33,10 +35,12 @@ public class OrderConverter implements Converter<Order, OrderDto> {
     @Resource
     private DiscreteOrderItemConverter discreteOrderItemConverter;
 
+    @Resource
+    private CustomerConverter customerConverter;
+
     @Override
     public OrderDto createDto(final Order order, final boolean embed) {
         final OrderDto orderDto = OrderDto.builder()
-                .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
                 .orderPayment(order.getPayments().stream()
@@ -54,6 +58,14 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                         .map(DtoConverters.orderAttributeEntityToDto)
                         .collect(toList()))
                 .build();
+
+
+        // (mst) Add Customer details as an embedded resource
+        if(embed) {
+            Optional.ofNullable(order.getCustomer()).ifPresent(customer -> {
+                orderDto.add(new EmbeddedResource("customer", customerConverter.createDto(customer, false)));
+            });
+        }
 
         orderDto.add(linkTo(
                 methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
@@ -84,7 +96,6 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 
     @Override
     public Order updateEntity(final Order order, final OrderDto orderDto) {
-        order.setId(orderDto.getOrderId());
         order.setOrderNumber(orderDto.getOrderNumber());
         order.setStatus(OrderStatus.getInstance(orderDto.getStatus()));
         order.setPayments(orderDto.getOrderPayment().stream().map(orderPaymentConverter::createEntity)

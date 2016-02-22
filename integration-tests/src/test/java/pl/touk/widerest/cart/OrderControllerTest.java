@@ -43,6 +43,7 @@ import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemOptionDto;
+import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
@@ -239,10 +240,11 @@ public class OrderControllerTest extends ApiTestBase {
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
         assertFalse(new ArrayList<>(allOrders.getBody().getContent()).stream()
-                .filter(x -> x.getOrderId() == orderId)
-                .findAny()
-                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
-                .orElse(false));
+                    .filter(x -> ApiTestUtils.strapSuffixId(x.getLink("self").getHref()) == orderId)
+                    .findAny()
+                    .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                    .orElse(false)
+        );
     }
 
     @Test
@@ -416,13 +418,14 @@ public class OrderControllerTest extends ApiTestBase {
 
         assertThat(allOrders.getStatusCode(), equalTo(HttpStatus.OK));
 
-        assertFalse(new ArrayList<>(allOrders3.getBody().getContent()).stream()
-                        .filter(x -> x.getOrderId() == goodOne.getOrderId())
-                        .findAny()
-                        .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
-                        .orElse(false)
-        );
+        final long goodOneOrderId = ApiTestUtils.strapSuffixId(goodOne.getLink("self").getHref());
 
+        assertFalse(new ArrayList<>(allOrders.getBody().getContent()).stream()
+                .filter(x -> ApiTestUtils.strapSuffixId(x.getLink("self").getHref()) == goodOneOrderId)
+                .findAny()
+                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                .orElse(false)
+        );
     }
 
     @Test

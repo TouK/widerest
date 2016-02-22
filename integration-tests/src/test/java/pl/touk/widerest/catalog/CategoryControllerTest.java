@@ -1,5 +1,6 @@
 package pl.touk.widerest.catalog;
 
+import com.google.common.collect.Lists;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
@@ -13,18 +14,19 @@ import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
+import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
+import pl.touk.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.base.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -617,6 +619,8 @@ public class CategoryControllerTest extends ApiTestBase {
 
         assertThat(receivedRootSubcategoriesEntity2.getBody().getContent().size(), equalTo(0));
     }
+
+
 
 
     /* ----------------------------- SUBCATEGORIES TESTS ----------------------------- */

@@ -43,7 +43,6 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.multitenancy.MultiTenancyConfig;
@@ -53,11 +52,8 @@ import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.products.dto.MediaDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
-import pl.touk.widerest.paypal.gateway.PayPalSession;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
@@ -318,11 +314,12 @@ public abstract class ApiTestBase {
         final ResponseEntity<Resources<OrderDto>> allOrders =
                 oAuth2AdminRestTemplate().exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
 
+
         return new ArrayList<>(allOrders.getBody().getContent()).stream()
-                .filter(x -> x.getOrderId() == orderId)
-                .findAny()
-                .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
-                .orElse(false);
+                    .filter(x -> ApiTestUtils.strapSuffixId(x.getLink("self").getHref()) == orderId)
+                    .findAny()
+                    .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
+                    .orElse(false);
     }
 
     protected Integer getRemoteItemsInOrderCount(final Integer orderId, final String token) {

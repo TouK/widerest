@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.Builder;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 
-@Builder
 @Data
+@Builder
 @ApiModel(value = "Customer Address", description = "Customer Address DTO resource description")
 public class CustomerAddressDto {
 

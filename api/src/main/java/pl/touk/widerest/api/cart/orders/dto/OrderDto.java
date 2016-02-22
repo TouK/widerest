@@ -29,8 +29,6 @@ import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 @ApiModel(value = "Order", description = "Order DTO resource representation")
 public class OrderDto extends BaseDto {
 
-    private Long orderId;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 0, value = "Order number", required = true, dataType = "java.lang.String")
     private String orderNumber;
