@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -42,6 +43,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.CatalogValidators;
 import pl.touk.widerest.api.catalog.categories.converters.CategoryConverter;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
@@ -54,6 +56,12 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 @RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaTypes.HAL_JSON_VALUE})
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
+
+    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
+    private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
+    private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
+    private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
+    private static final ResponseEntity<Void> CREATED = ResponseEntity.status(HttpStatus.CREATED).build();
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
@@ -111,12 +119,10 @@ public class CategoryController {
     })
     public ResponseEntity<?> addOneCategory(
             @ApiParam(value = "Description of a new category", required = true)
-            @RequestBody CategoryDto categoryDto) {
+                @RequestBody final CategoryDto categoryDto
+    ) {
 
-    	/* (mst) CategoryDto has to have at least a Name! */
-        if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+        CatalogValidators.validateCategoryDto(categoryDto);
 
         final Category createdCategoryEntity = catalogService.saveCategory(categoryConverter.createEntity(categoryDto));
 
@@ -140,7 +146,8 @@ public class CategoryController {
     })
     public ResponseEntity<CategoryDto> readOneCategoryById(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") final Long categoryId
+    ) {
 
         final CategoryDto categoryToReturnDto = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -162,7 +169,7 @@ public class CategoryController {
     })
     public ResponseEntity<?> removeOneCategoryById(
             @ApiParam(value = "ID of a specific category")
-            @PathVariable(value="categoryId") Long categoryId) {
+            @PathVariable(value="categoryId") final Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -172,7 +179,7 @@ public class CategoryController {
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot delete category with ID: " + categoryId + ". Category does not exist"));
 
-        return ResponseEntity.noContent().build();
+        return NO_CONTENT;
     }
 
     @Transactional
@@ -190,14 +197,11 @@ public class CategoryController {
     })
     public ResponseEntity<?> updateOneCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value = "categoryId") Long categoryId,
+                @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "(Full) Description of an updated category", required = true)
-            @RequestBody CategoryDto categoryDto) {
+                @RequestBody final CategoryDto categoryDto) {
 
-    	/* (mst) CategoryDto has to have at least a Name! */
-        if(categoryDto.getName() == null || categoryDto.getName().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+    	CatalogValidators.validateCategoryDto(categoryDto);
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
@@ -205,8 +209,7 @@ public class CategoryController {
                 .map(catalogService::saveCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-
-        return ResponseEntity.ok().build();
+        return OK;
     }
 
     @Transactional
@@ -261,8 +264,9 @@ public class CategoryController {
             @ApiParam(value = "Link to the subcategory")
             @RequestParam(value = "href", required = true) String href) {
 
-        if(href == null || href.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+
+        if(StringUtils.isEmpty(href)) {
+            return BAD_REQUEST;
         }
 
         long hrefCategoryId;
@@ -270,11 +274,11 @@ public class CategoryController {
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
         } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
-            return ResponseEntity.badRequest().build();
+            return BAD_REQUEST;
         }
 
         if(hrefCategoryId == categoryId) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return CONFLICT;
         }
 
         final Category hrefCategory = Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
@@ -292,9 +296,9 @@ public class CategoryController {
         if(!parentCategory.getAllChildCategoryXrefs().contains(parentChildCategoryXref)) {
             parentCategory.getAllChildCategoryXrefs().add(parentChildCategoryXref);
             catalogService.saveCategory(parentCategory);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            return CREATED;
         } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return CONFLICT;
         }
     }
 
@@ -312,12 +316,12 @@ public class CategoryController {
     })
     public ResponseEntity<?> removeSubcategoryFromParent(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value = "categoryId") Long categoryId,
+                @PathVariable(value = "categoryId") final Long categoryId,
             @ApiParam(value = "Link to the subcategory")
-            @RequestParam(value = "href", required = true) String href) {
+                @RequestParam(value = "href", required = true) final String href) {
 
-        if(href == null || href.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+        if(StringUtils.isEmpty(href)) {
+            return BAD_REQUEST;
         }
 
         long hrefCategoryId;
@@ -325,15 +329,14 @@ public class CategoryController {
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
         } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
-            return ResponseEntity.badRequest().build();
+            return BAD_REQUEST;
         }
 
         if(hrefCategoryId == categoryId) {
-            ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return CONFLICT;
         }
 
-
-        Optional.ofNullable(catalogService.findCategoryById(categoryId))
+            Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)
                 .map(e -> {
                     final CategoryXref catXref = Optional.ofNullable(e.getAllChildCategoryXrefs()).orElse(Collections.emptyList()).stream()
@@ -349,7 +352,7 @@ public class CategoryController {
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
-        return ResponseEntity.noContent().build();
+        return NO_CONTENT;
     }
 
     @Transactional
@@ -401,8 +404,8 @@ public class CategoryController {
             @ApiParam(value = "Link to the product")
             @RequestParam(value = "href", required = true) String href) {
 
-        if(href == null || href.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+        if(StringUtils.isEmpty(href)) {
+            return BAD_REQUEST;
         }
 
         long hrefProductId;
@@ -410,7 +413,7 @@ public class CategoryController {
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(href);
         } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
-            return ResponseEntity.badRequest().build();
+            return BAD_REQUEST;
         }
 
         final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
@@ -430,9 +433,9 @@ public class CategoryController {
             categoryEntity.getAllProductXrefs().add(productToAddXref);
             catalogService.saveCategory(categoryEntity);
             /* TODO: (mst) add URI */
-            return new ResponseEntity<>(HttpStatus.CREATED);
+            return CREATED;
         } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return CONFLICT;
         }
     }
 
@@ -455,8 +458,8 @@ public class CategoryController {
             @ApiParam(value = "Link to the product")
             @RequestParam(value = "href", required = true) String href) {
 
-        if(href == null || href.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+        if(StringUtils.isEmpty(href)) {
+            return BAD_REQUEST;
         }
 
         long hrefProductId;
@@ -492,13 +495,13 @@ public class CategoryController {
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
 
-        return ResponseEntity.noContent().build();
+        return NO_CONTENT;
 
     }
 
     /* ------------------------------- HELPER METHODS ------------------------------- */
 
-    private List<Product> getProductsFromCategoryId(Long categoryId) throws ResourceNotFoundException {
+    private List<Product> getProductsFromCategoryId(final long categoryId) throws ResourceNotFoundException {
 
         return Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils::archivedCategoryFilter)

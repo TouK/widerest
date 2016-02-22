@@ -2,6 +2,7 @@ package pl.touk.widerest.api.catalog;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.http.ResponseEntity;
+import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.products.dto.MediaDto;
 import pl.touk.widerest.api.catalog.products.dto.ProductAttributeDto;
@@ -9,6 +10,7 @@ import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 
 public class CatalogValidators {
 
@@ -62,7 +64,24 @@ public class CatalogValidators {
                 StringUtils.isEmpty(productAttributeDto.getAttributeValue())) {
             throw new DtoValidationException("Product Attribute has to have a Name and a Value set");
         }
-
     }
 
+    public static void validateCategoryDto(final CategoryDto categoryDto) throws DtoValidationException {
+        if(StringUtils.isEmpty(categoryDto.getName())) {
+            throw new DtoValidationException("Category has to have a name");
+        }
+    }
+
+    public static void validateHrefLink(final String href) throws DtoValidationException {
+
+        if(StringUtils.isEmpty(href)) {
+            throw new DtoValidationException("Href links has to be set");
+        }
+
+        try {
+            CatalogUtils.getIdFromUrl(href);
+        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+            throw new DtoValidationException("Incorrect href link format");
+        }
+    }
 }

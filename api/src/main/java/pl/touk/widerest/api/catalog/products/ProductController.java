@@ -1205,6 +1205,7 @@ public class ProductController {
 
         final Product product = getProductById(productId);
 
+        /* (mst) Product's Default SKU cannot be deleted! */
         if (product.getDefaultSku().getId().longValue() == skuId) {
             return CONFLICT;
         }
