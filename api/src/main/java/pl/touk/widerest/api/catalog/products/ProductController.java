@@ -80,8 +80,6 @@ import java.util.*;
 @Api(value = "products", description = "Product catalog endpoint", produces = MediaTypes.HAL_JSON_VALUE)
 public class ProductController {
 
-//    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
-
     private static final ResponseEntity<Resources<ProductDto>> BAD_REQUEST = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
     private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
@@ -457,27 +455,6 @@ public class ProductController {
         return OK;
     }
 
-//    /* PATCH /products/{id} */
-//    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-//    @RequestMapping(value = "/{productId}", method = RequestMethod.PATCH)
-//    @ApiOperation(
-//            value = "Partially update an existing product",
-//            notes = "Partially updates an existing category with new details. It does not follow the format specified in RFC yet though",
-//            response = Void.class)
-//    @ApiResponses({
-//            @ApiResponse(code = 200, message = "Successful update of the specified product"),
-//            @ApiResponse(code = 404, message = "The specified product does not exist"),
-//            @ApiResponse(code = 409, message = "Product with that name already exists")
-//    })
-//    public ResponseEntity<?> partialUpdateOneProduct(
-//            @ApiParam(value = "ID of a specific product", required = true)
-//            @PathVariable(value = "productId") Long productId,
-//            @ApiParam(value = "(Partial) Description of an updated product", required = true)
-//            @RequestBody ProductDto productDto) {
-//        throw new ResourceNotFoundException("Implement me, dammit!");
-//    }
-
     /* DELETE /products/{id} */
     @Transactional
     @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
@@ -695,9 +672,10 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of all available SKUs", responseContainer = "List"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public Resources<SkuDto> readSkusByProduct(
+    public Resources<SkuDto> readSkusForProductById(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId) {
+                @PathVariable(value = "productId") final Long productId
+    ) {
 
         final List<SkuDto> productSkus = Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
@@ -706,7 +684,11 @@ public class ProductController {
                 .map(sku -> skuConverter.createDto(sku, false))
                 .collect(toList());
 
-        return new Resources<>(productSkus);
+        return new Resources<>(
+                productSkus,
+
+                linkTo(methodOn(ProductController.class).readSkusForProductById(productId)).withSelfRel()
+        );
     }
 
     /* POST /products/{id}/skus */
@@ -725,9 +707,10 @@ public class ProductController {
     })
     public ResponseEntity<?> saveOneSkuByProduct(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") final Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new SKU", required = true)
-            @RequestBody final SkuDto skuDto) {
+                @RequestBody final SkuDto skuDto
+    ) {
 
         CatalogValidators.validateSkuDto(skuDto);
 
@@ -741,7 +724,7 @@ public class ProductController {
         if (product.getProductOptionXrefs() != null && !product.getProductOptionXrefs().isEmpty()) {
             if (skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty() ||
                     skuDto.getSkuProductOptionValues().size() != product.getProductOptionXrefs().size()) {
-                return ResponseEntity.badRequest().build();
+                return BAD_REQUEST;
             }
         }
 
@@ -793,9 +776,9 @@ public class ProductController {
     })
     public SkuDto getSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") Long productId,
+                @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") Long skuId) {
+                @PathVariable(value = "skuId") final Long skuId) {
 
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils::archivedProductFilter)
