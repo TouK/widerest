@@ -676,16 +676,10 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId
     ) {
-
-        final List<SkuDto> productSkus = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
-                .getAllSkus().stream()
-                .map(sku -> skuConverter.createDto(sku, false))
-                .collect(toList());
-
         return new Resources<>(
-                productSkus,
+                getProductById(productId).getAllSkus().stream()
+                        .map(sku -> skuConverter.createDto(sku, false))
+                        .collect(toList()),
 
                 linkTo(methodOn(ProductController.class).readSkusForProductById(productId)).withSelfRel()
         );
@@ -714,9 +708,8 @@ public class ProductController {
 
         CatalogValidators.validateSkuDto(skuDto);
 
-        Product product = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
+        final Product product = getProductById(productId);
+
 
         /* (mst) Basically, when you're adding a new SKU to a product which has options, you have to
                 provide them.
@@ -727,6 +720,7 @@ public class ProductController {
                 return BAD_REQUEST;
             }
         }
+
 
         Sku newSkuEntity = skuConverter.createEntity(skuDto);
         newSkuEntity.setProduct(product);
@@ -780,14 +774,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
                 @PathVariable(value = "skuId") final Long skuId) {
 
-        return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
-                .map(Product::getAllSkus)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist")).stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findAny()
-                .map(sku -> skuConverter.createDto(sku, false))
-                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
+        return Optional.of(getSkuByIdForProductById(productId, skuId))
+                .map(skuEntity -> skuConverter.createDto(skuEntity, false))
+                .get();
     }
 
 //    /* GET /products/{productId}/skus/default */
@@ -1088,7 +1077,7 @@ public class ProductController {
 //                .map(catalogService::saveSku)
 //                .orElseThrow(() -> new ResourceNotFoundException("SKU with ID: " + skuId + " does not exist or is not related to product with ID: " + productId));
 
-        Optional.ofNullable(getSkuByIdForProductById(productId, skuId))
+        Optional.of(getSkuByIdForProductById(productId, skuId))
                 .map(e -> {
                     e.setQuantityAvailable(quantity);
                     return e;
