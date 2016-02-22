@@ -513,11 +513,12 @@ public class ProductControllerTest extends ApiTestBase {
     @Test
     @Transactional
     public void addingComplexProductSavesAllValuesProperly() {
-
+        // when: creating a new test category
         final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
         final ResponseEntity<?> responseEntity1 = apiTestCatalogManager.addTestCategory(testCategory);
         final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(responseEntity1.getHeaders().getLocation().toString());
 
+        // when: creating a new test product with: default SKU, 2 additional SKUs and 3 medias
         final ProductDto complexProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
         final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
         final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
@@ -563,6 +564,7 @@ public class ProductControllerTest extends ApiTestBase {
         complexProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
         complexProductDto.setAttributes(productAttributes);
 
+        // then: all fields should be properly saved
         final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(complexProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());

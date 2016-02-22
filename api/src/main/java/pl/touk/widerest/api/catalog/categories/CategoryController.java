@@ -124,7 +124,7 @@ public class CategoryController {
                 .path("/{id}")
                 .buildAndExpand(createdCategoryEntity.getId())
                 .toUri())
-                .build();//contentType(MediaType.APPLICATION_JSON).body("");
+                .build();
     }
 
     @Transactional

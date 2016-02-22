@@ -192,7 +192,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertTrue(!createdCategoryLocationUri.isEmpty());
 
         // when: 2) deleting the newly created category
-        oAuth2AdminRestTemplate().delete(createdCategoryLocationUri, 1);
+        apiTestCatalogManager.removeTestCategory(ApiTestUtils.strapSuffixId(createdCategoryLocationUri));
 
         // then: deleted category should no longer exist
         try {
@@ -298,7 +298,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(categoryId), equalTo(1L));
 
         // when: 1) deleting the newly created category
-        oAuth2AdminRestTemplate().delete(ApiTestUrls.CATEGORY_BY_ID_URL, serverPort, categoryId);
+        apiTestCatalogManager.removeTestCategory(categoryId);
 
         // then: deleting the category does not remove its products
         try {
@@ -611,7 +611,7 @@ public class CategoryControllerTest extends ApiTestBase {
         assertThat(receivedSubcategoriesEntity.getBody().getContent().size(), equalTo(1));
 
         // when: 2) deleting the subcategory from test category
-        oAuth2AdminRestTemplate().delete(ApiTestUrls.CATEGORY_BY_ID_URL, serverPort, subcategoryId);
+        apiTestCatalogManager.removeTestCategory(subcategoryId);
 
         // then: test category should no longer have any subcategories
         final ResponseEntity<Resources<CategoryDto>> receivedRootSubcategoriesEntity2 =

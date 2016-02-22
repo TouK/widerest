@@ -14,6 +14,10 @@ public interface ApiTestCatalogOperations {
     ResponseEntity<?> addCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId);
     ResponseEntity<?> addProductToCategoryReference(final long categoryId, final long productId);
 
+
+
+
+    ResponseEntity<?> removeTestCategory(final long categoryId);
     ResponseEntity<?> removeCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId);
     ResponseEntity<?> removeProductToCategoryReference(final long categoryId, final long productId);
 }

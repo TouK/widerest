@@ -24,6 +24,7 @@ public class ApiTestCatalogManager implements ApiTestCatalogOperations {
 
     private final String serverPort;
 
+
     public ApiTestCatalogManager(final String serverPort) {
         this.serverPort = serverPort;
     }
@@ -66,6 +67,12 @@ public class ApiTestCatalogManager implements ApiTestCatalogOperations {
     public ResponseEntity<?> addProductToCategoryReference(final long categoryId, final long productId) {
         return oAuth2AdminRestTemplate().postForEntity(ApiTestUrls.ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + ApiTestUrls.PRODUCT_BY_ID_URL,
                 null, null, serverPort, categoryId, serverPort, productId);
+    }
+
+    @Override
+    public ResponseEntity<?> removeTestCategory(final long categoryId) {
+        return oAuth2AdminRestTemplate().exchange(ApiTestUrls.CATEGORY_BY_ID_URL,
+                HttpMethod.DELETE, null, Void.class, serverPort, categoryId);
     }
 
     @Override

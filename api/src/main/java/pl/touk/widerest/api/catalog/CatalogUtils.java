@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -18,6 +19,7 @@ import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 
+import pl.touk.widerest.api.catalog.products.dto.MediaDto;
 import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
@@ -234,27 +236,6 @@ public class CatalogUtils {
 //
 //        return productEntity;
 //    }
-
-    public static void validateSkuPrices(final BigDecimal salePrice, final BigDecimal retailPrice) throws DtoValidationException {
-
-        if(salePrice == null && retailPrice == null) {
-            throw new DtoValidationException("Product's SKU has to have a price");
-        }
-
-        if((salePrice != null && salePrice.longValue() < 0) ||
-                (retailPrice != null && retailPrice.longValue() < 0)) {
-            throw new DtoValidationException("Sku's prices cannot be negative");
-        }
-    }
-
-    public static void validateProductDto(final ProductDto productDto) throws DtoValidationException {
-
-        validateSkuPrices(productDto.getSalePrice(), productDto.getRetailPrice());
-
-        if(productDto.getName() == null || productDto.getName().isEmpty()) {
-            throw new DtoValidationException("Product has to have a name");
-        }
-    }
 
     public static long getIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
         final URL categoryPathURL = new URL(categoryPathUrl);

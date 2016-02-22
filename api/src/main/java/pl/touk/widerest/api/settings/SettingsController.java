@@ -6,10 +6,9 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import lombok.Builder;
 import org.broadleafcommerce.common.config.dao.SystemPropertiesDao;
 import org.broadleafcommerce.common.config.domain.SystemProperty;
-import org.springframework.hateoas.Resource;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,44 +26,45 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import lombok.Data;
 import pl.touk.widerest.api.settings.converters.PropertyConverter;
 import pl.touk.widerest.api.settings.dto.PropertyDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
+
+import javax.annotation.Resource;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/settings")
 @Api(value = "settings", description = "System properties endpoint")
 public class SettingsController {
 
-    @javax.annotation.Resource(name = "blSystemPropertiesDao")
+    @Resource(name = "blSystemPropertiesDao")
     protected SystemPropertiesDao systemPropertiesDao;
 
-    @javax.annotation.Resource
+    @Resource
     protected SettingsService settingsService;
 
-    @javax.annotation.Resource
+    @Resource
     protected PropertyConverter propertyConverter;
 
     @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
-            value = "Get system setting value for a given key",
-            notes = "",
-            response = String.class)
+            value = "List all system properties",
+            notes = "Gets a list of all available system properties",
+            response = PropertyDto.class,
+            responseContainer = "List"
+    )
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Value successfully returned"),
-            @ApiResponse(code = 204, message = "Value for the key hasn't been set yet"),
-            @ApiResponse(code = 404, message = "There is no system property for the key")
+            @ApiResponse(code = 200, message = "Successful retrieval of properties list", response = PropertyDto.class, responseContainer = "List")
     })
-    public Resources<PropertyDto> listAll() {
+    public Resources<PropertyDto> readAllProperties() {
         return new Resources<>(
                 settingsService.getAvailableSystemPropertyNames().stream()
                         .map(name -> propertyConverter.createDto(name, false))
                         .collect(Collectors.toList()),
 
-                linkTo(methodOn(getClass()).listAll()).withSelfRel()
+                linkTo(methodOn(SettingsController.class).readAllProperties()).withSelfRel()
         );
 
     }
