@@ -8,7 +8,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import static pl.touk.widerest.base.ApiTestUrls.ORDERS_COUNT;
 import static pl.touk.widerest.base.ApiTestUrls.CUSTOMERS_URL;
 import pl.touk.widerest.security.oauth2.Scope;
 
-@SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @Slf4j
 public class AuthorizationTest extends ApiTestBase {

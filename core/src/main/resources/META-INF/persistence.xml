@@ -6,9 +6,6 @@
              
     <persistence-unit name="blPU" transaction-type="RESOURCE_LOCAL">
         <non-jta-data-source>jdbc/web</non-jta-data-source>
-        <class>pl.touk.widerest.ext.SkuExtImpl</class>
-        <class>pl.touk.widerest.ext.DiscreteOrderItemExtImpl</class>
-        <class>pl.touk.widerest.ext.OrderExtImpl</class>
         <exclude-unlisted-classes/>
     </persistence-unit>
 

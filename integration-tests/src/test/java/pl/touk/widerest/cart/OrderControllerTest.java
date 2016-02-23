@@ -19,7 +19,6 @@ import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
@@ -52,7 +51,6 @@ import pl.touk.widerest.base.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
 public class OrderControllerTest extends ApiTestBase {
 
     @Before

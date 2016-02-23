@@ -1,13 +1,5 @@
 package pl.touk.widerest.security.jwt;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetailsServiceImpl;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
@@ -22,9 +14,15 @@ import org.springframework.security.oauth2.provider.token.UserAuthenticationConv
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
 import pl.touk.widerest.security.authentication.BackofficeAuthenticationToken;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class WiderestUserAuthenticationConverter implements UserAuthenticationConverter {
@@ -35,10 +33,10 @@ public class WiderestUserAuthenticationConverter implements UserAuthenticationCo
     public static final String SITE_SUB_PREFIX = "site";
     public static final String DELIMITER = "/";
 
-    @Autowired
+    @Autowired(required = false)
     protected AdminUserDetailsServiceImpl backofficeUserDetailsService;
 
-    @Autowired
+    @Autowired(required = false)
     protected UserDetailsServiceImpl siteUserDetailsService;
 
     @PersistenceContext(unitName = "blPU")

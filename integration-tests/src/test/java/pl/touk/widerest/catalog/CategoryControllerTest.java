@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpMethod;
@@ -20,7 +19,6 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
-import pl.touk.multitenancy.MultiTenancyConfig;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
@@ -36,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
 public class CategoryControllerTest extends ApiTestBase {
 
     @Before

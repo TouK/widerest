@@ -13,13 +13,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.Application;
 import pl.touk.widerest.api.cart.service.CustomerServiceProxy;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
@@ -35,7 +32,6 @@ import static org.junit.Assert.assertTrue;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
 public class CustomerControllerTest extends ApiTestBase {
 
     @Resource(name="blCustomerService")
@@ -105,8 +101,9 @@ public class CustomerControllerTest extends ApiTestBase {
             assertTrue(remoteCustomer.isRegistered());
             assertThat(remoteCustomer.getEmailAddress(), is(email));
 
-            PasswordEncoder encoder = new BCryptPasswordEncoder();
-            assertTrue(encoder.matches(password, remoteCustomer.getPassword()));
+//            PasswordEncoder encoder = new BCryptPasswordEncoder();
+//            assertTrue(encoder.matches(password, remoteCustomer.getPassword()));
+            assertThat(remoteCustomer.getPassword(), is(password));
 
         }
     }

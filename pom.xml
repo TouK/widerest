@@ -11,10 +11,29 @@
 
     <groupId>pl.touk.widerest</groupId>
     <artifactId>widerest</artifactId>
-    <version>1.0</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>widerest</name>
     <organization><name>TouK</name><url>http://touk.pl</url></organization>
+    
+    <scm>
+        <connection>git@gitlab.touk.pl:touk-oss/widerest.git</connection>
+        <developerConnection>scm:git:git@gitlab.touk.pl:touk-oss/widerest.git</developerConnection>
+        <url>http://gitlab.touk.pl/touk-oss/widerest</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>touk.nexus.release</id>
+            <name>TouK Release Repository</name>
+            <url>http://nexus.touk.pl/nexus/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>touk.nexus.snapshots</id>
+            <name>TouK SNAPSHOT Repository</name>
+            <url>http://nexus.touk.pl/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <blc.version>4.0.0-RC1</blc.version>
@@ -160,20 +179,14 @@
 
             <dependency>
                 <groupId>pl.touk</groupId>
-                <artifactId>spring-boot-multitenancy</artifactId>
-                <version>0.1.0</version>
+                <artifactId>throwing-function</artifactId>
+                <version>1.2</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.security.oauth</groupId>
                 <artifactId>spring-security-oauth2</artifactId>
                 <version>2.0.7.RELEASE</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.auth0</groupId>
-                <artifactId>spring-security-auth0</artifactId>
-                <version>0.2</version>
             </dependency>
 
             <dependency>
@@ -217,54 +230,10 @@
             </dependency>
 
             <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>jquery</artifactId>
-                <version>2.1.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>html5shiv</artifactId>
-                <version>3.7.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>respond</artifactId>
-                <version>1.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>webjars-locator</artifactId>
-                <version>0.26</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.paypal.sdk</groupId>
-                <artifactId>rest-api-sdk</artifactId>
-                <version>1.2.5</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>9.4-1202-jdbc42</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-client</artifactId>
                 <classifier>shaded</classifier>
                 <version>2.7.7</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.liquibase</groupId>
-                <artifactId>liquibase-core</artifactId>
-                <version>3.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.mattbertolini</groupId>
-                <artifactId>liquibase-slf4j</artifactId>
-                <version>1.2.1</version>
             </dependency>
 
             <dependency>
@@ -292,8 +261,8 @@
         <module>blc-deps</module>
         <module>core</module>
         <module>api</module>
-        <module>paypal</module>
         <module>app</module>
         <module>integration-tests</module>
+        <module>boot</module>
     </modules>
 </project>

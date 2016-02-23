@@ -13,7 +13,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.hateoas.Link;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -29,7 +28,6 @@ import pl.touk.widerest.api.catalog.products.dto.SkuDto;
 import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 import pl.touk.widerest.base.*;
 
-@SpringApplicationConfiguration(classes = Application.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 public class CatalogTest extends ApiTestBase {
 

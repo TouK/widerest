@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resources;
@@ -45,7 +44,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
 public class ProductControllerTest extends ApiTestBase {
 
     @javax.annotation.Resource(name="blCurrencyService")
@@ -126,7 +124,7 @@ public class ProductControllerTest extends ApiTestBase {
         final long currentProductCount = apiTestCatalogLocal.getTotalProductsCount();
         final ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
         final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(testProduct);
-        
+
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         // then: API should return 4xx code and only one copy of the product should be saved
