@@ -74,5 +74,5 @@ public class SkuDto extends BaseDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
-    private Map<String /*key*/, MediaDto> skuMedia;
+    private Map<String /*key*/, MediaDto> media;
 }

@@ -59,7 +59,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                         .map(SkuProductOptionValueXref::getProductOptionValue)
                         .map(DtoConverters.productOptionValueToSkuValueDto)
                         .collect(toSet()))
-                .skuMedia(sku.getSkuMediaXref().entrySet().stream()
+                .media(sku.getSkuMediaXref().entrySet().stream()
                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)))
                 )
                 .build();
@@ -132,9 +132,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                         })));
 
 
-        if(skuDto.getSkuMedia() != null) {
+        if(skuDto.getMedia() != null) {
             sku.setSkuMediaXref(
-                    skuDto.getSkuMedia().entrySet().stream()
+                    skuDto.getMedia().entrySet().stream()
                             .collect(toMap(Map.Entry::getKey, e -> {
 
                                 final Media media = mediaConverter.createEntity(e.getValue());

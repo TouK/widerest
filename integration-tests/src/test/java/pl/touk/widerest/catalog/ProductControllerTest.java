@@ -71,10 +71,10 @@ public class ProductControllerTest extends ApiTestBase {
         productDto.setRetailPrice(BigDecimal.valueOf(99.33f));
         productDto.setCurrencyCode(null);
 
-        productDto.setSkuMedia(new HashMap<>());
-        productDto.getSkuMedia().put("primary", mediaDto1);
-        productDto.getSkuMedia().put("alt1", mediaDto2);
-        productDto.getSkuMedia().put("alt2", mediaDto3);
+        productDto.setMedia(new HashMap<>());
+        productDto.getMedia().put("primary", mediaDto1);
+        productDto.getMedia().put("alt1", mediaDto2);
+        productDto.getMedia().put("alt2", mediaDto3);
 
 
         final ResponseEntity<?> remoteAddProductEntity = apiTestCatalogManager.addTestProduct(productDto);
@@ -106,7 +106,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductDto.getRetailPrice().longValue(), equalTo(productDto.getRetailPrice().longValue()));
 
 
-        final Map<String, MediaDto> receivedDefaultSkuMediaDto = receivedProductDto.getSkuMedia();
+        final Map<String, MediaDto> receivedDefaultSkuMediaDto = receivedProductDto.getMedia();
         assertThat(receivedDefaultSkuMediaDto.size(), equalTo(3));
 
         assertThat(receivedDefaultSkuMediaDto.get("primary").getTitle(), equalTo(mediaDto1.getTitle()));
@@ -538,17 +538,17 @@ public class ProductControllerTest extends ApiTestBase {
         final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
-        additionalSku1.setSkuMedia(new HashMap<>());
-        additionalSku1.getSkuMedia().put("primary", mediaDto1);
-        additionalSku1.getSkuMedia().put("alt1", mediaDto2);
+        additionalSku1.setMedia(new HashMap<>());
+        additionalSku1.getMedia().put("primary", mediaDto1);
+        additionalSku1.getMedia().put("alt1", mediaDto2);
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
         additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("CHECK_QUANTITY");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
-        additionalSku2.setSkuMedia(new HashMap<>());
-        additionalSku2.getSkuMedia().put("primary", mediaDto3);
+        additionalSku2.setMedia(new HashMap<>());
+        additionalSku2.getMedia().put("primary", mediaDto3);
         additionalSku2.setRetailPrice(new BigDecimal("19.99"));
         additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
         additionalSku2.setCurrencyCode("EUR");
@@ -585,7 +585,7 @@ public class ProductControllerTest extends ApiTestBase {
 
         final SkuDto receivedAdditionalSku1, receivedAdditionalSku2;
 
-        if(additionalSkus.get(0).getSkuMedia().size() == 2) {
+        if(additionalSkus.get(0).getMedia().size() == 2) {
             receivedAdditionalSku1 = additionalSkus.get(0);
             receivedAdditionalSku2 = additionalSkus.get(1);
         } else {
@@ -594,21 +594,21 @@ public class ProductControllerTest extends ApiTestBase {
         }
 
         // validate addtional Sku #1
-        final Map<String, MediaDto> additionalSku1Media = receivedAdditionalSku1.getSkuMedia();
+        final Map<String, MediaDto> additionalSku1Media = receivedAdditionalSku1.getMedia();
 
         assertThat(additionalSku1Media.size(), equalTo(2));
-        assertTrue(CollectionUtils.isEqualCollection(additionalSku1Media.entrySet(), additionalSku1.getSkuMedia().entrySet()));
+        assertTrue(CollectionUtils.isEqualCollection(additionalSku1Media.entrySet(), additionalSku1.getMedia().entrySet()));
 
-        receivedAdditionalSku1.setSkuMedia(null);
-        additionalSku1.setSkuMedia(null);
+        receivedAdditionalSku1.setMedia(null);
+        additionalSku1.setMedia(null);
 
         assertThat(receivedAdditionalSku1, equalTo(additionalSku1));
 
         // validate addtional Sku #2
-        final Map<String, MediaDto> additionalSku2Media = receivedAdditionalSku2.getSkuMedia();
+        final Map<String, MediaDto> additionalSku2Media = receivedAdditionalSku2.getMedia();
 
         assertThat(additionalSku2Media.size(), equalTo(1));
-        assertThat(additionalSku2Media.get(0), equalTo(additionalSku2.getSkuMedia().get(0)));
+        assertThat(additionalSku2Media.get(0), equalTo(additionalSku2.getMedia().get(0)));
 
         assertThat(receivedAdditionalSku2, equalTo(additionalSku2));
 
