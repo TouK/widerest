@@ -7,6 +7,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,18 +23,14 @@ import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
+import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
-import org.broadleafcommerce.core.order.domain.BundleOrderItem;
-import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
-import org.broadleafcommerce.core.order.domain.Order;
-import org.broadleafcommerce.core.order.domain.OrderAttribute;
-import org.broadleafcommerce.core.order.domain.OrderAttributeImpl;
-import org.broadleafcommerce.core.order.domain.OrderItem;
+import org.broadleafcommerce.core.order.domain.*;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
@@ -74,12 +71,8 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.orders.converters.DiscreteOrderItemConverter;
-import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
-import pl.touk.widerest.api.cart.orders.dto.OrderDto;
-import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
-import pl.touk.widerest.api.cart.orders.dto.OrderItemOptionDto;
-import pl.touk.widerest.api.cart.orders.dto.PaymentDto;
+import pl.touk.widerest.api.cart.orders.converters.FulfillmentGroupConverter;
+import pl.touk.widerest.api.cart.orders.dto.*;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.orders.converters.OrderConverter;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
@@ -88,6 +81,7 @@ import pl.touk.widerest.api.cart.service.OrderValidationService;
 import pl.touk.widerest.api.catalog.CatalogUtils;
 import pl.touk.widerest.api.catalog.exceptions.DtoValidationException;
 import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
+import pl.touk.widerest.api.catalog.products.dto.ProductDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
@@ -129,6 +123,9 @@ public class OrderController {
     @Resource(name = "blOrderToPaymentRequestDTOService")
     private OrderToPaymentRequestDTOService orderToPaymentRequestDTOService;
 
+    @Resource(name = "blGenericEntityService")
+    protected GenericEntityService genericEntityService;
+
     @Resource
     private ISOService isoService;
 
@@ -141,7 +138,17 @@ public class OrderController {
     @Resource
     private DiscreteOrderItemConverter discreteOrderItemConverter;
 
+    @Resource
+    private FulfillmentGroupConverter fulfillmentGroupConverter;
+
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
+
+
+    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
+    private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
+    private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
+
 
     /* GET /orders */
     @Transactional
@@ -576,13 +583,13 @@ public class OrderController {
             @RequestBody int quantity)
     {
         if(quantity <= 0) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            return CONFLICT;
         }
 
         try {
             return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
         } catch(Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return BAD_REQUEST;
         }
     }
 
@@ -627,6 +634,151 @@ public class OrderController {
         return fulfillmentServiceProxy.createFulfillmentDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 
+    // ---------------------------------------------FULFILLMENTS---------------------------------------------
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get a fulfillment for the order",
+//            notes = "Returns details of a current fulfillment for the specified order",
+//            response = FulfillmentDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
+//            @ApiResponse(code = 404, message = "The specified order does not exist")
+//    })
+    public Resources<FulfillmentGroupDto> getOrderFulfillments(
+            @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
+            @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "orderId") final Long orderId) {
+
+        final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
+                .orElseThrow(ResourceNotFoundException::new);
+
+        final List<FulfillmentGroupDto> fullfillmentGroupsDtoForOrder =  Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
+                .map(fulfillmentGroup -> fulfillmentGroupConverter.createDto(fulfillmentGroup, false))
+                .collect(toList());
+
+        return new Resources<>(
+                fullfillmentGroupsDtoForOrder,
+
+                linkTo(methodOn(OrderController.class).getOrderFulfillments(null, orderId)).withSelfRel()
+        );
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.GET)
+//    @ApiOperation(
+//            value = "Get a fulfillment for the order",
+//            notes = "Returns details of a current fulfillment for the specified order",
+//            response = FulfillmentDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
+//            @ApiResponse(code = 404, message = "The specified order does not exist")
+//    })
+    public FulfillmentGroupDto getOrderFulfillmentById(
+            @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
+            @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "orderId") final Long orderId,
+            @ApiParam(value = "ID of a specific fulfillment", required = true)
+            @PathVariable(value = "fulfillmentId") final Long fulfillmentId) {
+
+        final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
+                .orElseThrow(ResourceNotFoundException::new);
+
+        return Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
+                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentId)
+                .findFirst()
+                .map(fulfillmentGroup -> fulfillmentGroupConverter.createDto(fulfillmentGroup, false))
+                .orElseThrow(ResourceNotFoundException::new);
+    }
+
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.PUT)
+//    @ApiOperation(
+//            value = "Get a fulfillment for the order",
+//            notes = "Returns details of a current fulfillment for the specified order",
+//            response = FulfillmentDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
+//            @ApiResponse(code = 404, message = "The specified order does not exist")
+//    })
+    public ResponseEntity<Void> updateOrderFulfillmentById(
+            @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
+                @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "orderId") final Long orderId,
+                @ApiParam(value = "ID of a specific fulfillment", required = true)
+            @PathVariable(value = "fulfillmentId") final Long fulfillmentId,
+                @ApiParam(value = "Description of a new fulfillment", required = true)
+            @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
+    ) {
+
+        // TODO: fulfillmentGroup validation
+
+        final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
+                .orElseThrow(ResourceNotFoundException::new);
+
+        final FulfillmentGroup fulfillmentGroupEntity = Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
+                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentId)
+                .findFirst()
+                .orElseThrow(ResourceNotFoundException::new);
+
+        final FulfillmentGroup updatedFulfillmentGroupEntity = fulfillmentGroupConverter.updateEntity(fulfillmentGroupEntity, fulfillmentGroupDto);
+
+        genericEntityService.save(updatedFulfillmentGroupEntity);
+
+        Try.ofFailable(() -> orderService.save(orderEntity, true)).onFailure(LOG::error);
+
+        return NO_CONTENT;
+    }
+
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.POST)
+//    @ApiOperation(
+//            value = "Get a fulfillment for the order",
+//            notes = "Returns details of a current fulfillment for the specified order",
+//            response = FulfillmentDto.class)
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
+//            @ApiResponse(code = 404, message = "The specified order does not exist")
+//    })
+    public ResponseEntity<Void> addOrderFulfillment (
+            @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
+                @ApiParam(value = "ID of a specific order", required = true)
+            @PathVariable(value = "orderId") final Long orderId,
+                @ApiParam(value = "Description of a new fulfillment", required = true)
+            @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
+    ) {
+
+        // TODO: fulfillmentGroup validation
+
+        final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
+                .orElseThrow(ResourceNotFoundException::new);
+
+        final FulfillmentGroup newFulfillmentGroupEntity = fulfillmentGroupConverter.createEntity(fulfillmentGroupDto);
+
+        newFulfillmentGroupEntity.setOrder(orderEntity);
+
+        final FulfillmentGroup createdFulfillmentGroupEntity = genericEntityService.save(newFulfillmentGroupEntity);
+
+        orderEntity.getFulfillmentGroups().add(createdFulfillmentGroupEntity);
+
+        Try.ofFailable(() -> orderService.save(orderEntity, true)).onFailure(LOG::error);
+
+        return ResponseEntity.created(
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/orders/{id}/fulfillments/{fulfillmentId}")
+                        .buildAndExpand(orderId, createdFulfillmentGroupEntity.getId())
+                        .toUri()
+        ).build();
+    }
+
+
+    // ---------------------------------------------FULFILLMENTS---------------------------------------------
 
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
