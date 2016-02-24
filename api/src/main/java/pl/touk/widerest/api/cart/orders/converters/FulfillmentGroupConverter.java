@@ -64,37 +64,12 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
 
         fulfillmentGroup.setAddress(addressConverter.createEntity(fulfillmentGroupDto.getAddress()));
 
-        // TODO: validate if inserted items are in order
-
-        // TODO: add new items
-//        fulfillmentGroup.setFulfillmentGroupItems(
-//                Optional.ofNullable(fulfillmentGroupDto.getItems()).orElse(Collections.emptyList()).stream()
-//                .map(itemHref -> {
-//                    final FulfillmentGroupItem fulfillmentGroupItem = new FulfillmentGroupItemImpl();
-//                    fulfillmentGroupItem.setFulfillmentGroup(fulfillmentGroup);
-//                    fulfillmentGroup.setOrder(fulfillmentGroup.getOrder());
-//
-//                    fulfillmentGroupItem.setOrderItem(orderItemService.readOrderItemById(getIdFromLocationUrl(itemHref)));
-//                    return fulfillmentGroupItem;
-//                })
-//                .collect(Collectors.toList())
-//        );
-
         return fulfillmentGroup;
     }
 
     @Override
     public FulfillmentGroup partialUpdateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentGroupDto fulfillmentGroupDto) {
         throw new UnsupportedOperationException();
-    }
-
-    private static long getIdFromLocationUrl(final String locationUrl) {
-        if(locationUrl != null && org.apache.commons.lang.StringUtils.isNotEmpty(locationUrl)) {
-            return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
-        } else {
-            return -1;
-        }
-
     }
 
 }
