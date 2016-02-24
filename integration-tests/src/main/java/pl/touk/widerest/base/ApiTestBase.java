@@ -282,7 +282,7 @@ public abstract class ApiTestBase {
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
-    protected ResponseEntity<HttpHeaders> addItemToOrder(final long skuId, final Integer quantity, final String location, final String token, final RestTemplate restTemplate) {
+    protected ResponseEntity<HttpHeaders> addItemToOrder(final long skuId, final int quantity, final String location, final String token, final RestTemplate restTemplate) {
         final OrderItemDto template = new OrderItemDto();
         template.setQuantity(quantity);
         template.setSkuId(skuId);

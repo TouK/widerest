@@ -2,14 +2,20 @@ package pl.touk.widerest.api.cart.orders.converters;
 
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroupImpl;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroupItem;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroupItemImpl;
+import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
 import pl.touk.widerest.api.cart.orders.OrderController;
 import pl.touk.widerest.api.cart.orders.dto.FulfillmentGroupDto;
+import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 
 import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -21,6 +27,9 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
 
     @Resource
     private AddressConverter addressConverter;
+
+    @Resource(name = "blOrderItemService")
+    protected OrderItemService orderItemService;
 
     @Override
     public FulfillmentGroupDto createDto(final FulfillmentGroup fulfillmentGroup, final boolean embed) {
@@ -58,7 +67,18 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
         // TODO: validate if inserted items are in order
 
         // TODO: add new items
-
+//        fulfillmentGroup.setFulfillmentGroupItems(
+//                Optional.ofNullable(fulfillmentGroupDto.getItems()).orElse(Collections.emptyList()).stream()
+//                .map(itemHref -> {
+//                    final FulfillmentGroupItem fulfillmentGroupItem = new FulfillmentGroupItemImpl();
+//                    fulfillmentGroupItem.setFulfillmentGroup(fulfillmentGroup);
+//                    fulfillmentGroup.setOrder(fulfillmentGroup.getOrder());
+//
+//                    fulfillmentGroupItem.setOrderItem(orderItemService.readOrderItemById(getIdFromLocationUrl(itemHref)));
+//                    return fulfillmentGroupItem;
+//                })
+//                .collect(Collectors.toList())
+//        );
 
         return fulfillmentGroup;
     }
@@ -67,4 +87,14 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
     public FulfillmentGroup partialUpdateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentGroupDto fulfillmentGroupDto) {
         throw new UnsupportedOperationException();
     }
+
+    private static long getIdFromLocationUrl(final String locationUrl) {
+        if(locationUrl != null && org.apache.commons.lang.StringUtils.isNotEmpty(locationUrl)) {
+            return Long.parseLong(locationUrl.substring(locationUrl.lastIndexOf('/') + 1));
+        } else {
+            return -1;
+        }
+
+    }
+
 }

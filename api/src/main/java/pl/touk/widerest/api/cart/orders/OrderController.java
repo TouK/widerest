@@ -31,8 +31,10 @@ import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.*;
+import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.order.service.call.FulfillmentGroupItemRequest;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
@@ -125,6 +127,9 @@ public class OrderController {
 
     @Resource(name = "blGenericEntityService")
     protected GenericEntityService genericEntityService;
+
+    @Resource(name = "blFulfillmentGroupService")
+    protected FulfillmentGroupService fulfillmentGroupService;
 
     @Resource
     private ISOService isoService;
@@ -654,12 +659,12 @@ public class OrderController {
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        final List<FulfillmentGroupDto> fullfillmentGroupsDtoForOrder =  Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
+        final List<FulfillmentGroupDto> fulfillmentGroupsDtoForOrder =  Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
                 .map(fulfillmentGroup -> fulfillmentGroupConverter.createDto(fulfillmentGroup, false))
                 .collect(toList());
 
         return new Resources<>(
-                fullfillmentGroupsDtoForOrder,
+                fulfillmentGroupsDtoForOrder,
 
                 linkTo(methodOn(OrderController.class).getOrderFulfillments(null, orderId)).withSelfRel()
         );
@@ -759,20 +764,41 @@ public class OrderController {
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        final FulfillmentGroup newFulfillmentGroupEntity = fulfillmentGroupConverter.createEntity(fulfillmentGroupDto);
+        FulfillmentGroup createdFulfillmentGroupEntity = fulfillmentGroupService.createEmptyFulfillmentGroup();
 
-        newFulfillmentGroupEntity.setOrder(orderEntity);
+        createdFulfillmentGroupEntity = fulfillmentGroupConverter.updateEntity(createdFulfillmentGroupEntity, fulfillmentGroupDto);
 
-        final FulfillmentGroup createdFulfillmentGroupEntity = genericEntityService.save(newFulfillmentGroupEntity);
+        createdFulfillmentGroupEntity.setOrder(orderEntity);
 
-        orderEntity.getFulfillmentGroups().add(createdFulfillmentGroupEntity);
+        final FulfillmentGroup savedFulfillmentGroupEntity = fulfillmentGroupService.save(createdFulfillmentGroupEntity);
 
+        Optional.ofNullable(fulfillmentGroupDto.getItems()).orElse(Collections.emptyList()).stream()
+                .forEach(itemHref -> {
+                    Try.ofFailable(() -> {
+                        final long orderItemId = CatalogUtils.getIdFromUrl(itemHref);
+                        final OrderItem orderItemEntity = orderItemService.readOrderItemById(orderItemId);
+
+                        fulfillmentGroupService.removeOrderItemFromFullfillmentGroups(orderEntity, orderItemEntity);
+
+                        final FulfillmentGroupItemRequest fulfillmentGroupItemRequest = new FulfillmentGroupItemRequest();
+
+                        fulfillmentGroupItemRequest.setFulfillmentGroup(savedFulfillmentGroupEntity);
+                        fulfillmentGroupItemRequest.setOrder(orderEntity);
+                        fulfillmentGroupItemRequest.setOrderItem(orderItemEntity);
+
+                        return fulfillmentGroupService.addItemToFulfillmentGroup(fulfillmentGroupItemRequest, true);
+                    }).onFailure(LOG::error);
+                });
+
+        fulfillmentGroupService.save(savedFulfillmentGroupEntity);
+
+        orderEntity.getFulfillmentGroups().add(savedFulfillmentGroupEntity);
         Try.ofFailable(() -> orderService.save(orderEntity, true)).onFailure(LOG::error);
 
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/orders/{id}/fulfillments/{fulfillmentId}")
-                        .buildAndExpand(orderId, createdFulfillmentGroupEntity.getId())
+                        .path("/{fulfillmentId}")
+                        .buildAndExpand(savedFulfillmentGroupEntity.getId())
                         .toUri()
         ).build();
     }

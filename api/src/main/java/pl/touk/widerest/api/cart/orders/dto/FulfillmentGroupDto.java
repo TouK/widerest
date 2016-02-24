@@ -20,9 +20,7 @@ import java.util.List;
 @ApiModel(value = "Fulfillment Group", description = "Fulfillment Group DTO resource representation")
 public class FulfillmentGroupDto extends BaseDto {
 
-    @JsonSerialize
     private AddressDto address;
 
-    @JsonSerialize
     private List<String> items;
 }
