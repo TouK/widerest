@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.customers.converters;
 
 
+import org.broadleafcommerce.common.i18n.domain.ISOCountry;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
@@ -9,6 +10,7 @@ import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 
 import javax.annotation.Resource;
+import java.util.Optional;
 
 @Component
 public class AddressConverter implements Converter<Address, AddressDto> {
@@ -27,7 +29,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
                 .city(address.getCity())
                 .postalCode(address.getPostalCode())
                 .companyName(address.getCompanyName())
-                .countryCode(address.getIsoCountryAlpha2().getAlpha2())
+                .countryCode(Optional.ofNullable(address.getIsoCountryAlpha2()).map(ISOCountry::getAlpha2).orElse(null))
                 .countrySubdivisionCode(address.getIsoCountrySubdivision())
                 .build();
     }
@@ -49,7 +51,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
         address.setPostalCode(addressDto.getPostalCode());
         address.setCompanyName(addressDto.getCompanyName());
         address.setCounty(addressDto.getCountrySubdivisionCode());
-        address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryCode()));
+//        address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryCode()));
         return address;
     }
 
