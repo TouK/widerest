@@ -33,13 +33,14 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
 
         fulfillmentGroupDto.setItems(
                 Optional.ofNullable(fulfillmentGroup.getFulfillmentGroupItems()).orElse(Collections.emptyList()).stream()
-                        .map(fulfillmentGroupItem -> fulfillmentGroupItem.getOrderItem().getName())
+                        .map(fulfillmentGroupItem -> linkTo(methodOn(OrderController.class)
+                                .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId())).toUri().toASCIIString())
                         .collect(Collectors.toList())
         );
 
-        fulfillmentGroupDto.add(linkTo(methodOn(OrderController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
-
         /* HATEOAS links */
+
+        fulfillmentGroupDto.add(linkTo(methodOn(OrderController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
 
         return fulfillmentGroupDto;
     }
