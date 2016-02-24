@@ -229,6 +229,6 @@ public class DtoConverters {
                   .currencyCode(productDto.getCurrencyCode())
                   .skuAttributes(productDto.getSkuAttributes())
                   .skuProductOptionValues(productDto.getSkuProductOptionValues())
-                  .skuMedia(productDto.getSkuMedia())
+                  .skuMedia(productDto.getMedia())
                   .build();
 }

@@ -67,7 +67,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)));
 
-        dto.setSkuMedia(defaultSkuMedias);
+        dto.setMedia(defaultSkuMedias);
 
         dto.setCategoryName(Optional.ofNullable(product.getCategory()).map(Category::getName).orElse(""));
 
