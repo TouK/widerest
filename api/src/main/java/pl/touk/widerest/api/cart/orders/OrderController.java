@@ -71,6 +71,7 @@ import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
+import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.orders.converters.DiscreteOrderItemConverter;
 import pl.touk.widerest.api.cart.orders.converters.FulfillmentGroupConverter;
@@ -132,7 +133,7 @@ public class OrderController {
     protected FulfillmentGroupService fulfillmentGroupService;
 
     @Resource
-    private ISOService isoService;
+    private AddressConverter addressConverter;
 
     @Resource
     private AnonymousUserDetailsService anonymousUserDetailsService;
@@ -654,7 +655,8 @@ public class OrderController {
     public Resources<FulfillmentGroupDto> getOrderFulfillments(
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") final Long orderId) {
+            @PathVariable(value = "orderId") final Long orderId
+    ) {
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
@@ -720,7 +722,7 @@ public class OrderController {
             @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
     ) {
 
-        // TODO: fulfillmentGroup validation
+        orderValidationService.validateFulfillmentGroupDto(fulfillmentGroupDto);
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
@@ -759,7 +761,7 @@ public class OrderController {
             @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
     ) {
 
-        // TODO: fulfillmentGroup validation
+        orderValidationService.validateFulfillmentGroupDto(fulfillmentGroupDto);
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
@@ -821,9 +823,9 @@ public class OrderController {
     public ResponseEntity<?> setOrderFulfilmentAddress(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") Long orderId,
+            @PathVariable(value = "orderId") final Long orderId,
             @ApiParam(value = "Description of a fulfillment address", required = true)
-            @RequestBody AddressDto addressDto) throws PricingException {
+            @RequestBody final AddressDto addressDto) throws PricingException {
 
         final Order order = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
@@ -834,16 +836,8 @@ public class OrderController {
         orderValidationService.validateAddressDto(addressDto);
 
         Address shippingAddress = addressService.create();
-        shippingAddress.setFirstName(addressDto.getFirstName());
-        shippingAddress.setLastName(addressDto.getLastName());
-        shippingAddress.setCity(addressDto.getCity());
-        shippingAddress.setPostalCode(addressDto.getPostalCode());
-        shippingAddress.setCompanyName(addressDto.getCompanyName());
-        shippingAddress.setAddressLine1(addressDto.getAddressLine1());
-        shippingAddress.setAddressLine2(addressDto.getAddressLine2());
-        shippingAddress.setAddressLine3(addressDto.getAddressLine3());
-        shippingAddress.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryCode()));
-        shippingAddress.setIsoCountrySubdivision(addressDto.getCountrySubdivisionCode());
+        addressConverter.updateEntity(shippingAddress, addressDto);
+
 
         fulfillmentServiceProxy.updateFulfillmentAddress(order, shippingAddress);
 

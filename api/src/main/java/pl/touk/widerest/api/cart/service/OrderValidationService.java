@@ -17,6 +17,7 @@ import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.NoFulfillmentOptionException;
 import pl.touk.widerest.api.cart.exceptions.NoShippingAddressException;
 import pl.touk.widerest.api.cart.exceptions.OrderValidationException;
+import pl.touk.widerest.api.cart.orders.dto.FulfillmentGroupDto;
 
 @Service("wdOrderValidationService")
 public class OrderValidationService {
@@ -61,7 +62,7 @@ public class OrderValidationService {
         }
     }
 
-    public void validateAddressDto(AddressDto address) throws OrderValidationException {
+    public void validateAddressDto(final AddressDto address) throws OrderValidationException {
         if(StringUtils.isEmpty(address.getFirstName()) || StringUtils.isEmpty(address.getLastName())) {
             throw new OrderValidationException("Provided address does not contain First and/or Last names");
         }
@@ -93,5 +94,12 @@ public class OrderValidationService {
                 .orElseThrow(() -> new NoFulfillmentOptionException("FulfillmentOption for order with ID: " + order
                         .getId() + " has not been provided"));
     }
+
+    public void validateFulfillmentGroupDto(final FulfillmentGroupDto fulfillmentGroupDto) throws OrderValidationException {
+        validateAddressDto(fulfillmentGroupDto.getAddress());
+
+        // TODO: fulfillmentGroup items validation
+    }
+
 
 }
