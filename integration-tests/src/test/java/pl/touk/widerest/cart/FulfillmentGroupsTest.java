@@ -1,10 +1,12 @@
 package pl.touk.widerest.cart;
 
+import ch.qos.logback.classic.pattern.MessageConverter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.core.ParameterizedTypeReference;
@@ -14,6 +16,7 @@ import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.orders.dto.FulfillmentGroupDto;
@@ -27,6 +30,7 @@ import java.util.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 public class FulfillmentGroupsTest extends ApiTestBase {
@@ -46,20 +50,9 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         final int clientOrderId = createNewOrder(clientAccessToken);
 
         // then: order should not have any fulfillment group yet
-        final HttpHeaders clientRequestHeaders = new HttpHeaders();
-        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-
         final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
+                getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
+
 
         assertThat(receivedFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
         assertTrue(receivedFulfillmentGroupEntity.getBody().getContent().isEmpty());
@@ -80,20 +73,7 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         em.clear();
 
         // then: "a default" fulfillment group with that item should be created
-        final HttpHeaders clientRequestHeaders = new HttpHeaders();
-        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
 
         assertThat(receivedFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedFulfillmentGroupEntity.getBody().getContent().size(), equalTo(1));
@@ -140,17 +120,7 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
         clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
 
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
 
         assertThat(receivedFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -169,17 +139,8 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         assertThat(responseUpdateFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.NO_CONTENT));
 
         // then: address should get changed and its new values should be properly set
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
 
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupAfterUpdateEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupAfterUpdateEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
 
 
         assertThat(receivedFulfillmentGroupAfterUpdateEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -210,22 +171,8 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         final String addedOrderItem2Url = responseAddItem2Entity.getHeaders().getLocation().toASCIIString();
 
         // then: both items should belong to the same fulfillment group
-        final HttpHeaders clientRequestHeaders = new HttpHeaders();
-        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
-        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
 
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
 
         assertThat(receivedFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedFulfillmentGroupEntity.getBody().getContent().size(), equalTo(1));
@@ -265,17 +212,8 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         final String addedOrderItem2Url = responseAddItem2Entity.getHeaders().getLocation().toASCIIString();
 
         // then: 1) there should only exist ONE fulfillment group with both items added to it
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedOriginalFulfillmentGroupsEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
 
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedOriginalFulfillmentGroupsEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
 
         assertThat(receivedOriginalFulfillmentGroupsEntity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedOriginalFulfillmentGroupsEntity.getBody().getContent().size(), equalTo(1));
@@ -321,18 +259,9 @@ public class FulfillmentGroupsTest extends ApiTestBase {
 
 
         // then: 2) both items should be placed in two different fulfillment groups
-        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-
         // then: 2.a) there should be two fulfillment groups associated with a created order
-        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedOriginalFulfillmentGroupEntity =
-                clientRestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
-                        serverPort,
-                        clientOrderId
-                );
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedOriginalFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
+
 
         assertThat(receivedOriginalFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedOriginalFulfillmentGroupEntity.getBody().getContent().size(), equalTo(2));
@@ -357,13 +286,7 @@ public class FulfillmentGroupsTest extends ApiTestBase {
 
         // then: 2.b) refering to both fulfillment groups individually, returns "the same" results
 
-        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup1Entity =
-                clientRestTemplate.exchange(
-                        createdFulfillmentGroupUrl,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<FulfillmentGroupDto>() {}
-                );
+        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup1Entity = getFulfillmentGroupByUrl(clientRestTemplate, clientAccessToken, createdFulfillmentGroupUrl);
 
         assertThat(receivedNewFulfillmentGroup1Entity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedNewFulfillmentGroup1Entity.getBody().getAddress(), equalTo(addressDto));
@@ -371,16 +294,272 @@ public class FulfillmentGroupsTest extends ApiTestBase {
         assertThat(receivedNewFulfillmentGroup1Entity.getBody().getItems().get(0), equalTo(addedOrderItem1Url));
 
 
-        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup2Entity =
-                clientRestTemplate.exchange(
-                        firstFulfillmentGroupUrl,
-                        HttpMethod.GET,
-                        new HttpEntity<>(clientRequestHeaders),
-                        new ParameterizedTypeReference<FulfillmentGroupDto>() {}
-                );
+        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup2Entity = getFulfillmentGroupByUrl(clientRestTemplate, clientAccessToken, firstFulfillmentGroupUrl);
 
         assertThat(receivedNewFulfillmentGroup2Entity.getStatusCode(), equalTo(HttpStatus.OK));
         assertThat(receivedNewFulfillmentGroup2Entity.getBody().getItems().size(), equalTo(1));
         assertThat(receivedNewFulfillmentGroup2Entity.getBody().getItems().get(0), equalTo(addedOrderItem2Url));
     }
+    
+    @Test
+    public void shouldReturnErrorWhenAddingNonExistentItemIntoFulfillmentGroupTest() throws URISyntaxException {
+        // when: creating a new order and creating a new fulfillment group with non existing item
+        final Pair<RestTemplate, String> user = generateAnonymousUser();
+        final RestTemplate clientRestTemplate = user.getKey();
+        final String clientAccessToken = user.getValue();
+
+        final HttpHeaders clientRequestHeaders = new HttpHeaders();
+        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
+        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+
+        final int clientOrderId = createNewOrder(clientAccessToken);
+
+        final AddressDto addressDto = AddressDto.builder()
+                .firstName("Jan")
+                .lastName("Kowalski")
+                .city("Wroclaw")
+                .postalCode("02-945")
+                .addressLine1("Zakopanska 40")
+                .countryCode("PL")
+                .build();
+
+        final String NON_EXISTING_ITEM = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + clientOrderId +
+                "/items/9999";
+
+        final FulfillmentGroupDto fulfillmentGroupDto = FulfillmentGroupDto.builder()
+                .items(Collections.singletonList(NON_EXISTING_ITEM))
+                .address(addressDto)
+                .build();
+
+        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+
+        // then: API should return 4xx error code
+        try {
+            final ResponseEntity<Void> responseNewFulfillmentGroupEntity =
+                    clientRestTemplate.exchange(
+                            ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
+                            HttpMethod.POST,
+                            new HttpEntity<>(fulfillmentGroupDto, clientRequestHeaders),
+                            Void.class,
+                            serverPort,
+                            clientOrderId
+                    );
+            fail();
+        } catch(final HttpClientErrorException httpClientErrorException) {
+            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+        }
+    }
+
+    @Test
+    public void shouldReturnErrorWhenUpdatingDefaultFulfillmentGroupWithNonExistingItemTest() throws URISyntaxException {
+        // when: creating a new order and product and then modifying its default fulfillment group
+        // with non existing order item
+        final Pair<RestTemplate, String> user = generateAnonymousUser();
+        final RestTemplate clientRestTemplate = user.getKey();
+        final String clientAccessToken = user.getValue();
+
+        final HttpHeaders clientRequestHeaders = new HttpHeaders();
+        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
+        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+
+        final int clientOrderId = createNewOrder(clientAccessToken);
+
+        final String clientOrderUrl  = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + clientOrderId;
+        final ResponseEntity<?> responseAddItem1Entity = addItemToOrder(1, 1, clientOrderUrl + "/items", clientAccessToken, restTemplate);
+        assertThat(responseAddItem1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
+
+        final AddressDto addressDto = AddressDto.builder()
+                .firstName("Jan")
+                .lastName("Kowalski")
+                .city("Wroclaw")
+                .postalCode("02-945")
+                .addressLine1("Zakopanska 40")
+                .countryCode("PL")
+                .build();
+
+        final String NON_EXISTING_ITEM = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + clientOrderId +
+                "/items/9999";
+
+        final FulfillmentGroupDto fulfillmentGroupDto = FulfillmentGroupDto.builder()
+                .items(Collections.singletonList(NON_EXISTING_ITEM))
+                .address(addressDto)
+                .build();
+
+
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
+
+        assertThat(receivedFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+        final String fulfillmentGroupUrl = receivedFulfillmentGroupEntity.getBody().getContent().iterator().next().getLink("self").getHref();
+
+        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+
+        try {
+            final ResponseEntity<Void> responseUpdateFulfillmentGroupEntity =
+                    clientRestTemplate.exchange(
+                            fulfillmentGroupUrl,
+                            HttpMethod.PUT,
+                            new HttpEntity<>(fulfillmentGroupDto, clientRequestHeaders),
+                            Void.class
+                    );
+            fail();
+        } catch(final HttpClientErrorException httpClientErrorException) {
+            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+        }
+
+    }
+
+    @Test
+    public void shouldMoveItemFromDefaultFGWhenModifyingAnotherFGTest() throws URISyntaxException {
+        // when: creating a new order, product and fulfillment group and then moving the product to
+        //       the 2nd FG via PUT endpoint
+        final Pair<RestTemplate, String> user = generateAnonymousUser();
+        final RestTemplate clientRestTemplate = user.getKey();
+        final String clientAccessToken = user.getValue();
+
+        final HttpHeaders clientRequestHeaders = new HttpHeaders();
+        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
+        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+
+        final int clientOrderId = createNewOrder(clientAccessToken);
+
+        final String clientOrderUrl  = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + clientOrderId;
+        final ResponseEntity<?> responseAddItem1Entity = addItemToOrder(1, 1, clientOrderUrl + "/items", clientAccessToken, restTemplate);
+        assertThat(responseAddItem1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final String addedOrderItemUrl = responseAddItem1Entity.getHeaders().getLocation().toASCIIString();
+
+        final AddressDto addressDto = AddressDto.builder()
+                .firstName("Jan")
+                .lastName("Kowalski")
+                .city("Wroclaw")
+                .postalCode("02-945")
+                .addressLine1("Zakopanska 40")
+                .countryCode("PL")
+                .build();
+
+        final FulfillmentGroupDto fulfillmentGroupDto = FulfillmentGroupDto.builder()
+                .items(Collections.emptyList())
+                .address(addressDto)
+                .build();
+
+        final ResponseEntity<Void> responseNewFulfillmentGroupEntity =
+                clientRestTemplate.exchange(
+                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
+                        HttpMethod.POST,
+                        new HttpEntity<>(fulfillmentGroupDto, clientRequestHeaders),
+                        Void.class,
+                        serverPort,
+                        clientOrderId
+                );
+
+        assertThat(responseNewFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final String createdFulfillmentGroupUrl = responseNewFulfillmentGroupEntity.getHeaders().getLocation().toASCIIString();
+
+        final FulfillmentGroupDto fulfillmentGroupDto2 = FulfillmentGroupDto.builder()
+                .items(Collections.singletonList(addedOrderItemUrl))
+                .address(addressDto)
+                .build();
+
+        final ResponseEntity<Void> responseUpdateFulfillmentGroupEntity =
+                clientRestTemplate.exchange(
+                        createdFulfillmentGroupUrl,
+                        HttpMethod.PUT,
+                        new HttpEntity<>(fulfillmentGroupDto2, clientRequestHeaders),
+                        Void.class
+                );
+
+        assertThat(responseUpdateFulfillmentGroupEntity.getStatusCode(), equalTo(HttpStatus.NO_CONTENT));
+
+        // then: product should be moved correctly and should not appear in order's default FG
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedFulfillmentGroupEntity = getFulfillmentGroupsForOrder(clientRestTemplate, clientAccessToken, clientOrderId);
+        assertThat(receivedFulfillmentGroupEntity.getBody().getContent().size(), equalTo(2));
+
+        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup1Entity = getFulfillmentGroupByUrl(clientRestTemplate, clientAccessToken, createdFulfillmentGroupUrl);
+
+        assertThat(receivedNewFulfillmentGroup1Entity.getStatusCode(), equalTo(HttpStatus.OK));
+        assertThat(receivedNewFulfillmentGroup1Entity.getBody().getItems().size(), equalTo(1));
+        assertThat(receivedNewFulfillmentGroup1Entity.getBody().getItems().get(0), equalTo(addedOrderItemUrl));
+    }
+
+
+    @Test
+    @Ignore("TODO")
+    public void shouldReturnErrorWhenUpdatingDefaultFulfillmentGroupWithoutAnyProductTest() {
+
+    }
+
+    @Test
+    @Ignore("TODO")
+    public void shouldIgnoreDuplicateOrderItemHrefsWhenAddingToFulfillmentGroupTest() {
+
+    }
+
+    @Test
+    @Ignore("TODO")
+    public void shouldNotSaveAnyOrderItemToAFulfillmentGroupIfOneIsInvalidTest() {
+
+    }
+
+    @Test
+    @Ignore("TODO")
+    public void shouldHandleMultipleFulfillmentGroupsComplexOperationsProperlyTest() {
+
+    }
+
+
+    private ResponseEntity<Resources<FulfillmentGroupDto>> getFulfillmentGroupsForOrder(final RestTemplate clientRestTemplate, final String clientAccessToken, final long orderId) {
+        final HttpHeaders clientRequestHeaders = new HttpHeaders();
+        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
+        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+
+        final List<HttpMessageConverter<?>> currentMessageConverters = clientRestTemplate.getMessageConverters();
+
+        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+
+        // then: 2.a) there should be two fulfillment groups associated with a created order
+        final ResponseEntity<Resources<FulfillmentGroupDto>> receivedOriginalFulfillmentGroupEntity =
+                clientRestTemplate.exchange(
+                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
+                        HttpMethod.GET,
+                        new HttpEntity<>(clientRequestHeaders),
+                        new ParameterizedTypeReference<Resources<FulfillmentGroupDto>>() {},
+                        serverPort,
+                        orderId
+                );
+
+        clientRestTemplate.setMessageConverters(currentMessageConverters);
+
+        return receivedOriginalFulfillmentGroupEntity;
+    }
+
+    private ResponseEntity<FulfillmentGroupDto> getFulfillmentGroupByUrl(final RestTemplate clientRestTemplate,
+                                                                                final String clientAccessToken,
+                                                                                final String fulfillmentGroupUrl) {
+        final HttpHeaders clientRequestHeaders = new HttpHeaders();
+        clientRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
+        clientRequestHeaders.setContentType(MediaType.APPLICATION_JSON);
+        clientRequestHeaders.set("Authorization", "Bearer " + clientAccessToken);
+
+        final List<HttpMessageConverter<?>> currentMessageConverters = clientRestTemplate.getMessageConverters();
+
+        clientRestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+
+        final ResponseEntity<FulfillmentGroupDto> receivedNewFulfillmentGroup1Entity =
+                clientRestTemplate.exchange(
+                        fulfillmentGroupUrl,
+                        HttpMethod.GET,
+                        new HttpEntity<>(clientRequestHeaders),
+                        new ParameterizedTypeReference<FulfillmentGroupDto>() {}
+
+                );
+
+        clientRestTemplate.setMessageConverters(currentMessageConverters);
+
+        return receivedNewFulfillmentGroup1Entity;
+    }
+
 }

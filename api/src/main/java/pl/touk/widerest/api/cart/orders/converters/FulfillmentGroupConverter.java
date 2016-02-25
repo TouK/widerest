@@ -5,6 +5,7 @@ import org.broadleafcommerce.core.order.domain.FulfillmentGroupImpl;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroupItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroupItemImpl;
 import org.broadleafcommerce.core.order.service.OrderItemService;
+import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.cart.customers.converters.AddressConverter;
@@ -46,6 +47,8 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
                                 .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId())).toUri().toASCIIString())
                         .collect(Collectors.toList())
         );
+
+        fulfillmentGroupDto.setType(Optional.ofNullable(fulfillmentGroup.getType()).map(FulfillmentType::getFriendlyType).orElse(null));
 
         /* HATEOAS links */
 
