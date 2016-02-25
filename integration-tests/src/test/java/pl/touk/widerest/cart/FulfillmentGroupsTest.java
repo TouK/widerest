@@ -127,6 +127,7 @@ public class FulfillmentGroupsTest extends ApiTestBase {
                 .city("Wroclaw")
                 .postalCode("02-945")
                 .addressLine1("Zakopanska 40")
+                .countryCode("PL")
                 .build();
 
         final FulfillmentGroupDto fulfillmentGroupDto = FulfillmentGroupDto.builder()
@@ -294,6 +295,7 @@ public class FulfillmentGroupsTest extends ApiTestBase {
                 .city("Wroclaw")
                 .postalCode("02-945")
                 .addressLine1("Zakopanska 40")
+                .countryCode("PL")
                 .build();
 
         final FulfillmentGroupDto fulfillmentGroupDto = FulfillmentGroupDto.builder()

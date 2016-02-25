@@ -89,6 +89,11 @@ import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
+
+/*
+    TODO: (mst) Refactor, clean up, make exceptions more "expressive"
+ */
+
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/orders", produces = { MediaTypes.HAL_JSON_VALUE })
 @Api(value = "orders", description = "Order management endpoint", produces = MediaTypes.HAL_JSON_VALUE)
@@ -644,18 +649,21 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Get a fulfillment for the order",
-//            notes = "Returns details of a current fulfillment for the specified order",
-//            response = FulfillmentDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
-//            @ApiResponse(code = 404, message = "The specified order does not exist")
-//    })
+    @ApiOperation(
+            value = "List all fulfillment groups",
+            notes = "Returns a list of all fulfillment groups linked to the specified order",
+            response = FulfillmentGroupDto.class,
+            responseContainer = "List"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment groups list", response = FulfillmentGroupDto.class,
+                    responseContainer = "List"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public Resources<FulfillmentGroupDto> getOrderFulfillments(
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") final Long orderId
+                @PathVariable(value = "orderId") final Long orderId
     ) {
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
@@ -675,26 +683,28 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.GET)
-//    @ApiOperation(
-//            value = "Get a fulfillment for the order",
-//            notes = "Returns details of a current fulfillment for the specified order",
-//            response = FulfillmentDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
-//            @ApiResponse(code = 404, message = "The specified order does not exist")
-//    })
+    @ApiOperation(
+            value = "Get a fulfillment group for the order",
+            notes = "Returns details of the specified fulfillment group for the specified order",
+            response = FulfillmentGroupDto.class
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment group details", response = FulfillmentGroupDto.class),
+            @ApiResponse(code = 404, message = "The specified order or fulfillment group does not exist")
+    })
     public FulfillmentGroupDto getOrderFulfillmentById(
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") final Long orderId,
-            @ApiParam(value = "ID of a specific fulfillment", required = true)
-            @PathVariable(value = "fulfillmentId") final Long fulfillmentId) {
+                @PathVariable(value = "orderId") final Long orderId,
+            @ApiParam(value = "ID of a specific fulfillment group", required = true)
+                @PathVariable(value = "fulfillmentId") final Long fulfillmentGroupId
+    ) {
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
         return Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
-                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentId)
+                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentGroupId)
                 .findFirst()
                 .map(fulfillmentGroup -> fulfillmentGroupConverter.createDto(fulfillmentGroup, false))
                 .orElseThrow(ResourceNotFoundException::new);
@@ -704,21 +714,22 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.PUT)
-//    @ApiOperation(
-//            value = "Get a fulfillment for the order",
-//            notes = "Returns details of a current fulfillment for the specified order",
-//            response = FulfillmentDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
-//            @ApiResponse(code = 404, message = "The specified order does not exist")
-//    })
+    @ApiOperation(
+            value = "Update existing fulfillment group",
+            notes = "Updates existing fulfillment group with new details"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 204, message = "Successful update of the specified fulfillment group"),
+            @ApiResponse(code = 400, message = "Provided Fulfillment Group Validation Error"),
+            @ApiResponse(code = 404, message = "The specified order or fulfillment group does not exist")
+    })
     public ResponseEntity<Void> updateOrderFulfillmentById(
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
                 @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") final Long orderId,
-                @ApiParam(value = "ID of a specific fulfillment", required = true)
-            @PathVariable(value = "fulfillmentId") final Long fulfillmentId,
-                @ApiParam(value = "Description of a new fulfillment", required = true)
+                @ApiParam(value = "ID of a specific fulfillment group", required = true)
+            @PathVariable(value = "fulfillmentId") final Long fulfillmentGroupId,
+                @ApiParam(value = "Description of a new fulfillment group", required = true)
             @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
     ) {
 
@@ -728,7 +739,7 @@ public class OrderController {
                 .orElseThrow(ResourceNotFoundException::new);
 
         final FulfillmentGroup fulfillmentGroupEntity = Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
-                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentId)
+                .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentGroupId)
                 .findFirst()
                 .orElseThrow(ResourceNotFoundException::new);
 
@@ -745,21 +756,24 @@ public class OrderController {
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.POST)
-//    @ApiOperation(
-//            value = "Get a fulfillment for the order",
-//            notes = "Returns details of a current fulfillment for the specified order",
-//            response = FulfillmentDto.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successful retrieval of fulfillment details", response = FulfillmentDto.class),
-//            @ApiResponse(code = 404, message = "The specified order does not exist")
-//    })
+    @ApiOperation(
+            value = "Create a new fulfillment group",
+            notes = "Allows to create a new fulfillment group with a specified address and order items"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "A new fulfillment group has been successfully created"),
+            @ApiResponse(code = 400, message = "Provided Fulfillment Group Validation Error"),
+            @ApiResponse(code = 404, message = "The specified order does not exist")
+    })
     public ResponseEntity<Void> addOrderFulfillment (
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
                 @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") final Long orderId,
-                @ApiParam(value = "Description of a new fulfillment", required = true)
+                @ApiParam(value = "Description of a new fulfillment group", required = true)
             @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
     ) {
+
+        // TODO: Handle "exceptional" situations...order item does not exist, FG duplicates etc
 
         orderValidationService.validateFulfillmentGroupDto(fulfillmentGroupDto);
 
