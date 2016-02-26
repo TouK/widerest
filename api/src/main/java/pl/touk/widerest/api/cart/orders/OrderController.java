@@ -1,18 +1,17 @@
 package pl.touk.widerest.api.cart.orders;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
-
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import javax.annotation.Resource;
-
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import com.jasongoodwin.monads.Try;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import javaslang.control.Match;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,12 +21,13 @@ import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayTransactionService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
@@ -46,6 +46,7 @@ import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
@@ -61,27 +62,17 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import com.jasongoodwin.monads.Try;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import javaslang.control.Match;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
+import pl.touk.widerest.api.cart.exceptions.NotShippableException;
 import pl.touk.widerest.api.cart.orders.converters.DiscreteOrderItemConverter;
+import pl.touk.widerest.api.cart.orders.converters.OrderConverter;
 import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.FulfillmentDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
 import pl.touk.widerest.api.cart.orders.dto.OrderItemOptionDto;
 import pl.touk.widerest.api.cart.orders.dto.PaymentDto;
-import pl.touk.widerest.api.cart.exceptions.NotShippableException;
-import pl.touk.widerest.api.cart.orders.converters.OrderConverter;
 import pl.touk.widerest.api.cart.service.FulfilmentServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderServiceProxy;
 import pl.touk.widerest.api.cart.service.OrderValidationService;
@@ -91,6 +82,17 @@ import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
+
+import javax.annotation.Resource;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/orders", produces = { MediaTypes.HAL_JSON_VALUE })
@@ -142,6 +144,15 @@ public class OrderController {
     private DiscreteOrderItemConverter discreteOrderItemConverter;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
+
+    private TypeIdResolver paymentTypeIdResolver;
+
+    @Autowired
+    public void initPaymentTypeIdResolver(ObjectMapper objectMapper) throws JsonMappingException {
+        SerializationConfig serializationConfig = objectMapper.getSerializationConfig();
+        JavaType javaType = objectMapper.getTypeFactory().constructType(PaymentDto.class);
+        paymentTypeIdResolver = objectMapper.getSerializerFactory().createTypeSerializer(serializationConfig, javaType).getTypeIdResolver();
+    }
 
     /* GET /orders */
     @Transactional
@@ -723,27 +734,45 @@ public class OrderController {
 
         orderValidationService.validateOrderBeforeCheckout(order);
 
-        PaymentRequestDTO paymentRequestDTO =
+        final PaymentRequestDTO paymentRequestDTO =
                 orderToPaymentRequestDTOService.translateOrder(order)
-                        .additionalField("SUCCESS_URL", paymentDto.getSuccessUrl())
-                        .additionalField("CANCEL_URL", paymentDto.getCancelUrl())
-                        .additionalField("FAILURE_URL", paymentDto.getFailureUrl());
+                        .additionalField("PAYMENT_DETAILS", paymentDto);
+        populateLineItemsAndSubscriptions(order, paymentRequestDTO);
 
-        paymentRequestDTO = populateLineItemsAndSubscriptions(order, paymentRequestDTO);
+        PaymentGatewayConfigurationService configurationService = findPaymentGatewayConfigurationService(paymentDto);
 
-        final PaymentGatewayConfigurationService configurationService =
-                paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
-                        PaymentGatewayType.getInstance(String.valueOf(paymentDto.getProvider()))
-                );
 
-        final PaymentResponseDTO paymentResponse = configurationService.getHostedService().requestHostedEndpoint
-                (paymentRequestDTO);
+        PaymentGatewayHostedService hostedService = configurationService.getHostedService();
+        if (hostedService != null) {
+            final PaymentResponseDTO paymentResponse =
+                    hostedService.requestHostedEndpoint(paymentRequestDTO);
 
-        //return redirect URI from the paymentResponse
-        final String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
-                .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
+            //return redirect URI from the paymentResponse
+            final String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
+                    .orElseThrow(() -> new ResourceNotFoundException());
 
-        return ResponseEntity.created(URI.create(redirectURI)).build();
+            return ResponseEntity.created(URI.create(redirectURI)).build();
+        }
+
+        PaymentGatewayTransactionService transactionService = configurationService.getTransactionService();
+        if (transactionService != null) {
+            PaymentResponseDTO paymentResponseDTO =
+                    transactionService.authorizeAndCapture(paymentRequestDTO);
+            return ResponseEntity.ok().build();
+        }
+
+        return ResponseEntity.unprocessableEntity().build();
+
+    }
+
+    private PaymentGatewayConfigurationService findPaymentGatewayConfigurationService(PaymentDto paymentDto) {
+
+        final String provider = paymentTypeIdResolver.idFromValue(paymentDto);
+        final PaymentGatewayType paymentGatewayType = PaymentGatewayType.getInstance(provider);
+
+        return paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
+                paymentGatewayType
+        );
     }
 
     private PaymentRequestDTO populateLineItemsAndSubscriptions(final Order order, PaymentRequestDTO

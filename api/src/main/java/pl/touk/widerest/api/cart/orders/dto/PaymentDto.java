@@ -1,32 +1,38 @@
 package pl.touk.widerest.api.cart.orders.dto;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
 
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
+//@AllArgsConstructor
 @JsonRootName("payment")
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Payment", description = "Payment request details")
-public class PaymentDto extends BaseDto {
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property="provider")
+public abstract class PaymentDto extends BaseDto {
 
     @ApiModelProperty
-    private String provider;
+    public void setProvider(String provider) {
+        throw new UnsupportedOperationException();
+    };
 
-    @ApiModelProperty
-    protected String successUrl;
-
-    @ApiModelProperty
-    protected String cancelUrl;
-
-    @ApiModelProperty
-    protected String failureUrl;
-
-
+//    @ApiModelProperty
+//    private String provider;
+//
+//    @ApiModelProperty
+//    protected String successUrl;
+//
+//    @ApiModelProperty
+//    protected String cancelUrl;
+//
+//    @ApiModelProperty
+//    protected String failureUrl;
 
 }
