@@ -1,9 +1,11 @@
 package pl.touk.widerest;
 
 import com.google.common.collect.Sets;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -15,6 +17,8 @@ import pl.touk.widerest.boot.ReorderedHttpMessageConverters;
 import springfox.documentation.swagger.web.ApiKeyVehicle;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
@@ -51,11 +55,13 @@ public class Application extends WebMvcConfigurerAdapter {
         return new BroadleafBeansPostProcessor();
     }
 
+    @Autowired(required = false)
+    private final List<HttpMessageConverter<?>> converters = Collections.emptyList();
+
     @Bean
     public ReorderedHttpMessageConverters httpMessageConverters() {
-        return new ReorderedHttpMessageConverters();
+        return new ReorderedHttpMessageConverters(converters);
     }
-
 
     @Bean
     public SettingsConsumer samplePropertyConsumer() {
