@@ -176,20 +176,19 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
-                        <phase>deploy</phase>
+                        <phase>install</phase>
                         <goals><goal>jar-no-fork</goal></goals>
                     </execution>
                 </executions>
             </plugin>
 
             <plugin>
-                <!-- explicitly define maven-deploy-plugin after other to force exec order -->
-                <artifactId>maven-deploy-plugin</artifactId>
+                <artifactId>maven-install-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>deploy</id>
-                        <phase>deploy</phase>
-                        <goals><goal>deploy</goal></goals>
+                        <id>install</id>
+                        <phase>install</phase>
+                        <goals><goal>install</goal></goals>
                     </execution>
                 </executions>
             </plugin>
