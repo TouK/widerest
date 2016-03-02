@@ -62,6 +62,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 import pl.touk.widerest.api.cart.exceptions.NotShippableException;
@@ -268,7 +270,7 @@ public class OrderController {
     /* POST /orders/{orderId}/items */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{orderId}/itemsp", method = RequestMethod.POST)
+    @RequestMapping(value = "/{orderId}/items", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new item",
             notes = "Adds a new item to the specified order",
@@ -332,7 +334,7 @@ public class OrderController {
     /* POST /orders/{orderId}/items */
     @Transactional
     @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
-    @RequestMapping(value = "/{orderId}/items", method = RequestMethod.POST)
+    @RequestMapping(value = "/{orderId}/items-old", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new item",
             notes = "Adds a new item to the specified order",
@@ -400,27 +402,24 @@ public class OrderController {
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
+        UriComponentsBuilder uriComponentsBuilder =
+                ServletUriComponentsBuilder.fromCurrentRequestUri().replacePath(
+                        ServletUriComponentsBuilder.fromCurrentRequest().build().getPath().replace("-old","")
+                );
 
-        if (!isBundleBeingAdded) {
-            return ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/{id}")
-                        .buildAndExpand(
-                                (cart.getDiscreteOrderItems().stream()
-                                        .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
-                                        .findAny()
-                                        .map(DiscreteOrderItem::getId)
-                                        .orElseThrow(ResourceNotFoundException::new))
-                        )
-                        .toUri()
-            ).build();
-        } else {
-            return ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                    .build()
-                    .toUri()
-            ).build();
-        }
+        UriComponents uriComponents = isBundleBeingAdded ?
+                uriComponentsBuilder.build()
+                : uriComponentsBuilder
+                .path("/{id}")
+                .buildAndExpand(
+                        (cart.getDiscreteOrderItems().stream()
+                                .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
+                                .findAny()
+                                .map(DiscreteOrderItem::getId)
+                                .orElseThrow(ResourceNotFoundException::new))
+                );
+
+        return ResponseEntity.created(uriComponents.toUri()).build();
     }
 
     /* GET /orders/items/ */
