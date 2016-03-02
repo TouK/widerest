@@ -33,10 +33,13 @@ public class ApiTestUrls {
 
     /* Orders */
     public static final String ORDERS_URL = API_BASE_URL + "/orders";
-    public static final String ORDER_BY_ID_URL = ORDERS_URL + "{orderId}";
+    public static final String ORDER_BY_ID_URL = ORDERS_URL + "/{orderId}";
     public static final String ORDERS_COUNT = ORDERS_URL+"/count";
     public static final String ORDERS_BY_ID_ITEMS_OLD = ORDER_BY_ID_URL + "/items-old";
     public static final String ORDERS_BY_ID_ITEMS = ORDER_BY_ID_URL + "/items";
+
+    public static final String ORDER_BY_ID_FULFILLMENTS_URL = ORDER_BY_ID_URL + "/fulfillments";
+    public static final String ORDER_BY_ID_FULFILLMENT_BY_ID_URL = ORDER_BY_ID_FULFILLMENTS_URL + "/{fulfillmentId}";
 
     /* PayPal */
     public static final String SYSTEM_PROPERTIES_URL = API_BASE_URL + "/settings";

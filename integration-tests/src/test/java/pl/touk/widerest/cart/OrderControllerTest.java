@@ -449,7 +449,7 @@ public class OrderControllerTest extends ApiTestBase {
 
 
         // Given anonymous user
-        Pair<OAuth2RestTemplate, String> userCredentials = generateAnonymousUser();
+        Pair<RestTemplate, String> userCredentials = generateAnonymousUser();
         RestTemplate userRestTemplate = userCredentials.getKey();
         String userAccessToken = userCredentials.getValue();
         Integer orderId = createNewOrder(userAccessToken);

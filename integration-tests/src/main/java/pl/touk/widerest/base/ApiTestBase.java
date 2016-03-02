@@ -254,14 +254,14 @@ public abstract class ApiTestBase {
     /* --------------------------------  ORDER METHODS -------------------------------- */
 
 
-    protected Integer createNewOrder(final String token) {
+    protected int createNewOrder(final String token) {
         final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
                 restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
 
         return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
-    protected Pair generateAnonymousUser() throws URISyntaxException {
+    protected Pair<RestTemplate, String> generateAnonymousUser() throws URISyntaxException {
         final RestTemplate restTemplate = new RestTemplate();
         final URI FirstResponseUri = restTemplate.postForLocation(ApiTestUrls.OAUTH_AUTHORIZATION, null, serverPort);
         return Pair.of(restTemplate, ApiTestUtils.strapTokenFromURI(FirstResponseUri));
@@ -282,7 +282,7 @@ public abstract class ApiTestBase {
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
-    protected ResponseEntity<HttpHeaders> addItemToOrder(final long skuId, final Integer quantity, final String location, final String token, final RestTemplate restTemplate) {
+    protected ResponseEntity<HttpHeaders> addItemToOrder(final long skuId, final int quantity, final String location, final String token, final RestTemplate restTemplate) {
         final OrderItemDto template = new OrderItemDto();
         template.setQuantity(quantity);
         template.setSkuId(skuId);

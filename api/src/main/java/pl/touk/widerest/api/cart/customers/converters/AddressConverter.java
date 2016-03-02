@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.cart.customers.converters;
 
 
+import org.broadleafcommerce.common.i18n.domain.ISOCountry;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
@@ -9,6 +10,7 @@ import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.cart.customers.dto.AddressDto;
 
 import javax.annotation.Resource;
+import java.util.Optional;
 
 @Component
 public class AddressConverter implements Converter<Address, AddressDto> {
@@ -27,7 +29,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
                 .city(address.getCity())
                 .postalCode(address.getPostalCode())
                 .companyName(address.getCompanyName())
-                .countryCode(address.getIsoCountryAlpha2().getAlpha2())
+                .countryCode(Optional.ofNullable(address.getIsoCountryAlpha2()).map(ISOCountry::getAlpha2).orElse(null))
                 .countrySubdivisionCode(address.getIsoCountrySubdivision())
                 .build();
     }
@@ -43,13 +45,20 @@ public class AddressConverter implements Converter<Address, AddressDto> {
         address.setAddressLine1(addressDto.getAddressLine1());
         address.setAddressLine2(addressDto.getAddressLine2());
         address.setAddressLine3(addressDto.getAddressLine3());
+
         address.setFirstName(addressDto.getFirstName());
         address.setLastName(addressDto.getLastName());
+
         address.setCity(addressDto.getCity());
         address.setPostalCode(addressDto.getPostalCode());
         address.setCompanyName(addressDto.getCompanyName());
+
         address.setCounty(addressDto.getCountrySubdivisionCode());
-        address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(addressDto.getCountryCode()));
+        address.setIsoCountrySubdivision(addressDto.getCountrySubdivisionCode());
+
+        Optional.ofNullable(addressDto.getCountryCode())
+                .ifPresent(countryCode -> address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(countryCode)));
+
         return address;
     }
 
