@@ -1,10 +1,10 @@
 package pl.touk.widerest.base;
 
 import org.springframework.http.ResponseEntity;
-import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.products.dto.MediaDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
+import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.products.skus.SkuDto;
 
 public interface ApiTestCatalogOperations {
     ResponseEntity<?> addTestCategory(final CategoryDto categoryDto);

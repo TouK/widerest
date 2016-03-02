@@ -1,38 +1,34 @@
 package pl.touk.widerest.api;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
-
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
-import javax.annotation.Resource;
-
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
-import org.broadleafcommerce.common.i18n.service.ISOService;
-import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.value.ValueAssignable;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.OrderAttribute;
 import org.broadleafcommerce.core.order.domain.OrderAttributeImpl;
 import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
 import org.springframework.stereotype.Service;
+import pl.touk.widerest.api.common.ResourceNotFoundException;
+import pl.touk.widerest.api.orders.CartAttributeDto;
+import pl.touk.widerest.api.products.BundleItemDto;
+import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.products.ProductOptionDto;
+import pl.touk.widerest.api.products.ProductOptionValueDto;
+import pl.touk.widerest.api.products.search.FacetDto;
+import pl.touk.widerest.api.products.search.FacetValueDto;
+import pl.touk.widerest.api.products.skus.SkuDto;
+import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
-import pl.touk.widerest.api.cart.orders.OrderController;
-import pl.touk.widerest.api.cart.orders.dto.CartAttributeDto;
-import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.catalog.exceptions.ResourceNotFoundException;
-import pl.touk.widerest.api.catalog.products.dto.*;
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toList;
 
 @Service("wdDtoConverters")
 public class DtoConverters {

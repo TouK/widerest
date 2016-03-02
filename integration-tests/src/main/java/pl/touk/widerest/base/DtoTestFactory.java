@@ -1,5 +1,14 @@
 package pl.touk.widerest.base;
 
+import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.orders.OrderDto;
+import pl.touk.widerest.api.products.ProductBundleDto;
+import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.products.ProductOptionDto;
+import pl.touk.widerest.api.products.skus.SkuDto;
+import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
+
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -8,15 +17,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
-
-import pl.touk.widerest.api.cart.orders.dto.OrderDto;
-import pl.touk.widerest.api.catalog.products.dto.MediaDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductBundleDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductOptionDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuProductOptionValueDto;
-import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
 
 public class DtoTestFactory {
 

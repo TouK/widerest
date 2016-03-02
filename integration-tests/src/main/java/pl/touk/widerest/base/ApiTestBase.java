@@ -45,12 +45,12 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
-import pl.touk.widerest.api.cart.orders.dto.DiscreteOrderItemDto;
-import pl.touk.widerest.api.cart.orders.dto.OrderDto;
-import pl.touk.widerest.api.cart.orders.dto.OrderItemDto;
-import pl.touk.widerest.api.catalog.CatalogUtils;
-import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
+import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.common.CatalogUtils;
+import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
+import pl.touk.widerest.api.orders.OrderDto;
+import pl.touk.widerest.api.orders.OrderItemDto;
+import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 

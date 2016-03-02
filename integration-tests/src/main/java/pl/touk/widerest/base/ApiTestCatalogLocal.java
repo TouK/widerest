@@ -1,10 +1,9 @@
 package pl.touk.widerest.base;
 
-import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.springframework.stereotype.Component;
-import pl.touk.widerest.api.catalog.CatalogUtils;
+import pl.touk.widerest.api.common.CatalogUtils;
 
 import javax.annotation.Resource;
 

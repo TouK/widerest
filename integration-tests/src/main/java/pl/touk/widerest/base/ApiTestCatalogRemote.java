@@ -1,19 +1,13 @@
 package pl.touk.widerest.base;
 
 import com.google.common.collect.Lists;
-import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.api.catalog.CatalogUtils;
 
 import javax.annotation.PostConstruct;
-
-import static org.junit.Assert.assertNotNull;
 
 @Component
 @WebIntegrationTest({

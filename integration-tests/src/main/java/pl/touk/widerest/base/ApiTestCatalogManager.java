@@ -1,20 +1,17 @@
 package pl.touk.widerest.base;
 
 import com.google.common.collect.Lists;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
-import pl.touk.widerest.api.catalog.categories.dto.CategoryDto;
-import pl.touk.widerest.api.catalog.products.dto.MediaDto;
-import pl.touk.widerest.api.catalog.products.dto.ProductDto;
-import pl.touk.widerest.api.catalog.products.dto.SkuDto;
+import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.products.skus.SkuDto;
 
 import java.util.Arrays;
 
