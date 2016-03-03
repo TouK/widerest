@@ -46,7 +46,7 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
 
         /* HATEOAS links */
 
-        fulfillmentGroupDto.add(linkTo(methodOn(OrderController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
+        fulfillmentGroupDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
 
         return fulfillmentGroupDto;
     }

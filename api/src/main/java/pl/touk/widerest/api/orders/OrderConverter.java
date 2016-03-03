@@ -12,6 +12,7 @@ import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.customers.CustomerController;
 import pl.touk.widerest.api.customers.CustomerConverter;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
 import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
 
 import javax.annotation.Resource;
@@ -79,7 +80,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 //        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, order.getId())).withRel("items-count"));
 
         /* link to fulfillment */
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilment(null, order.getId())).withRel("fulfillment"));
+        orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfilment(null, order.getId())).withRel("fulfillment"));
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
 

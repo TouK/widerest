@@ -16,7 +16,6 @@ import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.common.AddressConverter;
-import pl.touk.widerest.api.orders.OrderController;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -152,9 +151,9 @@ public class FulfilmentServiceProxy {
         }
 
 
-        fulfillmentDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderFulfilment(null, order.getId())).withSelfRel());
+        fulfillmentDto.add(ControllerLinkBuilder.linkTo(methodOn(FulfillmentController.class).getOrderFulfilment(null, order.getId())).withSelfRel());
 
-        fulfillmentDto.add(linkTo(methodOn(OrderController.class).getOrderFulfilmentAddress(null, order.getId())).withRel("fulfillment-address"));
+        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfilmentAddress(null, order.getId())).withRel("fulfillment-address"));
 
         return fulfillmentDto;
     }
