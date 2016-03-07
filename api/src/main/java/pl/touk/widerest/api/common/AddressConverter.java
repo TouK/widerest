@@ -35,8 +35,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
     @Override
     public Address createEntity(final AddressDto addressDto) {
-        final Address addressEntity = new AddressImpl();
-        return updateEntity(addressEntity, addressDto);
+        return updateEntity(new AddressImpl(), addressDto);
     }
 
     @Override

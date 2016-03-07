@@ -19,8 +19,7 @@ public class MediaConverter implements Converter<Media, MediaDto> {
 
     @Override
     public Media createEntity(final MediaDto mediaDto) {
-        final Media media = new MediaImpl();
-        return updateEntity(media, mediaDto);
+        return updateEntity(new MediaImpl(), mediaDto);
     }
 
     @Override

@@ -15,8 +15,11 @@ import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.products.skus.SkuConverter;
 
 import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -84,7 +87,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setAttributes(product.getProductAttributes().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
 
-        dto.setOptions(product.getProductOptionXrefs().stream().map(DtoConverters.productOptionXrefToDto).collect(toList()));
+        dto.setOptions(product.getProductOptionXrefs().stream().map(productOptionXrefToDto).collect(toList()));
 
         dto.setSkus(product.getAdditionalSkus().stream()
                 .map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
@@ -191,4 +194,18 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         return product;
     }
+
+    private static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
+        final ProductOption productOption = input.getProductOption();
+
+        final List<String> productOptionAllowedValues = Optional.ofNullable(productOption.getAllowedValues()).orElse(Collections.emptyList()).stream()
+                .map(ProductOptionValue::getAttributeValue)
+                .collect(toList());
+
+        return ProductOptionDto.builder()
+                .name(productOption.getAttributeName())
+                .allowedValues(productOptionAllowedValues)
+                .build();
+    };
+
 }

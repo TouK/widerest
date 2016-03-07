@@ -1,5 +1,6 @@
 package pl.touk.widerest.api;
 
+import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.money.Money;
@@ -39,25 +40,14 @@ public class DtoConverters {
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
 
-    private static Function<ProductAttribute, String> getProductAttributeName = ValueAssignable::getValue;
-
-    private static Function<ProductOptionValue, String> getProductOptionValueName = ProductOptionValue::getAttributeValue;
-
     public Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
         BroadleafCurrency skuCurrency = null;
 
-        if(currencyCode == null || currencyCode.isEmpty()) {
+        if(StringUtils.isEmpty(currencyCode)) {
             skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
         } else {
-            skuCurrency = blCurrencyService.findCurrencyByCode(currencyCode);
-
-            if (skuCurrency == null) {
-//                BroadleafCurrency newBLCurrency = new BroadleafCurrencyImpl();
-//                newBLCurrency.setCurrencyCode(currencyCode);
-//                skuCurrency = blCurrencyService.save(newBLCurrency);
-                throw new ResourceNotFoundException("Invalid currency code.");
-            }
-
+            skuCurrency = Optional.ofNullable(blCurrencyService.findCurrencyByCode(currencyCode))
+                            .orElseThrow(() -> new ResourceNotFoundException("Invalid currency code."));
         }
         return skuCurrency;
     };
@@ -81,7 +71,7 @@ public class DtoConverters {
 
     public static Function <ProductOption, ProductOptionDto> productOptionEntityToDto = entity ->
                 ProductOptionDto.builder().name(entity.getAttributeName()).allowedValues(entity.getAllowedValues().stream()
-                        .map(DtoConverters.getProductOptionValueName)
+                        .map(ProductOptionValue::getAttributeValue)
                         .collect(toList()))
                         .build();
 
@@ -107,7 +97,7 @@ public class DtoConverters {
 
 
     public static Function<ProductOptionValueDto, ProductOptionValue> productOptionValueDtoToEntity = dto -> {
-        ProductOptionValue productOptionValue = new ProductOptionValueImpl();
+        final ProductOptionValue productOptionValue = new ProductOptionValueImpl();
 
         productOptionValue.setAttributeValue(dto.getAttributeValue());
         productOptionValue.setProductOption(DtoConverters.productOptionDtoToEntity.apply(dto.getProductOption()));
@@ -115,8 +105,10 @@ public class DtoConverters {
     };
 
     public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity ->
-            SkuProductOptionValueDto.builder().attributeName(entity.getProductOption().getAttributeName())
-                .attributeValue(entity.getAttributeValue()).build();
+            SkuProductOptionValueDto.builder()
+                    .attributeName(entity.getProductOption().getAttributeName())
+                    .attributeValue(entity.getAttributeValue())
+                    .build();
 
 
     public static Function<SkuBundleItem, BundleItemDto> skuBundleItemToBundleItemDto = entity -> {
@@ -125,13 +117,6 @@ public class DtoConverters {
                 .quantity(entity.getQuantity())
                 .salePrice(Optional.ofNullable(entity.getSalePrice()).map(Money::getAmount).orElse(null))
                 .build();
-
-        final Product associatedProduct = entity.getSku().getProduct();
-
-//        bundleItemDto.add(linkTo(methodOn(ProductController.class).getSkuById(
-//                associatedProduct.getId(),
-//                entity.getSku().getId())).withSelfRel());
-
 
         return bundleItemDto;
     };
@@ -144,52 +129,6 @@ public class DtoConverters {
         return skuBundleItem;
     };
 
-    /******************************** SKU BUNDLE ITEMS ********************************/
-
-    /******************************** Product Option Xref ********************************/
-
-    public static Function<ProductOptionXref, ProductOptionDto> productOptionXrefToDto = input -> {
-        org.broadleafcommerce.core.catalog.domain.ProductOption productOption = input.getProductOption();
-
-        final List<ProductOptionValue> productOptionValues = productOption.getAllowedValues();
-        final List<String> collectAllowedValues = productOptionValues.stream()
-                .map(getProductOptionValueName)
-                .collect(toList());
-        return new ProductOptionDto(productOption.getAttributeName(), collectAllowedValues);
-    };
-
-    // experimental
-    public static Function<ProductOptionDto, ProductOptionXref> productOptionDtoToXRef = input -> {
-        final ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
-        final ProductOption productOption = new ProductOptionImpl();
-
-        productOption.setAttributeName(input.getName());
-        productOption.setAllowedValues(input.getAllowedValues().stream()
-                .map(e -> {
-                    ProductOptionValue v = new ProductOptionValueImpl();
-                    v.setAttributeValue(e);
-                    return v;
-                }).collect(toList()));
-
-        productOptionXref.setProductOption(productOption);
-        return productOptionXref;
-    };
-
-    public static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity ->
-            CartAttributeDto.builder().name(entity.getName()).value(entity.getValue()).build();
-
-
-    public static Function<CartAttributeDto, OrderAttribute> orderAttributeDtoToEntity = dto -> {
-        final OrderAttribute order = new OrderAttributeImpl();
-        order.setName(dto.getName());
-        order.setValue(dto.getValue());
-        return order;
-    };
-
-
-    /******************************** DISCRETEORDERITEM ********************************/
-//
-    /******************************** DISCRETEORDERITEM ********************************/
     public static Function<SearchFacetResultDTO, FacetValueDto> searchFacetResultDTOFacetValueToDto = entity -> FacetValueDto.builder()
             .value(entity.getValue())
             .minValue(entity.getMinValue())

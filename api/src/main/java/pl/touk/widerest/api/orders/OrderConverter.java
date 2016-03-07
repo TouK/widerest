@@ -3,6 +3,7 @@ package pl.touk.widerest.api.orders;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
+import org.broadleafcommerce.core.order.domain.OrderAttribute;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.springframework.hateoas.EmbeddedResource;
@@ -19,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -54,7 +56,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                         .orElse(null))
                 .cartAttributes(Optional.ofNullable(order.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
                         .map(Map.Entry::getValue)
-                        .map(DtoConverters.orderAttributeEntityToDto)
+                        .map(orderAttributeEntityToDto)
                         .collect(toList()))
                 .build();
 
@@ -89,8 +91,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 
     @Override
     public Order createEntity(final OrderDto orderDto) {
-        final Order orderEntity = new OrderImpl();
-        return updateEntity(orderEntity, orderDto);
+        return updateEntity(new OrderImpl(), orderDto);
     }
 
     @Override
@@ -102,4 +103,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 
         return order;
     }
+
+    private static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity ->
+            CartAttributeDto.builder().name(entity.getName()).value(entity.getValue()).build();
 }
