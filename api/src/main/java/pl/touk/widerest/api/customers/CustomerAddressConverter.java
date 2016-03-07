@@ -24,8 +24,7 @@ public class CustomerAddressConverter implements Converter<CustomerAddress, Cust
 
     @Override
     public CustomerAddress createEntity(final CustomerAddressDto customerAddressDto) {
-        final CustomerAddress customerAddress = new CustomerAddressImpl();
-        return updateEntity(customerAddress, customerAddressDto);
+        return updateEntity(new CustomerAddressImpl(), customerAddressDto);
     }
 
     @Override

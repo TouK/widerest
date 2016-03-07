@@ -91,14 +91,6 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 11, value = "Tax code for this product", dataType = "java.lang.String")
     private String taxCode;
 
-//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-//    @ApiModelProperty(position = 8, value = "Date from which the SKU becomes active", required = true, dataType = "java.util.Date")
-//    private Date activeStartDate;
-//
-//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-//    @ApiModelProperty(position = 9, value = "Date from which the SKU becomes inactive", dataType = "java.util.Date")
-//    private Date activeEndDate;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 12, value = "Default attributes associated with this product")
     private Map<String, String> skuAttributes;
@@ -137,12 +129,7 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 20, value = "Manufacturer of the product", dataType = "java.lang.String")
     private String manufacturer;
 
-//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-//    @ApiModelProperty(position = 13, value = "Possible bundles for the product", dataType = "java.util.List")
-//    private List<Long> possibleBundles;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 21, dataType = "java.lang.String")
     private String url;
-
 }

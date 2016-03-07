@@ -3,6 +3,7 @@ package pl.touk.widerest.api.customers;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -26,27 +27,19 @@ import java.util.Locale;
 @ApiModel(value = "Customer", description = "Customer DTO resource description")
 public class CustomerDto extends BaseDto {
 
-    @JsonIgnore
-    private Long customerId;
-
     @ApiModelProperty(position = 0, value = "Customer's username", required = true, dataType = "java.lang.String")
     private String username;
 
-    @JsonIgnore
-    @ApiModelProperty(position = 1, value = "Customer's password hash", dataType = "java.lang.String")
-    private String passwordHash;
-
-    @ApiModelProperty(position = 2, value = "Customer's first name", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 1, value = "Customer's first name", required = true, dataType = "java.lang.String")
     private String firstName;
 
-    @ApiModelProperty(position = 3, value = "Customer's last name", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 2, value = "Customer's last name", required = true, dataType = "java.lang.String")
     private String lastName;
 
-    /* TODO: (mst) Validation? */
-    @ApiModelProperty(position = 4, value = "Customer's e-mail address", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 3, value = "Customer's e-mail address", required = true, dataType = "java.lang.String")
     private String email;
 
-    @ApiModelProperty(position = 5, value = "Customer's locale", dataType = "java.util.Locale")
+    @ApiModelProperty(position = 4, value = "Customer's locale", dataType = "java.util.Locale")
     private Locale locale;
 
     @JsonIgnore
@@ -56,15 +49,14 @@ public class CustomerDto extends BaseDto {
     @JsonIgnore
     @ApiModelProperty
     private Boolean deactivated = false;
-    
-    /* customer attributes */
 
-    @ApiModelProperty(position = 6, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.common.AddressDto")
+    @ApiModelProperty(position = 5, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.common.AddressDto")
     private AddressDto correspondenceAddress;
 
-    @ApiModelProperty(position = 7, value = "Customer's residence address", dataType = "pl.touk.widerest.api.common.AddressDto")
+    @ApiModelProperty(position = 6, value = "Customer's residence address", dataType = "pl.touk.widerest.api.common.AddressDto")
     private AddressDto residenceAddress;
 
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+    @ApiModelProperty(position = 7, value = "List of available customer addresses", dataType = "java.util.List")
     private List<CustomerAddressDto> addresses;
-
 }

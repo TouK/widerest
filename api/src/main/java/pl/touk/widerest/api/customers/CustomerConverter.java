@@ -7,8 +7,11 @@ import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 
 import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -21,21 +24,21 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
     @Override
     public CustomerDto createDto(final Customer customer, final boolean embed) {
         final CustomerDto customerDto = CustomerDto.builder()
-                .customerId(customer.getId())
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
                 .deactivated(customer.isDeactivated())
-                .addresses(customer.getCustomerAddresses().stream()
-                        .map(customerAddress -> customerAddressConverter.createDto(customerAddress, false))
-                        .collect(Collectors.toList()))
                 .username(customer.getUsername())
-                /* disabled due to security reasons */
-//                .passwordHash(entity.getPassword())
                 .registered(customer.isRegistered())
                 .email(customer.getEmailAddress())
+                .addresses(
+                        Optional.ofNullable(customer.getCustomerAddresses()).orElse(Collections.emptyList()).stream()
+                            .map(customerAddress -> customerAddressConverter.createDto(customerAddress, false))
+                            .collect(toList())
+                )
                 .build();
 
         customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
+
         customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, customer.getId().toString())).withRel("authorization"));
 
         return customerDto;
@@ -43,22 +46,22 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
 
     @Override
     public Customer createEntity(final CustomerDto customerDto) {
-        final Customer customer = new CustomerImpl();
-        return updateEntity(customer, customerDto);
+        return updateEntity(new CustomerImpl(), customerDto);
     }
 
     @Override
     public Customer updateEntity(final Customer customer, final CustomerDto customerDto) {
-        customer.setId(customerDto.getCustomerId());
         customer.setFirstName(customerDto.getFirstName());
         customer.setLastName(customerDto.getLastName());
         customer.setRegistered(customerDto.getRegistered());
         customer.setUsername(customerDto.getUsername());
-        customer.setPassword(customerDto.getPasswordHash());
         customer.setEmailAddress(customerDto.getEmail());
-        customer.setCustomerAddresses(customerDto.getAddresses().stream()
-                .map(customerAddressConverter::createEntity)
-                .collect(Collectors.toList()));
+
+        customer.setCustomerAddresses(
+                Optional.ofNullable(customerDto.getAddresses()).orElse(Collections.emptyList()).stream()
+                        .map(customerAddressConverter::createEntity)
+                        .collect(toList())
+        );
 
         return customer;
     }
