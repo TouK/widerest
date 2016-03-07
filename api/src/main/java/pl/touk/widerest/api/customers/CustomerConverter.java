@@ -26,9 +26,7 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
         final CustomerDto customerDto = CustomerDto.builder()
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
-                .deactivated(customer.isDeactivated())
                 .username(customer.getUsername())
-                .registered(customer.isRegistered())
                 .email(customer.getEmailAddress())
                 .addresses(
                         Optional.ofNullable(customer.getCustomerAddresses()).orElse(Collections.emptyList()).stream()
@@ -53,9 +51,10 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
     public Customer updateEntity(final Customer customer, final CustomerDto customerDto) {
         customer.setFirstName(customerDto.getFirstName());
         customer.setLastName(customerDto.getLastName());
-        customer.setRegistered(customerDto.getRegistered());
         customer.setUsername(customerDto.getUsername());
         customer.setEmailAddress(customerDto.getEmail());
+
+       // customer.setRegistered(customerDto.getRegistered()); // -> false
 
         customer.setCustomerAddresses(
                 Optional.ofNullable(customerDto.getAddresses()).orElse(Collections.emptyList()).stream()

@@ -1,7 +1,6 @@
 package pl.touk.widerest.api.customers;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -12,7 +11,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
-import pl.touk.widerest.api.common.AddressDto;
 
 import java.util.List;
 import java.util.Locale;
@@ -42,21 +40,7 @@ public class CustomerDto extends BaseDto {
     @ApiModelProperty(position = 4, value = "Customer's locale", dataType = "java.util.Locale")
     private Locale locale;
 
-    @JsonIgnore
-    @ApiModelProperty
-    private Boolean registered = false;
-
-    @JsonIgnore
-    @ApiModelProperty
-    private Boolean deactivated = false;
-
-    @ApiModelProperty(position = 5, value = "Customer's correspondence address", dataType = "pl.touk.widerest.api.common.AddressDto")
-    private AddressDto correspondenceAddress;
-
-    @ApiModelProperty(position = 6, value = "Customer's residence address", dataType = "pl.touk.widerest.api.common.AddressDto")
-    private AddressDto residenceAddress;
-
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 7, value = "List of available customer addresses", dataType = "java.util.List")
+    @ApiModelProperty(position = 5, value = "List of available customer addresses", dataType = "java.util.List")
     private List<CustomerAddressDto> addresses;
 }
