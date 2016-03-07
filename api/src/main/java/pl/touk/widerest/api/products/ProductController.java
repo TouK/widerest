@@ -176,7 +176,7 @@ public class ProductController {
         return ResponseEntity.ok(
                 new Resources<>(
                         productsToReturn.stream()
-                                .filter(CatalogUtils::archivedProductFilter)
+                                .filter(CatalogUtils.nonArchivedProduct)
                                 .map(product -> productConverter.createDto(product, false))
                                 .collect(toList()),
 
@@ -199,7 +199,7 @@ public class ProductController {
             @ApiParam @RequestParam(value = "url", required = true) final String url) {
 
         return Optional.ofNullable(catalogService.findProductByURI(url))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .map(product -> productConverter.createDto(product, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
@@ -218,7 +218,7 @@ public class ProductController {
 ////    })
 ////    public List<ProductDto> getAllBundlesProducts() {
 ////        return catalogService.findAllProducts().stream()
-////                .filter(CatalogUtils::archivedProductFilter)
+////                .filter(CatalogUtils::nonArchivedProduct)
 ////                .filter(e -> e instanceof ProductBundle)
 ////                .map(product -> productConverter.createDto(product, false))
 ////                .collect(toList());
@@ -242,7 +242,7 @@ public class ProductController {
             @PathVariable(value = "bundleId") final Long bundleId) {
 
         return Optional.ofNullable(catalogService.findProductById(bundleId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .filter(e -> e instanceof ProductBundle)
                 .map(product -> productConverter.createDto(product, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
@@ -386,7 +386,7 @@ public class ProductController {
     })
     public Long getAllProductsCount() {
         return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .count();
     }
 
@@ -481,7 +481,7 @@ public class ProductController {
             @PathVariable(value = "productId") final Long productId) {
 
         final Product product = Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 
         return new Resources<>(
@@ -595,7 +595,7 @@ public class ProductController {
 
         final List<CategoryDto> productCategories = getProductById(productId).getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(category -> categoryConverter.createDto(category, true))
                 .collect(toList());
 
@@ -622,7 +622,7 @@ public class ProductController {
 //            @PathVariable(value = "productId") Long productId) {
 //
 //        return Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(CatalogUtils::nonArchivedProduct)
 //                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
 //                .getAllParentCategoryXrefs().stream()
 //                .map(CategoryProductXref::getCategory)
@@ -773,7 +773,7 @@ public class ProductController {
 //            @PathVariable(value = "productId") Long productId) {
 //
 //        return Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(CatalogUtils::nonArchivedProduct)
 //                .map(Product::getDefaultSku)
 //                .map(sku -> skuConverter.createDto(sku, false))
 //                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
@@ -802,7 +802,7 @@ public class ProductController {
 //        CatalogUtils.validateSkuPrices(defaultSkuDto.getSalePrice(), defaultSkuDto.getRetailPrice());
 //
 //        Product product = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(CatalogUtils::nonArchivedProduct)
 //                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
 //
 //        final Sku defaultSKU = skuConverter.updateEntity(product.getDefaultSku(), defaultSkuDto);
@@ -982,7 +982,7 @@ public class ProductController {
 //
 //
 //        final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::archivedProductFilter)
+//                .filter(CatalogUtils::nonArchivedProduct)
 //                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
 //                .getAllSkus().stream()
 //                .count();
@@ -1102,7 +1102,7 @@ public class ProductController {
 
         final String skuAvailability = Optional.ofNullable(sku.getInventoryType())
                 .map(InventoryType::getType)
-                .orElse(CatalogUtils.EMPTY_STRING);
+                .orElse("");
 
         return ResponseEntity.ok(skuAvailability);
     }
@@ -1386,7 +1386,7 @@ public class ProductController {
 
     private Sku getSkuByIdForProductById(final long productId, final long skuId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .filter(x -> x.getId() == skuId)
@@ -1398,14 +1398,14 @@ public class ProductController {
 
     private Sku getDefaultSkuForProductById(final long productId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getDefaultSku();
     }
 
     private Product getProductById(final long productId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
@@ -1460,7 +1460,7 @@ public class ProductController {
                 .filter(name -> !isNullOrEmpty(name))
                 .map(name -> catalogService.findCategoriesByName(name))
                 .map(Collection::stream).orElse(empty())
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .findAny()
                 .ifPresent(newProduct::setCategory);
     }
@@ -1501,7 +1501,7 @@ public class ProductController {
 
     private boolean hasDuplicates(final String productName) {
         return catalogService.findProductsByName(productName).stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .count() > 0;
     }
 }

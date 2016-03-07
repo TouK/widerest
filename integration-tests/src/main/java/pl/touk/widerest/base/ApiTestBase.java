@@ -233,7 +233,7 @@ public abstract class ApiTestBase {
 
     protected void removeLocalTestCategories() {
         catalogService.findAllCategories().stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
                 .forEach(catalogService::removeCategory);
     }
@@ -241,7 +241,7 @@ public abstract class ApiTestBase {
 
     protected void removeLocalTestProducts() {
         catalogService.findAllProducts().stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .filter(x -> x.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME))
                 .forEach(catalogService::removeProduct);
     }

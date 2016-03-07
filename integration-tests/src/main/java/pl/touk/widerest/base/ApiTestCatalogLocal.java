@@ -16,14 +16,14 @@ public class ApiTestCatalogLocal implements ApiTestCatalog {
     @Override
     public long getTotalCategoriesCount() {
         return catalogService.findAllCategories().stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .count();
     }
 
     @Override
     public long getTotalProductsCount() {
         return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .count();
     }
 
@@ -36,7 +36,7 @@ public class ApiTestCatalogLocal implements ApiTestCatalog {
     public long getTotalProductsInCategoryCount(final long categoryId) {
         return catalogService.findCategoryById(categoryId).getAllProductXrefs().stream()
                     .map(CategoryProductXref::getProduct)
-                    .filter(CatalogUtils::archivedProductFilter)
+                    .filter(CatalogUtils.nonArchivedProduct)
                     .count();
     }
 
@@ -44,7 +44,7 @@ public class ApiTestCatalogLocal implements ApiTestCatalog {
     public long getTotalCategoriesForProductCount(final long productId) {
         return catalogService.findProductById(productId).getAllParentCategoryXrefs().stream()
                     .map(CategoryProductXref::getCategory)
-                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .filter(CatalogUtils.nonArchivedCategory)
                     .count();
     }
 

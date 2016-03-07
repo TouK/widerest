@@ -125,7 +125,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         if (product.getAllParentCategoryXrefs() != null && !product.getAllParentCategoryXrefs().isEmpty()) {
             product.getAllParentCategoryXrefs().stream()
                     .map(CategoryProductXref::getCategory)
-                    .filter(CatalogUtils::archivedCategoryFilter)
+                    .filter(CatalogUtils.nonArchivedCategory)
                     .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
         }
 

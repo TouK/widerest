@@ -92,7 +92,7 @@ public class CategoryController {
 
         final List<CategoryDto> categoriesToReturn =
                 (flat ? catalogService.findAllCategories() : catalogService.findAllParentCategories()).stream()
-                        .filter(CatalogUtils::archivedCategoryFilter)
+                        .filter(CatalogUtils.nonArchivedCategory)
                         .filter(category -> flat || category.getAllParentCategoryXrefs().size() == 0)
                         .map(category -> categoryConverter.createDto(category, !flat))
                         .collect(Collectors.toList());
@@ -146,7 +146,7 @@ public class CategoryController {
     ) {
 
         final CategoryDto categoryToReturnDto = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(category -> categoryConverter.createDto(category, false))
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
@@ -168,7 +168,7 @@ public class CategoryController {
             @PathVariable(value="categoryId") final Long categoryId) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(e -> {
                     catalogService.removeCategory(e);
                     return e;
@@ -200,7 +200,7 @@ public class CategoryController {
     	CatalogValidators.validateCategoryDto(categoryDto);
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(e -> categoryConverter.updateEntity(e, categoryDto))
                 .map(catalogService::saveCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
@@ -230,11 +230,11 @@ public class CategoryController {
             @RequestParam(value = "offset", required = false) Integer offset) {
 
         final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         List<CategoryDto> subcategoriesDtos = catalogService.findAllSubCategories(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(subcategory -> categoryConverter.createDto(subcategory, false))
                 .collect(Collectors.toList());
 
@@ -278,11 +278,11 @@ public class CategoryController {
         }
 
         final Category hrefCategory = Optional.ofNullable(catalogService.findCategoryById(hrefCategoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + hrefCategoryId + " does not exist"));
 
         final Category parentCategory = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         final CategoryXref parentChildCategoryXref = new CategoryXrefImpl();
@@ -333,7 +333,7 @@ public class CategoryController {
         }
 
             Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(e -> {
                     final CategoryXref catXref = Optional.ofNullable(e.getAllChildCategoryXrefs()).orElse(Collections.emptyList()).stream()
                             .filter(x -> Optional.ofNullable(x.getSubCategory()).map(Category::getId).orElse(-1L) == hrefCategoryId)
@@ -370,7 +370,7 @@ public class CategoryController {
 
         return new Resources<>(
                 getProductsFromCategoryId(categoryId).stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .map(product -> productConverter.createDto(product, false))
                 .collect(Collectors.toList())
         );
@@ -413,12 +413,12 @@ public class CategoryController {
         }
 
         final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         /* (mst) ProductController's POST methods guarantee there will be no duplicates therefore... */
         final Product productToAdd = Optional.ofNullable(catalogService.findProductById(hrefProductId))
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + hrefProductId + " does not exist"));
 
         final CategoryProductXref productToAddXref = new CategoryProductXrefImpl();
@@ -468,14 +468,14 @@ public class CategoryController {
 
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
         getProductsFromCategoryId(categoryId).stream()
-                .filter(CatalogUtils::archivedProductFilter)
+                .filter(CatalogUtils.nonArchivedProduct)
                 .filter(x -> x.getId() == hrefProductId)
                 .findAny()
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + hrefProductId + " does not exist in category with ID: " + categoryId));
 
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .map(e -> {
                     CategoryProductXref xref = e.getAllProductXrefs().stream()
                             .filter(x -> x.getProduct().getId() == hrefProductId)
@@ -500,7 +500,7 @@ public class CategoryController {
     private List<Product> getProductsFromCategoryId(final long categoryId) throws ResourceNotFoundException {
 
         return Optional.ofNullable(catalogService.findCategoryById(categoryId))
-                .filter(CatalogUtils::archivedCategoryFilter)
+                .filter(CatalogUtils.nonArchivedCategory)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"))
                 .getAllProductXrefs().stream()
                 .map(CategoryProductXref::getProduct)
