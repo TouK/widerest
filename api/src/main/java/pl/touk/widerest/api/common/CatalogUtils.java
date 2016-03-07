@@ -14,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 public class CatalogUtils {
@@ -28,10 +29,13 @@ public class CatalogUtils {
         return ((Status) category).getArchived() == 'N';
     }
 
-    public static InventoryType getInventoryTypeByAvailability(final String availability) {
-        final InventoryType inventoryType = InventoryType.getInstance(availability);
-        return (inventoryType != null) ? inventoryType : InventoryType.ALWAYS_AVAILABLE;
-    }
+//    public static InventoryType getInventoryTypeByAvailability(final String availability) {
+//        final InventoryType inventoryType = InventoryType.getInstance(availability);
+//        return (inventoryType != null) ? inventoryType : InventoryType.ALWAYS_AVAILABLE;
+//    }
+
+    public static Function<String, InventoryType> toInventoryTypeByAvailability = availability ->
+         Optional.ofNullable(InventoryType.getInstance(availability)).orElse(InventoryType.ALWAYS_AVAILABLE);
 
 
 //    public static Category partialUpdateCategoryEntityFromDto(

@@ -60,9 +60,4 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
         return address;
     }
-
-    @Override
-    public Address partialUpdateEntity(final Address address, final AddressDto addressDto) {
-        throw new UnsupportedOperationException();
-    }
 }

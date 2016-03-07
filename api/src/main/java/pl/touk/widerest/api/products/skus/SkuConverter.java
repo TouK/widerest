@@ -156,10 +156,4 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
         return sku;
     }
-
-    @Override
-    public Sku partialUpdateEntity(final Sku sku, final SkuDto skuDto) {
-        throw new UnsupportedOperationException();
-    }
-
 }

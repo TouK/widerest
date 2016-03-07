@@ -40,9 +40,4 @@ public class OrderPaymentConverter implements Converter<OrderPayment, OrderPayme
 
         return orderPayment;
     }
-
-    @Override
-    public OrderPayment partialUpdateEntity(OrderPayment orderPayment, OrderPaymentDto orderPaymentDto) {
-        throw new UnsupportedOperationException();
-    }
 }

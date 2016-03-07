@@ -102,9 +102,4 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 
         return order;
     }
-
-    @Override
-    public Order partialUpdateEntity(final Order order, final OrderDto orderDto) {
-        throw new UnsupportedOperationException();
-    }
 }

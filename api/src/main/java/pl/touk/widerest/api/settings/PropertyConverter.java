@@ -42,9 +42,4 @@ public class PropertyConverter implements Converter<String, PropertyDto> {
     public String updateEntity(final String s, final PropertyDto propertyDto) {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public String partialUpdateEntity(final String s, final PropertyDto propertyDto) {
-        throw new UnsupportedOperationException();
-    }
 }

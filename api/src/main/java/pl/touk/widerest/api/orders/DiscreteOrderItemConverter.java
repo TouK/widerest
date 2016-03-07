@@ -49,9 +49,4 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
     public DiscreteOrderItem updateEntity(final DiscreteOrderItem discreteOrderItem, final DiscreteOrderItemDto discreteOrderItemDto) {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public DiscreteOrderItem partialUpdateEntity(final DiscreteOrderItem discreteOrderItem, final DiscreteOrderItemDto discreteOrderItemDto) {
-        throw new UnsupportedOperationException();
-    }
 }

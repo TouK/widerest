@@ -3,11 +3,7 @@ package pl.touk.widerest.api.categories;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
-import org.broadleafcommerce.core.catalog.domain.Category;
-import org.broadleafcommerce.core.catalog.domain.CategoryImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryMediaXref;
-import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
-import org.broadleafcommerce.core.catalog.domain.CategoryXref;
+import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
@@ -17,12 +13,11 @@ import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
+import pl.touk.widerest.api.common.MediaDto;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -39,29 +34,31 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
 
 
     @Override
-    public CategoryDto createDto(Category entity, boolean embed) {
+    public CategoryDto createDto(final Category entity, final boolean embed) {
         final CategoryDto dto = CategoryDto.builder()
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .longDescription(entity.getLongDescription())
-                .productsAvailability(Optional.ofNullable(entity.getInventoryType())
-                        .map(InventoryType::getType)
-                        .orElse(null))
-                .attributes(entity.getCategoryAttributesMap().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())))
-                .media(entity.getCategoryMediaXref().entrySet().stream().collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia(), false))))
+                .productsAvailability(
+                        Optional.ofNullable(entity.getInventoryType())
+                            .map(InventoryType::getType)
+                            .orElse(null))
+                .attributes(
+                        Optional.ofNullable(entity.getCategoryAttributesMap())
+                            .map(toCategoryAttributesMapDto)
+                            .orElse(Collections.emptyMap())
+                )
+                .media(
+                        Optional.ofNullable(entity.getCategoryMediaXref())
+                            .orElse(Collections.emptyMap()).entrySet().stream()
+                                .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia(), false)))
+                )
                 .build();
 
 
         dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 
         dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
-
-//        dto.add(linkTo(methodOn(CategoryController.class).getCategoryByIdAvailability(entity.getId())).withRel("availability"));
-
-//        dto.add(linkTo(methodOn(CategoryController.class).getAllProductsInCategoryCount(entity.getId())).withRel("products-count"));
-
-//        dto.add(linkTo(methodOn(CategoryController.class).getAllCategoriesCount(null)).withRel("categories-count"));
 
         final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                 .orElse(Collections.emptyList()).stream()
@@ -80,10 +77,11 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         dto.add(parentCategoriesLinks);
 
         if (embed) {
-            List<CategoryDto> subcategoryDtos = entity.getAllChildCategoryXrefs().stream()
+            final List<CategoryDto> subcategoryDtos = Optional.ofNullable(entity.getAllChildCategoryXrefs())
+                    .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getSubCategory)
                     .map(subcategory -> createDto(subcategory, true))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             if (!CollectionUtils.isEmpty(subcategoryDtos)) {
                 dto.add(new EmbeddedResource("subcategories", subcategoryDtos));
@@ -95,25 +93,24 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
     }
 
     @Override
-    public Category createEntity(CategoryDto dto) {
-        final Category categoryEntity = new CategoryImpl();
-
-        return updateEntity(categoryEntity, dto);
+    public Category createEntity(final CategoryDto dto) {
+        return updateEntity(new CategoryImpl(), dto);
     }
 
     @Override
-    public Category updateEntity(Category categoryEntity, CategoryDto categoryDto) {
+    public Category updateEntity(final Category categoryEntity, final CategoryDto categoryDto) {
 
         categoryEntity.setName(categoryDto.getName());
         categoryEntity.setDescription(categoryDto.getDescription());
         categoryEntity.setLongDescription(categoryDto.getLongDescription());
 
-        if(categoryDto.getProductsAvailability() != null) {
-            categoryEntity.setInventoryType(CatalogUtils.getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));
-        } else {
-            /* (mst) Remove this if you don't want to have a "default" availability set */
-            categoryEntity.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
+        categoryEntity.setInventoryType(
+                Optional.ofNullable(categoryDto.getProductsAvailability())
+                        .map(CatalogUtils.toInventoryTypeByAvailability)
+                        /* (mst) Remove this if you don't want to have a "default" availability set */
+                        .orElse(InventoryType.ALWAYS_AVAILABLE)
+        );
+
 
         categoryEntity.getCategoryAttributesMap().clear();
 
@@ -138,7 +135,6 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
 
                             categoryMediaXref.setMedia(categoryMedia);
 
-//                            CatalogUtils.updateMediaEntityFromDto(categoryMediaXref, mediaDtoEntry.getValue());
                             return categoryMediaXref;
                         }
                 ));
@@ -148,52 +144,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         return categoryEntity;
     }
 
-    @Override
-    public Category partialUpdateEntity(final Category category, final CategoryDto categoryDto) {
-
-        if (categoryDto.getName() != null) {
-            category.setName(categoryDto.getName());
-        }
-
-        if (categoryDto.getDescription() != null) {
-            category.setDescription(categoryDto.getDescription());
-        }
-
-        if (categoryDto.getLongDescription() != null) {
-            category.setLongDescription(categoryDto.getLongDescription());
-        }
-
-        if(categoryDto.getProductsAvailability() != null) {
-            category.setInventoryType(CatalogUtils.getInventoryTypeByAvailability(categoryDto.getProductsAvailability()));;
-        }
-
-        if(categoryDto.getAttributes() != null) {
-            category.getCategoryAttributesMap().clear();
-            category.getCategoryAttributesMap().putAll(
-                    Optional.ofNullable(categoryDto.getAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                            .collect(toMap(Map.Entry::getKey, valueExtractor(category))));
-        }
-
-        if(categoryDto.getMedia() != null) {
-            category.getCategoryMediaXref().clear();
-            category.getCategoryMediaXref().putAll(
-                    categoryDto.getMedia().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, mediaDtoEntry -> {
-                            final CategoryMediaXref categoryMediaXref = new CategoryMediaXrefImpl();
-                            categoryMediaXref.setCategory(category);
-                            categoryMediaXref.setKey(mediaDtoEntry.getKey());
-
-                            final Media categoryMedia = new MediaImpl();
-                            mediaConverter.updateEntity(categoryMedia, mediaDtoEntry.getValue());
-
-                            categoryMediaXref.setMedia(categoryMedia);
-
-                            return categoryMediaXref;
-                        }))
-            );
-        }
-
-        return category;
-    }
+    private Function<Map<String, CategoryAttribute>, Map<String, String>> toCategoryAttributesMapDto = categoryAttributesMap ->
+            categoryAttributesMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().toString()));
 
 }

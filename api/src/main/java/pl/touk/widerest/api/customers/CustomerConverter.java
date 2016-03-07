@@ -62,9 +62,4 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
 
         return customer;
     }
-
-    @Override
-    public Customer partialUpdateEntity(final Customer customer, final CustomerDto customerDto) {
-        throw new UnsupportedOperationException();
-    }
 }

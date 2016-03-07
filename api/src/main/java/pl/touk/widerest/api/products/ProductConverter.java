@@ -191,11 +191,4 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         return product;
     }
-
-    @Override
-    public Product partialUpdateEntity(final Product product, final ProductDto productDto) {
-        throw new UnsupportedOperationException();
-    }
-
-
 }

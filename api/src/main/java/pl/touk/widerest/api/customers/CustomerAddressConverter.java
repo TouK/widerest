@@ -34,9 +34,4 @@ public class CustomerAddressConverter implements Converter<CustomerAddress, Cust
         customerAddress.setAddressName(customerAddressDto.getAddressName());
         return customerAddress;
     }
-
-    @Override
-    public CustomerAddress partialUpdateEntity(final CustomerAddress customerAddress, final CustomerAddressDto customerAddressDto) {
-        throw new UnsupportedOperationException();
-    }
 }

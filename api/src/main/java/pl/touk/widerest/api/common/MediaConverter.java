@@ -32,25 +32,4 @@ public class MediaConverter implements Converter<Media, MediaDto> {
 
         return media;
     }
-
-    @Override
-    public Media partialUpdateEntity(final Media media, final MediaDto mediaDto) {
-        if(mediaDto.getTitle() != null) {
-            media.setTitle(mediaDto.getTitle());
-        }
-
-        if(mediaDto.getTags() != null) {
-            media.setTags(mediaDto.getTags());
-        }
-
-        if(mediaDto.getAltText() != null) {
-            media.setAltText(mediaDto.getAltText());
-        }
-
-        if(mediaDto.getUrl() != null) {
-            media.setUrl(mediaDto.getUrl());
-        }
-
-        return media;
-    }
 }
