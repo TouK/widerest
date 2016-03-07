@@ -1,7 +1,7 @@
 package pl.touk.widerest.api.orders.fulfillments;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonRootName;
+import cz.jirutka.validator.collection.constraints.EachURL;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -19,20 +19,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonRootName("fulfillment")
-@EqualsAndHashCode(callSuper = false)
-@JsonIgnoreProperties(ignoreUnknown = true)
+@EqualsAndHashCode
 @ApiModel(value = "Fulfillment Group", description = "Fulfillment Group DTO resource representation")
 public class FulfillmentGroupDto extends BaseDto {
 
-    @ApiModelProperty(position = 0, value = "Fulfillment type", required = true,
-            dataType = "java.lang.String")
+    @ApiModelProperty(position = 0, value = "Fulfillment type", required = true)
     private String type;
 
-    @ApiModelProperty(position = 1, value = "Address related to a fulfillment group", required = true,
-            dataType = "pl.touk.widerest.api.common.AddressDto")
+    @ApiModelProperty(position = 1, value = "Address related to a fulfillment group", required = true)
     private AddressDto address;
 
-    @ApiModelProperty(position = 2, value = "List of items belonging to a fulfillment group", required = true,
-            dataType = "java.util.List")
+    @ApiModelProperty(position = 3, value = "List of items belonging to a fulfillment group", required = true)
+    @EachURL
     private List<String> items;
+
 }

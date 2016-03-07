@@ -9,7 +9,6 @@ import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.service.CountryService;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.common.AddressDto;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentGroupDto;
 import pl.touk.widerest.api.orders.fulfillments.NoFulfillmentOptionException;
 import pl.touk.widerest.api.orders.fulfillments.NoShippingAddressException;
 
@@ -92,11 +91,6 @@ public class OrderValidationService {
                         .getId() + " has not been provided"));
     }
 
-    public void validateFulfillmentGroupDto(final FulfillmentGroupDto fulfillmentGroupDto) throws OrderValidationException {
-        validateAddressDto(fulfillmentGroupDto.getAddress());
-
-        // TODO: fulfillmentGroup items validation
-    }
 
 
 }

@@ -299,8 +299,7 @@ public class OrderController {
             @ApiParam(value = "Description of a new order item", required = true)
             @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
-        if(orderItemDto.getQuantity() == null || orderItemDto.getProductHref() == null || orderItemDto.getSelectedProductOptions() == null ||
-                orderItemDto.getSelectedProductOptions().isEmpty()) {
+        if(orderItemDto.getQuantity() == null || orderItemDto.getProductHref() == null) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -310,7 +309,7 @@ public class OrderController {
 
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(orderItemDto.getProductHref());
-        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+        } catch ( NumberFormatException e) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -385,7 +384,7 @@ public class OrderController {
             try {
                 skuId = CatalogUtils.getIdFromUrl(orderItemDto.getSkuHref());
                 req.setSkuId(skuId);
-            } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+            } catch (NumberFormatException | DtoValidationException e) {
                 return ResponseEntity.badRequest().build();
             }
         }

@@ -265,7 +265,7 @@ public class CategoryController {
 
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+        } catch (NumberFormatException | DtoValidationException e) {
             return BAD_REQUEST;
         }
 
@@ -320,7 +320,7 @@ public class CategoryController {
 
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+        } catch (NumberFormatException | DtoValidationException e) {
             return BAD_REQUEST;
         }
 
@@ -404,7 +404,7 @@ public class CategoryController {
 
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+        } catch ( NumberFormatException | DtoValidationException e) {
             return BAD_REQUEST;
         }
 
@@ -458,7 +458,7 @@ public class CategoryController {
 
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch (MalformedURLException | NumberFormatException | DtoValidationException e) {
+        } catch ( NumberFormatException | DtoValidationException e) {
             return ResponseEntity.badRequest().build();
         }
 

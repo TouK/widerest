@@ -17,7 +17,6 @@ import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.FulfillmentGroupItemRequest;
-import org.broadleafcommerce.core.order.service.call.FulfillmentGroupRequest;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
@@ -49,10 +48,11 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
+import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -245,8 +245,6 @@ public class FulfillmentController {
             @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
     ) {
 
-        orderValidationService.validateFulfillmentGroupDto(fulfillmentGroupDto);
-
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
@@ -309,54 +307,36 @@ public class FulfillmentController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") final Long orderId,
             @ApiParam(value = "Description of a new fulfillment group", required = true)
-            @RequestBody final FulfillmentGroupDto fulfillmentGroupDto
-    ) throws PricingException {
+            @RequestBody @Valid final FulfillmentGroupDto fulfillmentGroupDto
+    ) throws PricingException, MalformedURLException {
 
         // TODO: Handle "exceptional" situations...order item does not exist, FG duplicates etc
-
-        orderValidationService.validateFulfillmentGroupDto(fulfillmentGroupDto);
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-
         // TODO: Cleanup, refactor, remove duplicate code, check if Broadleaf offers a more "intelligent" way to manage
         //       fulfillment groups, cleanup exception handling mess
 
+        FulfillmentGroup fulfillmentGroup = null;
+        for (String itemHref : fulfillmentGroupDto.getItems()) {
+            OrderItem orderItem = Optional.ofNullable(orderItemService.readOrderItemById(CatalogUtils.getIdFromUrl(itemHref)))
+                    .orElseThrow(ResourceNotFoundException::new);
+            final FulfillmentGroupItemRequest fulfillmentGroupItemRequest = new FulfillmentGroupItemRequest();
+            fulfillmentGroupItemRequest.setFulfillmentGroup(fulfillmentGroup);
+            fulfillmentGroupItemRequest.setOrder(orderEntity);
+            fulfillmentGroupItemRequest.setOrderItem(orderItem);
+            fulfillmentGroup = fulfillmentGroupService.addItemToFulfillmentGroup(fulfillmentGroupItemRequest, false);
+        }
 
-        final FulfillmentGroupRequest fulfillmentGroupRequest = new FulfillmentGroupRequest();
-        fulfillmentGroupRequest.setOrder(orderEntity);
-        fulfillmentGroupRequest.setAddress(addressConverter.createEntity(fulfillmentGroupDto.getAddress()));
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.addFulfillmentGroupToOrder(fulfillmentGroupRequest, false);
-
-        Optional<Try<FulfillmentGroup>> fulfillmentGroupTry = Optional.ofNullable(fulfillmentGroupDto.getItems())
-                .flatMap(items -> items.stream()
-                        .map(itemHref -> (OrderItem) Try.ofFailable(
-                                () -> orderItemService.readOrderItemById(CatalogUtils.getIdFromUrl(itemHref))
-                                )
-                                .toOptional()
-                                .orElseThrow(ResourceNotFoundException::new)
-                        )
-                        .map(orderItem -> {
-                            final FulfillmentGroupItemRequest fulfillmentGroupItemRequest = new FulfillmentGroupItemRequest();
-                            fulfillmentGroupItemRequest.setFulfillmentGroup(fulfillmentGroup);
-                            fulfillmentGroupItemRequest.setOrderItem(orderItem);
-                            return fulfillmentGroupItemRequest;
-                        })
-                        .map(fulfillmentGroupItemRequest -> Try.ofFailable(() -> fulfillmentGroupService.addItemToFulfillmentGroup(fulfillmentGroupItemRequest, false, false)))
-                        .filter(((Predicate<Try>) Try::isSuccess).negate())
-                        .findAny()
-                );
-
-
-        FulfillmentGroup savedFulfillmentGroup = fulfillmentGroupService.save(fulfillmentGroup);
-        orderEntity.getFulfillmentGroups().add(savedFulfillmentGroup);
+        fulfillmentGroup.setAddress(Optional.ofNullable(fulfillmentGroupDto.getAddress()).map(addressConverter::createEntity).orElse(null));
+        fulfillmentGroupService.save(fulfillmentGroup);
         orderService.save(orderEntity, true);
 
         ResponseEntity<Void> build = ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
                         .path("/{fulfillmentId}")
-                        .buildAndExpand(savedFulfillmentGroup.getId())
+                        .buildAndExpand(fulfillmentGroup.getId())
                         .toUri()
         ).build();
 

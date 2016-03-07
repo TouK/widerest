@@ -59,7 +59,7 @@ public class FulfillmentGroupConverter implements Converter<FulfillmentGroup, Fu
     @Override
     public FulfillmentGroup updateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentGroupDto fulfillmentGroupDto) {
 
-        fulfillmentGroup.setAddress(addressConverter.createEntity(fulfillmentGroupDto.getAddress()));
+        fulfillmentGroup.setAddress(Optional.ofNullable(fulfillmentGroupDto.getAddress()).map(addressConverter::createEntity).orElse(null));
 
         return fulfillmentGroup;
     }

@@ -8,10 +8,9 @@ import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.products.skus.SkuDto;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,18 +58,21 @@ public class CatalogUtils {
     }
 
 
-    public static long getIdFromUrl(final String categoryPathUrl) throws MalformedURLException, DtoValidationException, NumberFormatException {
-        final URL categoryPathURL = new URL(categoryPathUrl);
-
-        final String categoryPath = categoryPathURL.getPath();
-
-        final int lastSlashIndex = categoryPath.lastIndexOf('/');
-
-        if(lastSlashIndex < 0 || (lastSlashIndex + 1) >= categoryPath.length()) {
-            throw new DtoValidationException();
-        }
-
-        return Long.parseLong(categoryPath.substring(lastSlashIndex + 1));
+    public static long getIdFromUrl(final String categoryPathUrl) throws NumberFormatException {
+        List<String> pathSegments = UriComponentsBuilder.fromUriString(categoryPathUrl).build().getPathSegments();
+        return Long.parseLong(pathSegments.get(pathSegments.size() - 1));
+//
+//        final URL categoryPathURL = new URL(categoryPathUrl);
+//
+//        final String categoryPath = categoryPathURL.getPath();
+//
+//        final int lastSlashIndex = categoryPath.lastIndexOf('/');
+//
+//        if(lastSlashIndex < 0 || (lastSlashIndex + 1) >= categoryPath.length()) {
+//            throw new DtoValidationException();
+//        }
+//
+//        return Long.parseLong(categoryPath.substring(lastSlashIndex + 1));
     }
 
     /*

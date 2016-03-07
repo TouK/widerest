@@ -35,9 +35,11 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedResourceDetails;
+import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.util.LinkedMultiValueMap;
@@ -86,12 +88,28 @@ public abstract class ApiTestBase {
     @Value("${local.server.port}")
     protected String serverPort;
 
+    @Deprecated
     protected final RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+
+    @Deprecated
     protected final RestTemplate restTemplateForHalJsonHandling = new RestTemplate(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
 
     protected final BasicCookieStore cookieStore = new BasicCookieStore();
     protected final CloseableHttpClient authorizationServerClient = HttpClients.custom().setDefaultCookieStore(cookieStore).disableRedirectHandling().build();
-    protected final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(new BaseOAuth2ProtectedResourceDetails());
+
+    private static class OAuth2HalRestTemplate extends OAuth2RestTemplate {
+
+        public OAuth2HalRestTemplate(OAuth2ProtectedResourceDetails resource) {
+            super(resource);
+            setMessageConverters(Lists.newArrayList(
+                    new AllEncompassingFormHttpMessageConverter(),
+                    new MappingHalJackson2HttpMessageConverter(),
+                    new MappingJackson2HttpMessageConverter()
+            ));
+        }
+    }
+
+    protected final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2HalRestTemplate(new BaseOAuth2ProtectedResourceDetails());
 
 
     /* HATEOAS Rest Template */
@@ -253,7 +271,6 @@ public abstract class ApiTestBase {
 
     /* --------------------------------  ORDER METHODS -------------------------------- */
 
-
     protected int createNewOrder(final String token) {
         final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
                 restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
@@ -261,6 +278,7 @@ public abstract class ApiTestBase {
         return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
+    @Deprecated
     protected Pair<RestTemplate, String> generateAnonymousUser() throws URISyntaxException {
         final RestTemplate restTemplate = new RestTemplate();
         final URI FirstResponseUri = restTemplate.postForLocation(ApiTestUrls.OAUTH_AUTHORIZATION, null, serverPort);
@@ -356,6 +374,15 @@ public abstract class ApiTestBase {
 
         return response.getBody();
 
+    }
+
+    /* BDD */
+
+    protected long whenNewOrderCreated() {
+        final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
+                oAuth2RestTemplate.postForEntity(ApiTestUrls.ORDERS_URL, null, HttpHeaders.class, serverPort);
+
+        return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
     protected void whenRegistrationPerformed(final String username, final String password, final String email) {

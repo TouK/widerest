@@ -16,16 +16,12 @@ public class CatalogUtilsTest {
     public void shouldReturnValidIdForValidUrlTest() throws MalformedURLException {
         final String validUrl = "http://c4d524aa-75c5-48b0-8474-1be0a458bc1c.localhost:8080/v1/categories/2008";
         assertThat(CatalogUtils.getIdFromUrl(validUrl), equalTo(2008L));
+
+        final String validUrlWithSlash = "http://c4d524aa-75c5-48b0-8474-1be0a458bc1c.localhost:8080/v1/categories/2008/";
+        assertThat(CatalogUtils.getIdFromUrl(validUrlWithSlash), equalTo(2008L));
     }
 
-    @Test(expected = DtoValidationException.class)
-    public void shouldThrowExceptionForValidUrlWithAnEndingSlashTest() throws MalformedURLException {
-        final String validUrl = "http://c4d524aa-75c5-48b0-8474-1be0a458bc1c.localhost:8080/v1/categories/2008/";
-        assertThat(CatalogUtils.getIdFromUrl(validUrl), equalTo(2008L));
-    }
-
-
-    @Test(expected = DtoValidationException.class)
+    @Test(expected = Exception.class)
     public void shouldThrowExceptionForInValidUrl1Test() throws MalformedURLException {
         final String validUrl = "http://c4d524aa-75c5-48b0-8474-1be0a458bc1c.localhost:8080";
         assertThat(CatalogUtils.getIdFromUrl(validUrl), equalTo(2008L));

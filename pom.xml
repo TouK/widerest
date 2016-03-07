@@ -208,7 +208,7 @@
             <dependency>
                 <groupId>pl.touk</groupId>
                 <artifactId>throwing-function</artifactId>
-                <version>1.2</version>
+                <version>1.2.2-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -274,6 +274,12 @@
                 <groupId>org.atteo</groupId>
                 <artifactId>evo-inflector</artifactId>
                 <version>1.2.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cz.jirutka.validator</groupId>
+                <artifactId>validator-collection</artifactId>
+                <version>2.1.6</version>
             </dependency>
 
             <dependency>

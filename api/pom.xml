@@ -115,5 +115,10 @@
             <artifactId>assertj-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>cz.jirutka.validator</groupId>
+            <artifactId>validator-collection</artifactId>
+        </dependency>
+
     </dependencies>
 </project>
