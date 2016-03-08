@@ -12,22 +12,16 @@ import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
-import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.common.AddressConverter;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Service("wdfulfilmentService")
 public class FulfilmentServiceProxy {
@@ -47,28 +41,25 @@ public class FulfilmentServiceProxy {
     @Resource
     private AddressConverter addressConverter;
 
-    public Map<? extends FulfillmentOption, Money> getFulfillmentOptionsWithPricesAvailableForProductsInOrder(Order cart) throws FulfillmentPriceException {
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(cart);
-
-        if (fulfillmentGroup == null) {
-            return null; // TODO nie lepiej pustą mapę?
-        }
-
-        return fulfillmentPricingService.estimateCostForFulfillmentGroup(fulfillmentGroup, findFulfillmentOptionsForProductsInOrder(cart)).getFulfillmentOptionPrices();
+    public Map<? extends FulfillmentOption, Money> getFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(FulfillmentGroup fulfillmentGroup) throws FulfillmentPriceException {
+        return fulfillmentPricingService.estimateCostForFulfillmentGroup(
+                fulfillmentGroup,
+                findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup)
+        ).getFulfillmentOptionPrices();
     }
 
-    private Set<FulfillmentOption> findFulfillmentOptionsForProductsInOrder(Order cart) {
+    public Set<FulfillmentOption> findFulfillmentOptionsForProductsInFulfillmentGroup(FulfillmentGroup fulfillmentGroup) {
         Set<FulfillmentOption> fulfillmentOptions = new HashSet<>(fulfillmentOptionService.readAllFulfillmentOptions());
 
-        for (DiscreteOrderItem item : cart.getDiscreteOrderItems()) {
+        for (DiscreteOrderItem item : fulfillmentGroup.getDiscreteOrderItems()) {
             fulfillmentOptions.removeAll(item.getSku().getExcludedFulfillmentOptions());
         }
 
         return fulfillmentOptions;
     }
 
-    public Order updateFulfillmentOption(Order order, long fulfillmentOptionId) throws PricingException {
-        Set<FulfillmentOption> allowedFulfillmentOptions = findFulfillmentOptionsForProductsInOrder(order);
+    public FulfillmentGroup updateFulfillmentOption(FulfillmentGroup fulfillmentGroup, long fulfillmentOptionId) throws PricingException {
+        Set<FulfillmentOption> allowedFulfillmentOptions = findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup);
         FulfillmentOption fulfillmentOption = fulfillmentOptionService.readFulfillmentOptionById(fulfillmentOptionId);
 
         if (fulfillmentOption == null) {
@@ -78,13 +69,7 @@ public class FulfilmentServiceProxy {
             throw new FulfillmentOptionNotAllowedException();
         }
 
-        FulfillmentGroup shippableFulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
-
-        if(shippableFulfillmentGroup != null) {
-            shippableFulfillmentGroup.setFulfillmentOption(fulfillmentOption);
-            order = orderService.save(order, true);
-        }
-        return order;
+        return fulfillmentGroup;
     }
 
     @Transactional
@@ -106,57 +91,5 @@ public class FulfilmentServiceProxy {
         }
         return order;
     }
-
-    @Transactional
-    public FulfillmentDto createFulfillmentDto(Order order) {
-        FulfillmentDto fulfillmentDto = new FulfillmentDto();
-
-        FulfillmentGroup fulfillmentGroup = fulfillmentGroupService.getFirstShippableFulfillmentGroup(order);
-
-        if(fulfillmentGroup != null) {
-            if(fulfillmentGroup.getAddress() != null) {
-                fulfillmentDto.setAddress(addressConverter.createDto(fulfillmentGroup.getAddress(), false));
-            }
-
-            if(fulfillmentGroup.getFulfillmentOption() != null) {
-                fulfillmentDto.setSelectedOptionId(fulfillmentGroup.getFulfillmentOption().getId());
-            }
-
-            if(fulfillmentGroup.getFulfillmentPrice() != null) {
-                fulfillmentDto.setPrice(fulfillmentGroup.getFulfillmentPrice().getAmount());
-            }
-        } else {
-            fulfillmentDto.setPrice(BigDecimal.ZERO);
-        }
-
-        try {
-            Map<? extends FulfillmentOption, Money> options = getFulfillmentOptionsWithPricesAvailableForProductsInOrder(order);
-
-            if(options != null) {
-
-                fulfillmentDto.setOptions(options.entrySet().stream()
-                        .map(e -> {
-                            FulfillmentOptionDto fulfillmentOptionDto = new FulfillmentOptionDto();
-                            fulfillmentOptionDto.setDescription(e.getKey().getLongDescription());
-                            fulfillmentOptionDto.setName(e.getKey().getName());
-                            fulfillmentOptionDto.setId(e.getKey().getId());
-                            fulfillmentOptionDto.setPrice(e.getValue().getAmount());
-                            return fulfillmentOptionDto;
-                        })
-                        .collect(Collectors.toList()));
-            }
-
-        } catch (FulfillmentPriceException e) {
-            e.printStackTrace();
-        }
-
-
-        fulfillmentDto.add(ControllerLinkBuilder.linkTo(methodOn(FulfillmentController.class).getOrderFulfilment(null, order.getId())).withSelfRel());
-
-        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfilmentAddress(null, order.getId())).withRel("fulfillment-address"));
-
-        return fulfillmentDto;
-    }
-
 
 }

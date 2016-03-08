@@ -69,7 +69,7 @@ import pl.touk.widerest.api.common.AddressConverter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.DtoValidationException;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentGroupConverter;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.api.orders.payments.PaymentDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
@@ -148,7 +148,7 @@ public class OrderController {
     private DiscreteOrderItemConverter discreteOrderItemConverter;
 
     @Resource
-    private FulfillmentGroupConverter fulfillmentGroupConverter;
+    private FulfillmentConverter fulfillmentConverter;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 

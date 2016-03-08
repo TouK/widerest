@@ -82,7 +82,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 //        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, order.getId())).withRel("items-count"));
 
         /* link to fulfillment */
-        orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfilment(null, order.getId())).withRel("fulfillment"));
+        orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel("fulfillments"));
 
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
 

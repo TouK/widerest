@@ -21,12 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.api.common.AddressDto;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.api.orders.OrderItemDto;
 import pl.touk.widerest.api.orders.OrderItemOptionDto;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
@@ -102,71 +100,6 @@ public class OrderControllerTest extends ApiTestBase {
         assert(remoteItem.getQuantity() == 10);
     }
 
-    @Test
-    @Transactional
-    public void shouldReturnFulfillmentAddressAndOption() throws URISyntaxException {
-        // Given anonymous user with order with 1 item
-        Pair<RestTemplate, String> user = generateAnonymousUser();
-        RestTemplate restTemplate = user.getKey();
-        String accessToken = user.getValue();
-        Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ApiTestUrls.ORDERS_URL.replaceFirst("\\{port\\}", serverPort) + "/" + orderId;
-        addItemToOrder(10, 5, orderUrl+"/items-old", accessToken, restTemplate);
-
-        // Given address and fulfillment option
-        AddressDto addressDto = new AddressDto();
-        addressDto.setAddressLine1("ul. Warszawska 45");
-        addressDto.setAddressLine2("POLSKA");
-        addressDto.setCity("Poznan");
-        addressDto.setPostalCode("05-134");
-        addressDto.setFirstName("Haskell");
-        addressDto.setLastName("Curry");
-        addressDto.setCountryCode("US");
-
-        // When POST /orders/{orderId}/fulfillment/address
-        HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        requestHeaders.set("Authorization", "Bearer " + accessToken);
-        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity httpRequestEntity = new HttpEntity(addressDto, requestHeaders);
-        ResponseEntity<HttpHeaders> response = restTemplate.exchange(orderUrl+"/fulfillment/address",
-        HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
-
-
-        // Then return status should be 201
-        assert(response.getStatusCode().value() == 201);
-
-
-        // When GET /orders/{orderId}/fulfillment/address
-        httpRequestEntity = new HttpEntity(null, requestHeaders);
-        ResponseEntity<AddressDto> responseAddress = restTemplate.exchange(orderUrl+"/fulfillment/address",
-        HttpMethod.GET, httpRequestEntity, AddressDto.class, serverPort);
-
-
-        // Then return status should be 2xx
-        assert(responseAddress.getStatusCode().is2xxSuccessful());
-        // Then address should be the same
-        assert(responseAddress.getBody().equals(addressDto));
-
-        // When PUT /orders/{orderId}/fulfillment/selectedOption
-        httpRequestEntity = new HttpEntity(3L, requestHeaders);
-        response = restTemplate.exchange(orderUrl+"/fulfillment/selectedOption",
-                HttpMethod.PUT, httpRequestEntity, HttpHeaders.class, serverPort);
-
-        // Then return status should be 200
-        assert(response.getStatusCode().value() == 200);
-
-        // When GET /orders/{orderId}/fulfillment/
-        httpRequestEntity = new HttpEntity(null, requestHeaders);
-        ResponseEntity<FulfillmentDto> responseFulfillment = restTemplate.exchange(orderUrl+"/fulfillment",
-                HttpMethod.GET, httpRequestEntity, FulfillmentDto.class, serverPort);
-
-        // Then return status should be 200
-        assert(responseFulfillment.getStatusCode().value() == 200);
-        // Then fulfillment option and address should be the same as sent
-        assert(responseFulfillment.getBody().getAddress().equals(addressDto));
-        assert(responseFulfillment.getBody().getSelectedOptionId() == 3);
-    }
 
     @Test
     @Transactional
@@ -475,54 +408,6 @@ public class OrderControllerTest extends ApiTestBase {
 
     }
 
-    @Test
-    @Transactional
-    public void shouldNotAcceptInvalidCountryNameInAddress() throws URISyntaxException {
-        // Given anonymous user with 1 item in order
-        Pair<RestTemplate, String> firstUser = generateAnonymousUser();
-        RestTemplate restTemplate = firstUser.getKey();
-        String accessToken = firstUser.getValue();
-        Integer orderId = createNewOrder(accessToken);
-        String orderUrl = ApiTestUrls.ORDERS_URL+"/"+orderId;
-        addItemToOrder(10, 10, orderUrl+"/items-old", accessToken, restTemplate);
-
-        // When sending wrong address
-        AddressDto addressDto = new AddressDto();
-        addressDto.setFirstName("Haskell");
-        addressDto.setLastName("Curry");
-        addressDto.setAddressLine1("Semigroup Valley 12");
-        addressDto.setPostalCode("13-337");
-        addressDto.setCity("Massachusetts");
-        addressDto.setCountryCode("USA");
-
-        HttpHeaders httpJsonRequestHeaders = new HttpHeaders();
-        httpJsonRequestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
-        httpJsonRequestHeaders.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        httpJsonRequestHeaders.set("Authorization", "Bearer "+ accessToken);
-        HttpEntity<AddressDto> addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
-
-
-        // Then 400 status code should be returned
-        try {
-            restTemplate.exchange(orderUrl + "/fulfillment/address", HttpMethod.POST,
-                    addressEntity, HttpHeaders.class, serverPort);
-            fail("Address was checked and should be invalid");
-        } catch(HttpClientErrorException e) {
-            assert(e.getStatusCode().is4xxClientError());
-        }
-
-
-        // When sending address with correct country code
-        addressDto.setCountryCode("PL");
-        addressEntity = new HttpEntity<>(addressDto, httpJsonRequestHeaders);
-
-
-        // Then 2xx status should be returned
-        ResponseEntity<HttpHeaders> response = restTemplate.exchange(orderUrl + "/fulfillment/address", HttpMethod.POST,
-                addressEntity, HttpHeaders.class, serverPort);
-        assert(response.getStatusCode().is2xxSuccessful());
-
-    }
 
 
     @Test

@@ -8,7 +8,6 @@ import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
-import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
@@ -19,10 +18,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.common.AddressConverter;
-import pl.touk.widerest.api.common.AddressDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.customers.CustomerNotFoundException;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionNotAllowedException;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 
 import javax.annotation.Resource;
@@ -113,18 +110,6 @@ public class OrderServiceProxy {
     }
 
     @Transactional
-    public AddressDto getOrderFulfilmentAddress(
-           UserDetails userDetails, Long orderId) {
-
-        final Order order = getProperCart(userDetails, orderId)
-                .orElseThrow(ResourceNotFoundException::new);
-
-        return fulfillmentServiceProxy.getFulfillmentAddress(order)
-                .map(address -> addressConverter.createDto(address, false))
-                .orElseThrow(() -> new ResourceNotFoundException("Address for fulfillment for order with ID: " + orderId + " does not exist"));
-    }
-
-    @Transactional
     public ResponseEntity<?> updateItemQuantityInOrder (
             Integer quantity, UserDetails userDetails, Long orderId, Long itemId)
                 throws UpdateCartException, RemoveFromCartException {
@@ -150,18 +135,4 @@ public class OrderServiceProxy {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @Transactional
-    public ResponseEntity<?> updateSelectedFulfillmentOption
-            (UserDetails userDetails, Long orderId, Long fulfillmentOptionId) throws PricingException {
-
-        final Order order = getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
-
-        if (order.getItemCount() <= 0) {
-            throw new FulfillmentOptionNotAllowedException("Order with ID: " + orderId + " is empty");
-        }
-
-        fulfillmentServiceProxy.updateFulfillmentOption(order, fulfillmentOptionId);
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
 }

@@ -1,0 +1,114 @@
+package pl.touk.widerest.api.orders.fulfillments;
+
+import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
+import org.broadleafcommerce.core.order.domain.FulfillmentGroupImpl;
+import org.broadleafcommerce.core.order.domain.FulfillmentOption;
+import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
+import org.broadleafcommerce.core.order.service.OrderItemService;
+import org.broadleafcommerce.core.order.service.type.FulfillmentType;
+import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
+import org.springframework.stereotype.Component;
+import pl.touk.widerest.api.Converter;
+import pl.touk.widerest.api.common.AddressConverter;
+import pl.touk.widerest.api.orders.OrderController;
+
+import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
+@Component
+public class FulfillmentConverter implements Converter<FulfillmentGroup, FulfillmentDto> {
+
+    @Resource
+    private AddressConverter addressConverter;
+
+    @Resource(name = "blOrderItemService")
+    protected OrderItemService orderItemService;
+
+    @Resource(name = "wdfulfilmentService")
+    private FulfilmentServiceProxy fulfillmentServiceProxy;
+
+    @Resource(name = "blFulfillmentGroupService")
+    private FulfillmentGroupService fulfillmentGroupService;
+
+    @Resource(name = "blFulfillmentPricingService")
+    private FulfillmentPricingService fulfillmentPricingService;
+
+    @Override
+    public FulfillmentDto createDto(final FulfillmentGroup fulfillmentGroup, final boolean embed) {
+
+        final FulfillmentDto fulfillmentDto = new FulfillmentDto();
+
+        Optional.ofNullable(fulfillmentGroup.getAddress()).ifPresent(address -> {
+            fulfillmentDto.setAddress(addressConverter.createDto(address, false));
+        });
+
+        fulfillmentDto.setItems(
+                Optional.ofNullable(fulfillmentGroup.getFulfillmentGroupItems()).orElse(Collections.emptyList()).stream()
+                        .map(fulfillmentGroupItem -> linkTo(methodOn(OrderController.class)
+                                .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId())).toUri().toASCIIString())
+                        .collect(Collectors.toList())
+        );
+
+        fulfillmentDto.setType(Optional.ofNullable(fulfillmentGroup.getType()).map(FulfillmentType::getFriendlyType).orElse(null));
+
+        Optional.ofNullable(fulfillmentGroup.getFulfillmentOption())
+                .map(selectedOption -> selectedOption.getName())
+                .ifPresent(fulfillmentDto::setSelectedFulfillmentOption);
+
+        try {
+            Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
+                    .ifPresent(options -> {
+                        fulfillmentDto.setFulfillmentOptions(options.entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        e -> e.getKey().getName(),
+                                        e -> FulfillmentOptionDto.builder()
+                                                .description(e.getKey().getLongDescription())
+                                                .price(e.getValue().getAmount()).build())
+                                ));
+                    });
+        } catch (FulfillmentPriceException e) {
+            throw new RuntimeException(e);
+        }
+
+        /* HATEOAS links */
+
+        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
+
+        return fulfillmentDto;
+    }
+
+    @Override
+    public FulfillmentGroup createEntity(final FulfillmentDto fulfillmentDto) {
+        return updateEntity(new FulfillmentGroupImpl(), fulfillmentDto);
+    }
+
+    @Override
+    public FulfillmentGroup updateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentDto fulfillmentDto) {
+
+        fulfillmentGroup.setAddress(Optional.ofNullable(fulfillmentDto.getAddress()).map(addressConverter::createEntity).orElse(null));
+
+        Set<FulfillmentOption> availableFulfillmentOptions = fulfillmentServiceProxy.findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup);
+
+        availableFulfillmentOptions.stream()
+                .filter(o -> o.getName().equals(fulfillmentDto.getSelectedFulfillmentOption()))
+                .findFirst()
+                .ifPresent(
+                        fulfillmentGroup::setFulfillmentOption
+                );
+
+        return fulfillmentGroup;
+    }
+
+    @Override
+    public FulfillmentGroup partialUpdateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentDto fulfillmentDto) {
+        throw new UnsupportedOperationException();
+    }
+
+}
