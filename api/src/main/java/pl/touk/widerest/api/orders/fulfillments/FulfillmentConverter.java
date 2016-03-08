@@ -106,9 +106,4 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
         return fulfillmentGroup;
     }
 
-    @Override
-    public FulfillmentGroup partialUpdateEntity(final FulfillmentGroup fulfillmentGroup, final FulfillmentDto fulfillmentDto) {
-        throw new UnsupportedOperationException();
-    }
-
 }
