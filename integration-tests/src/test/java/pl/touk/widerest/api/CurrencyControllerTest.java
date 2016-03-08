@@ -1,6 +1,7 @@
 package pl.touk.widerest.api;
 
 
+import javaslang.Tuple;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
 import org.junit.Assert;
@@ -10,12 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
-import pl.touk.widerest.api.settings.CurrencyNotFoundException;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.security.oauth2.Scope;
-
-import java.io.IOException;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -26,40 +24,50 @@ import static org.junit.Assert.assertTrue;
 public class CurrencyControllerTest extends ApiTestBase {
 
     @Test
-    public void shouldGetDefaultCurrency() throws CurrencyNotFoundException, IOException {
-        whenLoggedIn("backoffice","admin", "admin");
-        whenAuthorizationRequestedFor(Scope.STAFF);
+    public void shouldGetDefaultCurrency() throws Throwable {
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
+            whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
 
-        final ResponseEntity<BroadleafCurrencyImpl> result = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
-        final BroadleafCurrency currency = result.getBody();
+                final ResponseEntity<BroadleafCurrencyImpl> result = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
+                final BroadleafCurrency currency = result.getBody();
 
-        assertTrue(result.getStatusCode().is2xxSuccessful());
-        assertTrue(currency.getCurrencyCode().length() > 0);
+                assertTrue(result.getStatusCode().is2xxSuccessful());
+                assertTrue(currency.getCurrencyCode().length() > 0);
+            });
+        });
     }
 
     @Test
-    public void shouldSetDefaultCurrency() throws IOException {
-        whenLoggedIn("backoffice", "admin", "admin");
-        whenAuthorizationRequestedFor(Scope.STAFF);
+    public void shouldSetDefaultCurrency() throws Throwable {
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
+            whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
 
-        final String SETTING_VALUE = "eur";
+                final String SETTING_VALUE = "eur";
 
-        oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+                oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
 
-        final ResponseEntity<BroadleafCurrencyImpl> receivedSettingEntity = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
+                final ResponseEntity<BroadleafCurrencyImpl> receivedSettingEntity = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
 
-        Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
-        assertThat(receivedSettingEntity.getBody().getCurrencyCode(), equalTo(SETTING_VALUE.toUpperCase()));
+                Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
+                assertThat(receivedSettingEntity.getBody().getCurrencyCode(), equalTo(SETTING_VALUE.toUpperCase()));
+            });
+        });
     }
 
 
     @Test(expected = HttpServerErrorException.class)
-    public void shouldThrowExceptionOnEmptyCredentials() throws IOException {
-        whenLoggedIn("backoffice","admin", "admin");
-        whenAuthorizationRequestedFor(Scope.STAFF);
+    public void shouldThrowExceptionOnEmptyCredentials() throws Throwable {
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
+            whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
 
-        final String SETTING_VALUE = "this_is_definitely_not_a_currency";
+                final String SETTING_VALUE = "this_is_definitely_not_a_currency";
 
-        oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+                oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+            });
+        });
+
     }
 }

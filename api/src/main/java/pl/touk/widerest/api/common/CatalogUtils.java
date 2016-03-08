@@ -11,6 +11,7 @@ import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.products.skus.SkuDto;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +58,11 @@ public class CatalogUtils {
         return skuEntity;
     }
 
+
+    public static long getIdFromUrl(final URI uri) throws NumberFormatException {
+        List<String> pathSegments = UriComponentsBuilder.fromUri(uri).build().getPathSegments();
+        return Long.parseLong(pathSegments.get(pathSegments.size() - 1));
+    }
 
     public static long getIdFromUrl(final String categoryPathUrl) throws NumberFormatException {
         List<String> pathSegments = UriComponentsBuilder.fromUriString(categoryPathUrl).build().getPathSegments();

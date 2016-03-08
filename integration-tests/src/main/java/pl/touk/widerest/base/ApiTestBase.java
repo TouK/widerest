@@ -3,16 +3,14 @@ package pl.touk.widerest.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import javaslang.Tuple;
+import javaslang.Tuple2;
+import javaslang.control.Try;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
-import org.junit.Before;
+import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -30,21 +28,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedResourceDetails;
-import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpMessageConverterExtractor;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.Application;
 import pl.touk.widerest.api.categories.CategoryDto;
@@ -53,21 +43,18 @@ import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.api.orders.OrderItemDto;
 import pl.touk.widerest.api.products.ProductDto;
-import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -94,22 +81,7 @@ public abstract class ApiTestBase {
     @Deprecated
     protected final RestTemplate restTemplateForHalJsonHandling = new RestTemplate(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
 
-    protected final BasicCookieStore cookieStore = new BasicCookieStore();
-    protected final CloseableHttpClient authorizationServerClient = HttpClients.custom().setDefaultCookieStore(cookieStore).disableRedirectHandling().build();
 
-    private static class OAuth2HalRestTemplate extends OAuth2RestTemplate {
-
-        public OAuth2HalRestTemplate(OAuth2ProtectedResourceDetails resource) {
-            super(resource);
-            setMessageConverters(Lists.newArrayList(
-                    new AllEncompassingFormHttpMessageConverter(),
-                    new MappingHalJackson2HttpMessageConverter(),
-                    new MappingJackson2HttpMessageConverter()
-            ));
-        }
-    }
-
-    protected final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2HalRestTemplate(new BaseOAuth2ProtectedResourceDetails());
 
 
     /* HATEOAS Rest Template */
@@ -134,11 +106,6 @@ public abstract class ApiTestBase {
     @PostConstruct
     public void init() {
         apiTestCatalogManager = new ApiTestCatalogManager(serverPort);
-    }
-
-    @Before
-    public void clearSession() {
-        cookieStore.clear();
     }
 
     /* This is the way to access admin related REST API!
@@ -378,14 +345,50 @@ public abstract class ApiTestBase {
 
     /* BDD */
 
-    protected long whenNewOrderCreated() {
-        final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                oAuth2RestTemplate.postForEntity(ApiTestUrls.ORDERS_URL, null, HttpHeaders.class, serverPort);
-
-        return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
+    protected <R> void when(Try.CheckedSupplier<R> r, Try.CheckedConsumer<R>... thens) throws Throwable {
+        Try<R> result = Try.of(r);
+        for (Try.CheckedConsumer<R> then : thens) {
+            then.accept(result.get());
+        }
     }
 
-    protected void whenRegistrationPerformed(final String username, final String password, final String email) {
+    protected void givenAuthorizationServerClient(Try.CheckedConsumer<AuthorizationServerClient> consumer) throws Throwable {
+        consumer.accept(authorizationServerClient());
+    }
+
+    protected void givenAuthorizationFor(final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenAuthorizationRequestedFor(authorizationServerClient, scope, thens);
+        });
+    }
+
+
+    protected Supplier<AuthorizationServerClient> givenAuthorizationServerClient() {
+        return this::authorizationServerClient;
+    }
+
+    protected AuthorizationServerClient authorizationServerClient() {
+        return new AuthorizationServerClient(this.serverPort);
+    }
+
+    protected void whenAuthorizationRequestedFor(AuthorizationServerClient authorizationServerClient, final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
+        when(() -> authorizationServerClient.requestAuthorization(scope), thens);
+    }
+
+    protected URI createNewOrder(OAuth2RestTemplate oAuth2RestTemplate) {
+        return oAuth2RestTemplate.postForLocation(ApiTestUrls.ORDERS_URL, null, serverPort);
+    }
+
+    protected void whenNewOrderCreated(OAuth2RestTemplate oAuth2RestTemplate, Try.CheckedConsumer<URI>... thens) throws Throwable {
+        when(() -> createNewOrder(oAuth2RestTemplate), thens);
+    }
+
+    protected Tuple2<String, String> performRegistration(OAuth2RestTemplate oAuth2RestTemplate) {
+
+        final String username = RandomStringUtils.random(32, "haskellCurry");
+        final String password = "uncurry";
+        final String email = RandomStringUtils.random(32, "haskellCurry") + "@curry.org";
+
         final MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
         map.add("email", email);
         map.add("username", username);
@@ -393,32 +396,35 @@ public abstract class ApiTestBase {
         map.add("passwordConfirm", password);
         final HttpEntity requestEntity = new HttpEntity(map, new HttpHeaders());
         oAuth2RestTemplate.postForEntity(ApiTestUrls.API_BASE_URL + "/customers/register", requestEntity, HttpHeaders.class, serverPort);
+
+        return Tuple.of(username, password);
     }
 
-    protected void whenLoggedIn(final String usertype, final String username, final String password) throws IOException {
-        final HttpUriRequest request = RequestBuilder
-                .post()
-                .setUri("http://localhost:" + serverPort + "/login")
-                .addParameter("usertype", usertype)
-                .addParameter("username", username)
-                .addParameter("password", password)
-                .build();
-        try (CloseableHttpResponse response = authorizationServerClient.execute(request)) {
-        }
+    protected void whenRegistrationPerformed(OAuth2RestTemplate oAuth2RestTemplate, Try.CheckedConsumer<Tuple2<String, String>> then) throws Throwable {
+        when(() -> performRegistration(oAuth2RestTemplate), then);
     }
 
-    protected void whenAuthorizationRequestedFor(final Scope scope) throws IOException {
-        final HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory(authorizationServerClient);
-        final ClientHttpRequest request = httpRequestFactory.createRequest(
-                URI.create("http://localhost:" + serverPort + "/oauth/authorize?client_id=default&response_type=token&redirect_uri=" + OutOfBandUriHandler.OOB_URI + (scope != null ? "&scope=" + scope : "")),
-                HttpMethod.GET
+    protected void whenLoggedInSite(AuthorizationServerClient authorizationServerClient, final Tuple2<String, String> usernameAndPassword) throws Throwable {
+        when(() -> { authorizationServerClient.logIn("site", usernameAndPassword._1, usernameAndPassword._2); return null; });
+    }
+
+    protected void whenLoggedInBackoffice(AuthorizationServerClient authorizationServerClient, final Tuple2<String, String> usernameAndPassword) throws Throwable {
+        when(() -> { authorizationServerClient.logIn("backoffice", usernameAndPassword._1, usernameAndPassword._2); return null; });
+    }
+
+    protected void thenAuthorized(OAuth2RestTemplate oAuth2RestTemplate, boolean value) {
+        Assert.assertEquals(
+                value,
+                oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken() != null
         );
-
-        try (ClientHttpResponse response = request.execute()) {
-            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
-            final Map<String, String> map = e.extractData(response);
-            final Optional<String> accessToken = Optional.ofNullable(map.get("access_token"));
-            oAuth2RestTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
-        }
     }
+    protected void thenAuthorized(OAuth2RestTemplate oAuth2RestTemplate) {
+        thenAuthorized(oAuth2RestTemplate, true);
+    }
+
+    public void thenNotAuthorized(OAuth2RestTemplate oAuth2RestTemplate) {
+        thenAuthorized(oAuth2RestTemplate, false);
+    }
+
+
 }

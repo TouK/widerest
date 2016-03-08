@@ -1,5 +1,6 @@
 package pl.touk.widerest.api;
 
+import javaslang.Tuple;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -12,7 +13,6 @@ import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.util.Collection;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -28,21 +28,24 @@ public class SettingsControllerTest extends ApiTestBase {
     protected Collection<SettingsConsumer> settingsConsumers;
 
     @Test
-    public void  shouldSetAKnownPropertyTest() throws IOException {
+    public void  shouldSetAKnownPropertyTest() throws Throwable {
 
-        whenLoggedIn("backoffice", "admin", "admin");
-        whenAuthorizationRequestedFor(Scope.STAFF);
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
+            whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
+                final String propertyKey = settingsConsumers.iterator().next().getHandledProperties().iterator().next();
+                final String propertyValue = "value";
 
-        final String propertyKey = settingsConsumers.iterator().next().getHandledProperties().iterator().next();
-        final String propertyValue = "value";
 
+                oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, propertyValue, serverPort, propertyKey);
 
-        oAuth2RestTemplate.put(SETTINGS_BY_NAME_URL, propertyValue, serverPort, propertyKey);
+                final ResponseEntity<String> receivedSettingEntity = oAuth2RestTemplate.getForEntity(SETTINGS_BY_NAME_URL, String.class, serverPort, propertyKey);
 
-        final ResponseEntity<String> receivedSettingEntity = oAuth2RestTemplate.getForEntity(SETTINGS_BY_NAME_URL, String.class, serverPort, propertyKey);
+                Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
+                assertThat(receivedSettingEntity.getBody(), equalTo(propertyValue));
+            });
+        });
 
-        Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
-        assertThat(receivedSettingEntity.getBody(), equalTo(propertyValue));
     }
 
 }
