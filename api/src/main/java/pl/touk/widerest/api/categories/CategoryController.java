@@ -39,6 +39,7 @@ import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -115,11 +116,8 @@ public class CategoryController {
     })
     public ResponseEntity<?> addOneCategory(
             @ApiParam(value = "Description of a new category", required = true)
-                @RequestBody final CategoryDto categoryDto
+                @Valid @RequestBody final CategoryDto categoryDto
     ) {
-
-        CatalogValidators.validateCategoryDto(categoryDto);
-
         final Category createdCategoryEntity = catalogService.saveCategory(categoryConverter.createEntity(categoryDto));
 
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest()
@@ -195,9 +193,7 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
                 @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "(Full) Description of an updated category", required = true)
-                @RequestBody final CategoryDto categoryDto) {
-
-    	CatalogValidators.validateCategoryDto(categoryDto);
+                @Valid @RequestBody final CategoryDto categoryDto) {
 
         Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils.nonArchivedCategory)

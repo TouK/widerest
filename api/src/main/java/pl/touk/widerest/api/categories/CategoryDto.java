@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
 
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
@@ -23,6 +24,7 @@ import java.util.Map;
 @ApiModel(value = "Category", description = "Category DTO resource representation")
 public class CategoryDto extends BaseDto {
 
+    @NotNull(message = "Category has to have a name")
     @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;
 

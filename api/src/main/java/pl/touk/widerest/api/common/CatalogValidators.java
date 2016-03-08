@@ -63,12 +63,6 @@ public class CatalogValidators {
         }
     }
 
-    public static void validateCategoryDto(final CategoryDto categoryDto) throws DtoValidationException {
-        if(StringUtils.isEmpty(categoryDto.getName())) {
-            throw new DtoValidationException("Category has to have a name");
-        }
-    }
-
     public static void validateHrefLink(final String href) throws DtoValidationException {
 
         if(StringUtils.isEmpty(href)) {
