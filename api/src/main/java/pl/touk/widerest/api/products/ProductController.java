@@ -47,6 +47,7 @@ import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -339,9 +340,9 @@ public class ProductController {
     })
     public ResponseEntity<?> addOneProduct(
             @ApiParam(value = "Description of a new product", required = true)
-                @RequestBody final ProductDto receivedProductDto) {
+                @Valid @RequestBody final ProductDto receivedProductDto) {
 
-        CatalogValidators.validateProductDto(receivedProductDto);
+        CatalogValidators.validateSkuPrices(receivedProductDto.getSalePrice(), receivedProductDto.getRetailPrice());
 
         Product newProductEntity = productConverter.createEntity(receivedProductDto);
 
@@ -429,9 +430,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "(Full) Description of an updated product", required = true)
-            @RequestBody final ProductDto productDto) {
+                @Valid @RequestBody final ProductDto productDto) {
 
-        CatalogValidators.validateProductDto(productDto);
+        CatalogValidators.validateSkuPrices(productDto.getSalePrice(), productDto.getRetailPrice());
 
         Optional.ofNullable(getProductById(productId))
                 .ifPresent(oldProductEntity -> {
@@ -521,9 +522,8 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new attribute", required = true)
-                @RequestBody final ProductAttributeDto productAttributeDto) {
+                @Valid @RequestBody final ProductAttributeDto productAttributeDto) {
 
-        CatalogValidators.validateProductAttributeDto(productAttributeDto);
 
         final Product product = getProductById(productId);
 
@@ -679,10 +679,10 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new SKU", required = true)
-                @RequestBody final SkuDto skuDto
+                @Valid @RequestBody final SkuDto skuDto
     ) {
 
-        CatalogValidators.validateSkuDto(skuDto);
+        CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
 
         final Product product = getProductById(productId);
 
@@ -938,10 +938,8 @@ public class ProductController {
             @ApiParam(value = "ID of a specific media", required = true)
                 @PathVariable(value = "key") final String key,
             @ApiParam(value = "(Full) Description of an updated media")
-                @RequestBody final MediaDto mediaDto
+                @Valid @RequestBody final MediaDto mediaDto
     ) {
-
-        CatalogValidators.validateMediaDto(mediaDto);
 
         final Sku productDefaultSku = getDefaultSkuForProductById(productId);
 
@@ -955,7 +953,7 @@ public class ProductController {
         newSkuMediaXref.setMedia(mediaEntity);
         newSkuMediaXref.setSku(productDefaultSku);
         newSkuMediaXref.setKey(key);
-        productDefaultSku .getSkuMediaXref().put(key, newSkuMediaXref);
+        productDefaultSku.getSkuMediaXref().put(key, newSkuMediaXref);
 
         catalogService.saveSku(productDefaultSku );
 
@@ -1176,9 +1174,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
                 @PathVariable(value = "skuId") final Long skuId,
             @ApiParam(value = "(Full) Description of an updated SKU", required = true)
-                @RequestBody final SkuDto skuDto) {
+                @Valid @RequestBody final SkuDto skuDto) {
 
-        CatalogValidators.validateSkuDto(skuDto);
+        CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
 
         Optional.of(getSkuByIdForProductById(productId, skuId))
                 .map(e -> skuConverter.updateEntity(e, skuDto))
@@ -1358,10 +1356,8 @@ public class ProductController {
             @ApiParam(value = "ID of a specific media", required = true)
                 @PathVariable(value = "key") final String key,
             @ApiParam(value = "(Full) Description of an updated media")
-                @RequestBody final MediaDto mediaDto
+                @Valid @RequestBody final MediaDto mediaDto
     ) {
-
-        CatalogValidators.validateMediaDto(mediaDto);
 
         final Sku sku = getSkuByIdForProductById(productId, skuId);
 

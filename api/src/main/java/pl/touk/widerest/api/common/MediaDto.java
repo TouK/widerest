@@ -10,7 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
 import pl.touk.widerest.api.BaseDto;
+
+import javax.validation.constraints.NotNull;
 
 @Data
 @Builder
@@ -25,6 +29,7 @@ public class MediaDto extends BaseDto {
     @ApiModelProperty(position = 0, value = "Title of the media", required = true, dataType = "java.lang.String")
     private String title;
 
+    @NotBlank(message = "Media has to have an URL provided")
     @ApiModelProperty(position = 1, value = "URL to the resource associated with this media", required = true, dataType = "java.lang.String")
     private String url;
 

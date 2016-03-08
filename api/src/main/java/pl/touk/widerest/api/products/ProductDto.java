@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.NotBlank;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
@@ -46,6 +47,7 @@ public class ProductDto extends BaseDto {
     @ApiModelProperty(position = 0, value = "Names of the categories this product belongs to", dataType = "java.lang.String")
     private String categoryName;
 
+    @NotBlank(message = "Product has to have a non empty name")
     @ApiModelProperty(position = 1, value = "Name of the product", required = true, dataType = "java.lang.String")
     private String name;
 

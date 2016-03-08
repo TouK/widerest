@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.NotBlank;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
 
@@ -24,7 +25,7 @@ import java.util.Map;
 @ApiModel(value = "Category", description = "Category DTO resource representation")
 public class CategoryDto extends BaseDto {
 
-    @NotNull(message = "Category has to have a name")
+    @NotBlank(message = "Category has to have a non empty name")
     @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;
 
@@ -49,6 +50,5 @@ public class CategoryDto extends BaseDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 5, value = "List of medias associated with a category")
-    private Map<String /*key*/, MediaDto> media;
-
+    private Map<String, MediaDto> media;
 }
