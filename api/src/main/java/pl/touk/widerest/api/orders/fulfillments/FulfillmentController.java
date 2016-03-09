@@ -240,10 +240,8 @@ public class FulfillmentController {
             @ApiParam(value = "ID of a specific fulfillment group", required = true)
             @PathVariable(value = "fulfillmentId") final Long fulfillmentGroupId,
             @ApiParam(value = "Description of a new fulfillment group", required = true)
-            @RequestBody final FulfillmentDto fulfillmentDto
+            @RequestBody @Valid final FulfillmentDto fulfillmentDto
     ) {
-
-        Optional.ofNullable(fulfillmentDto.getAddress()).ifPresent(orderValidationService::validateAddressDto);
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
@@ -309,8 +307,6 @@ public class FulfillmentController {
             @ApiParam(value = "Description of a new fulfillment group", required = true)
             @RequestBody @Valid final FulfillmentDto fulfillmentDto
     ) throws PricingException, MalformedURLException {
-
-        Optional.ofNullable(fulfillmentDto.getAddress()).ifPresent(orderValidationService::validateAddressDto);
 
         // TODO: Handle "exceptional" situations...order item does not exist, FG duplicates etc
 

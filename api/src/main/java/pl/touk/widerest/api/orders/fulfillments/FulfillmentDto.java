@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ public class FulfillmentDto extends BaseDto {
     private String type;
 
     @ApiModelProperty(position = 1, value = "Address related to a fulfillment group", required = true)
+    @Valid
     private AddressDto address;
 
     @ApiModelProperty(position = 3, value = "List of items belonging to a fulfillment group", required = true)

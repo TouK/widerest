@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
+import pl.touk.widerest.constraints.IsoCountryCode;
 
 @Data
 @Builder
@@ -50,6 +51,7 @@ public class AddressDto extends BaseDto {
     protected String addressName;
 
     @ApiModelProperty(position = 9, value = "ISO 3166 alpha-2 country code", required = true, dataType = "java.lang.String")
+    @IsoCountryCode
     protected String countryCode;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

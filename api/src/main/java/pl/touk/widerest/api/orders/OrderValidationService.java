@@ -21,12 +21,6 @@ public class OrderValidationService {
     @Resource(name = "blFulfillmentGroupService")
     private FulfillmentGroupService fulfillmentGroupService;
 
-    @Resource(name = "blCountryService")
-    private CountryService countryService;
-
-    @Resource
-    private ISOService isoService;
-
     public void validateOrderBeforeCheckout(Order order) throws OrderValidationException {
 
         validateOrderNotEmpty(order);
@@ -43,7 +37,7 @@ public class OrderValidationService {
     }
 
 
-    public void validateCustomerDataInAddress(Address address) throws OrderValidationException {
+    private void validateCustomerDataInAddress(Address address) throws OrderValidationException {
         if(StringUtils.isEmpty(address.getFirstName()) || StringUtils.isEmpty(address.getLastName())) {
             throw new OrderValidationException("Provided address does not contain First and/or Last names");
         }
@@ -54,22 +48,6 @@ public class OrderValidationService {
             throw new OrderValidationException("Provided address does not contain postal code and/or city");
         }
         if(address.getIsoCountryAlpha2() == null) {
-            throw new OrderValidationException("Provided address does not contain valid country code");
-        }
-    }
-
-    public void validateAddressDto(final AddressDto address) throws OrderValidationException {
-        if(StringUtils.isEmpty(address.getFirstName()) || StringUtils.isEmpty(address.getLastName())) {
-            throw new OrderValidationException("Provided address does not contain First and/or Last names");
-        }
-        if(StringUtils.isEmpty(address.getAddressLine1())){
-            throw new OrderValidationException("Provided address does not contain address lines");
-        }
-        if(StringUtils.isEmpty(address.getPostalCode()) || StringUtils.isEmpty(address.getCity())) {
-            throw new OrderValidationException("Provided address does not contain postal code and/or city");
-        }
-        if(StringUtils.isEmpty(address.getCountryCode())
-                || isoService.findISOCountryByAlpha2Code(address.getCountryCode()) == null) {
             throw new OrderValidationException("Provided address does not contain valid country code");
         }
     }

@@ -22,6 +22,7 @@ import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationS
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayTransactionService;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayTransparentRedirectService;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -659,6 +660,12 @@ public class OrderController {
             PaymentResponseDTO paymentResponseDTO =
                     transactionService.authorizeAndCapture(paymentRequestDTO);
             return ResponseEntity.ok().build();
+        }
+
+        PaymentGatewayTransparentRedirectService transparentRedirectService = configurationService.getTransparentRedirectService();
+        if (transparentRedirectService != null) {
+            PaymentResponseDTO authorizeForm = transparentRedirectService.createAuthorizeForm(paymentRequestDTO);
+            return ResponseEntity.ok(authorizeForm.getResponseMap());
         }
 
         return ResponseEntity.unprocessableEntity().build();
