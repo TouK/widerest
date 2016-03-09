@@ -3,6 +3,8 @@ package pl.touk.widerest.api.products;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.catalog.service.type.ProductType;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
     @Resource
     protected MediaConverter mediaConverter;
+
+    @Resource
+    protected CatalogService catalogService;
 
     @Override
     public ProductDto createDto(final Product product, final boolean embed) {
@@ -141,9 +146,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
     @Override
     public Product createEntity(final ProductDto productDto) {
-        final Product product = new ProductImpl();
+        final Product product = catalogService.createProduct(ProductType.PRODUCT);
 
-        final Sku defaultSku = new SkuImpl();
+        final Sku defaultSku = catalogService.createSku();
         product.setDefaultSku(defaultSku);
 
         return updateEntity(product, productDto);

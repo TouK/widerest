@@ -11,6 +11,7 @@ import org.broadleafcommerce.core.catalog.domain.SkuImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
     @Resource(name = "wdDtoConverters")
     protected DtoConverters dtoConverters;
+
+    @Resource
+    protected CatalogService catalogService;
     
     @Override
     public SkuDto createDto(final Sku sku, final boolean embed) {
@@ -91,7 +95,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
     @Override
     public Sku createEntity(final SkuDto skuDto) {
-        final Sku skuEntity = new SkuImpl();
+        final Sku skuEntity = catalogService.createSku();
 
         skuEntity.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
 

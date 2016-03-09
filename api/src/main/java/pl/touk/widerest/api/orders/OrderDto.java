@@ -30,7 +30,7 @@ public class OrderDto extends BaseDto {
     @ApiModelProperty(position = 0, value = "Order number", required = true, dataType = "java.lang.String")
     private String orderNumber;
 
-    @ApiModelProperty(position = 1, value = "Status of the order", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 1, value = "Status of the order", readOnly = true)
     private String status;
 
     @ApiModelProperty(position = 2, value = "Shipping address for the order", required = true, dataType = "pl.touk.widerest.api.common.AddressDto")
@@ -51,7 +51,7 @@ public class OrderDto extends BaseDto {
 
     /* TODO: (mst) what is this!? */
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 7, value = "", dataType = "java.util.List")
+    @ApiModelProperty(position = 7, value = "", readOnly = true)
     private List<OrderPaymentDto> orderPayment;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

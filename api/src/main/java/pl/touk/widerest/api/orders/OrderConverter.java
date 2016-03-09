@@ -5,6 +5,7 @@ import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderAttribute;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
+import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
@@ -31,13 +32,16 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class OrderConverter implements Converter<Order, OrderDto> {
 
     @Resource
-    private OrderPaymentConverter orderPaymentConverter;
+    protected OrderPaymentConverter orderPaymentConverter;
 
     @Resource
-    private DiscreteOrderItemConverter discreteOrderItemConverter;
+    protected DiscreteOrderItemConverter discreteOrderItemConverter;
 
     @Resource
-    private CustomerConverter customerConverter;
+    protected CustomerConverter customerConverter;
+
+    @Resource
+    protected OrderService orderService;
 
     @Override
     public OrderDto createDto(final Order order, final boolean embed) {
@@ -87,21 +91,6 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
 
         return orderDto;
-    }
-
-    @Override
-    public Order createEntity(final OrderDto orderDto) {
-        return updateEntity(new OrderImpl(), orderDto);
-    }
-
-    @Override
-    public Order updateEntity(final Order order, final OrderDto orderDto) {
-        order.setOrderNumber(orderDto.getOrderNumber());
-        order.setStatus(OrderStatus.getInstance(orderDto.getStatus()));
-        order.setPayments(orderDto.getOrderPayment().stream().map(orderPaymentConverter::createEntity)
-                .collect(Collectors.toList()));
-
-        return order;
     }
 
     private static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity ->

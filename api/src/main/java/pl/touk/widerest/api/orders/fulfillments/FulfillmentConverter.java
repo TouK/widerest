@@ -86,7 +86,7 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
 
     @Override
     public FulfillmentGroup createEntity(final FulfillmentDto fulfillmentDto) {
-        return updateEntity(new FulfillmentGroupImpl(), fulfillmentDto);
+        return updateEntity(fulfillmentGroupService.createEmptyFulfillmentGroup(), fulfillmentDto);
     }
 
     @Override

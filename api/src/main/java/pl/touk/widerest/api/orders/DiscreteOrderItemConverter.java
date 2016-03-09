@@ -40,13 +40,4 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
         return orderItemDto;
     }
 
-    @Override
-    public DiscreteOrderItem createEntity(final DiscreteOrderItemDto discreteOrderItemDto) {
-        return updateEntity(new DiscreteOrderItemImpl(), discreteOrderItemDto);
-    }
-
-    @Override
-    public DiscreteOrderItem updateEntity(final DiscreteOrderItem discreteOrderItem, final DiscreteOrderItemDto discreteOrderItemDto) {
-        throw new UnsupportedOperationException();
-    }
 }

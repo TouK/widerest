@@ -3,6 +3,7 @@ package pl.touk.widerest.api.orders.payments;
 import org.broadleafcommerce.common.payment.PaymentType;
 import org.broadleafcommerce.core.payment.domain.OrderPayment;
 import org.broadleafcommerce.core.payment.domain.OrderPaymentImpl;
+import org.broadleafcommerce.core.payment.service.OrderPaymentService;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.common.AddressConverter;
@@ -13,7 +14,10 @@ import javax.annotation.Resource;
 public class OrderPaymentConverter implements Converter<OrderPayment, OrderPaymentDto>{
 
     @Resource
-    private AddressConverter addressConverter;
+    protected AddressConverter addressConverter;
+
+    @Resource
+    protected OrderPaymentService orderPaymentService;
 
     @Override
     public OrderPaymentDto createDto(final OrderPayment orderPayment, final boolean embed) {
@@ -24,20 +28,4 @@ public class OrderPaymentConverter implements Converter<OrderPayment, OrderPayme
                 .referenceNumber(orderPayment.getReferenceNumber()).type(orderPayment.getType().getType()).build();
     }
 
-    @Override
-    public OrderPayment createEntity(final OrderPaymentDto orderPaymentDto) {
-        final OrderPayment orderPayment = new OrderPaymentImpl();
-        return updateEntity(orderPayment, orderPaymentDto);
-    }
-
-    @Override
-    public OrderPayment updateEntity(final OrderPayment orderPayment, final OrderPaymentDto orderPaymentDto) {
-        orderPayment.setId(orderPaymentDto.getOrderId());
-        orderPayment.setAmount(orderPaymentDto.getAmount());
-        orderPayment.setBillingAddress(addressConverter.createEntity(orderPaymentDto.getBillingAddress()));
-        orderPayment.setReferenceNumber(orderPaymentDto.getReferenceNumber());
-        orderPayment.setType(PaymentType.getInstance(orderPaymentDto.getType()));
-
-        return orderPayment;
-    }
 }

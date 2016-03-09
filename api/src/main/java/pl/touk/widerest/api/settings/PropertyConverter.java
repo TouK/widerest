@@ -33,13 +33,4 @@ public class PropertyConverter implements Converter<String, PropertyDto> {
         return propertyDto;
     }
 
-    @Override
-    public String createEntity(final PropertyDto propertyDto) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String updateEntity(final String s, final PropertyDto propertyDto) {
-        throw new UnsupportedOperationException();
-    }
 }

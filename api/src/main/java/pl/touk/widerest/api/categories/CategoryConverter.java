@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
 import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
@@ -32,6 +33,8 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
     @Resource
     protected MediaConverter mediaConverter;
 
+    @Resource
+    protected CatalogService catalogService;
 
     @Override
     public CategoryDto createDto(final Category entity, final boolean embed) {
@@ -94,7 +97,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
 
     @Override
     public Category createEntity(final CategoryDto dto) {
-        return updateEntity(new CategoryImpl(), dto);
+        return updateEntity(catalogService.createCategory(), dto);
     }
 
     @Override

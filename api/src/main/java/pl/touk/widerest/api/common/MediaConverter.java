@@ -2,11 +2,13 @@ package pl.touk.widerest.api.common;
 
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
+import org.broadleafcommerce.openadmin.web.service.MediaBuilderService;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 
 @Component
 public class MediaConverter implements Converter<Media, MediaDto> {
+
     @Override
     public MediaDto createDto(final Media media, boolean embed) {
         return MediaDto.builder()
