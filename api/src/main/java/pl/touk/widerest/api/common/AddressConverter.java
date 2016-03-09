@@ -5,6 +5,7 @@ import org.broadleafcommerce.common.i18n.domain.ISOCountry;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.profile.core.domain.Address;
 import org.broadleafcommerce.profile.core.domain.AddressImpl;
+import org.broadleafcommerce.profile.core.service.AddressService;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 
@@ -16,6 +17,9 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
     @Resource
     protected ISOService isoService;
+
+    @Resource
+    protected AddressService addressService;
 
     @Override
     public AddressDto createDto(final Address address, final boolean embed) {
@@ -35,7 +39,9 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
     @Override
     public Address createEntity(final AddressDto addressDto) {
-        return updateEntity(new AddressImpl(), addressDto);
+        Address address = addressService.create();
+        address.setCountry(null);
+        return updateEntity(address, addressDto);
     }
 
     @Override
