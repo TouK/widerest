@@ -145,16 +145,18 @@ public class DockerizedDataSource extends DelegatingDataSource {
     }
 
     private void waitForDatabaseStart() throws InterruptedException {
-        while (true) {
+        for (int i = 0; i < 10; i++) {
             try {
-                if (DriverManager.getConnection(getUrl(), getUsername(), getPassword()).isValid(3))
+                if (DriverManager.getConnection(getUrl(), getUsername(), getPassword()).isValid(3)) {
+                    log.info("Database container seems to have started");
                     break;
+                }
             } catch (SQLException e) {
                 Thread.sleep(3000);
             }
             log.info("Waiting for the container to start up...");
         }
-        log.info("Database container seems to have started");
+        log.error("Database container has probably not started");
 
     }
 
