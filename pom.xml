@@ -36,10 +36,11 @@
     </distributionManagement>
 
     <properties>
-        <blc.version>4.0.0-RC1</blc.version>
-        <blc.menu.version>1.0.0-RC4</blc.menu.version>
+        <blc.version>4.0.5-GA</blc.version>
+        <blc.menu.version>1.0.0-GA</blc.menu.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hibernate.version>4.1.11.Final</hibernate.version>
+        <httpclient.version>4.5</httpclient.version>
         <solr.version>4.10.3</solr.version>
         <spring-hateoas.version>0.20.0.BUILD-alpha.touk.1</spring-hateoas.version>
         <jackson.version>2.5.4</jackson.version>
@@ -200,12 +201,6 @@
         <dependencies>
 
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>pl.touk</groupId>
                 <artifactId>throwing-function</artifactId>
                 <version>1.2.1</version>
@@ -280,12 +275,6 @@
                 <groupId>cz.jirutka.validator</groupId>
                 <artifactId>validator-collection</artifactId>
                 <version>2.1.6</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>4.5</version>
             </dependency>
 
             <dependency>

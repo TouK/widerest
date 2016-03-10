@@ -14,17 +14,25 @@
     <dependencies>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
+            <artifactId>widerest-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>pl.touk.widerest</groupId>
             <artifactId>widerest-app</artifactId>
+            <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
             <artifactId>widerest-core</artifactId>
+            <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
             <artifactId>widerest-boot</artifactId>
+            <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
 
@@ -36,6 +44,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

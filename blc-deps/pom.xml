@@ -12,11 +12,6 @@
     <artifactId>widerest-blc-deps</artifactId>
     <packaging>pom</packaging>
 
-    <properties>
-        <blc.version>4.0.5-GA</blc.version>
-        <blc.menu.version>1.0.0-GA</blc.menu.version>
-    </properties>
-
     <dependencies>
         <!--Broadleaf libraries -->
         <dependency>
