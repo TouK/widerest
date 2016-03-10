@@ -24,6 +24,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,16 +59,29 @@ public class DockerizedDataSource extends DelegatingDataSource {
 
         setTargetDataSource(
                 DataSourceBuilder.create()
-                        .username("postgres")
-                        .url("jdbc:postgresql://" + dockerHost + ":" + databasePort + "/")
+                        .username(getUsername())
+                        .password(getPassword())
+                        .url(getUrl())
                         .build()
         );
     }
 
     @PreDestroy
     public void destroyContainer() throws Exception {
-        docker.stopContainer(containerId, 10);
+        docker.stopContainer(containerId, 30);
         docker.removeContainer(containerId, true);
+    }
+
+    public String getUrl() {
+        return "jdbc:postgresql://" + dockerHost + ":" + databasePort + "/";
+    }
+
+    public String getUsername() {
+        return "postgres";
+    }
+
+    public String getPassword() {
+        return null;
     }
 
     private void configureDockerClient() throws DockerCertificateException {
@@ -85,8 +102,15 @@ public class DockerizedDataSource extends DelegatingDataSource {
         log.warn("Found {} probably stale containers. Consider removing them.", staleContainersCount);
     }
 
-    private void createContainer() throws DockerException, InterruptedException {
-        ContainerConfig containerConfig = ContainerConfig.builder().image("postgres:9.4").build();
+    private void createContainer() throws DockerException, InterruptedException, IOException {
+
+        this.databasePort = findFreePort();
+
+        final Map<String, List<PortBinding>> portBindings = new HashMap<>();
+        portBindings.put("5432/tcp", Lists.newArrayList(PortBinding.of("", databasePort)));
+        final HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
+
+        ContainerConfig containerConfig = ContainerConfig.builder().image("postgres:9.4").hostConfig(hostConfig).build();
         ContainerCreation containerCreation = docker.createContainer(containerConfig, CONTAINER_NAME_PREFIX + UUID.randomUUID());
         if (!CollectionUtils.isEmpty(containerCreation.getWarnings())) {
             containerCreation.getWarnings().forEach(DockerizedDataSource.log::warn);
@@ -115,38 +139,20 @@ public class DockerizedDataSource extends DelegatingDataSource {
 
     private void startContainer() throws IOException, DockerException, InterruptedException {
 
-        databasePort = findFreePort();
-
-        final Map<String, List<PortBinding>> portBindings = new HashMap<>();
-        portBindings.put("5432/tcp", Lists.newArrayList(PortBinding.of("", databasePort)));
-        final HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
-
         log.info("Starting database container");
-
-        docker.startContainer(this.containerId, hostConfig);
+        docker.startContainer(this.containerId);
 
     }
 
-    private void waitForDatabaseStart() throws IOException, InterruptedException {
-
+    private void waitForDatabaseStart() throws InterruptedException {
         while (true) {
-            Thread.sleep(1000);
             try {
-                Socket s = new Socket(dockerHost, databasePort);
-                s.setKeepAlive(true);
-                s.setSoTimeout(3000);
-                s.sendUrgentData(1);
-                InputStream is = s.getInputStream();
-                boolean connected = s.isConnected();
-                int read = is.read();
-                log.info("read: {}", read);
-//                break;
-            } catch (SocketException ex) {
-                log.info("Waiting for the container to start up...");
-            } catch (SocketTimeoutException ex) {
-//                log.info("Waiting for the container to start up...");
-                break;
+                if (DriverManager.getConnection(getUrl(), getUsername(), getPassword()).isValid(3))
+                    break;
+            } catch (SQLException e) {
+                Thread.sleep(3000);
             }
+            log.info("Waiting for the container to start up...");
         }
         log.info("Database container seems to have started");
 
