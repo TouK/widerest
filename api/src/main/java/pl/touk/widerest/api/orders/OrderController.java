@@ -68,7 +68,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.RequestUtils;
 import pl.touk.widerest.api.common.AddressConverter;
 import pl.touk.widerest.api.common.CatalogUtils;
-import pl.touk.widerest.api.common.DtoValidationException;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
@@ -385,7 +384,7 @@ public class OrderController {
             try {
                 skuId = CatalogUtils.getIdFromUrl(orderItemDto.getSkuHref());
                 req.setSkuId(skuId);
-            } catch (NumberFormatException | DtoValidationException e) {
+            } catch (NumberFormatException e) {
                 return ResponseEntity.badRequest().build();
             }
         }

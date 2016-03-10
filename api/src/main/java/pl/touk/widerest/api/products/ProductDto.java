@@ -18,6 +18,10 @@ import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
+import javax.validation.Valid;
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -73,10 +77,13 @@ public class ProductDto extends BaseDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 6, value = "Default sale price of this product", required = true, dataType = "java.math.BigDecimal")
+    @DecimalMin("0.01")
     private BigDecimal salePrice;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 7, value = "Default retail price of this product", dataType = "java.math.BigDecimal")
+    @NotNull
+    @DecimalMin("0.01")
     private BigDecimal retailPrice;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -109,6 +116,7 @@ public class ProductDto extends BaseDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 15, value = "List of all additional SKUs for the product", dataType = "java.util.List")
+    @Valid
     private List<SkuDto> skus;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)

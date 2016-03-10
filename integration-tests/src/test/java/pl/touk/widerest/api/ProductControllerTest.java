@@ -104,7 +104,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertThat(receivedProductDto.getModel(), equalTo(productDto.getModel()));
         assertThat(receivedProductDto.getManufacturer(), equalTo(productDto.getManufacturer()));
         assertThat(receivedProductDto.getValidFrom(), equalTo(productDto.getValidFrom()));
-        assertThat(receivedProductDto.getSalePrice().longValue(), equalTo(productDto.getSalePrice().longValue()));
+        assertThat(receivedProductDto.getSalePrice(), equalTo(productDto.getSalePrice()));
         assertThat(receivedProductDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
         assertThat(receivedProductDto.getRetailPrice().longValue(), equalTo(productDto.getRetailPrice().longValue()));
 
@@ -328,7 +328,7 @@ public class ProductControllerTest extends ApiTestBase {
         assertNotNull(receivedSkuDto.getName());
         assertNotNull(receivedSkuDto.getActiveStartDate());
         assertNotNull(receivedSkuDto.getTaxCode());
-        assertNotNull(receivedSkuDto.getSalePrice());
+        assertNotNull(receivedSkuDto.getRetailPrice());
 
         assertThat(receivedSkuDto.getDescription(), equalTo(additionalSkuDto.getDescription()));
         assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(additionalSkuDto.getQuantityAvailable()));

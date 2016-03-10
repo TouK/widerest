@@ -106,21 +106,12 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     public Sku updateEntity(final Sku sku, final SkuDto skuDto) {
         sku.setName(skuDto.getName());
         sku.setDescription(skuDto.getDescription());
-        sku.setSalePrice(new Money(skuDto.getSalePrice()));
+        sku.setRetailPrice(Optional.ofNullable(skuDto.getRetailPrice()).map(Money::new).orElse(null));
+        sku.setSalePrice(Optional.ofNullable(skuDto.getSalePrice()).map(Money::new).orElse(null));
         sku.setQuantityAvailable(skuDto.getQuantityAvailable());
         sku.setTaxCode(skuDto.getTaxCode());
         sku.setActiveStartDate(skuDto.getActiveStartDate());
         sku.setActiveEndDate(skuDto.getActiveEndDate());
-
-		/*
-		 * (mst) RetailPrice cannot be null, so just leave "the old" value if a
-		 * new one has not been provided
-		 */
-        if (skuDto.getRetailPrice() != null) {
-            sku.setRetailPrice(new Money(skuDto.getRetailPrice()));
-        } else {
-            sku.setRetailPrice(new Money(skuDto.getSalePrice()));
-        }
 
         if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
             sku.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
@@ -128,7 +119,6 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
             /* (mst) turn on Inventory Service by default */
             sku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
         }
-
 
         sku.getSkuAttributes().clear();
         sku.getSkuAttributes().putAll(

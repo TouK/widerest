@@ -15,6 +15,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
 
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -41,10 +42,13 @@ public class SkuDto extends BaseDto {
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 2, value = "Sale price of the SKU", required = true, dataType = "java.math.BigDecimal")
+    @DecimalMin("0.01")
     private BigDecimal salePrice;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 3, value = "Retail price of the SKU", dataType = "java.math.BigDecimal")
+    @NotNull
+    @DecimalMin("0.01")
     private BigDecimal retailPrice;
 
     @NotNull(message = "Sku has to have available quantity set")

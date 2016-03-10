@@ -31,8 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.common.CatalogUtils;
-import pl.touk.widerest.api.common.CatalogValidators;
-import pl.touk.widerest.api.common.DtoValidationException;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.ProductConverter;
 import pl.touk.widerest.api.products.ProductDto;
@@ -40,7 +38,6 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -265,7 +262,7 @@ public class CategoryController {
 
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (NumberFormatException | DtoValidationException e) {
+        } catch (NumberFormatException e) {
             return BAD_REQUEST;
         }
 
@@ -320,7 +317,7 @@ public class CategoryController {
 
         try {
             hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (NumberFormatException | DtoValidationException e) {
+        } catch (NumberFormatException e) {
             return BAD_REQUEST;
         }
 
@@ -404,7 +401,7 @@ public class CategoryController {
 
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch ( NumberFormatException | DtoValidationException e) {
+        } catch (NumberFormatException e) {
             return BAD_REQUEST;
         }
 
@@ -458,7 +455,7 @@ public class CategoryController {
 
         try {
             hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch ( NumberFormatException | DtoValidationException e) {
+        } catch ( NumberFormatException e) {
             return ResponseEntity.badRequest().build();
         }
 

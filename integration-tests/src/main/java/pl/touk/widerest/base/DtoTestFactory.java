@@ -250,7 +250,7 @@ public class DtoTestFactory {
         productDto.setName(TEST_PRODUCT_DEFAULT_NAME);
         productDto.setDescription(TEST_DEFAULT_SKU_DESC);
         productDto.setValidFrom(defaultActiveStartDate);
-        productDto.setSalePrice(new BigDecimal("39.99"));
+        productDto.setRetailPrice(new BigDecimal("39.99"));
         productDto.setQuantityAvailable(99);
         productDto.setTaxCode("DefaultSKU Tax Code");
 
@@ -277,7 +277,7 @@ public class DtoTestFactory {
         productDto.setName(TEST_PRODUCT_DEFAULT_NAME);
         productDto.setDescription(TEST_DEFAULT_SKU_DESC + skuCounter);
         productDto.setValidFrom(defaultActiveStartDate);
-        productDto.setSalePrice(new BigDecimal("39.99"));
+        productDto.setRetailPrice(new BigDecimal("39.99"));
         productDto.setQuantityAvailable(99);
         productDto.setTaxCode("DefaultSKU Tax Code");
 
@@ -293,7 +293,7 @@ public class DtoTestFactory {
             newSkuDto2 = SkuDto.builder()
                     .name(TEST_ADDITIONAL_SKU_NAME)
                     .description(TEST_ADDITIONAL_SKU_DESC)
-                    .salePrice(new BigDecimal(99.99))
+                    .retailPrice(new BigDecimal(99.99))
                     .quantityAvailable(34)
                     .taxCode("AdditionalSKU Tax Code")
                     .activeStartDate(defaultActiveStartDate)
@@ -310,7 +310,7 @@ public class DtoTestFactory {
         SkuDto skuDto = SkuDto.builder()
                 .name(TEST_ADDITIONAL_SKU_NAME + skuCounter)
                 .description(TEST_ADDITIONAL_SKU_DESC + skuCounter)
-                .salePrice(new BigDecimal(String.valueOf(3 + skuCounter) + ".00"))
+                .retailPrice(new BigDecimal(String.valueOf(3 + skuCounter) + ".00"))
                 .quantityAvailable((int) (3 + skuCounter))
                 .taxCode("AdditionalSKU Tax Code" + skuCounter)
                 .activeStartDate(defaultActiveStartDate)

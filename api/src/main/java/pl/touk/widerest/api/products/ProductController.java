@@ -36,8 +36,6 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.categories.CategoryConverter;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.CatalogUtils;
-import pl.touk.widerest.api.common.CatalogValidators;
-import pl.touk.widerest.api.common.DtoValidationException;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
@@ -342,8 +340,6 @@ public class ProductController {
             @ApiParam(value = "Description of a new product", required = true)
                 @Valid @RequestBody final ProductDto receivedProductDto) {
 
-        CatalogValidators.validateSkuPrices(receivedProductDto.getSalePrice(), receivedProductDto.getRetailPrice());
-
         Product newProductEntity = productConverter.createEntity(receivedProductDto);
 
         /* (mst) if there is a default category set, try to find it and connect it with the product.
@@ -431,8 +427,6 @@ public class ProductController {
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "(Full) Description of an updated product", required = true)
                 @Valid @RequestBody final ProductDto productDto) {
-
-        CatalogValidators.validateSkuPrices(productDto.getSalePrice(), productDto.getRetailPrice());
 
         Optional.ofNullable(getProductById(productId))
                 .ifPresent(oldProductEntity -> {
@@ -681,8 +675,6 @@ public class ProductController {
             @ApiParam(value = "Description of a new SKU", required = true)
                 @Valid @RequestBody final SkuDto skuDto
     ) {
-
-        CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
 
         final Product product = getProductById(productId);
 
@@ -1176,8 +1168,6 @@ public class ProductController {
             @ApiParam(value = "(Full) Description of an updated SKU", required = true)
                 @Valid @RequestBody final SkuDto skuDto) {
 
-        CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
-
         Optional.of(getSkuByIdForProductById(productId, skuId))
                 .map(e -> skuConverter.updateEntity(e, skuDto))
                 .map(e -> {
@@ -1208,9 +1198,7 @@ public class ProductController {
             @ApiParam(value = "ID of a specific SKU", required = true)
                 @PathVariable(value = "skuId") final Long skuId,
             @ApiParam(value = "(Partial) Description of an updated SKU", required = true)
-                @RequestBody final SkuDto skuDto) {
-
-        CatalogValidators.validateSkuPrices(skuDto.getSalePrice(), skuDto.getRetailPrice());
+                @Valid @RequestBody final SkuDto skuDto) {
 
         Optional.of(getSkuByIdForProductById(productId, skuId))
                 .map(e -> CatalogUtils.partialUpdateSkuEntityFromDto(e, skuDto))
@@ -1467,13 +1455,6 @@ public class ProductController {
         savedSkus.addAll(newProduct.getAllSkus());
 
         for (SkuDto additionalSkuDto : additionalSkus) {
-
-            try {
-                CatalogValidators.validateSkuPrices(additionalSkuDto.getSalePrice(), additionalSkuDto.getRetailPrice());
-            } catch(final DtoValidationException ex) {
-                    /* (mst) Since this is not a default SKU, we'll just skip it */
-                continue;
-            }
 
             Sku additionalSkuEntity = skuConverter.createEntity(additionalSkuDto);
 
