@@ -182,7 +182,8 @@ public class OrderController {
     public Resources<OrderDto> getOrders(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "Status to be used to filter orders")
-            @RequestParam(value = "status", required = false) String status) {
+            @RequestParam(value = "status", required = false) String status
+    ) {
 
         return new Resources<>(
                 orderServiceProxy.getOrdersByCustomer(userDetails).stream()
@@ -209,9 +210,11 @@ public class OrderController {
     public OrderDto getOrderById(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "id") Long orderId) {
+            @PathVariable(value = "id") Long orderId,
+            @RequestParam(value = "embed", required = false) Boolean embed
+    ) {
 
-        return orderConverter.createDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null), false);
+        return orderConverter.createDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null), embed);
         //return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 

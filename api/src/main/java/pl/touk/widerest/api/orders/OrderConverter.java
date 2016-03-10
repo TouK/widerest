@@ -15,13 +15,18 @@ import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.customers.CustomerController;
 import pl.touk.widerest.api.customers.CustomerConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
 
 import javax.annotation.Resource;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -43,15 +48,18 @@ public class OrderConverter implements Converter<Order, OrderDto> {
     @Resource
     protected OrderService orderService;
 
+    @Resource
+    protected FulfillmentConverter fulfillmentConverter;
+
     @Override
     public OrderDto createDto(final Order order, final boolean embed) {
         final OrderDto orderDto = OrderDto.builder()
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
                 .orderPayment(order.getPayments().stream()
-                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, false)).collect(Collectors.toList()))
+                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed)).collect(Collectors.toList()))
                 .orderItems(order.getDiscreteOrderItems().stream()
-                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
+                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed))
                         .collect(Collectors.toList()))
 //                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(Money.toAmount(order.getTotal()))
@@ -70,13 +78,21 @@ public class OrderConverter implements Converter<Order, OrderDto> {
             Optional.ofNullable(order.getCustomer()).ifPresent(customer -> {
                 orderDto.add(new EmbeddedResource("customer", customerConverter.createDto(customer, false)));
             });
+            Optional.ofNullable(order.getFulfillmentGroups())
+                    .map(fulfillmentGroups -> fulfillmentGroups.stream()
+                            .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed))
+                            .collect(toList())
+                    )
+                    .filter(((Predicate<Collection>) Collection::isEmpty).negate())
+                    .map(fulfillmentDtos -> new EmbeddedResource("fulfillments", fulfillmentDtos))
+                    .ifPresent(orderDto::add);
         }
 
         orderDto.add(linkTo(
                 methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
         ).withRel("customer"));
 
-        orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId())).withSelfRel());
+        orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId(), null)).withSelfRel());
 
 //        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
 
