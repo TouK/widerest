@@ -36,7 +36,6 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.Application;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
@@ -60,10 +59,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-@SpringApplicationConfiguration(classes = Application.class, initializers = Application.ContextInitializer.class)
-@WebIntegrationTest({
-        "server.port:0"
-})
 public abstract class ApiTestBase {
 
     @PersistenceContext(unitName="blPU")

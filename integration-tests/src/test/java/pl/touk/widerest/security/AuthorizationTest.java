@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
 
@@ -17,7 +18,7 @@ import static pl.touk.widerest.base.ApiTestUrls.ORDERS_COUNT;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @Slf4j
-public class AuthorizationTest extends ApiTestBase {
+public class AuthorizationTest extends AbstractTest {
 
     @Test
     public void shouldRequireScopeForAuthoriztion() throws Throwable {

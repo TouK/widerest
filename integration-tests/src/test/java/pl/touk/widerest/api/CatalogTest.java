@@ -11,6 +11,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
+import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-public class CatalogTest extends ApiTestBase {
+public class CatalogTest extends AbstractTest {
 
 
     /* (mst) Tests involving the entire catalog (eg: create a category -> create a product -> add it to the category ->

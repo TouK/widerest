@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.api.orders.OrderItemDto;
@@ -49,7 +50,7 @@ import static org.junit.Assert.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-public class OrderControllerTest extends ApiTestBase {
+public class OrderControllerTest extends AbstractTest {
 
     @Before
     public void initTests() {

@@ -15,6 +15,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.customers.CustomerServiceProxy;
 import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-public class CustomerControllerTest extends ApiTestBase {
+public class CustomerControllerTest extends AbstractTest {
 
     @Resource(name="blCustomerService")
     private CustomerService customerService;

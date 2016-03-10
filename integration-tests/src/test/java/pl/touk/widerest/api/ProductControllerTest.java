@@ -21,6 +21,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
+import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.products.BundleItemDto;
@@ -47,7 +48,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-public class ProductControllerTest extends ApiTestBase {
+public class ProductControllerTest extends AbstractTest {
 
     @javax.annotation.Resource(name="blCurrencyService")
     protected BroadleafCurrencyService currencyService;
