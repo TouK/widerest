@@ -41,18 +41,18 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
     private FulfillmentPricingService fulfillmentPricingService;
 
     @Override
-    public FulfillmentDto createDto(final FulfillmentGroup fulfillmentGroup, final boolean embed) {
+    public FulfillmentDto createDto(final FulfillmentGroup fulfillmentGroup, final boolean embed, final boolean link) {
 
         final FulfillmentDto fulfillmentDto = new FulfillmentDto();
 
         Optional.ofNullable(fulfillmentGroup.getAddress()).ifPresent(address -> {
-            fulfillmentDto.setAddress(addressConverter.createDto(address, false));
+            fulfillmentDto.setAddress(addressConverter.createDto(address, embed, link));
         });
 
         fulfillmentDto.setItems(
                 Optional.ofNullable(fulfillmentGroup.getFulfillmentGroupItems()).orElse(Collections.emptyList()).stream()
                         .map(fulfillmentGroupItem -> linkTo(methodOn(OrderController.class)
-                                .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId())).toUri().toASCIIString())
+                                .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId(), null, null)).toUri().toASCIIString())
                         .collect(Collectors.toList())
         );
 
@@ -79,7 +79,9 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
 
         /* HATEOAS links */
 
-        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
+        if (link) {
+            fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
+        }
 
         return fulfillmentDto;
     }

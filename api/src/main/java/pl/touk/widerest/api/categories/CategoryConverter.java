@@ -37,7 +37,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
     protected CatalogService catalogService;
 
     @Override
-    public CategoryDto createDto(final Category entity, final boolean embed) {
+    public CategoryDto createDto(final Category entity, final boolean embed, final boolean link) {
         final CategoryDto dto = CategoryDto.builder()
                 .name(entity.getName())
                 .description(entity.getDescription())
@@ -54,36 +54,37 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 .media(
                         Optional.ofNullable(entity.getCategoryMediaXref())
                             .orElse(Collections.emptyMap()).entrySet().stream()
-                                .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia(), false)))
+                                .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia())))
                 )
                 .build();
 
+        if (link) {
+            dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
+            dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
 
-        dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
+            final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
+                    .orElse(Collections.emptyList()).stream()
+                    .map(CategoryXref::getSubCategory)
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories"))
+                    .collect(toList());
 
-        final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getSubCategory)
-                .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories"))
-                .collect(toList());
+            dto.add(subcategoriesLinks);
 
-        dto.add(subcategoriesLinks);
+            final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
+                    .orElse(Collections.emptyList()).stream()
+                    .map(CategoryXref::getCategory)
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories"))
+                    .collect(toList());
 
-        final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
-                .orElse(Collections.emptyList()).stream()
-                .map(CategoryXref::getCategory)
-                .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories"))
-                .collect(toList());
-
-        dto.add(parentCategoriesLinks);
+            dto.add(parentCategoriesLinks);
+        }
 
         if (embed) {
             final List<CategoryDto> subcategoryDtos = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getSubCategory)
-                    .map(subcategory -> createDto(subcategory, true))
+                    .map(subcategory -> createDto(subcategory, true, link))
                     .collect(toList());
 
             if (!CollectionUtils.isEmpty(subcategoryDtos)) {

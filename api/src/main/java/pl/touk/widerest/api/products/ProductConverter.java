@@ -45,7 +45,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
     protected CatalogService catalogService;
 
     @Override
-    public ProductDto createDto(final Product product, final boolean embed) {
+    public ProductDto createDto(final Product product, final boolean embed, final boolean link) {
         final ProductDto dto = product instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
 
         dto.setName(product.getName());
@@ -71,7 +71,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                                 .collect(toSet()));
 
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)));
+                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia())));
 
         dto.setMedia(defaultSkuMedias);
 
@@ -95,7 +95,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setOptions(product.getProductOptionXrefs().stream().map(productOptionXrefToDto).collect(toList()));
 
         dto.setSkus(product.getAdditionalSkus().stream()
-                .map(sku -> skuConverter.createDto(sku, false)).collect(toList()));
+                .map(sku -> skuConverter.createDto(sku)).collect(toList()));
 
         if (dto instanceof ProductBundleDto) {
             ProductBundle productBundle = (ProductBundle) product;
@@ -109,37 +109,39 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
         }
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
+        if (link) {
+            dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
 
-        if (product.getDefaultSku() != null) {
-            dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))
-                    .withRel("default-sku"));
-        }
+            if (product.getDefaultSku() != null) {
+                dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))
+                        .withRel("default-sku"));
+            }
 
 		/* skus link does not include default SKU! */
-        if (product.getAdditionalSkus() != null && !product.getAdditionalSkus().isEmpty()) {
-            for (Sku additionalSku : product.getAdditionalSkus()) {
-                if (!additionalSku.equals(product.getDefaultSku())) {
-                    dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), additionalSku.getId()))
-                            .withRel("skus"));
+            if (product.getAdditionalSkus() != null && !product.getAdditionalSkus().isEmpty()) {
+                for (Sku additionalSku : product.getAdditionalSkus()) {
+                    if (!additionalSku.equals(product.getDefaultSku())) {
+                        dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), additionalSku.getId()))
+                                .withRel("skus"));
 
-                    //dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(product.getId(), additionalSku.getId())).withRel("medias"));
+                        //dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(product.getId(), additionalSku.getId())).withRel("medias"));
 
+                    }
                 }
             }
-        }
 
         /* Links to the product's categories */
-        if (product.getAllParentCategoryXrefs() != null && !product.getAllParentCategoryXrefs().isEmpty()) {
-            product.getAllParentCategoryXrefs().stream()
-                    .map(CategoryProductXref::getCategory)
-                    .filter(CatalogUtils.nonArchivedCategory)
-                    .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
+            if (product.getAllParentCategoryXrefs() != null && !product.getAllParentCategoryXrefs().isEmpty()) {
+                product.getAllParentCategoryXrefs().stream()
+                        .map(CategoryProductXref::getCategory)
+                        .filter(CatalogUtils.nonArchivedCategory)
+                        .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
+            }
+
+            dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(product.getId())).withRel("attributes"));
+
+            dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
         }
-
-        dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(product.getId())).withRel("attributes"));
-
-        dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
 
         return dto;
     }

@@ -22,7 +22,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
     protected AddressService addressService;
 
     @Override
-    public AddressDto createDto(final Address address, final boolean embed) {
+    public AddressDto createDto(final Address address, final boolean embed, final boolean link) {
         return AddressDto.builder()
                 .addressLine1(address.getAddressLine1())
                 .addressLine2(address.getAddressLine2())

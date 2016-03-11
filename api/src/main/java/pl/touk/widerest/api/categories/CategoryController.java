@@ -92,7 +92,7 @@ public class CategoryController {
                 (flat ? catalogService.findAllCategories() : catalogService.findAllParentCategories()).stream()
                         .filter(CatalogUtils.nonArchivedCategory)
                         .filter(category -> flat || category.getAllParentCategoryXrefs().size() == 0)
-                        .map(category -> categoryConverter.createDto(category, !flat))
+                        .map(category -> categoryConverter.createDto(category, !flat, true))
                         .collect(Collectors.toList());
 
         return new Resources<>(categoriesToReturn);
@@ -142,7 +142,7 @@ public class CategoryController {
 
         final CategoryDto categoryToReturnDto = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils.nonArchivedCategory)
-                .map(category -> categoryConverter.createDto(category, false))
+                .map(category -> categoryConverter.createDto(category))
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         return ResponseEntity.ok(categoryToReturnDto);
@@ -228,7 +228,7 @@ public class CategoryController {
 
         List<CategoryDto> subcategoriesDtos = catalogService.findAllSubCategories(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils.nonArchivedCategory)
-                .map(subcategory -> categoryConverter.createDto(subcategory, false))
+                .map(subcategory -> categoryConverter.createDto(subcategory))
                 .collect(Collectors.toList());
 
         return new Resources(subcategoriesDtos);
@@ -364,7 +364,7 @@ public class CategoryController {
         return new Resources<>(
                 getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils.nonArchivedProduct)
-                .map(product -> productConverter.createDto(product, false))
+                .map(product -> productConverter.createDto(product))
                 .collect(Collectors.toList())
         );
     }

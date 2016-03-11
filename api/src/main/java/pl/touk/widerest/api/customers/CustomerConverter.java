@@ -37,7 +37,7 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
     private CustomerService customerService;
 
     @Override
-    public CustomerDto createDto(final Customer customer, final boolean embed) {
+    public CustomerDto createDto(final Customer customer, final boolean embed, final boolean link) {
 
         final CustomerDto customerDto = CustomerDto.builder()
                 .firstName(customer.getFirstName())
@@ -48,14 +48,16 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
                         customer.getCustomerAddresses().stream()
                                 .collect(toMap(
                                         CustomerAddress::getAddressName,
-                                        customerAddress -> addressConverter.createDto(customerAddress.getAddress(), embed)
+                                        customerAddress -> addressConverter.createDto(customerAddress.getAddress(), embed, link)
                                 ))
                 )
                 .build();
 
-        customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
+        if (link) {
+            customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
 
-        customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, customer.getId().toString())).withRel("authorization"));
+            customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, customer.getId().toString())).withRel("authorization"));
+        }
 
         return customerDto;
     }

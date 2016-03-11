@@ -17,7 +17,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Component
 public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, DiscreteOrderItemDto> {
     @Override
-    public DiscreteOrderItemDto createDto(final DiscreteOrderItem discreteOrderItem, final boolean embed) {
+    public DiscreteOrderItemDto createDto(final DiscreteOrderItem discreteOrderItem, final boolean embed, final boolean link) {
         final Money errCode = new Money(BigDecimal.valueOf(-1337));
         final Sku sku = discreteOrderItem.getSku();
         final long productId = sku.getProduct().getId();
@@ -34,8 +34,10 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
                 .price(Optional.ofNullable(discreteOrderItem.getTotalPrice()).orElse(errCode).getAmount())
                 .build();
 
-        orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getId(), discreteOrderItem.getOrder().getId())).withSelfRel());
-        orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
+        if (link) {
+            orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getId(), discreteOrderItem.getOrder().getId(), null, null)).withSelfRel());
+            orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
+        }
 
         return orderItemDto;
     }

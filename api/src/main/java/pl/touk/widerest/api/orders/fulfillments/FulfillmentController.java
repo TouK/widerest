@@ -180,7 +180,7 @@ public class FulfillmentController {
                 .orElseThrow(ResourceNotFoundException::new);
 
         final List<FulfillmentDto> fulfillmentGroupsDtoForOrder =  Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
-                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, false))
+                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup))
                 .collect(toList());
 
         return new Resources<>(
@@ -216,7 +216,7 @@ public class FulfillmentController {
         return Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
                 .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentGroupId)
                 .findFirst()
-                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, false))
+                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup))
                 .orElseThrow(ResourceNotFoundException::new);
     }
 

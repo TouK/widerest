@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -95,9 +96,8 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @RestController
 @RequestMapping(value = ResourceServerConfig.API_PATH + "/orders", produces = { MediaTypes.HAL_JSON_VALUE })
 @Api(value = "orders", description = "Order management endpoint", produces = MediaTypes.HAL_JSON_VALUE)
+@Slf4j
 public class OrderController {
-
-    private static final Log LOG = LogFactory.getLog(OrderController.class);
 
     @Resource(name = "blOrderService")
     protected OrderService orderService;
@@ -182,16 +182,17 @@ public class OrderController {
     public Resources<OrderDto> getOrders(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "Status to be used to filter orders")
+            @RequestParam(value = "link", defaultValue = "true") Boolean link,
             @RequestParam(value = "status", required = false) String status
     ) {
 
         return new Resources<>(
                 orderServiceProxy.getOrdersByCustomer(userDetails).stream()
-                        .map(order -> orderConverter.createDto(order, false))
+                        .map(order -> orderConverter.createDto(order, false, link))
                         .filter(x -> status == null || x.getStatus().equals(status))
                         .collect(toList()),
 
-                linkTo(methodOn(getClass()).getOrders(null, status)).withSelfRel()
+                linkTo(methodOn(getClass()).getOrders(null, null, status)).withSelfRel()
         );
     }
 
@@ -211,10 +212,11 @@ public class OrderController {
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "id") Long orderId,
-            @RequestParam(value = "embed", required = false) Boolean embed
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
 
-        return orderConverter.createDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null), embed);
+        return orderConverter.createDto(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null), embed, link);
         //return DtoConverters.orderEntityToDto.apply(orderServiceProxy.getProperCart(userDetails, orderId).orElse(null));
     }
 
@@ -231,7 +233,7 @@ public class OrderController {
             @ApiResponse(code = 201, message = "A new order entry successfully created")
     })
     public ResponseEntity<?> createNewOrder(
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) {
+            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) throws PricingException {
 
         final Customer currentCustomer = Optional.ofNullable(customerUserDetails)
                 .map(CustomerUserDetails::getId)
@@ -250,7 +252,7 @@ public class OrderController {
             cart.setName(channel);
         }
 
-        Try.ofFailable(() -> orderService.save(cart, true)).onFailure(LOG::error);
+        orderService.save(cart, true);
 
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
@@ -451,11 +453,14 @@ public class OrderController {
     public Resources<DiscreteOrderItemDto> getAllItemsInOrder(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") Long orderId) {
+            @PathVariable(value = "orderId") Long orderId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return new Resources<>(
                 orderServiceProxy.getDiscreteOrderItemsFromProperCart(userDetails, orderId).stream()
-                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
+                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
                 .collect(toList())
         );
 
@@ -566,13 +571,14 @@ public class OrderController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "ID of a specific item in the order", required = true)
-            @PathVariable(value = "itemId") Long itemId) {
-
-
+            @PathVariable(value = "itemId") Long itemId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
         return orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new)
                 .getDiscreteOrderItems().stream()
                 .filter(x -> Objects.equals(x.getId(), itemId)).findAny()
-                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, false))
+                .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find the item in card with ID: " + itemId));
 
     }

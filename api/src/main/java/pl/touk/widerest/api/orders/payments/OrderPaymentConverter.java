@@ -20,10 +20,10 @@ public class OrderPaymentConverter implements Converter<OrderPayment, OrderPayme
     protected OrderPaymentService orderPaymentService;
 
     @Override
-    public OrderPaymentDto createDto(final OrderPayment orderPayment, final boolean embed) {
+    public OrderPaymentDto createDto(final OrderPayment orderPayment, final boolean embed, final boolean link) {
         return OrderPaymentDto.builder()
                 .amount(orderPayment.getAmount())
-                .billingAddress(addressConverter.createDto(orderPayment.getBillingAddress(), embed))
+                .billingAddress(addressConverter.createDto(orderPayment.getBillingAddress(), embed, link))
                 .orderId(orderPayment.getOrder().getId()).paymentId(orderPayment.getId())
                 .referenceNumber(orderPayment.getReferenceNumber()).type(orderPayment.getType().getType()).build();
     }

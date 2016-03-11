@@ -18,7 +18,7 @@ public class PropertyConverter implements Converter<String, PropertyDto> {
     protected SystemPropertiesDao systemPropertiesDao;
 
     @Override
-    public PropertyDto createDto(final String propertyName, final boolean embed) {
+    public PropertyDto createDto(final String propertyName, final boolean embed, final boolean link) {
         final PropertyDto propertyDto = PropertyDto.builder()
                 .name(propertyName)
                 .value(
@@ -28,7 +28,9 @@ public class PropertyConverter implements Converter<String, PropertyDto> {
                 )
                 .build();
 
-        propertyDto.add(ControllerLinkBuilder.linkTo(methodOn(SettingsController.class).getValue(propertyDto.getName())).withSelfRel());
+        if (link) {
+            propertyDto.add(ControllerLinkBuilder.linkTo(methodOn(SettingsController.class).getValue(propertyDto.getName())).withSelfRel());
+        }
 
         return propertyDto;
     }

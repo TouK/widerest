@@ -176,7 +176,7 @@ public class ProductController {
                 new Resources<>(
                         productsToReturn.stream()
                                 .filter(CatalogUtils.nonArchivedProduct)
-                                .map(product -> productConverter.createDto(product, false))
+                                .map(product -> productConverter.createDto(product))
                                 .collect(toList()),
 
                         linkTo(methodOn(getClass()).getAllProducts(limit, offset, q, pageSize, page)).withSelfRel()
@@ -199,7 +199,7 @@ public class ProductController {
 
         return Optional.ofNullable(catalogService.findProductByURI(url))
                 .filter(CatalogUtils.nonArchivedProduct)
-                .map(product -> productConverter.createDto(product, false))
+                .map(product -> productConverter.createDto(product))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
 
@@ -243,7 +243,7 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(bundleId))
                 .filter(CatalogUtils.nonArchivedProduct)
                 .filter(e -> e instanceof ProductBundle)
-                .map(product -> productConverter.createDto(product, false))
+                .map(product -> productConverter.createDto(product))
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
     }
 
@@ -404,7 +404,7 @@ public class ProductController {
             @PathVariable(value = "productId") final Long productId) {
 
         return Optional.of(getProductById(productId))
-                .map(product -> productConverter.createDto(product, false))
+                .map(product -> productConverter.createDto(product))
                 .get();
     }
 
@@ -590,7 +590,7 @@ public class ProductController {
         final List<CategoryDto> productCategories = getProductById(productId).getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
                 .filter(CatalogUtils.nonArchivedCategory)
-                .map(category -> categoryConverter.createDto(category, true))
+                .map(category -> categoryConverter.createDto(category, true, true))
                 .collect(toList());
 
         return new Resources<>(
@@ -648,7 +648,7 @@ public class ProductController {
     ) {
         return new Resources<>(
                 getProductById(productId).getAllSkus().stream()
-                        .map(sku -> skuConverter.createDto(sku, false))
+                        .map(sku -> skuConverter.createDto(sku))
                         .collect(toList()),
 
                 linkTo(methodOn(ProductController.class).readSkusForProductById(productId)).withSelfRel()
@@ -743,7 +743,7 @@ public class ProductController {
                 @PathVariable(value = "skuId") final Long skuId) {
 
         return Optional.of(getSkuByIdForProductById(productId, skuId))
-                .map(skuEntity -> skuConverter.createDto(skuEntity, false))
+                .map(skuEntity -> skuConverter.createDto(skuEntity))
                 .get();
     }
 
@@ -839,7 +839,7 @@ public class ProductController {
                 getDefaultSkuForProductById(productId).getSkuMediaXref().entrySet().stream()
                     .map(Map.Entry::getValue)
                     .map(skuMediaXref -> {
-                        final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true);
+                        final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true, true);
                         mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, skuMediaXref.getKey())).withSelfRel());
                         return mediaDto;
                     })
@@ -874,7 +874,7 @@ public class ProductController {
         return Optional.ofNullable(productDefaultSku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
                 .map(media -> {
-                    final MediaDto mediaDto = mediaConverter.createDto(media, false);
+                    final MediaDto mediaDto = mediaConverter.createDto(media);
                     mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, key)).withSelfRel());
                     return mediaDto;
                 })
@@ -1243,7 +1243,7 @@ public class ProductController {
                 getSkuByIdForProductById(productId, skuId).getSkuMediaXref().entrySet().stream()
                     .map(Map.Entry::getValue)
                     .map(skuMediaXref -> {
-                        final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true);
+                        final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true, true);
                         mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(productId, skuId, skuMediaXref.getKey())).withSelfRel());
                         return mediaDto;
                     })
@@ -1284,7 +1284,7 @@ public class ProductController {
         return Optional.ofNullable(sku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
                 .map(media -> {
-                    final MediaDto mediaDto = mediaConverter.createDto(media, false);
+                    final MediaDto mediaDto = mediaConverter.createDto(media);
                     mediaDto.add(linkTo(methodOn(ProductController.class).getMediaByIdForSku(productId, skuId, key)).withSelfRel());
                     return mediaDto;
                 })

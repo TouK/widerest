@@ -10,7 +10,7 @@ import pl.touk.widerest.api.Converter;
 public class MediaConverter implements Converter<Media, MediaDto> {
 
     @Override
-    public MediaDto createDto(final Media media, boolean embed) {
+    public MediaDto createDto(final Media media, boolean embed, boolean link) {
         return MediaDto.builder()
                 .title(media.getTitle())
                 .url(media.getUrl())

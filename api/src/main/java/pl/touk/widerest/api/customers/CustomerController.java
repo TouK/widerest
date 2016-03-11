@@ -114,11 +114,11 @@ public class CustomerController {
     public Resources<CustomerDto> readAllCustomers(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
         final List<CustomerDto> allCustomers = Match.of(userDetails)
                 .whenType(AdminUserDetails.class).then(() -> customerServiceProxy.getAllCustomers().stream()
-                        .map(customer -> customerConverter.createDto(customer, false))
+                        .map(customer -> customerConverter.createDto(customer))
                         .collect(Collectors.toList()))
                 .whenType(CustomerUserDetails.class).then(() -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
                         //.map(id -> customerEntityToDto.apply(id))
-                        .map(id -> customerConverter.createDto(id, false))
+                        .map(id -> customerConverter.createDto(id))
                         .map(Collections::singletonList)
                         .orElse(emptyList()))
                 .otherwise(Collections::emptyList)
@@ -149,7 +149,7 @@ public class CustomerController {
         return ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))
                 .map(customerService::readCustomerById)
-                .map(customer -> customerConverter.createDto(customer, false))
+                .map(customer -> customerConverter.createDto(customer))
                 .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
                 .orElseThrow(CustomerNotFoundException::new);
     }

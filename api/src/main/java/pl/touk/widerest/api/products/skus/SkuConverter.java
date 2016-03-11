@@ -49,7 +49,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     protected CatalogService catalogService;
     
     @Override
-    public SkuDto createDto(final Sku sku, final boolean embed) {
+    public SkuDto createDto(final Sku sku, final boolean embed, final boolean link) {
         final SkuDto dto = SkuDto.builder()
                 .name(sku.getName())
                 .description(sku.getDescription())
@@ -70,25 +70,27 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                         .map(DtoConverters.productOptionValueToSkuValueDto)
                         .collect(toSet()))
                 .media(sku.getSkuMediaXref().entrySet().stream()
-                       .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), false)))
+                       .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), embed, link)))
                 )
                 .build();
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
-                .withSelfRel());
+        if (link) {
+            dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
+                    .withSelfRel());
 
-        dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId()))
-                .withRel("product"));
+            dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId()))
+                    .withRel("product"));
 
-        dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(sku.getProduct().getId(), sku.getId()))
-                .withRel("media"));
+            dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(sku.getProduct().getId(), sku.getId()))
+                    .withRel("media"));
 
-        dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(sku.getProduct().getId(), sku.getId()))
-                .withRel("availability"));
+            dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(sku.getProduct().getId(), sku.getId()))
+                    .withRel("availability"));
 
-        //dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(sku.getProduct().getId())).withRel("count")));
+            //dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(sku.getProduct().getId())).withRel("count")));
 
-        dto.add((linkTo(methodOn(ProductController.class).getSkuByIdQuantity(sku.getProduct().getId(), sku.getId())).withRel("quantity")));
+            dto.add((linkTo(methodOn(ProductController.class).getSkuByIdQuantity(sku.getProduct().getId(), sku.getId())).withRel("quantity")));
+        }
 
         return dto;
     }

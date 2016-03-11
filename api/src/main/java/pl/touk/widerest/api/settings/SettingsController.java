@@ -56,7 +56,7 @@ public class SettingsController {
     public Resources<PropertyDto> readAllProperties() {
         return new Resources<>(
                 settingsService.getAvailableSystemPropertyNames().stream()
-                        .map(name -> propertyConverter.createDto(name, false))
+                        .map(name -> propertyConverter.createDto(name))
                         .collect(Collectors.toList()),
 
                 linkTo(methodOn(SettingsController.class).readAllProperties()).withSelfRel()

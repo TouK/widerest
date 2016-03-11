@@ -52,14 +52,14 @@ public class OrderConverter implements Converter<Order, OrderDto> {
     protected FulfillmentConverter fulfillmentConverter;
 
     @Override
-    public OrderDto createDto(final Order order, final boolean embed) {
+    public OrderDto createDto(final Order order, final boolean embed, final boolean link) {
         final OrderDto orderDto = OrderDto.builder()
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
                 .orderPayment(order.getPayments().stream()
-                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed)).collect(Collectors.toList()))
+                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed, link)).collect(Collectors.toList()))
                 .orderItems(order.getDiscreteOrderItems().stream()
-                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed))
+                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
                         .collect(Collectors.toList()))
 //                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
                 .totalPrice(Money.toAmount(order.getTotal()))
@@ -76,11 +76,11 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         // (mst) Add Customer details as an embedded resource
         if(embed) {
             Optional.ofNullable(order.getCustomer()).ifPresent(customer -> {
-                orderDto.add(new EmbeddedResource("customer", customerConverter.createDto(customer, false)));
+                orderDto.add(new EmbeddedResource("customer", customerConverter.createDto(customer, embed, link)));
             });
             Optional.ofNullable(order.getFulfillmentGroups())
                     .map(fulfillmentGroups -> fulfillmentGroups.stream()
-                            .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed))
+                            .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed, link))
                             .collect(toList())
                     )
                     .filter(((Predicate<Collection>) Collection::isEmpty).negate())
@@ -88,23 +88,25 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                     .ifPresent(orderDto::add);
         }
 
-        orderDto.add(linkTo(
-                methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
-        ).withRel("customer"));
+        if (link) {
+            orderDto.add(linkTo(
+                    methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
+            ).withRel("customer"));
 
-        orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId(), null)).withSelfRel());
+            orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId(), null, null)).withSelfRel());
 
 //        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
 
         /* link to items placed in an order */
-        orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId())).withRel("items"));
+            orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel("items"));
 
 //        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, order.getId())).withRel("items-count"));
 
         /* link to fulfillment */
-        orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel("fulfillments"));
+            orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel("fulfillments"));
 
-        orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
+            orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
+        }
 
         return orderDto;
     }
