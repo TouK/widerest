@@ -257,7 +257,7 @@ public class FulfillmentController {
         // TODO: Cleanup, refactor, remove duplicate code, check if Broadleaf offers a more "intelligent" way to manage
         //       fulfillment groups, cleanup exception handling mess
 
-        Optional.ofNullable(fulfillmentDto.getItems()).orElse(Collections.emptyList())
+        Optional.ofNullable(fulfillmentDto.getItemHrefs()).orElse(Collections.emptyList())
                 .forEach(itemHref -> {
                     Try.ofFailable(() -> {
                         final long orderItemId = CatalogUtils.getIdFromUrl(itemHref);
@@ -275,6 +275,7 @@ public class FulfillmentController {
 
                         fulfillmentGroupItemRequest.setFulfillmentGroup(updatedFulfillmentGroupEntity);
                         fulfillmentGroupItemRequest.setOrder(orderEntity);
+                        fulfillmentGroupItemRequest.setQuantity(orderEntity.getItemCount());
                         fulfillmentGroupItemRequest.setOrderItem(orderItemEntity);
 
                         return fulfillmentGroupService.addItemToFulfillmentGroup(fulfillmentGroupItemRequest, true);
@@ -317,7 +318,7 @@ public class FulfillmentController {
         //       fulfillment groups, cleanup exception handling mess
 
         FulfillmentGroup fulfillmentGroup = null;
-        for (String itemHref : fulfillmentDto.getItems()) {
+        for (String itemHref : fulfillmentDto.getItemHrefs()) {
             OrderItem orderItem = Optional.ofNullable(orderItemService.readOrderItemById(CatalogUtils.getIdFromUrl(itemHref)))
                     .orElseThrow(ResourceNotFoundException::new);
             final FulfillmentGroupItemRequest fulfillmentGroupItemRequest = new FulfillmentGroupItemRequest();

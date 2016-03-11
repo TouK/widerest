@@ -49,7 +49,7 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
             fulfillmentDto.setAddress(addressConverter.createDto(address, embed, link));
         });
 
-        fulfillmentDto.setItems(
+        fulfillmentDto.setItemHrefs(
                 Optional.ofNullable(fulfillmentGroup.getFulfillmentGroupItems()).orElse(Collections.emptyList()).stream()
                         .map(fulfillmentGroupItem -> linkTo(methodOn(OrderController.class)
                                 .getOneItemFromOrder(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroupItem.getOrderItem().getId(), null, null)).toUri().toASCIIString())
@@ -80,7 +80,6 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
         /* HATEOAS links */
 
         fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
-
         return fulfillmentDto;
     }
 

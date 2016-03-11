@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.NotEmpty;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
@@ -33,8 +34,9 @@ public class FulfillmentDto extends BaseDto {
     private AddressDto address;
 
     @ApiModelProperty(position = 3, value = "List of items belonging to a fulfillment group", required = true)
+    @NotEmpty
     @EachURL
-    private List<String> items;
+    private List<String> itemHrefs;
 
     @ApiModelProperty(value = "The selected fulfillment option", required = true)
     private String selectedFulfillmentOption;

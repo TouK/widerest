@@ -330,6 +330,16 @@ public abstract class ApiTestBase {
         return response.getBody();
     }
 
+    protected DiscreteOrderItemDto getItemDetailsFromCart(final String itemHref, final String token) {
+        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
+
+        final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(itemHref,
+                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class);
+
+        return response.getBody();
+    }
+
+
     protected OrderStatus getOrderStatus(final Integer orderId, final String token) {
         final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
 

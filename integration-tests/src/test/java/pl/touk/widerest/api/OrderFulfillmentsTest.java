@@ -85,13 +85,42 @@ public class OrderFulfillmentsTest extends AbstractTest {
     }
 
     @Test
+    public void shouldNotLeaveAllowEmptyFulfilmentCreation() throws Throwable {
+        givenAnonymousUserWithAnOrderAndAnItem((restTemplate, orderUri, orderItemHref) -> {
+
+            final AddressDto addressDto = AddressDto.builder()
+                    .firstName("Jan")
+                    .lastName("Kowalski")
+                    .city("Wroclaw")
+                    .postalCode("02-945")
+                    .addressLine1("Zakopanska 40")
+                    .countryCode("PL")
+                    .build();
+
+            final FulfillmentDto fulfillmentDto = FulfillmentDto.builder()
+                    .address(addressDto)
+                    .build();
+
+            thrown.expect(HttpClientErrorException.class);
+            restTemplate.postForLocation(
+                    ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
+                    fulfillmentDto,
+                    serverPort,
+                    CatalogUtils.getIdFromUrl(orderUri)
+            );
+
+        });
+    }
+
+
+    @Test
     public void shouldCreateAProperFulfillmentGroupForFirstItemInOrderTest() throws Throwable {
         givenAnonymousUserWithAnOrderAndAnItem((restTemplate, orderUri, orderItemHref) -> {
             whenOrderFulfillmentsRetrieved(restTemplate, orderUri, fulfillments -> {
                 assertThat(fulfillments.size(), equalTo(1));
                 final FulfillmentDto fulfillment = fulfillments.iterator().next();
-                assertThat(fulfillment.getItems().size(), equalTo(1));
-                assertThat(fulfillment.getItems().get(0).trim(), equalTo(orderItemHref.toASCIIString()));
+                assertThat(fulfillment.getItemHrefs().size(), equalTo(1));
+                assertThat(fulfillment.getItemHrefs().get(0).trim(), equalTo(orderItemHref.toASCIIString()));
             });
         });
     }
@@ -111,7 +140,7 @@ public class OrderFulfillmentsTest extends AbstractTest {
                     .build();
 
             final FulfillmentDto fulfillmentDto = FulfillmentDto.builder()
-                    .items(Collections.singletonList(orderItemHref.toASCIIString()))
+                    .itemHrefs(Collections.singletonList(orderItemHref.toASCIIString()))
                     .address(addressDto)
                     .build();
 
@@ -132,6 +161,11 @@ public class OrderFulfillmentsTest extends AbstractTest {
 
             });
 
+            // then there is no problem with adding more items
+            whenOrderItemAdded(restTemplate,  orderUri, SAMPLE_PRODUCT_HREF_2, orderItem2Href -> {
+                // no error
+            });
+
         });
     }
 
@@ -147,9 +181,9 @@ public class OrderFulfillmentsTest extends AbstractTest {
                             // then: both items should belong to the same fulfillment group
                             assertThat(fulfillments.size(), equalTo(1));
                             final FulfillmentDto receivedFulfillmentDto = fulfillments.iterator().next();
-                            assertThat(receivedFulfillmentDto.getItems().size(), equalTo(2));
-                            assertTrue(receivedFulfillmentDto.getItems().contains(orderItem1Href.toASCIIString()));
-                            assertTrue(receivedFulfillmentDto.getItems().contains(orderItem2Href.toASCIIString()));
+                            assertThat(receivedFulfillmentDto.getItemHrefs().size(), equalTo(2));
+                            assertTrue(receivedFulfillmentDto.getItemHrefs().contains(orderItem1Href.toASCIIString()));
+                            assertTrue(receivedFulfillmentDto.getItemHrefs().contains(orderItem2Href.toASCIIString()));
 
                         });
                     });
@@ -169,7 +203,7 @@ public class OrderFulfillmentsTest extends AbstractTest {
                     whenOrderItemAdded(restTemplate, orderUri, SAMPLE_PRODUCT_HREF_2, orderItem2Href -> {
                         // when: 2) creating 2nd fulfillment group with 1st item in it
                         final FulfillmentDto fulfillmentDto = FulfillmentDto.builder()
-                                .items(Collections.singletonList(orderItem1Href.toASCIIString()))
+                                .itemHrefs(Collections.singletonList(orderItem1Href.toASCIIString()))
                                 .build();
 
                         final String createdFulfillmentGroupUrl = restTemplate.postForLocation(
@@ -189,17 +223,17 @@ public class OrderFulfillmentsTest extends AbstractTest {
                             FulfillmentDto fulfillment2 = iterator.next();
 
                             // both fulfillment groups hold only 1 order item reference
-                            assertArrayEquals(fulfillment1.getItems().toArray(), Arrays.array(orderItem2Href.toASCIIString()));
-                            assertArrayEquals(fulfillment2.getItems().toArray(), Arrays.array(orderItem1Href.toASCIIString()));
+                            assertArrayEquals(fulfillment1.getItemHrefs().toArray(), Arrays.array(orderItem2Href.toASCIIString()));
+                            assertArrayEquals(fulfillment2.getItemHrefs().toArray(), Arrays.array(orderItem1Href.toASCIIString()));
 
                             // then: 2.b) refering to both fulfillment groups individually, returns "the same" results
 
                             whenSingleOrderFulfillmentRetrieved(restTemplate, URI.create(fulfillment1.getLink("self").getHref()), fulfillmentGroupDto1 -> {
-                                assertArrayEquals(fulfillmentGroupDto1.getItems().toArray(), Arrays.array(orderItem2Href.toASCIIString()));
+                                assertArrayEquals(fulfillmentGroupDto1.getItemHrefs().toArray(), Arrays.array(orderItem2Href.toASCIIString()));
                             });
 
                             whenSingleOrderFulfillmentRetrieved(restTemplate, URI.create(fulfillment2.getLink("self").getHref()), fulfillmentGroupDto2 -> {
-                                assertArrayEquals(fulfillmentGroupDto2.getItems().toArray(), Arrays.array(orderItem1Href.toASCIIString()));
+                                assertArrayEquals(fulfillmentGroupDto2.getItemHrefs().toArray(), Arrays.array(orderItem1Href.toASCIIString()));
                             });
                         });
                     });
@@ -214,7 +248,7 @@ public class OrderFulfillmentsTest extends AbstractTest {
             whenNewOrderCreated(restTemplate, orderUri -> {
                 final String NONEXISTENT_ITEM = orderUri + "/items/9999";
                 final FulfillmentDto fulfillmentDto = FulfillmentDto.builder()
-                        .items(Collections.singletonList(NONEXISTENT_ITEM))
+                        .itemHrefs(Collections.singletonList(NONEXISTENT_ITEM))
                         .build();
 
                 thrown.expect(HttpClientErrorException.class);
@@ -232,7 +266,7 @@ public class OrderFulfillmentsTest extends AbstractTest {
                     final FulfillmentDto fulfillment = fulfillments.iterator().next();
                     final String fulfillmentGroupUrl = fulfillment.getLink("self").getHref();
                     final String NON_EXISTING_ITEM = orderUri + "/items/9999";
-                    fulfillment.setItems(Collections.singletonList(NON_EXISTING_ITEM));
+                    fulfillment.setItemHrefs(Collections.singletonList(NON_EXISTING_ITEM));
 
                     thrown.expect(HttpClientErrorException.class);
                     restTemplate.put(fulfillmentGroupUrl, fulfillment);

@@ -27,38 +27,33 @@ import java.util.Map;
 @ApiModel(value = "Discrete Order Item", description = "Discrete Order Item DTO resource description")
 public class DiscreteOrderItemDto extends BaseDto {
 
-    /* TODO: (mst) ID should probably be removed, I kept it because there were few tests that use it */
     @ApiModelProperty
-    private long itemId;
+    private String externalId;
 
-    @ApiModelProperty(position = 0, value = "Quantity of this item", required = true, dataType = "java.lang.Integer")
+    @ApiModelProperty(position = 0, value = "Quantity of this item", required = true)
     private Integer quantity;
 
-    @ApiModelProperty(position = 1, value = "Name of the product", dataType = "java.lang.String")
+    @ApiModelProperty(position = 1, value = "Name of the product")
     private String productName;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 2, value = "Product Options related to this item",
-            dataType = "pl.touk.widerest.api.products.ProductOptionDto")
-    private ProductOptionDto options;
+    @ApiModelProperty(position = 2, value = "A map of selected options for the product")
+    private Map<String, String> selectedOptions;
 
-    @ApiModelProperty(position = 3, value = "Total price for this item", required = true, dataType = "java.math.BigDecimal")
+    @ApiModelProperty(position = 3, value = "Total price for this item", required = true)
     private BigDecimal price;
 
-    @ApiModelProperty(position = 4, value = "ID of a product this item is related to", dataType = "java.lang.Long")
-    private Long productId;
-
-    @ApiModelProperty(position = 5, value = "ID of a SKU this item is related to", required = true, dataType = "java.lang.Long")
-    private Long skuId;
+    @ApiModelProperty(position = 4, value = "ID of a product this item is related to")
+    private String productHref;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 6, value = "Short description of this item", dataType = "java.lang.String")
+    @ApiModelProperty(position = 6, value = "Short description of this item")
     private String description;
 
-    @ApiModelProperty(position = 7, value = "Sale price for this item", dataType = "org.broadleafcommerce.common.money.Money")
+    @ApiModelProperty(position = 7, value = "Sale price for this item")
     protected Money salePrice;
 
-    @ApiModelProperty(position = 8, value = "Retail price for this item", dataType = "org.broadleafcommerce.common.money.Money")
+    @ApiModelProperty(position = 8, value = "Retail price for this item")
     protected Money retailPrice;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

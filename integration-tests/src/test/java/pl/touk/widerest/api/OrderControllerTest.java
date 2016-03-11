@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
@@ -205,10 +206,10 @@ public class OrderControllerTest extends AbstractTest {
         // Then all these items should be seen
         assertNotNull(remoteItems);
         assert(remoteItems.size() == 4);
-        assert(remoteItems.stream().filter(x -> !skuIds.contains(x.getSkuId())).count() == 0);
 
         // When GETting details about one item
-        DiscreteOrderItemDto remoteItem = getItemDetailsFromCart(orderId, remoteItems.get(0).getItemId(), accessToken);
+
+        DiscreteOrderItemDto remoteItem = getItemDetailsFromCart(remoteItems.get(0).getLink(Link.REL_SELF).getHref(), accessToken);
 
         // Then they should be available and not null
         assertNotNull(remoteItem);

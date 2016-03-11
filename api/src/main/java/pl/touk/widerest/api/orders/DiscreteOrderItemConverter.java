@@ -23,18 +23,19 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
         final long productId = sku.getProduct().getId();
 
         final DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
-                .itemId(discreteOrderItem.getId())
+                .externalId(sku.getExternalId())
                 .salePrice(discreteOrderItem.getSalePrice())
                 .retailPrice(discreteOrderItem.getRetailPrice())
                 .quantity(discreteOrderItem.getQuantity())
                 .productName(discreteOrderItem.getName())
-                .productId(productId)
-                .skuId(sku.getId())
+                .productHref(linkTo(methodOn(ProductController.class)
+                        .readOneProductById(productId)).toUri().toASCIIString()
+                )
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(discreteOrderItem.getTotalPrice()).orElse(errCode).getAmount())
                 .build();
 
-        orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getId(), discreteOrderItem.getOrder().getId(), null, null)).withSelfRel());
+        orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getOrder().getId(), discreteOrderItem.getId(), null, null)).withSelfRel());
 
         if (link) {
             orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
