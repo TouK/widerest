@@ -340,42 +340,5 @@ public class OrderFulfillmentsTest extends AbstractTest {
 
     }
 
-    protected void whenOrderItemAdded(RestTemplate restTemplate, final URI orderUri, final URI productHref, Try.CheckedConsumer<URI>... thens) throws Throwable {
-        when(() -> addOrderItem(restTemplate, CatalogUtils.getIdFromUrl(orderUri), productHref, 1), thens);
-    }
-
-    protected URI addOrderItem(RestTemplate restTemplate, final long orderId, final URI productHref, final int quantity) {
-        final OrderItemDto dto = OrderItemDto.builder()
-                .productHref(productHref.toASCIIString())
-                .quantity(quantity)
-                .build();
-        return restTemplate.postForLocation(ApiTestUrls.ORDERS_BY_ID_ITEMS, dto, serverPort, orderId);
-    }
-
-    protected void whenOrderItemDeleted(RestTemplate restTemplate, final URI orderItemHref, Try.CheckedConsumer<Void>... thens) throws Throwable {
-        when(() -> { restTemplate.delete(orderItemHref); return null; }, thens);
-    }
-
-    private void whenOrderFulfillmentsRetrieved(RestTemplate oAuth2RestTemplate, final URI orderUri, Try.CheckedConsumer<Collection<FulfillmentDto>>... thens) throws Throwable {
-        when(() -> retrieveOrderFulfillments(oAuth2RestTemplate, CatalogUtils.getIdFromUrl(orderUri)), thens);
-    }
-
-    private Collection<FulfillmentDto> retrieveOrderFulfillments(RestTemplate oAuth2RestTemplate, final long orderId) {
-        final ResponseEntity<Resources<FulfillmentDto>> receivedOriginalFulfillmentGroupEntity =
-                oAuth2RestTemplate.exchange(
-                        ApiTestUrls.ORDER_BY_ID_FULFILLMENTS_URL,
-                        HttpMethod.GET,
-                        null,
-                        new ParameterizedTypeReference<Resources<FulfillmentDto>>() {
-                        },
-                        serverPort,
-                        orderId
-                );
-        return receivedOriginalFulfillmentGroupEntity.getBody().getContent();
-    }
-
-    private void whenSingleOrderFulfillmentRetrieved(RestTemplate restTemplate, URI fulfillmentHref, Try.CheckedConsumer<FulfillmentDto>... thens) throws Throwable {
-        when(() -> restTemplate.getForObject(fulfillmentHref, FulfillmentDto.class), thens);
-    }
 
 }

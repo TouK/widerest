@@ -66,7 +66,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                 .fulfillment(CartUtils.getFulfilmentOption(order)
                         .map(FulfillmentOption::getLongDescription)
                         .orElse(null))
-                .cartAttributes(Optional.ofNullable(order.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
+                .attributes(Optional.ofNullable(order.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
                         .map(Map.Entry::getValue)
                         .map(orderAttributeEntityToDto)
                         .collect(toList()))

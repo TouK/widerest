@@ -42,7 +42,7 @@
         <hibernate.version>4.1.11.Final</hibernate.version>
         <httpclient.version>4.5</httpclient.version>
         <solr.version>4.10.3</solr.version>
-        <spring-hateoas.version>0.20.0.BUILD-alpha.touk.1</spring-hateoas.version>
+        <spring-hateoas.version>0.19.0.TOUK.1</spring-hateoas.version>
         <jackson.version>2.5.4</jackson.version>
     </properties>
 

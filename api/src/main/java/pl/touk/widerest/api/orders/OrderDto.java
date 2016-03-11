@@ -26,18 +26,12 @@ import java.util.List;
 @ApiModel(value = "Order", description = "Order DTO resource representation")
 public class OrderDto extends BaseDto {
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 0, value = "Order number", required = true, dataType = "java.lang.String")
     private String orderNumber;
 
     @ApiModelProperty(position = 1, value = "Status of the order", readOnly = true)
     private String status;
-
-    @ApiModelProperty(position = 2, value = "Shipping address for the order", required = true, dataType = "pl.touk.widerest.api.common.AddressDto")
-    private AddressDto shippingAddress;
-
-//    @ApiModelProperty(position = 3, value = "Customer information", required = true, dataType = "pl.touk.widerest.api.customers.CustomerDto")
-//    private CustomerDto customer;
 
     @ApiModelProperty(position = 4, value = "Items belonging to the order", dataType = "java.util.List")
     private List<DiscreteOrderItemDto> orderItems;
@@ -45,12 +39,12 @@ public class OrderDto extends BaseDto {
     @ApiModelProperty(position = 5, value = "Total price for the order", dataType = "java.math.BigDecimal")
     private BigDecimal totalPrice;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 6, value = "Additional attributes for the order", dataType = "java.util.List")
-    private List<CartAttributeDto> cartAttributes;
+    private List<CartAttributeDto> attributes;
 
     /* TODO: (mst) what is this!? */
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 7, value = "", readOnly = true)
     private List<OrderPaymentDto> orderPayment;
 
