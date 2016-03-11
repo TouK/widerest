@@ -33,8 +33,8 @@ public class OrderDto extends BaseDto {
     @ApiModelProperty(position = 1, value = "Status of the order", readOnly = true)
     private String status;
 
-    @ApiModelProperty(position = 4, value = "Items belonging to the order", dataType = "java.util.List")
-    private List<DiscreteOrderItemDto> orderItems;
+//    @ApiModelProperty(position = 4, value = "Items belonging to the order", dataType = "java.util.List")
+//    private List<DiscreteOrderItemDto> orderItems;
 
     @ApiModelProperty(position = 5, value = "Total price for the order", dataType = "java.math.BigDecimal")
     private BigDecimal totalPrice;
@@ -43,12 +43,12 @@ public class OrderDto extends BaseDto {
     @ApiModelProperty(position = 6, value = "Additional attributes for the order", dataType = "java.util.List")
     private List<CartAttributeDto> attributes;
 
-    /* TODO: (mst) what is this!? */
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
-    @ApiModelProperty(position = 7, value = "", readOnly = true)
-    private List<OrderPaymentDto> orderPayment;
+//    /* TODO: (mst) what is this!? */
+//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
+//    @ApiModelProperty(position = 7, value = "", readOnly = true)
+//    private List<OrderPaymentDto> payments;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-    @ApiModelProperty(position = 8, value = "Name of the fulfillment", dataType = "java.lang.String")
-    private String fulfillment;
+//    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+//    @ApiModelProperty(position = 8, value = "Name of the fulfillment", dataType = "java.lang.String")
+//    private String fulfillment;
 }

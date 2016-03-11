@@ -56,16 +56,15 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         final OrderDto orderDto = OrderDto.builder()
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
-                .orderPayment(order.getPayments().stream()
-                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed, link)).collect(Collectors.toList()))
-                .orderItems(order.getDiscreteOrderItems().stream()
-                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
-                        .collect(Collectors.toList()))
-//                .customer(DtoConverters.customerEntityToDto.apply(entity.getCustomer()))
+//                .payment(order.getPayments().stream()
+//                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed, link)).collect(Collectors.toList()))
+//                .orderItems(order.getDiscreteOrderItems().stream()
+//                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
+//                        .collect(Collectors.toList()))
                 .totalPrice(Money.toAmount(order.getTotal()))
-                .fulfillment(CartUtils.getFulfilmentOption(order)
-                        .map(FulfillmentOption::getLongDescription)
-                        .orElse(null))
+//                .fulfillment(CartUtils.getFulfilmentOption(order)
+//                        .map(FulfillmentOption::getLongDescription)
+//                        .orElse(null))
                 .attributes(Optional.ofNullable(order.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
                         .map(Map.Entry::getValue)
                         .map(orderAttributeEntityToDto)
@@ -78,6 +77,16 @@ public class OrderConverter implements Converter<Order, OrderDto> {
             Optional.ofNullable(order.getCustomer()).ifPresent(customer -> {
                 orderDto.add(new EmbeddedResource("customer", customerConverter.createDto(customer, embed, link)));
             });
+
+            Optional.ofNullable(order.getDiscreteOrderItems())
+                    .map(orderItems -> orderItems.stream()
+                            .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
+                            .collect(Collectors.toList())
+                    )
+                    .filter(((Predicate<Collection>) Collection::isEmpty).negate())
+                    .map(fulfillmentDtos -> new EmbeddedResource("items", fulfillmentDtos))
+                    .ifPresent(orderDto::add);
+
             Optional.ofNullable(order.getFulfillmentGroups())
                     .map(fulfillmentGroups -> fulfillmentGroups.stream()
                             .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed, link))
