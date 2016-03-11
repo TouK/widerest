@@ -322,10 +322,8 @@ public class OrderController {
         orderItemRequestDTO.setQuantity(orderItemDto.getQuantity());
         orderItemRequestDTO.setProductId(hrefProductId);
 
-        if(orderItemDto.getSelectedProductOptions() != null && !orderItemDto.getSelectedProductOptions().isEmpty()) {
-            orderItemRequestDTO.getItemAttributes().putAll(
-                    orderItemDto.getSelectedProductOptions().stream()
-                        .collect(toMap(OrderItemOptionDto::getOptionName, OrderItemOptionDto::getOptionValue)));
+        if(orderItemDto.getSelectedOptions() != null) {
+            orderItemRequestDTO.getItemAttributes().putAll(orderItemDto.getSelectedOptions());
         }
 
         orderService.addItem(cart.getId(), orderItemRequestDTO, true);

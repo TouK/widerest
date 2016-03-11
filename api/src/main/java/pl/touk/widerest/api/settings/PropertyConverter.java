@@ -28,9 +28,7 @@ public class PropertyConverter implements Converter<String, PropertyDto> {
                 )
                 .build();
 
-        if (link) {
-            propertyDto.add(ControllerLinkBuilder.linkTo(methodOn(SettingsController.class).getValue(propertyDto.getName())).withSelfRel());
-        }
+        propertyDto.add(ControllerLinkBuilder.linkTo(methodOn(SettingsController.class).getValue(propertyDto.getName())).withSelfRel());
 
         return propertyDto;
     }

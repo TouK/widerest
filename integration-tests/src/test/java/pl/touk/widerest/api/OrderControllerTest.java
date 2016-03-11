@@ -25,11 +25,9 @@ import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.api.orders.OrderItemDto;
-import pl.touk.widerest.api.orders.OrderItemOptionDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.base.ApiTestUtils;
 import pl.touk.widerest.base.DtoTestFactory;
@@ -43,7 +41,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
@@ -565,12 +565,10 @@ public class OrderControllerTest extends AbstractTest {
         orderItemDto.setQuantity(2);
         orderItemDto.setProductHref(productHref);
 
-        final OrderItemOptionDto orderItemOptionDto = OrderItemOptionDto.builder()
-                .optionName("TESTOPTION")
-                .optionValue("test2")
-                .build();
+        orderItemDto.setSelectedOptions(
+                Arrays.asList(Pair.of("TESTOPTION", "test2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+        );
 
-        orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
 
         final HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
@@ -636,12 +634,9 @@ public class OrderControllerTest extends AbstractTest {
         orderItemDto.setQuantity(2);
         orderItemDto.setProductHref(productHref);
 
-        final OrderItemOptionDto orderItemOptionDto = OrderItemOptionDto.builder()
-                .optionName("TESTOPTION")
-                .optionValue("test2")
-                .build();
-
-        orderItemDto.setSelectedProductOptions(Arrays.asList(orderItemOptionDto));
+        orderItemDto.setSelectedOptions(
+                Arrays.asList(Pair.of("TESTOPTION", "test2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+        );
 
         final HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Accept", MediaTypes.HAL_JSON_VALUE);
@@ -657,12 +652,9 @@ public class OrderControllerTest extends AbstractTest {
         orderItemDto2.setQuantity(2);
         orderItemDto2.setProductHref(productHref);
 
-        final OrderItemOptionDto orderItemOptionDto2 = OrderItemOptionDto.builder()
-                .optionName("TESTOPTION")
-                .optionValue("test1")
-                .build();
-
-        orderItemDto2.setSelectedProductOptions(Arrays.asList(orderItemOptionDto2));
+        orderItemDto2.setSelectedOptions(
+                Arrays.asList(Pair.of("TESTOPTION", "test1")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+        );
 
         final HttpEntity httpRequestEntity2 = new HttpEntity(orderItemDto2, requestHeaders);
 

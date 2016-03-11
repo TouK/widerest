@@ -97,12 +97,12 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                     .ifPresent(orderDto::add);
         }
 
+        orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId(), null, null)).withSelfRel());
+
         if (link) {
             orderDto.add(linkTo(
                     methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
             ).withRel("customer"));
-
-            orderDto.add(ControllerLinkBuilder.linkTo(methodOn(OrderController.class).getOrderById(null, order.getId(), null, null)).withSelfRel());
 
 //        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
 

@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -37,6 +38,6 @@ public class OrderItemDto {
     @ApiModelProperty(position = 4, value = "Href of a product to be added into the order", required = true, dataType = "java.lang.String")
     private String productHref;
 
-    @ApiModelProperty(position = 5, value = "A list of selected options for the product", required = true, dataType = "java.util.List")
-    private List<OrderItemOptionDto> selectedProductOptions;
+    @ApiModelProperty(position = 5, value = "A map of selected options for the product", required = true)
+    private Map<String, String> selectedOptions;
 }

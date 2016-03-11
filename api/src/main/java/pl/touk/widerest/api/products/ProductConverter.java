@@ -109,8 +109,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
         }
 
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
+
         if (link) {
-            dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
 
             if (product.getDefaultSku() != null) {
                 dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))

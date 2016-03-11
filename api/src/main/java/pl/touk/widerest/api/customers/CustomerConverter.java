@@ -53,9 +53,9 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
                 )
                 .build();
 
-        if (link) {
-            customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
+        customerDto.add(ControllerLinkBuilder.linkTo(methodOn(CustomerController.class).readOneCustomer(null, customer.getId().toString())).withSelfRel());
 
+        if (link) {
             customerDto.add(linkTo(methodOn(CustomerController.class).createAuthorizationCode(null, customer.getId().toString())).withRel("authorization"));
         }
 

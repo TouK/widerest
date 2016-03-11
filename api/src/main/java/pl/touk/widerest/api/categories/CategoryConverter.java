@@ -58,8 +58,9 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 )
                 .build();
 
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
+
         if (link) {
-            dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 
             dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
 

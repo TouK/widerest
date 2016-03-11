@@ -79,9 +79,7 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
 
         /* HATEOAS links */
 
-        if (link) {
-            fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
-        }
+        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
 
         return fulfillmentDto;
     }

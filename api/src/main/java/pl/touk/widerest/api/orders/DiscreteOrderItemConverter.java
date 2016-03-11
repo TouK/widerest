@@ -34,8 +34,9 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
                 .price(Optional.ofNullable(discreteOrderItem.getTotalPrice()).orElse(errCode).getAmount())
                 .build();
 
+        orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getId(), discreteOrderItem.getOrder().getId(), null, null)).withSelfRel());
+
         if (link) {
-            orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getId(), discreteOrderItem.getOrder().getId(), null, null)).withSelfRel());
             orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
         }
 
