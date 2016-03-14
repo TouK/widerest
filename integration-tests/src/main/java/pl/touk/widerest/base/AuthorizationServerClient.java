@@ -7,36 +7,46 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpMessageConverterExtractor;
 import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
+@Component
+@org.springframework.context.annotation.Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AuthorizationServerClient {
 
     protected final BasicCookieStore cookieStore = new BasicCookieStore();
     protected final CloseableHttpClient httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).disableRedirectHandling().build();
 
-    protected final String serverPort;
+    @Value("${local.server.port}")
+    protected String serverPort;
 
-    public AuthorizationServerClient(String serverPort) {
-        this.serverPort = serverPort;
-    }
+    @Resource
+    protected OAuth2RestTemplate oAuth2RestTemplate;
 
     public void logIn(final String usertype, final String username, final String password) throws IOException {
         final HttpUriRequest request = RequestBuilder
@@ -58,28 +68,30 @@ public class AuthorizationServerClient {
                 HttpMethod.GET
         );
 
-        final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2HalRestTemplate(new BaseOAuth2ProtectedResourceDetails());
-
         try (ClientHttpResponse response = request.execute()) {
-            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
+
+            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingHalJackson2HttpMessageConverter()));
             final Map<String, String> map = e.extractData(response);
             final Optional<String> accessToken = Optional.ofNullable(map.get("access_token"));
+
             oAuth2RestTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
             return oAuth2RestTemplate;
         }
 
     }
 
-    private static class OAuth2HalRestTemplate extends OAuth2RestTemplate {
 
-        public OAuth2HalRestTemplate(OAuth2ProtectedResourceDetails resource) {
-            super(resource);
-            setMessageConverters(Lists.newArrayList(
-                    new AllEncompassingFormHttpMessageConverter(),
-                    new MappingHalJackson2HttpMessageConverter(),
-                    new MappingJackson2HttpMessageConverter()
-            ));
+    @org.springframework.context.annotation.Configuration
+    public static class Configuration {
+
+        @Bean
+        public OAuth2RestTemplate oAuth2RestTemplate(HttpMessageConverters httpMessageConverters) {
+            OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(new BaseOAuth2ProtectedResourceDetails());
+            oAuth2RestTemplate.setMessageConverters(httpMessageConverters.getConverters());
+            return oAuth2RestTemplate;
         }
+
+
     }
 
 }

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.Resources;
@@ -49,6 +50,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -62,6 +64,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public abstract class ApiTestBase {
+
+    @Resource
+    ApplicationContext applicationContext;
 
     @PersistenceContext(unitName="blPU")
     protected EntityManager em;
@@ -242,19 +247,6 @@ public abstract class ApiTestBase {
         return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
     }
 
-    @Deprecated
-    protected Pair<RestTemplate, String> generateAnonymousUser() throws URISyntaxException {
-        final RestTemplate restTemplate = new RestTemplate();
-        final URI FirstResponseUri = restTemplate.postForLocation(ApiTestUrls.OAUTH_AUTHORIZATION, null, serverPort);
-        return Pair.of(restTemplate, ApiTestUtils.strapTokenFromURI(FirstResponseUri));
-    }
-
-    protected Pair generateAdminUser() throws URISyntaxException {
-        final OAuth2RestTemplate adminRestTemplate = oAuth2AdminHalRestTemplate();
-        final URI adminUri = adminRestTemplate.postForLocation(ApiTestUrls.LOGIN_URL, null, serverPort);
-        return Pair.of(adminRestTemplate, ApiTestUtils.strapTokenFromURI(adminUri));
-    }
-
     protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(final RestTemplate restTemplate, final String token,
                                                               final Integer orderId, final Integer orderItemId) {
 
@@ -264,25 +256,20 @@ public abstract class ApiTestBase {
                 HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
     }
 
-    protected ResponseEntity<HttpHeaders> addItemToOrder(final long skuId, final int quantity, final String location, final String token, final RestTemplate restTemplate) {
+    protected URI addItemToOrder(final RestTemplate restTemplate, final URI orderUrl, final long skuId, final int quantity) {
         final OrderItemDto template = new OrderItemDto();
         template.setQuantity(quantity);
         template.setSkuId(skuId);
 
-        final HttpEntity<OrderItemDto> httpRequestEntity = new HttpEntity(template, httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-
-        return restTemplate.exchange(location, HttpMethod.POST, httpRequestEntity, HttpHeaders.class, serverPort);
+        return restTemplate.postForLocation(orderUrl.toASCIIString() + "/items-old", template);
     }
 
-    protected long getRemoteTotalOrdersCountValue(final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
+    protected long getRemoteTotalOrdersCountValue(final RestTemplate restTemplate) {
+        final Long ordersCount = restTemplate.getForObject(ApiTestUrls.ORDERS_COUNT, Long.class, serverPort);
 
-        final HttpEntity<Long> remoteCountEntity = restTemplate.exchange(ApiTestUrls.ORDERS_COUNT,
-                HttpMethod.GET, httpRequestEntity, Long.class, serverPort);
+        assertNotNull(ordersCount);
 
-        assertNotNull(remoteCountEntity);
-
-        return remoteCountEntity.getBody();
+        return ordersCount;
     }
 
     protected Boolean givenOrderIdIsCancelled(final String adminToken, final Long orderId) {
@@ -301,24 +288,16 @@ public abstract class ApiTestBase {
                     .orElse(false);
     }
 
-    protected Integer getRemoteItemsInOrderCount(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-
-        final HttpEntity<Integer> remoteCountEntity = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/items/count",
-                HttpMethod.GET, httpRequestEntity, Integer.class, serverPort);
-
-        return remoteCountEntity.getBody();
+    protected Integer getRemoteItemsInOrderCount(final RestTemplate restTemplate, final URI orderUrl) {
+        return restTemplate.getForObject(orderUrl.toASCIIString() + "/items/count", Integer.class);
     }
 
-    protected List<DiscreteOrderItemDto> getItemsFromCart(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
+    protected List<DiscreteOrderItemDto> getItemsFromCart(RestTemplate restTemplate, final URI orderUrl) {
 
-        final ResponseEntity<Resources<DiscreteOrderItemDto>> receivedProductAttributeEntity =
-                restTemplateForHalJsonHandling.exchange(ApiTestUrls.ORDERS_URL+"/"+orderId+"/items", HttpMethod.GET, httpRequestEntity, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}, serverPort);
+        final Resources<DiscreteOrderItemDto> orderItems =
+                restTemplate.exchange(orderUrl.toASCIIString() + "/items", HttpMethod.GET, null, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}).getBody();
 
-        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        return new ArrayList<>(receivedProductAttributeEntity.getBody().getContent());
+        return new ArrayList<>(orderItems.getContent());
     }
 
     protected DiscreteOrderItemDto getItemDetailsFromCart(final Integer orderId, final Long itemId, final String token) {
@@ -330,24 +309,23 @@ public abstract class ApiTestBase {
         return response.getBody();
     }
 
-    protected DiscreteOrderItemDto getItemDetailsFromCart(final String itemHref, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-
+    protected DiscreteOrderItemDto getItemDetailsFromCart(final RestTemplate restTemplate, final URI itemHref) {
         final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(itemHref,
-                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class);
+                HttpMethod.GET, null, DiscreteOrderItemDto.class);
 
         return response.getBody();
     }
 
 
-    protected OrderStatus getOrderStatus(final Integer orderId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
+    protected Collection<OrderDto> getAllOrders(RestTemplate restTemplate) {
+        return restTemplate.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<Resources<OrderDto>>() {
+                        }, serverPort).getBody().getContent();
 
-        final HttpEntity<OrderStatus> response = restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/status",
-                HttpMethod.GET, httpRequestEntity, OrderStatus.class, serverPort);
+    }
 
-        return response.getBody();
-
+    protected OrderStatus getOrderStatus(RestTemplate restTemplate, final Integer orderId) {
+        return restTemplate.getForObject(ApiTestUrls.ORDERS_URL + "/" + orderId + "/status", OrderStatus.class, serverPort);
     }
 
     /* BDD */
@@ -365,6 +343,9 @@ public abstract class ApiTestBase {
 
     protected void givenAuthorizationFor(final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
         givenAuthorizationServerClient(authorizationServerClient -> {
+            if (Scope.STAFF.equals(scope)) {
+                whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
+            }
             whenAuthorizationRequestedFor(authorizationServerClient, scope, thens);
         });
     }
@@ -375,14 +356,14 @@ public abstract class ApiTestBase {
     }
 
     protected AuthorizationServerClient authorizationServerClient() {
-        return new AuthorizationServerClient(this.serverPort);
+        return applicationContext.getBean(AuthorizationServerClient.class);
     }
 
     protected void whenAuthorizationRequestedFor(AuthorizationServerClient authorizationServerClient, final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
         when(() -> authorizationServerClient.requestAuthorization(scope), thens);
     }
 
-    protected URI createNewOrder(OAuth2RestTemplate oAuth2RestTemplate) {
+    protected URI createNewOrder(RestTemplate oAuth2RestTemplate) {
         return oAuth2RestTemplate.postForLocation(ApiTestUrls.ORDERS_URL, null, serverPort);
     }
 

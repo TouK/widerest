@@ -43,9 +43,6 @@ public class OrderFulfillmentsTest extends AbstractTest {
     public static final URI SAMPLE_PRODUCT_HREF_1 = URI.create(ApiTestUrls.PRODUCT_BY_ID_URL.substring(ApiTestUrls.API_BASE_URL.length()).replaceFirst("\\{productId\\}", "1"));
     public static final URI SAMPLE_PRODUCT_HREF_2 = URI.create(ApiTestUrls.PRODUCT_BY_ID_URL.substring(ApiTestUrls.API_BASE_URL.length()).replaceFirst("\\{productId\\}", "2"));
 
-    @Rule
-    public ExpectedException thrown= ExpectedException.none();
-
     @Test
     public void shouldNotCreateAnyFulfillmentForEmptyOrder() throws Throwable {
         givenAuthorizationFor(Scope.CUSTOMER, restTemplate -> {
@@ -59,6 +56,10 @@ public class OrderFulfillmentsTest extends AbstractTest {
 
     @FunctionalInterface
     interface CheckedConsumer3<T, U, V> {
+
+        default void init111() {
+        }
+
         void accept(T t, U u, V v) throws Throwable;
     }
 
@@ -129,7 +130,6 @@ public class OrderFulfillmentsTest extends AbstractTest {
     @Test
     public void shouldAddProperAddressToItemsFulfillmentTest() throws Throwable {
         givenAnonymousUserWithAnOrderAndAnItem((restTemplate, orderUri, orderItemHref) -> {
-
             final AddressDto addressDto = AddressDto.builder()
                     .firstName("Jan")
                     .lastName("Kowalski")
