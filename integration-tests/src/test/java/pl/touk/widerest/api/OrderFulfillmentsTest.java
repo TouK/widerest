@@ -228,6 +228,10 @@ public class OrderFulfillmentsTest extends AbstractTest {
                         });
                     });
                 });
+                // TODO:
+                // whenAllItemsInOrderRetrieved
+                // thenAllItemsHaveAHateoasLinkToADistinctFulfillment
+
             });
         });
     }
