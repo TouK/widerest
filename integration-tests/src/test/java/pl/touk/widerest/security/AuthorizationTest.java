@@ -8,7 +8,6 @@ import org.junit.runner.RunWith;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.AbstractTest;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import static org.hamcrest.CoreMatchers.equalTo;

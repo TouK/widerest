@@ -17,7 +17,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.customers.CustomerServiceProxy;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.base.ApiTestUtils;
 

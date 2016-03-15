@@ -1,26 +1,16 @@
 package pl.touk.widerest.api;
 
-import javaslang.control.Try;
 import org.assertj.core.util.Arrays;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.Resources;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.common.AddressDto;
 import pl.touk.widerest.api.common.CatalogUtils;
-import pl.touk.widerest.api.orders.OrderItemDto;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.security.oauth2.Scope;
 

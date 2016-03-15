@@ -12,7 +12,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
 import pl.touk.widerest.AbstractTest;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.security.oauth2.Scope;
 

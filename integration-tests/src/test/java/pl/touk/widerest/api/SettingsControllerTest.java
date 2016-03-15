@@ -10,7 +10,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.settings.SettingsConsumer;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import javax.annotation.Resource;

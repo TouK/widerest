@@ -2,10 +2,7 @@ package pl.touk.widerest.base;
 
 import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.common.CatalogUtils;
-
-import javax.annotation.Resource;
 
 public class CatalogOperationsLocal implements CatalogOperations {
 
