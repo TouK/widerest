@@ -1,43 +1,25 @@
 package pl.touk.widerest.base;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import javaslang.Tuple;
 import javaslang.Tuple2;
 import javaslang.control.Try;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Assert;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.Resources;
-import org.springframework.hateoas.core.AnnotationRelProvider;
-import org.springframework.hateoas.core.DefaultRelProvider;
-import org.springframework.hateoas.core.DelegatingRelProvider;
-import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
@@ -52,9 +34,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -77,136 +57,24 @@ public abstract class ApiTestBase {
     @Value("${local.server.port}")
     protected String serverPort;
 
-    @Deprecated
-    protected final RestTemplate restTemplate = new RestTemplate(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
+    protected RestTemplate backofficeRestTemplate;
 
-    @Deprecated
-    protected final RestTemplate restTemplateForHalJsonHandling = new RestTemplate(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
+    protected CatalogOperationsLocal catalogOperationsLocal;
 
-
-
-
-    /* HATEOAS Rest Template */
-    private final List<HttpMessageConverter<?>> httpMessageConverters = new ArrayList<>();
-    private RestTemplate hateoasRestTemplate;
-
-
-    /* (mst) Http Request 'Accept' Format to be used while testing */
-    protected final TestHttpRequestEntity testHttpRequestEntity = new HalHttpRequestEntity();
-
-    @Autowired
-    protected ApiTestCatalogLocal apiTestCatalogLocal;
-
-    @Autowired
-    protected ApiTestCatalogRemote apiTestCatalogRemote;
-
-    protected ApiTestCatalogOperations apiTestCatalogManager;
-
-    @Autowired
-    protected HttpHeadersWithTokenFactory httpHeadersWithTokenFactory;
+    protected CatalogOperationsRemote catalogOperationsRemote;
 
     @PostConstruct
-    public void init() {
-        apiTestCatalogManager = new ApiTestCatalogManager(serverPort);
+    public void init() throws IOException {
+        AuthorizationServerClient authorizationServerClient = authorizationServerClient();
+        authorizationServerClient.logIn("backoffice", "admin", "admin");
+        this.backofficeRestTemplate = authorizationServerClient.requestAuthorization(Scope.STAFF);
+        this.catalogOperationsRemote = new CatalogOperationsRemote(backofficeRestTemplate, serverPort);
+        this.catalogOperationsLocal = new CatalogOperationsLocal(catalogService);
     }
-
-    /* This is the way to access admin related REST API!
-     *
-     *
-     */
-    protected OAuth2RestTemplate oAuth2AdminRestTemplate() {
-
-        final ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
-        resourceDetails.setGrantType("password");
-        resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-        resourceDetails.setClientId("default");
-        resourceDetails.setScope(Arrays.asList("staff"));
-        resourceDetails.setUsername("backoffice/admin");
-        resourceDetails.setPassword("admin");
-
-        final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
-        oAuth2RestTemplate.setMessageConverters(Lists.newArrayList(new MappingJackson2HttpMessageConverter()));
-        return oAuth2RestTemplate;
-    }
-
-    protected OAuth2RestTemplate oAuth2AdminHalRestTemplate() {
-
-        final ResourceOwnerPasswordResourceDetails resourceDetails = new ResourceOwnerPasswordResourceDetails();
-        resourceDetails.setGrantType("password");
-        resourceDetails.setAccessTokenUri("http://localhost:" + serverPort + "/oauth/token");
-        resourceDetails.setClientId("default");
-        resourceDetails.setScope(Arrays.asList("staff"));
-        resourceDetails.setUsername("backoffice/admin");
-        resourceDetails.setPassword("admin");
-
-        final OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(resourceDetails);
-        oAuth2RestTemplate.setMessageConverters(Lists.newArrayList(new MappingHalJackson2HttpMessageConverter()));
-        return oAuth2RestTemplate;
-    }
-
-    protected RestTemplate hateoasRestTemplate() {
-        if(hateoasRestTemplate == null) {
-            httpMessageConverters.add(getHalConverter());
-            hateoasRestTemplate = new RestTemplate();
-            hateoasRestTemplate.setMessageConverters(httpMessageConverters);
-        }
-        return hateoasRestTemplate;
-    }
-
-    private DefaultRelProvider getDefaultRelProvider() {
-        return new DefaultRelProvider();
-    }
-
-    private AnnotationRelProvider getAnnotationRelProvider() {
-        return new AnnotationRelProvider();
-    }
-
-    private MappingJackson2HttpMessageConverter getHalConverter() {
-        final RelProvider defaultRelProvider = getDefaultRelProvider();
-        final RelProvider annotationRelProvider = getAnnotationRelProvider();
-
-        final OrderAwarePluginRegistry<RelProvider, Class<?>> relProviderPluginRegistry = OrderAwarePluginRegistry
-                .create(Arrays.asList(defaultRelProvider, annotationRelProvider));
-
-        final DelegatingRelProvider delegatingRelProvider = new DelegatingRelProvider(relProviderPluginRegistry);
-
-        final ObjectMapper halObjectMapper = new ObjectMapper();
-        halObjectMapper.registerModule(new Jackson2HalModule());
-        halObjectMapper
-                .setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(delegatingRelProvider, null, null));
-
-        final MappingJackson2HttpMessageConverter halConverter = new MappingJackson2HttpMessageConverter();
-        halConverter.setSupportedMediaTypes(ImmutableList.of(
-                new MediaType("application", "hal+json"),
-                new MediaType("*", "json",  MappingJackson2HttpMessageConverter.DEFAULT_CHARSET),
-                new MediaType("*", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET)
-            )
-        );
-        halConverter.setObjectMapper(halObjectMapper);
-        return halConverter;
-    }
-
-
-    protected long addNewTestCategory() {
-        final ResponseEntity<?> newTestCategoryEntity = apiTestCatalogManager.addTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
-                //oAuth2AdminRestTemplate().postForEntity(CATEGORIES_URL, DtoTestFactory.getTestCategory(DtoTestType.NEXT), null, serverPort);
-        assertThat(newTestCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        return ApiTestUtils.getIdFromLocationUrl(newTestCategoryEntity.getHeaders().getLocation().toString());
-    }
-
-    protected ResponseEntity<CategoryDto> getRemoteTestCategoryByIdEntity(final long categoryId) {
-        final ResponseEntity<CategoryDto> receivedCategoryEntity =
-                restTemplate.getForEntity(ApiTestUrls.CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
-
-        assertThat(receivedCategoryEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        return receivedCategoryEntity;
-    }
-
 
     protected ResponseEntity<ProductDto> getRemoteTestProductByIdEntity(final long productId) {
         final ResponseEntity<ProductDto> receivedProductEntity =
-                restTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
+                backofficeRestTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_URL, ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
         return receivedProductEntity;
@@ -233,28 +101,7 @@ public abstract class ApiTestBase {
                 .forEach(catalogService::removeProduct);
     }
 
-    protected HttpEntity<?> getProperEntity(final String token) {
-        return new HttpEntity<>(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-    }
-
-
     /* --------------------------------  ORDER METHODS -------------------------------- */
-
-    protected int createNewOrder(final String token) {
-        final ResponseEntity<HttpHeaders> anonymousOrderHeaders =
-                restTemplate.postForEntity(ApiTestUrls.ORDERS_URL, getProperEntity(token), HttpHeaders.class, serverPort);
-
-        return ApiTestUtils.strapSuffixId(anonymousOrderHeaders.getHeaders().getLocation().toString());
-    }
-
-    protected ResponseEntity<HttpHeaders> deleteRemoveOrderItem(final RestTemplate restTemplate, final String token,
-                                                              final Integer orderId, final Integer orderItemId) {
-
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-
-        return restTemplate.exchange(ApiTestUrls.ORDERS_URL + "/" + orderId + "/items/" + orderItemId,
-                HttpMethod.DELETE, httpRequestEntity, HttpHeaders.class, serverPort);
-    }
 
     protected URI addItemToOrder(final RestTemplate restTemplate, final URI orderUrl, final long skuId, final int quantity) {
         final OrderItemDto template = new OrderItemDto();
@@ -272,22 +119,6 @@ public abstract class ApiTestBase {
         return ordersCount;
     }
 
-    protected Boolean givenOrderIdIsCancelled(final String adminToken, final Long orderId) {
-        final HttpEntity<?> adminHttpEntity = getProperEntity(adminToken);
-//        final ResponseEntity<OrderDto[]> allOrders =
-//                oAuth2AdminRestTemplate().getForEntity(ORDERS_URL, OrderDto[].class, serverPort, adminHttpEntity);
-
-        final ResponseEntity<Resources<OrderDto>> allOrders =
-                oAuth2AdminRestTemplate().exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, adminHttpEntity, new ParameterizedTypeReference<Resources<OrderDto>>() {}, serverPort);
-
-
-        return new ArrayList<>(allOrders.getBody().getContent()).stream()
-                    .filter(x -> ApiTestUtils.strapSuffixId(x.getLink("self").getHref()) == orderId)
-                    .findAny()
-                    .map(e -> e.getStatus().equals(OrderStatus.CANCELLED))
-                    .orElse(false);
-    }
-
     protected Integer getRemoteItemsInOrderCount(final RestTemplate restTemplate, final URI orderUrl) {
         return restTemplate.getForObject(orderUrl.toASCIIString() + "/items/count", Integer.class);
     }
@@ -298,15 +129,6 @@ public abstract class ApiTestBase {
                 restTemplate.exchange(orderUrl.toASCIIString() + "/items", HttpMethod.GET, null, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}).getBody();
 
         return new ArrayList<>(orderItems.getContent());
-    }
-
-    protected DiscreteOrderItemDto getItemDetailsFromCart(final Integer orderId, final Long itemId, final String token) {
-        final HttpEntity httpRequestEntity = new HttpEntity(httpHeadersWithTokenFactory.getHalHttpHeadersWithToken(token));
-
-        final HttpEntity<DiscreteOrderItemDto> response = restTemplate.exchange(ApiTestUrls.ORDERS_URL+"/"+orderId+"/items/"+itemId,
-                HttpMethod.GET, httpRequestEntity, DiscreteOrderItemDto.class, serverPort);
-
-        return response.getBody();
     }
 
     protected DiscreteOrderItemDto getItemDetailsFromCart(final RestTemplate restTemplate, final URI itemHref) {

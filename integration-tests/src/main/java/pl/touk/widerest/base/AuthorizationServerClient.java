@@ -46,7 +46,7 @@ public class AuthorizationServerClient {
     protected String serverPort;
 
     @Resource
-    protected OAuth2RestTemplate oAuth2RestTemplate;
+    protected OAuth2RestTemplate restTemplate;
 
     public void logIn(final String usertype, final String username, final String password) throws IOException {
         final HttpUriRequest request = RequestBuilder
@@ -70,12 +70,12 @@ public class AuthorizationServerClient {
 
         try (ClientHttpResponse response = request.execute()) {
 
-            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingHalJackson2HttpMessageConverter()));
+            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
             final Map<String, String> map = e.extractData(response);
             final Optional<String> accessToken = Optional.ofNullable(map.get("access_token"));
 
-            oAuth2RestTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
-            return oAuth2RestTemplate;
+            restTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
+            return restTemplate;
         }
 
     }
@@ -85,6 +85,7 @@ public class AuthorizationServerClient {
     public static class Configuration {
 
         @Bean
+        @org.springframework.context.annotation.Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
         public OAuth2RestTemplate oAuth2RestTemplate(HttpMessageConverters httpMessageConverters) {
             OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(new BaseOAuth2ProtectedResourceDetails());
             oAuth2RestTemplate.setMessageConverters(httpMessageConverters.getConverters());

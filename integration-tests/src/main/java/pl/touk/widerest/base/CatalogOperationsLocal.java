@@ -7,11 +7,13 @@ import pl.touk.widerest.api.common.CatalogUtils;
 
 import javax.annotation.Resource;
 
-@Component
-public class ApiTestCatalogLocal implements ApiTestCatalog {
+public class CatalogOperationsLocal implements CatalogOperations {
 
-    @Resource(name="blCatalogService")
     protected CatalogService catalogService;
+
+    public CatalogOperationsLocal(CatalogService catalogService) {
+        this.catalogService = catalogService;
+    }
 
     @Override
     public long getTotalCategoriesCount() {

@@ -16,7 +16,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -30,11 +29,11 @@ import pl.touk.widerest.api.products.ProductBundleDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
-import pl.touk.widerest.base.ApiTestBase;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.base.ApiTestUtils;
 import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
+import pl.touk.widerest.security.oauth2.Scope;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -63,7 +62,7 @@ public class ProductControllerTest extends AbstractTest {
     public void addingNewProductIncreasesProductsCountAndSavedValuesAreValidTest() {
 
         // when: adding a new product without a specified category
-        final long currentProductsCount = apiTestCatalogLocal.getTotalProductsCount();
+        final long currentProductsCount = catalogOperationsLocal.getTotalProductsCount();
 
         final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
 
@@ -81,15 +80,15 @@ public class ProductControllerTest extends AbstractTest {
         productDto.getMedia().put("alt2", mediaDto3);
 
 
-        final ResponseEntity<?> remoteAddProductEntity = apiTestCatalogManager.addTestProduct(productDto);
+        final ResponseEntity<?> remoteAddProductEntity = catalogOperationsRemote.addTestProduct(productDto);
         final long productId = ApiTestUtils.getIdFromLocationUrl(remoteAddProductEntity.getHeaders().getLocation().toString());
 
         assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentProductsCount + 1));
+        assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentProductsCount + 1));
 
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(
+        final ResponseEntity<ProductDto> receivedProductEntity = backofficeRestTemplate.exchange(
                 ApiTestUrls.PRODUCT_BY_ID_URL,
-                HttpMethod.GET, testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, productId);
+                HttpMethod.GET, null, ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
@@ -125,114 +124,127 @@ public class ProductControllerTest extends AbstractTest {
     @Ignore("considering allowing duplicate names")
     public void addingDuplicateProductDoesNotIncreaseProductsCount() {
         // when: adding the same (new) product twice
-        final long currentProductCount = apiTestCatalogLocal.getTotalProductsCount();
+        final long currentProductCount = catalogOperationsLocal.getTotalProductsCount();
         final ProductDto testProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(testProduct);
+        final ResponseEntity<?> retEntity = catalogOperationsRemote.addTestProduct(testProduct);
 
         assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         // then: API should return 4xx code and only one copy of the product should be saved
         try {
-            apiTestCatalogManager.addTestProduct(testProduct);
+            catalogOperationsRemote.addTestProduct(testProduct);
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertTrue(httpClientException.getStatusCode().is4xxClientError());
-            assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentProductCount + 1));
+            assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentProductCount + 1));
         }
 
     }
 
     @Test
-    public void successfullyDeletingNewlyCreatedProductTest() {
-        // when: adding a new product and then deleting it
-        final long currentProductsCount = apiTestCatalogLocal.getTotalProductsCount();
-        final ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
-        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(defaultProduct);
-        final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+    public void successfullyDeletingNewlyCreatedProductTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentProductsCount + 1));
+            // when: adding a new product and then deleting it
+            final long currentProductsCount = catalogOperationsLocal.getTotalProductsCount();
+            final ProductDto defaultProduct = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.SAME);
+            final ResponseEntity<?> retEntity = catalogOperationsRemote.addTestProduct(defaultProduct);
+            final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
 
-        oAuth2AdminRestTemplate().delete(retEntity.getHeaders().getLocation().toString());
+            assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentProductsCount + 1));
 
-        // then: the deleted product should no longer exist (HTTP code returned by API => 404)
-        try {
-            restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
+            adminRestTemplate.delete(retEntity.getHeaders().getLocation().toString());
+
+            // then: the deleted product should no longer exist (HTTP code returned by API => 404)
+            try {
+                backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
+                        HttpMethod.GET,
+                        null, ProductDto.class, serverPort, productId);
+                fail();
+            } catch (HttpClientErrorException httpClientErrorException) {
+                assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+            }
+
+            assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentProductsCount));
+        });
+    }
+
+    @Test
+    public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
+
+            // when: adding a new product and then modifying its values
+            final ResponseEntity<?> retEntity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+            assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+
+            final long currentGlobalProductsCount = catalogOperationsLocal.getTotalProductsCount();
+            final ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+            adminRestTemplate.put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
+
+            // then: no new product gets created
+            assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentGlobalProductsCount));
+        });
+    }
+
+    @Test
+    public void modifyingExistingProductDoesActuallyModifyItsValuesTest() throws Throwable {
+
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
+
+            // when: adding a test new product and then modifying its values
+            final ResponseEntity<?> retEntity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+            assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
+
+            final ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+
+            adminRestTemplate.put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
+
+            // then: the modified fields get updated in test product
+            final ResponseEntity<ProductDto> receivedProductEntity = backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                     HttpMethod.GET,
-                    testHttpRequestEntity.getTestHttpRequestEntity(), ProductDto.class, serverPort, productId);
-            fail();
-        } catch(HttpClientErrorException httpClientErrorException) {
-            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
-        }
+                    null,
+                    ProductDto.class, serverPort, productId);
 
-        assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentProductsCount));
-    }
+            final ProductDto receivedProductDto = receivedProductEntity.getBody();
 
-    @Test
-    public void modifyingExistingProductDoesNotCreateANewOneInsteadTest() {
-        // when: adding a new product and then modifying its values
-        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
-        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
-
-        final long currentGlobalProductsCount = apiTestCatalogLocal.getTotalProductsCount();
-        final  ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-
-        oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
-
-        // then: no new product gets created
-        assertThat(apiTestCatalogLocal.getTotalProductsCount(), equalTo(currentGlobalProductsCount));
-    }
-
-    @Test
-    public void modifyingExistingProductDoesActuallyModifyItsValuesTest() {
-        // when: adding a test new product and then modifying its values
-        final ResponseEntity<?> retEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
-        assertThat(retEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long productId = ApiTestUtils.getIdFromLocationUrl(retEntity.getHeaders().getLocation().toString());
-
-        final ProductDto modifiedProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-
-        oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, modifiedProductDto, serverPort, productId);
-
-        // then: the modified fields get updated in test product
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
-                HttpMethod.GET,
-                testHttpRequestEntity.getTestHttpRequestEntity(),
-                ProductDto.class, serverPort, productId);
-
-        final ProductDto receivedProductDto = receivedProductEntity.getBody();
-
-        assertThat(modifiedProductDto.getName(), equalTo(receivedProductDto.getName()));
-        assertThat(modifiedProductDto.getLongDescription(), equalTo(receivedProductDto.getLongDescription()));
-        assertThat(modifiedProductDto.getDescription(), equalTo(receivedProductDto.getDescription()));
-        assertThat(modifiedProductDto.getModel(), equalTo(receivedProductDto.getModel()));
-        assertThat(modifiedProductDto.getManufacturer(), equalTo(receivedProductDto.getManufacturer()));
+            assertThat(modifiedProductDto.getName(), equalTo(receivedProductDto.getName()));
+            assertThat(modifiedProductDto.getLongDescription(), equalTo(receivedProductDto.getLongDescription()));
+            assertThat(modifiedProductDto.getDescription(), equalTo(receivedProductDto.getDescription()));
+            assertThat(modifiedProductDto.getModel(), equalTo(receivedProductDto.getModel()));
+            assertThat(modifiedProductDto.getManufacturer(), equalTo(receivedProductDto.getManufacturer()));
+        });
     }
 
     @Test
     @Ignore("considering allowing duplicate names")
-    public void updatingProductsNameWithAnExistingOneCausesExceptionTest() {
-        // when: creating two new products and then updating the first one with second one's name
-        final ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+    public void updatingProductsNameWithAnExistingOneCausesExceptionTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final ResponseEntity<?> retEntity1 = apiTestCatalogManager.addTestProduct(productDto1);
-        assertThat(retEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long productId1 = ApiTestUtils.getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
+            // when: creating two new products and then updating the first one with second one's name
+            final ProductDto productDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+            final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final ResponseEntity<?> retEntity2 = apiTestCatalogManager.addTestProduct(productDto2);
-        assertThat(retEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final ResponseEntity<?> retEntity1 = catalogOperationsRemote.addTestProduct(productDto1);
+            assertThat(retEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final long productId1 = ApiTestUtils.getIdFromLocationUrl(retEntity1.getHeaders().getLocation().toString());
 
-        productDto1.setName(productDto2.getName());
+            final ResponseEntity<?> retEntity2 = catalogOperationsRemote.addTestProduct(productDto2);
+            assertThat(retEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        // then: API should return HTTP.CONFLICT
-        try {
-            oAuth2AdminRestTemplate().put(ApiTestUrls.PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
-            fail();
-        } catch(HttpClientErrorException httpCleintErrorException) {
-            assertThat(httpCleintErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
-        }
+            productDto1.setName(productDto2.getName());
+
+            // then: API should return HTTP.CONFLICT
+            try {
+                adminRestTemplate.put(ApiTestUrls.PRODUCT_BY_ID_URL, productDto1, serverPort, productId1);
+                fail();
+            } catch (HttpClientErrorException httpCleintErrorException) {
+                assertThat(httpCleintErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+            }
+        });
     }
 
 
@@ -243,7 +255,7 @@ public class ProductControllerTest extends AbstractTest {
     @Test
     public void addingNewProductWihoutDefaultSKUCausesExceptionTest() {
         // when: adding a new product without default SKu
-        final long currentProductsCount = apiTestCatalogLocal.getTotalProductsCount();
+        final long currentProductsCount = catalogOperationsLocal.getTotalProductsCount();
         final ProductDto productWihtoutDefaultSkuDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
         //productWihtoutDefaultSkuDto.setDefaultSku(null);
 
@@ -253,11 +265,11 @@ public class ProductControllerTest extends AbstractTest {
         // then: API should return HTTP.BAD_REQUEST code and the product should not be added
         try {
 
-            apiTestCatalogManager.addTestProduct(productWihtoutDefaultSkuDto);
+            catalogOperationsRemote.addTestProduct(productWihtoutDefaultSkuDto);
             fail();
         } catch (HttpClientErrorException httpClientException) {
             assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.BAD_REQUEST));
-            assertThat(currentProductsCount, equalTo(apiTestCatalogLocal.getTotalProductsCount()));
+            assertThat(currentProductsCount, equalTo(catalogOperationsLocal.getTotalProductsCount()));
         }
     }
 
@@ -266,21 +278,21 @@ public class ProductControllerTest extends AbstractTest {
     public void addingNewSkuAfterCreatingProductWithDefaultSkuIncreasesSkusCountForThatProductTest() {
         // when: adding new SKU to a product
         final ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productWithDefaultSKU);
+        final ResponseEntity<?> addedProductEntity = catalogOperationsRemote.addTestProduct(productWithDefaultSKU);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         final String createdProductUrlString = addedProductEntity.getHeaders().getLocation().toString();
         final long productId = ApiTestUtils.getIdFromLocationUrl(createdProductUrlString);
-        assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(productId), equalTo(1L));
+        assertThat(catalogOperationsLocal.getTotalSkusForProductCount(productId), equalTo(1L));
 
         final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-        final ResponseEntity<?> addedAdditionalSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, additionalSkuDto);
+        final ResponseEntity<?> addedAdditionalSkuEntity = catalogOperationsRemote.addTestSKUToProduct(productId, additionalSkuDto);
         assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         em.clear();
 
         // then: total number of SKUs for that product should increase
-        assertThat(apiTestCatalogLocal.getTotalSkusForProductCount(productId), equalTo(2L));
+        assertThat(catalogOperationsLocal.getTotalSkusForProductCount(productId), equalTo(2L));
     }
 
     @Test
@@ -289,50 +301,53 @@ public class ProductControllerTest extends AbstractTest {
     }
 
     @Test
-    public void partiallyUpdatingSkuDoesNotRemoveAlreadySetValuesTest() {
-        // when: modifying certain values (via PATCH) of SKU
-        final ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+    public void partiallyUpdatingSkuDoesNotRemoveAlreadySetValuesTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productWithDefaultSKU);
-        assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
+            // when: modifying certain values (via PATCH) of SKU
+            final ProductDto productWithDefaultSKU = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+            final ResponseEntity<?> addedProductEntity = catalogOperationsRemote.addTestProduct(productWithDefaultSKU);
+            assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
-        final ResponseEntity<?> addedSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, additionalSkuDto);
-        assertThat(addedSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
-        final long skuId = ApiTestUtils.getIdFromLocationUrl(addedSkuEntity.getHeaders().getLocation().toString());
+            final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
 
-        additionalSkuDto.setDescription("New Sku Description");
-        additionalSkuDto.setQuantityAvailable(4);
+            final ResponseEntity<?> addedSkuEntity = catalogOperationsRemote.addTestSKUToProduct(productId, additionalSkuDto);
+            assertThat(addedSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            final long skuId = ApiTestUtils.getIdFromLocationUrl(addedSkuEntity.getHeaders().getLocation().toString());
 
-        final HttpEntity<SkuDto> requestEntity = new HttpEntity<>(additionalSkuDto);
-        final OAuth2RestTemplate adminRestTemplate = oAuth2AdminRestTemplate();
-        adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+            additionalSkuDto.setDescription("New Sku Description");
+            additionalSkuDto.setQuantityAvailable(4);
 
-        try {
-            adminRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
-                    requestEntity, Void.class, serverPort, productId, skuId);
-        } catch(RestClientException ex) {
-            System.out.println(ex.getMessage() + ex.getCause() + ex.getLocalizedMessage() + ex.getStackTrace());
-        }
+            final HttpEntity<SkuDto> requestEntity = new HttpEntity<>(additionalSkuDto);
+            adminRestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
-        final ResponseEntity<SkuDto> receivedSkuEntity =
-                restTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
-                        serverPort, productId, skuId);
 
-        assertThat(receivedSkuEntity.getStatusCode(), equalTo(HttpStatus.OK));
+            try {
+                adminRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, HttpMethod.PATCH,
+                        requestEntity, Void.class, serverPort, productId, skuId);
+            } catch (RestClientException ex) {
+                System.out.println(ex.getMessage() + ex.getCause() + ex.getLocalizedMessage() + ex.getStackTrace());
+            }
 
-        // then: only modified values are affected, the others remain unchanged
-        final SkuDto receivedSkuDto = receivedSkuEntity.getBody();
+            final ResponseEntity<SkuDto> receivedSkuEntity =
+                    backofficeRestTemplate.getForEntity(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, SkuDto.class,
+                            serverPort, productId, skuId);
 
-        assertNotNull(receivedSkuDto.getName());
-        assertNotNull(receivedSkuDto.getActiveStartDate());
-        assertNotNull(receivedSkuDto.getTaxCode());
-        assertNotNull(receivedSkuDto.getRetailPrice());
+            assertThat(receivedSkuEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        assertThat(receivedSkuDto.getDescription(), equalTo(additionalSkuDto.getDescription()));
-        assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(additionalSkuDto.getQuantityAvailable()));
+            // then: only modified values are affected, the others remain unchanged
+            final SkuDto receivedSkuDto = receivedSkuEntity.getBody();
+
+            assertNotNull(receivedSkuDto.getName());
+            assertNotNull(receivedSkuDto.getActiveStartDate());
+            assertNotNull(receivedSkuDto.getTaxCode());
+            assertNotNull(receivedSkuDto.getRetailPrice());
+
+            assertThat(receivedSkuDto.getDescription(), equalTo(additionalSkuDto.getDescription()));
+            assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(additionalSkuDto.getQuantityAvailable()));
+        });
     }
 
     @Test
@@ -342,13 +357,13 @@ public class ProductControllerTest extends AbstractTest {
 
         productDto.setCurrencyCode(null);
 
-        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productDto);
+        final ResponseEntity<?> addedProductEntity = catalogOperationsRemote.addTestProduct(productDto);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
+        final ResponseEntity<ProductDto> receivedProductEntity = backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
-                testHttpRequestEntity.getTestHttpRequestEntity(),
+                null,
                 ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -368,14 +383,14 @@ public class ProductControllerTest extends AbstractTest {
 
         productDto.setName(newProductName);
 
-        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(productDto);
+        final ResponseEntity<?> addedProductEntity = catalogOperationsRemote.addTestProduct(productDto);
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
         // then: default SKU's name should be chosen far a product name
-        final ResponseEntity<ProductDto> receivedProductEntity = restTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
+        final ResponseEntity<ProductDto> receivedProductEntity = backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.GET,
-                testHttpRequestEntity.getTestHttpRequestEntity(),
+                null,
                 ProductDto.class, serverPort, productId);
 
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
@@ -386,17 +401,17 @@ public class ProductControllerTest extends AbstractTest {
     @Transactional
     public void addingNewSkuMediaInsertsAllValuesCorrectlyTest() {
         // when: creating new product with 1 Media Object
-        final ResponseEntity<?> addedProductEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> addedProductEntity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT));
         assertThat(addedProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long productId = ApiTestUtils.getIdFromLocationUrl(addedProductEntity.getHeaders().getLocation().toString());
 
-        final ResponseEntity<?> addedAdditionalSkuEntity = apiTestCatalogManager.addTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
+        final ResponseEntity<?> addedAdditionalSkuEntity = catalogOperationsRemote.addTestSKUToProduct(productId, DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT));
         assertThat(addedAdditionalSkuEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long skuId = ApiTestUtils.getIdFromLocationUrl(addedAdditionalSkuEntity.getHeaders().getLocation().toString());
 
         final MediaDto testSkuMedia = DtoTestFactory.getTestSkuMedia(DtoTestType.NEXT);
 
-        apiTestCatalogManager.addTestMediaToSku(productId, skuId, "alt1", testSkuMedia);
+        catalogOperationsRemote.addTestMediaToSku(productId, skuId, "alt1", testSkuMedia);
 
         // then: Media object gets added properly
         final SkuMediaXref skuMediaXref = catalogService.findSkuById(skuId).getSkuMediaXref().get("alt1");
@@ -458,7 +473,7 @@ public class ProductControllerTest extends AbstractTest {
 
         testProductWithoutDefaultCategory.setAttributes(productAttributes);
 
-        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(testProductWithoutDefaultCategory);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(testProductWithoutDefaultCategory);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
@@ -473,7 +488,7 @@ public class ProductControllerTest extends AbstractTest {
 
         // then: all of the specified attributes should be saved correctly (via /product/{id}/attributes endpoint)
         final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
-                restTemplateForHalJsonHandling.exchange(
+                backofficeRestTemplate.exchange(
                         ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null,
                         new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, idFromLocationUrl);
 
@@ -483,31 +498,35 @@ public class ProductControllerTest extends AbstractTest {
 
 
     @Test
-    public void attemptingToRemoveDefaultSkuCausesExceptionTest() {
-        // when: creating a new test product and then trying to delete its default SKU
-        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
-        final long productId = ApiTestUtils.getIdFromEntity(responseEntity);
+    public void attemptingToRemoveDefaultSkuCausesExceptionTest() throws Throwable {
 
-        final ResponseEntity<ProductDto> receivedProductEntity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId);
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final Link defaultSkuLink = receivedProductEntity.getBody().getLink("default-sku");
+            // when: creating a new test product and then trying to delete its default SKU
+            final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+            final long productId = ApiTestUtils.getIdFromEntity(responseEntity);
 
-        assertNotNull(defaultSkuLink);
+            final ResponseEntity<ProductDto> receivedProductEntity =
+                    adminRestTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId);
 
-        final long defaultSkuId = ApiTestUtils.getIdFromLocationUrl(defaultSkuLink.getHref());
+            final Link defaultSkuLink = receivedProductEntity.getBody().getLink("default-sku");
 
-        // then: API should not allow to do that and return 4xx error
-        try {
-            oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, serverPort, productId, defaultSkuId);
-            fail();
-        } catch(HttpClientErrorException httpClientErrorException) {
-            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
-        }
+            assertNotNull(defaultSkuLink);
+
+            final long defaultSkuId = ApiTestUtils.getIdFromLocationUrl(defaultSkuLink.getHref());
+
+            // then: API should not allow to do that and return 4xx error
+            try {
+                adminRestTemplate.delete(ApiTestUrls.PRODUCT_BY_ID_SKU_BY_ID, serverPort, productId, defaultSkuId);
+                fail();
+            } catch (HttpClientErrorException httpClientErrorException) {
+                assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+            }
+        });
     }
 
 
@@ -517,7 +536,7 @@ public class ProductControllerTest extends AbstractTest {
     public void addingComplexProductSavesAllValuesProperly() {
         // when: creating a new test category
         final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> responseEntity1 = apiTestCatalogManager.addTestCategory(testCategory);
+        final ResponseEntity<?> responseEntity1 = catalogOperationsRemote.addTestCategory(testCategory);
         final long testCategoryId = ApiTestUtils.getIdFromLocationUrl(responseEntity1.getHeaders().getLocation().toString());
 
         // when: creating a new test product with: default SKU, 2 additional SKUs and 3 medias
@@ -567,11 +586,11 @@ public class ProductControllerTest extends AbstractTest {
         complexProductDto.setAttributes(productAttributes);
 
         // then: all fields should be properly saved
-        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(complexProductDto);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(complexProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
-        assertThat(apiTestCatalogLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
+        assertThat(catalogOperationsLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
 
         final ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);
 
@@ -640,221 +659,234 @@ public class ProductControllerTest extends AbstractTest {
 
     @Test
     @Ignore("Commented out Bundle endpoints for now")
-    public void creatingProductBundleSavesPotentialSavingsProperlyTest() {
-        // when: creating a bundle out of two products with a given prices
-        final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ProductDto testProductDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+    public void creatingProductBundleSavesPotentialSavingsProperlyTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final ResponseEntity<?> responseEntityProduct1 = apiTestCatalogManager.addTestProduct(testProductDto1);
-        final ResponseEntity<?> responseEntityProduct2 = apiTestCatalogManager.addTestProduct(testProductDto2);
+            // when: creating a bundle out of two products with a given prices
+            final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+            final ProductDto testProductDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
 
-        final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
-        final long productId2 = ApiTestUtils.getIdFromEntity(responseEntityProduct2);
+            final ResponseEntity<?> responseEntityProduct1 = catalogOperationsRemote.addTestProduct(testProductDto1);
+            final ResponseEntity<?> responseEntityProduct2 = catalogOperationsRemote.addTestProduct(testProductDto2);
 
-        final ResponseEntity<ProductDto> receivedProduct1Entity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId1);
+            final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
+            final long productId2 = ApiTestUtils.getIdFromEntity(responseEntityProduct2);
 
-        assertThat(receivedProduct1Entity.getStatusCode(), equalTo(HttpStatus.OK));
+            final ResponseEntity<ProductDto> receivedProduct1Entity =
+                    adminRestTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId1);
 
-        final ResponseEntity<ProductDto> receivedProduct2Entity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId2);
+            assertThat(receivedProduct1Entity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        assertThat(receivedProduct2Entity.getStatusCode(), equalTo(HttpStatus.OK));
+            final ResponseEntity<ProductDto> receivedProduct2Entity =
+                    adminRestTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId2);
 
-        final ProductDto remoteTestProductByIdDto1 = receivedProduct1Entity.getBody();
-        final ProductDto remoteTestProductByIdDto2 = receivedProduct2Entity.getBody();
+            assertThat(receivedProduct2Entity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        final long defaultSkuId1 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
-        final long defaultSkuId2 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto2.getLink("default-sku").getHref());
+            final ProductDto remoteTestProductByIdDto1 = receivedProduct1Entity.getBody();
+            final ProductDto remoteTestProductByIdDto2 = receivedProduct2Entity.getBody();
 
-        final ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
+            final long defaultSkuId1 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
+            final long defaultSkuId2 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto2.getLink("default-sku").getHref());
 
-        final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
-                .quantity(2)
-                .salePrice(new BigDecimal("3.99"))
-                .skuId(defaultSkuId1)
-                .build();
+            final ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
 
-        final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
-                .quantity(1)
-                .salePrice(new BigDecimal("2.99"))
-                .skuId(defaultSkuId2)
-                .build();
+            final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
+                    .quantity(2)
+                    .salePrice(new BigDecimal("3.99"))
+                    .skuId(defaultSkuId1)
+                    .build();
+
+            final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
+                    .quantity(1)
+                    .salePrice(new BigDecimal("2.99"))
+                    .skuId(defaultSkuId2)
+                    .build();
 
 
-        testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
+            testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
 
-        final ResponseEntity<?> objectResponseEntity = oAuth2AdminRestTemplate().postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
+            final ResponseEntity<?> objectResponseEntity = adminRestTemplate.postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
 
-        assertThat(objectResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+            assertThat(objectResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
-        final long testBundleId = ApiTestUtils.getIdFromEntity(objectResponseEntity);
+            final long testBundleId = ApiTestUtils.getIdFromEntity(objectResponseEntity);
 
-        final ResponseEntity<ProductBundleDto> receivedBundleEntity =
-                restTemplate.getForEntity(ApiTestUrls.BUNDLE_BU_ID_URL, ProductBundleDto.class, serverPort, testBundleId);
+            final ResponseEntity<ProductBundleDto> receivedBundleEntity =
+                    adminRestTemplate.getForEntity(ApiTestUrls.BUNDLE_BU_ID_URL, ProductBundleDto.class, serverPort, testBundleId);
 
-        assertThat(receivedBundleEntity.getStatusCode(), equalTo(HttpStatus.OK));
+            assertThat(receivedBundleEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        // then: total prices and potential savings should be calculated correctly
+            // then: total prices and potential savings should be calculated correctly
 
-        final ProductBundleDto receivedBundleDto = receivedBundleEntity.getBody();
+            final ProductBundleDto receivedBundleDto = receivedBundleEntity.getBody();
 
-        final BigDecimal totalNormalPriceForSku1 = remoteTestProductByIdDto1.getRetailPrice()
-                .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(0).getQuantity()));
+            final BigDecimal totalNormalPriceForSku1 = remoteTestProductByIdDto1.getRetailPrice()
+                    .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(0).getQuantity()));
 
-        final BigDecimal totalNormalPriceForSku2 = remoteTestProductByIdDto2.getRetailPrice()
-                .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(1).getQuantity()));
+            final BigDecimal totalNormalPriceForSku2 = remoteTestProductByIdDto2.getRetailPrice()
+                    .multiply(new BigDecimal(receivedBundleDto.getBundleItems().get(1).getQuantity()));
 
-        final BigDecimal totalNormalPriceForBundle = totalNormalPriceForSku1.add(totalNormalPriceForSku2);
+            final BigDecimal totalNormalPriceForBundle = totalNormalPriceForSku1.add(totalNormalPriceForSku2);
 
-        final BigDecimal potentialSavings = totalNormalPriceForBundle.subtract(receivedBundleDto.getBundleRetailPrice());
+            final BigDecimal potentialSavings = totalNormalPriceForBundle.subtract(receivedBundleDto.getBundleRetailPrice());
 
-        assertThat(potentialSavings, equalTo(receivedBundleDto.getPotentialSavings()));
+            assertThat(potentialSavings, equalTo(receivedBundleDto.getPotentialSavings()));
+        });
     }
 
 
     @Test
     @Ignore("Commented out Bundle endpoints for now")
-    public void creatingABundleFromNonExistingSkusThrowsExceptionTest() {
-        // when: creating a bundle with any of its SKU ids refering to a non existing SKU
-        final long NON_EXISTING_SKU_ID = 9999999;
+    public void creatingABundleFromNonExistingSkusThrowsExceptionTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
+            // when: creating a bundle with any of its SKU ids refering to a non existing SKU
+            final long NON_EXISTING_SKU_ID = 9999999;
 
-        final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> responseEntityProduct1 = apiTestCatalogManager.addTestProduct(testProductDto1);
-        final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
+            final ProductDto testProductDto1 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+            final ResponseEntity<?> responseEntityProduct1 = catalogOperationsRemote.addTestProduct(testProductDto1);
+            final long productId1 = ApiTestUtils.getIdFromEntity(responseEntityProduct1);
 
-        final ResponseEntity<ProductDto> receivedProductEntity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId1);
+            final ResponseEntity<ProductDto> receivedProductEntity =
+                    adminRestTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId1);
 
-        assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
+            assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        final ProductDto remoteTestProductByIdDto1 = receivedProductEntity.getBody();
+            final ProductDto remoteTestProductByIdDto1 = receivedProductEntity.getBody();
 
-        final long defaultSkuId1 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
+            final long defaultSkuId1 = ApiTestUtils.getIdFromLocationUrl(remoteTestProductByIdDto1.getLink("default-sku").getHref());
 
-        final ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
+            final ProductBundleDto testBundle = DtoTestFactory.getTestBundle(DtoTestType.NEXT);
 
-        final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
-                .quantity(2)
-                .salePrice(new BigDecimal("3.99"))
-                .skuId(defaultSkuId1)
-                .build();
+            final BundleItemDto bundleItemDto1 = BundleItemDto.builder()
+                    .quantity(2)
+                    .salePrice(new BigDecimal("3.99"))
+                    .skuId(defaultSkuId1)
+                    .build();
 
-        final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
-                .quantity(1)
-                .salePrice(new BigDecimal("2.99"))
-                .skuId(NON_EXISTING_SKU_ID)
-                .build();
+            final BundleItemDto bundleItemDto2 = BundleItemDto.builder()
+                    .quantity(1)
+                    .salePrice(new BigDecimal("2.99"))
+                    .skuId(NON_EXISTING_SKU_ID)
+                    .build();
 
-        testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
+            testBundle.setBundleItems(Arrays.asList(bundleItemDto1, bundleItemDto2));
 
-        // then: API should return HTTP.CONFLICT code
-        try {
-            oAuth2AdminRestTemplate().postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
-            fail();
-        } catch(HttpClientErrorException httpClientErrorException) {
-            assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
-        }
-
+            // then: API should return HTTP.CONFLICT code
+            try {
+                adminRestTemplate.postForEntity(ApiTestUrls.BUNDLES_URL, testBundle, null, serverPort);
+                fail();
+            } catch (HttpClientErrorException httpClientErrorException) {
+                assertThat(httpClientErrorException.getStatusCode(), equalTo(HttpStatus.CONFLICT));
+            }
+        });
     }
 
     /* Product Attributes Tests */
     @Test
-    public void addingSameAttributeWithAnotherValueUpdatesPreviousValueTest() {
-        // when: adding an attribute to a product and then adding it once again but with a different value
-        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> productResponseEntity = apiTestCatalogManager.addTestProduct(productDto);
-        final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
+    public void addingSameAttributeWithAnotherValueUpdatesPreviousValueTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final ProductAttributeDto productAttributeDto1 = ProductAttributeDto.builder()
-                .attributeName("Range")
-                .attributeValue("Long")
-                .build();
+            // when: adding an attribute to a product and then adding it once again but with a different value
+            final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+            final ResponseEntity<?> productResponseEntity = catalogOperationsRemote.addTestProduct(productDto);
+            final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
 
-        final ProductAttributeDto productAttributeDto2 = ProductAttributeDto.builder()
-                .attributeName("Range")
-                .attributeValue("Short")
-                .build();
+            final ProductAttributeDto productAttributeDto1 = ProductAttributeDto.builder()
+                    .attributeName("Range")
+                    .attributeValue("Long")
+                    .build();
 
-        final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
-                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
+            final ProductAttributeDto productAttributeDto2 = ProductAttributeDto.builder()
+                    .attributeName("Range")
+                    .attributeValue("Short")
+                    .build();
 
-        assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
+            final ResponseEntity<?> attributeDtoEntity1 = adminRestTemplate.postForEntity(
+                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
 
-        final ResponseEntity<?> attributeDtoEntity2 = oAuth2AdminRestTemplate().postForEntity(
-                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
+            assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
 
-        assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
+            final ResponseEntity<?> attributeDtoEntity2 = adminRestTemplate.postForEntity(
+                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
 
-        // then: the "original" attribute's value gets updated
-        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
-                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+            assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
 
-        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
+            // then: the "original" attribute's value gets updated
+            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
+                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
+                    }, serverPort, productId);
 
-        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
+            assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
-        final ProductAttributeDto receivedProductAttributeDto = receivedProductAttributeEntity.getBody().getContent().iterator().next();
+            // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
+            assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
 
-        assertThat(receivedProductAttributeDto.getAttributeName(), equalTo(productAttributeDto2.getAttributeName()));
-        assertThat(receivedProductAttributeDto.getAttributeValue(), equalTo(productAttributeDto2.getAttributeValue()));
+            final ProductAttributeDto receivedProductAttributeDto = receivedProductAttributeEntity.getBody().getContent().iterator().next();
+
+            assertThat(receivedProductAttributeDto.getAttributeName(), equalTo(productAttributeDto2.getAttributeName()));
+            assertThat(receivedProductAttributeDto.getAttributeValue(), equalTo(productAttributeDto2.getAttributeValue()));
+        });
     }
 
     @Test
-    public void addingAttributeAndRemovingItWorksAsExpectedTest() {
-        // when: adding an attribute to a product and then deleting it
-        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> productResponseEntity = apiTestCatalogManager.addTestProduct(productDto);
-        final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
+    public void addingAttributeAndRemovingItWorksAsExpectedTest() throws Throwable {
+        givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
-        final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()
-                .attributeName("Range")
-                .attributeValue("Long")
-                .build();
+            // when: adding an attribute to a product and then deleting it
+            final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+            final ResponseEntity<?> productResponseEntity = catalogOperationsRemote.addTestProduct(productDto);
+            final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
 
-        final ResponseEntity<?> attributeDtoEntity1 = oAuth2AdminRestTemplate().postForEntity(
-                ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
+            final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()
+                    .attributeName("Range")
+                    .attributeValue("Long")
+                    .build();
 
-        assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
+            final ResponseEntity<?> attributeDtoEntity1 = adminRestTemplate.postForEntity(
+                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
 
-        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity1 =
-                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+            assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
 
-        assertThat(receivedProductAttributeEntity1.getStatusCode(), equalTo(HttpStatus.OK));
+            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity1 =
+                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
+                    }, serverPort, productId);
 
-        assertThat(receivedProductAttributeEntity1.getBody().getContent().size(), equalTo(1));
+            assertThat(receivedProductAttributeEntity1.getStatusCode(), equalTo(HttpStatus.OK));
 
-        oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+            assertThat(receivedProductAttributeEntity1.getBody().getContent().size(), equalTo(1));
 
-        // then: the attribute no longer exists
-        try {
-            oAuth2AdminRestTemplate().delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
-            fail();
-        } catch(HttpClientErrorException httpClientErrorException) {
-            assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
-        }
+            adminRestTemplate.delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+
+            // then: the attribute no longer exists
+            try {
+                adminRestTemplate.delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
+                fail();
+            } catch (HttpClientErrorException httpClientErrorException) {
+                assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+            }
 
 
-        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity2 =
-                restTemplateForHalJsonHandling.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, productId);
+            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity2 =
+                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
+                    }, serverPort, productId);
 
-        assertThat(receivedProductAttributeEntity2.getStatusCode(), equalTo(HttpStatus.OK));
+            assertThat(receivedProductAttributeEntity2.getStatusCode(), equalTo(HttpStatus.OK));
 
-        // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-        assertThat(receivedProductAttributeEntity2.getBody().getContent().size(), equalTo(0));
+            // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
+            assertThat(receivedProductAttributeEntity2.getBody().getContent().size(), equalTo(0));
+        });
     }
 
 

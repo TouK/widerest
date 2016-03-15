@@ -4,21 +4,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.Resources;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
 import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
@@ -34,8 +27,6 @@ import pl.touk.widerest.security.oauth2.Scope;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,7 +35,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.*;
 
@@ -256,28 +246,28 @@ public class OrderControllerTest extends AbstractTest {
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        final ResponseEntity<?> newProductResponseEntity = apiTestCatalogManager.addTestProduct(testProductDto);
+        final ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
 
         //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
 
-        final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId);
-
-        assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-
-        ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
-        long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
-
-
         givenAuthorizationFor(Scope.CUSTOMER, restTemplate -> {
+
+            final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
+                    restTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId);
+
+            assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+
+            ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+            long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+
 
             URI newOrderUrl = createNewOrder(restTemplate);
 
@@ -304,25 +294,26 @@ public class OrderControllerTest extends AbstractTest {
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        ResponseEntity<?> newProductResponseEntity = apiTestCatalogManager.addTestProduct(testProductDto);
+        ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addTestProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
-        final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
-                hateoasRestTemplate().exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_URL,
-                        HttpMethod.GET,
-                        testHttpRequestEntity.getTestHttpRequestEntity(),
-                        ProductDto.class, serverPort, productId);
-
-        assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-        //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
-        ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
-        long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
-
-
         givenAuthorizationFor(Scope.CUSTOMER, restTemplate -> {
+
+            final ResponseEntity<ProductDto> remoteTestProductByIdEntity =
+                    restTemplate.exchange(
+                            ApiTestUrls.PRODUCT_BY_ID_URL,
+                            HttpMethod.GET,
+                            null,
+                            ProductDto.class, serverPort, productId);
+
+            assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
+
+            //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
+            ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+            long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
+
+
             URI newOrderUrl = createNewOrder(restTemplate);
             try {
                 addItemToOrder(restTemplate, newOrderUrl, skuId, TEST_QUANTITY + 2);
@@ -370,7 +361,7 @@ public class OrderControllerTest extends AbstractTest {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
@@ -428,7 +419,7 @@ public class OrderControllerTest extends AbstractTest {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = apiTestCatalogManager.addTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
