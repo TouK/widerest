@@ -3,7 +3,11 @@ package pl.touk.widerest.api.categories;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
+import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
+import org.broadleafcommerce.core.catalog.domain.CategoryXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.EmbeddedResource;
@@ -14,10 +18,14 @@ import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
-import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,8 +44,12 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
     @Resource
     protected CatalogService catalogService;
 
+    @Resource
+    protected FulfilmentServiceProxy fulfilmentServiceProxy;
+
     @Override
     public CategoryDto createDto(final Category entity, final boolean embed, final boolean link) {
+
         final CategoryDto dto = CategoryDto.builder()
                 .name(entity.getName())
                 .description(entity.getDescription())
@@ -57,6 +69,22 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                                 .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia())))
                 )
                 .build();
+
+        try {
+            Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
+                    .ifPresent(options -> {
+                        dto.setFulfillmentOptions(options.entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        e -> e.getKey().getName(),
+                                        e -> FulfillmentOptionDto.builder()
+                                                .description(e.getKey().getLongDescription())
+                                                .price(e.getValue().getAmount()).build())
+                                ));
+                    });
+
+        } catch (FulfillmentPriceException e) {
+            throw new RuntimeException(e);
+        }
 
         dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
 

@@ -77,7 +77,6 @@ public class FulfillmentController {
     @Resource(name = "wdOrderService")
     protected OrderServiceProxy orderServiceProxy;
 
-    @Resource(name = "wdfulfilmentService")
     protected FulfilmentServiceProxy fulfillmentServiceProxy;
 
     @Resource(name = "blAddressService")

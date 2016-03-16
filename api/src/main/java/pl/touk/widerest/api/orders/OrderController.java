@@ -14,8 +14,6 @@ import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
@@ -85,7 +83,6 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -114,7 +111,6 @@ public class OrderController {
     @Resource(name = "wdOrderService")
     protected OrderServiceProxy orderServiceProxy;
 
-    @Resource(name = "wdfulfilmentService")
     protected FulfilmentServiceProxy fulfillmentServiceProxy;
 
     @Resource(name = "blAddressService")
@@ -330,18 +326,16 @@ public class OrderController {
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
+        DiscreteOrderItem orderItem = cart.getDiscreteOrderItems().stream()
+                .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
+                .findAny().get();
+
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
                         .path("/{id}")
-                        .buildAndExpand(
-                                (cart.getDiscreteOrderItems().stream()
-                                        .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
-                                        .findAny()
-                                        .map(DiscreteOrderItem::getId)
-                                        .orElseThrow(ResourceNotFoundException::new))
-                        )
+                        .buildAndExpand(orderItem.getId())
                         .toUri()
-        ).build();
+        ).body(discreteOrderItemConverter.createDto(orderItem));
     }
 
     /* POST /orders/{orderId}/items */

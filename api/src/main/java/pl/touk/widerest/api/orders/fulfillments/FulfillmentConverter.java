@@ -2,7 +2,6 @@ package pl.touk.widerest.api.orders.fulfillments;
 
 import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
-import org.broadleafcommerce.core.order.domain.FulfillmentGroupImpl;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderItemService;
@@ -31,7 +30,7 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
     @Resource(name = "blOrderItemService")
     protected OrderItemService orderItemService;
 
-    @Resource(name = "wdfulfilmentService")
+    @Resource
     private FulfilmentServiceProxy fulfillmentServiceProxy;
 
     @Resource(name = "blFulfillmentGroupService")
@@ -63,7 +62,7 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
                 .ifPresent(fulfillmentDto::setSelectedFulfillmentOption);
 
         try {
-            Optional.ofNullable(fulfillmentServiceProxy.getFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
+            Optional.ofNullable(fulfillmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
                     .ifPresent(options -> {
                         fulfillmentDto.setFulfillmentOptions(options.entrySet().stream()
                                 .collect(Collectors.toMap(

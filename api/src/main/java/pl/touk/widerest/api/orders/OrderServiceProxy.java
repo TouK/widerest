@@ -46,7 +46,6 @@ public class OrderServiceProxy {
     @Resource(name = "blCustomerService")
     private CustomerService customerService;
 
-    @Resource(name = "wdfulfilmentService")
     private FulfilmentServiceProxy fulfillmentServiceProxy;
 
     @Resource
