@@ -18,7 +18,7 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Component
 public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, DiscreteOrderItemDto> {
 
-    public static final String FULFILLMENT_PARENT_REL = "fulfillment_parent";
+    public static final String FULFILLMENT_REL = "fulfillment";
 
     @Override
     public DiscreteOrderItemDto createDto(final DiscreteOrderItem discreteOrderItem, final boolean embed, final boolean link) {
@@ -43,7 +43,7 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
 
         if (link) {
             orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
-            orderItemDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, discreteOrderItem.getOrder().getId(), findFullfillmentGroupId(discreteOrderItem))).withRel(FULFILLMENT_PARENT_REL));
+            orderItemDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, discreteOrderItem.getOrder().getId(), findFullfillmentGroupId(discreteOrderItem))).withRel(FULFILLMENT_REL));
         }
 
         return orderItemDto;

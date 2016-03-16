@@ -24,12 +24,7 @@ import java.util.Iterator;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 public class OrderFulfillmentsTest extends AbstractTest {
@@ -233,8 +228,8 @@ public class OrderFulfillmentsTest extends AbstractTest {
 
                         final DiscreteOrderItemDto item1 = restTemplate.getForObject(orderItem1Href, DiscreteOrderItemDto.class);
                         final DiscreteOrderItemDto item2 = restTemplate.getForObject(orderItem2Href, DiscreteOrderItemDto.class);
-                        final String href1 = item1.getLink(DiscreteOrderItemConverter.FULFILLMENT_PARENT_REL).getHref();
-                        final String href2 = item2.getLink(DiscreteOrderItemConverter.FULFILLMENT_PARENT_REL).getHref();
+                        final String href1 = item1.getLink(DiscreteOrderItemConverter.FULFILLMENT_REL).getHref();
+                        final String href2 = item2.getLink(DiscreteOrderItemConverter.FULFILLMENT_REL).getHref();
 
                         assertNotNull(href1);
                         assertNotNull(href2);
