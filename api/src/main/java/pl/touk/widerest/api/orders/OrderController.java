@@ -326,18 +326,16 @@ public class OrderController {
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
+        DiscreteOrderItem orderItem = cart.getDiscreteOrderItems().stream()
+                .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
+                .findAny().get();
+
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
                         .path("/{id}")
-                        .buildAndExpand(
-                                (cart.getDiscreteOrderItems().stream()
-                                        .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
-                                        .findAny()
-                                        .map(DiscreteOrderItem::getId)
-                                        .orElseThrow(ResourceNotFoundException::new))
-                        )
+                        .buildAndExpand(orderItem.getId())
                         .toUri()
-        ).build();
+        ).body(discreteOrderItemConverter.createDto(orderItem));
     }
 
     /* POST /orders/{orderId}/items */
