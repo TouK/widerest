@@ -10,6 +10,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.common.AddressDto;
 import pl.touk.widerest.api.common.CatalogUtils;
+import pl.touk.widerest.api.orders.DiscreteOrderItemConverter;
+import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.security.oauth2.Scope;
@@ -23,6 +25,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -226,12 +230,18 @@ public class OrderFulfillmentsTest extends AbstractTest {
                                 assertArrayEquals(fulfillmentGroupDto2.getItemHrefs().toArray(), Arrays.array(orderItem1Href.toASCIIString()));
                             });
                         });
+
+                        final DiscreteOrderItemDto item1 = restTemplate.getForObject(orderItem1Href, DiscreteOrderItemDto.class);
+                        final DiscreteOrderItemDto item2 = restTemplate.getForObject(orderItem2Href, DiscreteOrderItemDto.class);
+                        final String href1 = item1.getLink(DiscreteOrderItemConverter.FULFILLMENT_PARENT_REL).getHref();
+                        final String href2 = item2.getLink(DiscreteOrderItemConverter.FULFILLMENT_PARENT_REL).getHref();
+
+                        assertNotNull(href1);
+                        assertNotNull(href2);
+
+                        assertNotEquals(href1, item2);
                     });
                 });
-                // TODO:
-                // whenAllItemsInOrderRetrieved
-                // thenAllItemsHaveAHateoasLinkToADistinctFulfillment
-
             });
         });
     }
