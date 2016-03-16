@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.NotBlank;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
 
-import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
@@ -51,4 +51,8 @@ public class CategoryDto extends BaseDto {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 5, value = "List of medias associated with a category")
     private Map<String, MediaDto> media;
+
+    @ApiModelProperty(value = "Available options for fulfillment")
+    private Map<String, FulfillmentOptionDto> fulfillmentOptions;
+
 }

@@ -2,6 +2,7 @@ package pl.touk.widerest.api.orders.fulfillments;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
+import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
@@ -9,6 +10,7 @@ import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.FulfillmentOptionService;
 import org.broadleafcommerce.core.order.service.OrderService;
+import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
@@ -18,12 +20,13 @@ import pl.touk.widerest.api.common.AddressConverter;
 
 import javax.annotation.Resource;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-@Service("wdfulfilmentService")
+@Service
 public class FulfilmentServiceProxy {
 
     @Resource(name = "blFulfillmentOptionService")
@@ -41,7 +44,18 @@ public class FulfilmentServiceProxy {
     @Resource
     private AddressConverter addressConverter;
 
-    public Map<? extends FulfillmentOption, Money> getFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(FulfillmentGroup fulfillmentGroup) throws FulfillmentPriceException {
+    public Map<? extends FulfillmentOption, Money> readFulfillmentOptionsWithPricesAvailableByFulfillmentType(FulfillmentType type) throws FulfillmentPriceException {
+        final List<FulfillmentOption> fulfillmentOptions = type != null
+                ? fulfillmentOptionService.readAllFulfillmentOptionsByFulfillmentType(type)
+                : fulfillmentOptionService.readAllFulfillmentOptions();
+
+        return fulfillmentPricingService.estimateCostForFulfillmentGroup(
+                fulfillmentGroupService.createEmptyFulfillmentGroup(),
+                new HashSet(fulfillmentOptions)
+        ).getFulfillmentOptionPrices();
+    }
+
+    public Map<? extends FulfillmentOption, Money> readFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(FulfillmentGroup fulfillmentGroup) throws FulfillmentPriceException {
         return fulfillmentPricingService.estimateCostForFulfillmentGroup(
                 fulfillmentGroup,
                 findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup)
@@ -52,7 +66,14 @@ public class FulfilmentServiceProxy {
         Set<FulfillmentOption> fulfillmentOptions = new HashSet<>(fulfillmentOptionService.readAllFulfillmentOptions());
 
         for (DiscreteOrderItem item : fulfillmentGroup.getDiscreteOrderItems()) {
-            fulfillmentOptions.removeAll(item.getSku().getExcludedFulfillmentOptions());
+            Optional.of(item.getSku())
+                    .map(Sku::getFulfillmentType)
+                    .map(fulfillmentOptionService::readAllFulfillmentOptionsByFulfillmentType)
+                    .ifPresent(fulfillmentOptions::retainAll);
+
+            Optional.of(item.getSku())
+                    .map(Sku::getExcludedFulfillmentOptions)
+                    .ifPresent(fulfillmentOptions::removeAll);
         }
 
         return fulfillmentOptions;
