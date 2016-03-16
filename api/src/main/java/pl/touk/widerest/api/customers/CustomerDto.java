@@ -10,10 +10,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -37,6 +37,7 @@ public class CustomerDto extends BaseDto {
     private String lastName;
 
     @ApiModelProperty(position = 3, value = "Customer's e-mail address")
+    @Email
     private String email;
 
     @ApiModelProperty(position = 4, value = "Customer's locale")

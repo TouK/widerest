@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.constraints.IsoCountryCode;
 
@@ -57,5 +58,10 @@ public class AddressDto extends BaseDto {
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     @ApiModelProperty(position = 10, value = "ISO 3166 country subdivision code", dataType = "java.lang.String")
     protected String countrySubdivisionCode;
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @ApiModelProperty
+    @Email
+    protected String email;
 
 }

@@ -4,7 +4,6 @@ package pl.touk.widerest.api.common;
 import org.broadleafcommerce.common.i18n.domain.ISOCountry;
 import org.broadleafcommerce.common.i18n.service.ISOService;
 import org.broadleafcommerce.profile.core.domain.Address;
-import org.broadleafcommerce.profile.core.domain.AddressImpl;
 import org.broadleafcommerce.profile.core.service.AddressService;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
@@ -34,6 +33,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
                 .companyName(address.getCompanyName())
                 .countryCode(Optional.ofNullable(address.getIsoCountryAlpha2()).map(ISOCountry::getAlpha2).orElse(null))
                 .countrySubdivisionCode(address.getIsoCountrySubdivision())
+                .email(address.getEmailAddress())
                 .build();
     }
 
@@ -62,6 +62,8 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
         Optional.ofNullable(addressDto.getCountryCode())
                 .ifPresent(countryCode -> address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(countryCode)));
+
+        address.setEmailAddress(addressDto.getEmail());
 
         return address;
     }
