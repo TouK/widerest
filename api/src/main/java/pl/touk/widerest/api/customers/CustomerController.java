@@ -155,27 +155,28 @@ public class CustomerController {
     }
 
     @Transactional
-    @RequestMapping(value = "/{id}/email", method = RequestMethod.PUT)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
     @ApiOperation(
-            value = "Update customer's email",
-            notes = "Updates customer's email address",
-            response = Void.class
-    )
+            value = "Get single customer details",
+            notes = "Retrieves single customer details",
+            response = CustomerDto.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Customer's email has been successfully updated", response = Void.class),
+            @ApiResponse(code = 200, message = "Successful retrieval of product", response = ProductDto.class),
             @ApiResponse(code = 404, message = "The specified customer does not exist")
     })
-    public void updateCustomerEmail(
+    public ResponseEntity<CustomerDto> updateOneCustomer(
             @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
-            @ApiParam(value = "ID of a customer", required = true)
-                @PathVariable(value = "id") final String customerId,
-            @RequestBody String email
+            @ApiParam(value = "ID of a customer", required = true) @PathVariable(value = "id") final String customerId,
+            @RequestBody CustomerDto customerDto
     ) {
-        Optional.ofNullable(customerId)
+        return ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))
                 .map(customerService::readCustomerById)
-                .map(toCustomerWithEmail(email))
+                .map(customer -> customerConverter.updateEntity(customer, customerDto))
+                .map(customerService::saveCustomer)
+                .map(customer -> customerConverter.createDto(customer))
+                .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
                 .orElseThrow(CustomerNotFoundException::new);
     }
 
