@@ -2,22 +2,15 @@ package pl.touk.widerest.api.customers;
 
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
-import org.broadleafcommerce.profile.core.domain.CustomerAddressImpl;
-import org.broadleafcommerce.profile.core.domain.CustomerImpl;
 import org.broadleafcommerce.profile.core.service.CustomerAddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.common.AddressConverter;
-import pl.touk.widerest.api.common.AddressDto;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -69,27 +62,32 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
 
     @Override
     public Customer updateEntity(final Customer customer, final CustomerDto customerDto) {
+
+        if (customerDto.getUsername() != null) {
+            throw new java.lang.IllegalArgumentException("Username may be assigned by registering only");
+        }
+
         customer.setFirstName(customerDto.getFirstName());
         customer.setLastName(customerDto.getLastName());
-        customer.setUsername(customerDto.getUsername());
         customer.setEmailAddress(customerDto.getEmail());
 
        // customer.setRegistered(customerDto.getRegistered()); // -> false
 
+        customer.getCustomerAddresses().clear();
 
-        customer.setCustomerAddresses(
-                Optional.ofNullable(customerDto.getAddresses())
-                        .map(addresses -> addresses.entrySet().stream())
-                        .map(stream -> stream
-                                .map(entry -> {
-                                    CustomerAddress customerAddress = customerAddressService.create();
-                                    customerAddress.setAddressName(entry.getKey());
-                                    customerAddress.setAddress(addressConverter.createEntity(entry.getValue()));
-                                    return customerAddress;
-                                })
-                                .collect(toList())
-                        ).orElse(Collections.emptyList())
-        );
+        Optional.ofNullable(customerDto.getAddresses())
+                .map(addresses -> addresses.entrySet().stream())
+                .map(stream -> stream
+                        .map(entry -> {
+                            CustomerAddress customerAddress = customerAddressService.create();
+                            customerAddress.setAddressName(entry.getKey());
+                            customerAddress.setAddress(addressConverter.createEntity(entry.getValue()));
+                            customerAddress.setCustomer(customer);
+                            return customerAddress;
+                        })
+                        .collect(toList())
+                )
+                .ifPresent(customerAddresses -> customer.getCustomerAddresses().addAll(customerAddresses));
 
         return customer;
     }

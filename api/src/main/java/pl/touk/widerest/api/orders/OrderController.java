@@ -5,22 +5,20 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import com.jasongoodwin.monads.Try;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
+import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
-import org.broadleafcommerce.common.payment.dto.PaymentResponseDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayTransactionService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayTransparentRedirectService;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
@@ -51,6 +49,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
@@ -76,6 +75,7 @@ import pl.touk.widerest.security.config.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Objects;
@@ -541,9 +541,8 @@ public class OrderController {
             throw new ResourceNotFoundException("Cannot find an item with ID: " + itemId);
         }
 
-        Try.ofFailable(() -> orderService.save(orderService.removeItem(cart.getId(), itemId, true), true))
-                .toOptional()
-                .orElseThrow(() -> new ResourceNotFoundException("Error while removing item with ID: " + itemId));
+        Try.of(() -> orderService.save(orderService.removeItem(cart.getId(), itemId, true), true))
+                .getOrElseThrow(() -> new ResourceNotFoundException("Error while removing item with ID: " + itemId));
     }
 
     /* GET /orders/items/{itemId} */
@@ -620,20 +619,20 @@ public class OrderController {
     })
     @Transactional
     public ResponseEntity initiatePayment(
-            @RequestBody PaymentDto paymentDto,
+            @Valid @RequestBody PaymentDto paymentDto,
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
             @PathVariable(value = "orderId") Long orderId
-    ) throws PaymentException {
+    ) {
 
         final Order order = Optional.ofNullable(orderService.findOrderById(orderId))
                 .filter(OrderController.notYetSubmitted)
-                .orElseThrow(() -> new org.apache.velocity.exception.ResourceNotFoundException(""));
+                .orElseThrow(() -> new ResourceNotFoundException());
 
         if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
-            throw new IllegalAccessError("Access Denied");
+            throw new AccessDeniedException("The ordere does not belong to the customer");
         }
 
-        orderValidationService.validateOrderBeforeCheckout(order);
+//        orderValidationService.validateOrderBeforeCheckout(order);
 
         final PaymentRequestDTO paymentRequestDTO =
                 orderToPaymentRequestDTOService.translateOrder(order)
@@ -642,34 +641,21 @@ public class OrderController {
 
         PaymentGatewayConfigurationService configurationService = findPaymentGatewayConfigurationService(paymentDto);
 
-
         PaymentGatewayHostedService hostedService = configurationService.getHostedService();
-        if (hostedService != null) {
-            final PaymentResponseDTO paymentResponse =
-                    hostedService.requestHostedEndpoint(paymentRequestDTO);
-
-            //return redirect URI from the paymentResponse
-            final String redirectURI = Optional.ofNullable(paymentResponse.getResponseMap().get("REDIRECT_URL"))
-                    .orElseThrow(() -> new ResourceNotFoundException());
-
-            return ResponseEntity.created(URI.create(redirectURI)).build();
-        }
-
-        PaymentGatewayTransactionService transactionService = configurationService.getTransactionService();
-        if (transactionService != null) {
-            PaymentResponseDTO paymentResponseDTO =
-                    transactionService.authorizeAndCapture(paymentRequestDTO);
-            return ResponseEntity.ok().build();
-        }
-
         PaymentGatewayTransparentRedirectService transparentRedirectService = configurationService.getTransparentRedirectService();
-        if (transparentRedirectService != null) {
-            PaymentResponseDTO authorizeForm = transparentRedirectService.createAuthorizeForm(paymentRequestDTO);
-            return ResponseEntity.ok(authorizeForm.getResponseMap());
-        }
+
+        try {
+            if (hostedService != null) {
+                return ResponseEntity.created(URI.create(hostedService.requestHostedEndpoint(paymentRequestDTO).getResponseMap().get("REDIRECT_URL"))).build();
+            }
+            if (transparentRedirectService != null) {
+                return ResponseEntity.ok(transparentRedirectService.createAuthorizeForm(paymentRequestDTO).getResponseMap());
+            }
+        } catch (PaymentException e) {
+            log.error("Error while initiating payment", e);
+        };
 
         return ResponseEntity.unprocessableEntity().build();
-
     }
 
     private PaymentGatewayConfigurationService findPaymentGatewayConfigurationService(PaymentDto paymentDto) {

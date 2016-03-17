@@ -49,6 +49,7 @@ import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -132,7 +133,7 @@ public class CustomerController {
 
     @Transactional
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
     @ApiOperation(
             value = "Get single customer details",
             notes = "Retrieves single customer details",
@@ -156,7 +157,7 @@ public class CustomerController {
 
     @Transactional
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == #customerUserDetails.id")
+    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
     @ApiOperation(
             value = "Get single customer details",
             notes = "Retrieves single customer details",
@@ -168,7 +169,7 @@ public class CustomerController {
     public ResponseEntity<CustomerDto> updateOneCustomer(
             @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
             @ApiParam(value = "ID of a customer", required = true) @PathVariable(value = "id") final String customerId,
-            @RequestBody CustomerDto customerDto
+            @Valid @RequestBody CustomerDto customerDto
     ) {
         return ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))

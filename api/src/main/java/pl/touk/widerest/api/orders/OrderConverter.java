@@ -1,28 +1,22 @@
 package pl.touk.widerest.api.orders;
 
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderAttribute;
-import org.broadleafcommerce.core.order.domain.OrderImpl;
 import org.broadleafcommerce.core.order.service.OrderService;
-import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.customers.CustomerController;
 import pl.touk.widerest.api.customers.CustomerConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
 
 import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -36,6 +30,9 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Component
 public class OrderConverter implements Converter<Order, OrderDto> {
 
+    public static final String REL_ITEMS = "items";
+    public static final String REL_FULFILLMENTS = "fulfillments";
+    public static final String REL_STATUS = "status";
     @Resource
     protected OrderPaymentConverter orderPaymentConverter;
 
@@ -104,17 +101,10 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                     methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
             ).withRel("customer"));
 
-//        orderDto.add(linkTo(methodOn(OrderController.class).getOrdersCount(null)).withRel("order-count"));
-
-        /* link to items placed in an order */
-            orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel("items"));
-
-//        orderDto.add(linkTo(methodOn(OrderController.class).getItemsCountByOrderId(null, order.getId())).withRel("items-count"));
-
-        /* link to fulfillment */
-            orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel("fulfillments"));
-
-            orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel("status"));
+            orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel(REL_ITEMS));
+            orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel(REL_FULFILLMENTS));
+            orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel(REL_STATUS));
+            orderDto.add(linkTo(methodOn(OrderController.class).initiatePayment(null, null, order.getId())).withRel(REL_STATUS));
         }
 
         return orderDto;
