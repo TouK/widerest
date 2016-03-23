@@ -1,5 +1,6 @@
 package pl.touk.widerest.api.customers;
 
+import org.broadleafcommerce.common.locale.domain.Locale;
 import org.broadleafcommerce.profile.core.domain.Customer;
 import org.broadleafcommerce.profile.core.domain.CustomerAddress;
 import org.broadleafcommerce.profile.core.service.CustomerAddressService;
@@ -37,6 +38,7 @@ public class CustomerConverter implements Converter<Customer, CustomerDto> {
                 .lastName(customer.getLastName())
                 .username(customer.getUsername())
                 .email(customer.getEmailAddress())
+                .locale(Optional.ofNullable(customer.getCustomerLocale()).map(Locale::getLocaleCode).orElse(null))
                 .addresses(
                         customer.getCustomerAddresses().stream()
                                 .collect(toMap(

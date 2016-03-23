@@ -14,7 +14,6 @@ import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -41,7 +40,7 @@ public class CustomerDto extends BaseDto {
     private String email;
 
     @ApiModelProperty(position = 4, value = "Customer's locale")
-    private Locale locale;
+    private String locale;
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 5, value = "Collection of available customer addresses")
