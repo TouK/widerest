@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.ProductConverter;
@@ -59,9 +58,6 @@ public class CategoryController {
 
     @Resource(name="blCatalogService")
     protected CatalogService catalogService;
-
-    @Resource(name = "wdDtoConverters")
-    protected DtoConverters dtoConverters;
 
     @Resource(name = "blGenericEntityService")
     protected GenericEntityService genericEntityService;
