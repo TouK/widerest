@@ -1,5 +1,6 @@
 package pl.touk.widerest.base;
 
+import org.broadleafcommerce.core.catalog.service.type.ProductOptionType;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.orders.OrderDto;
@@ -105,7 +106,7 @@ public class DtoTestFactory {
                     .model("Test Product Model")
                     .offerMessage("Test Product Offer Message")
                     //.defaultSku(null)
-                    .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
+                    .options(Arrays.asList(new ProductOptionDto("TESTOPTION", ProductOptionType.TEXT.getType(), false, Arrays.asList("test1", "test2"))))
                     .build();
 
         return defaultProductDto;
@@ -120,7 +121,7 @@ public class DtoTestFactory {
                 .model("Test Product Model" + productCounter)
                 .offerMessage("Test Product Offer Message" + productCounter)
                 //.defaultSku(null)
-                .options(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))))
+                .options(Arrays.asList(new ProductOptionDto("TESTOPTION", ProductOptionType.TEXT.getType(), false, Arrays.asList("test1", "test2"))))
                 .categoryName(null)
                 .validFrom(defaultActiveStartDate)
                 .build();
@@ -208,7 +209,7 @@ public class DtoTestFactory {
         productBundleDto.setOfferMessage("Test Bundle Offer Message" + productCounter);
 
         //productBundleDto.setDefaultSku(nextTestDefaultSku());
-        productBundleDto.setOptions(Arrays.asList(new ProductOptionDto("TESTOPTION", Arrays.asList("test1", "test2"))));
+        productBundleDto.setOptions(Arrays.asList(new ProductOptionDto("TESTOPTION", ProductOptionType.TEXT.getType(), false, Arrays.asList("test1", "test2"))));
         productBundleDto.setValidFrom(defaultActiveStartDate);
 
         ((ProductBundleDto)productBundleDto).setBundleSalePrice(new BigDecimal("19.99"));

@@ -7,7 +7,6 @@ import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.domain.SkuAttribute;
 import org.broadleafcommerce.core.catalog.domain.SkuAttributeImpl;
-import org.broadleafcommerce.core.catalog.domain.SkuImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
@@ -109,8 +108,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     public Sku updateEntity(final Sku sku, final SkuDto skuDto) {
         sku.setName(skuDto.getName());
         sku.setDescription(skuDto.getDescription());
-        sku.setRetailPrice(Optional.ofNullable(skuDto.getRetailPrice()).map(Money::new).orElse(null));
-        sku.setSalePrice(Optional.ofNullable(skuDto.getSalePrice()).map(Money::new).orElse(null));
+        sku.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
+        sku.setRetailPrice(Optional.ofNullable(skuDto.getRetailPrice()).map((amount) -> new Money(amount, sku.getCurrency())).orElse(null));
+        sku.setSalePrice(Optional.ofNullable(skuDto.getSalePrice()).map((amount) -> new Money(amount, sku.getCurrency())).orElse(null));
         sku.setQuantityAvailable(skuDto.getQuantityAvailable());
         sku.setTaxCode(skuDto.getTaxCode());
         sku.setActiveStartDate(skuDto.getActiveStartDate());

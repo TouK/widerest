@@ -1,15 +1,12 @@
 package pl.touk.widerest.api.common;
 
-import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.persistence.Status;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
-import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.web.util.UriComponentsBuilder;
-import pl.touk.widerest.api.products.skus.SkuDto;
 
 import java.net.URI;
 import java.util.List;
@@ -38,26 +35,6 @@ public class CatalogUtils {
             return a;
         };
     }
-
-    /* TODO: (mst) To be removed. Left because of temporal compatibility issues  */
-    public static Sku partialUpdateSkuEntityFromDto(final Sku skuEntity, final SkuDto skuDto) {
-
-        Optional.ofNullable(skuDto.getName()).ifPresent(skuEntity::setName);
-        Optional.ofNullable(skuDto.getDescription()).ifPresent(skuEntity::setDescription);
-        Optional.ofNullable(skuDto.getQuantityAvailable()).ifPresent(skuEntity::setQuantityAvailable);
-        Optional.ofNullable(skuDto.getTaxCode()).ifPresent(skuEntity::setTaxCode);
-        Optional.ofNullable(skuDto.getActiveStartDate()).ifPresent(skuEntity::setActiveStartDate);
-        Optional.ofNullable(skuDto.getActiveEndDate()).ifPresent(skuEntity::setActiveEndDate);
-
-        Optional.ofNullable(skuDto.getSalePrice()).ifPresent(salePrice ->
-                skuEntity.setSalePrice(new Money(salePrice)));
-
-        Optional.ofNullable(skuDto.getRetailPrice()).ifPresent(retailPrice ->
-                skuEntity.setRetailPrice(new Money(retailPrice)));
-
-        return skuEntity;
-    }
-
 
     public static long getIdFromUrl(final URI uri) throws NumberFormatException {
         List<String> pathSegments = UriComponentsBuilder.fromUri(uri).build().getPathSegments();

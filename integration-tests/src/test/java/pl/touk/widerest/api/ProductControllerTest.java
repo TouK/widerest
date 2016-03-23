@@ -300,6 +300,7 @@ public class ProductControllerTest extends AbstractTest {
 
     }
 
+    @Ignore("dropped PATCH support")
     @Test
     public void partiallyUpdatingSkuDoesNotRemoveAlreadySetValuesTest() throws Throwable {
         givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {

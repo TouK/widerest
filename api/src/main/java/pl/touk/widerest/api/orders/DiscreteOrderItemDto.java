@@ -12,7 +12,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.broadleafcommerce.common.money.Money;
 import pl.touk.widerest.api.BaseDto;
-import pl.touk.widerest.api.products.ProductOptionDto;
 
 import java.math.BigDecimal;
 import java.util.Map;

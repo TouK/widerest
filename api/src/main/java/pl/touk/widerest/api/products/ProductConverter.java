@@ -4,6 +4,8 @@ import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.catalog.service.type.ProductOptionType;
+import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.catalog.service.type.ProductType;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
@@ -14,18 +16,25 @@ import pl.touk.widerest.api.categories.CategoryController;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.common.MediaDto;
+import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.skus.SkuConverter;
+import pl.touk.widerest.api.products.skus.SkuDto;
+import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.empty;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -154,7 +163,19 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         final Sku defaultSku = catalogService.createSku();
         product.setDefaultSku(defaultSku);
 
-        return updateEntity(product, productDto);
+        updateEntity(product, productDto);
+
+                /* (mst) if there is a default category set, try to find it and connect it with the product.
+                 Otherwise just ignore it.
+         */
+        setCategoryIfPresent(productDto, product);
+
+        setProductOptionXrefs(productDto, product, product);
+
+        Optional.ofNullable(productDto.getSkus())
+                .map(additionalSkus -> setAdditionalSkus(additionalSkus, product));
+
+        return product;
     }
 
     @Override
@@ -212,8 +233,125 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         return ProductOptionDto.builder()
                 .name(productOption.getAttributeName())
+                .type(Optional.ofNullable(productOption.getType()).map(ProductOptionType::getType).orElse(null))
+                .required(productOption.getRequired())
                 .allowedValues(productOptionAllowedValues)
                 .build();
     };
+
+
+    private void setCategoryIfPresent(ProductDto productDto, Product newProduct) {
+        Optional.ofNullable(productDto.getCategoryName())
+                .filter(name -> !isNullOrEmpty(name))
+                .map(name -> catalogService.findCategoriesByName(name))
+                .map(Collection::stream).orElse(empty())
+                .filter(CatalogUtils.nonArchivedCategory)
+                .findAny()
+                .ifPresent(newProduct::setCategory);
+    }
+
+    private Product setAdditionalSkus(final List<SkuDto> additionalSkus, final Product newProduct) {
+
+        final List<Sku> savedSkus = new ArrayList<>();
+        savedSkus.addAll(newProduct.getAllSkus());
+
+        for (SkuDto additionalSkuDto : additionalSkus) {
+
+            Sku additionalSkuEntity = skuConverter.createEntity(additionalSkuDto);
+
+            final Sku tempSkuEntityParam = additionalSkuEntity;
+
+            additionalSkuEntity.setProductOptionValueXrefs(
+                    Optional.ofNullable(additionalSkuDto.getSkuProductOptionValues()).orElse(Collections.emptySet()).stream()
+                            .map(e -> generateXref(e, tempSkuEntityParam, newProduct))
+                            .collect(toSet())
+            );
+
+
+            additionalSkuEntity.setProduct(newProduct);
+//            additionalSkuEntity = catalogService.saveSku(additionalSkuEntity);
+            savedSkus.add(additionalSkuEntity);
+        }
+
+        newProduct.setAdditionalSkus(savedSkus);
+        return newProduct;
+    }
+
+    public SkuProductOptionValueXref generateXref(SkuProductOptionValueDto skuProductOption, Sku sku, Product product) {
+        final ProductOption currentProductOption = Optional.ofNullable(getProductOptionByNameForProduct(
+                skuProductOption.getAttributeName(),
+                product))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product option: " + skuProductOption.getAttributeName() + " does not exist in product with ID: " + product.getId()
+                ));
+
+        final ProductOptionValue productOptionValue = Optional.ofNullable(getProductOptionValueByNameForProduct(
+                        currentProductOption,
+                        skuProductOption.getAttributeValue()))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "'" + skuProductOption.getAttributeValue() + "'" + " is not an allowed value for option: " +
+                                skuProductOption.getAttributeName() + " for product with ID: " + product.getId()
+                ));
+
+
+        return new SkuProductOptionValueXrefImpl(sku, productOptionValue);
+    }
+
+    private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
+        final ProductOption p = catalogService.saveProductOption(productOptionDtoToEntity(productOptionDto));
+        p.getAllowedValues().forEach(x -> x.setProductOption(p));
+        p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
+        p.setRequired(true);
+
+        final ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
+        productOptionXref.setProduct(product);
+        productOptionXref.setProductOption(p);
+
+        return productOptionXref;
+    }
+
+    private void setProductOptionXrefs(ProductDto productDto, Product newProduct, Product productParam) {
+        final List<ProductOptionXref> productOptionXrefs = Optional.ofNullable(productDto.getOptions())
+                .filter(e -> !e.isEmpty())
+                .map(List::stream)
+                .map(e -> e.map(x -> generateProductXref(x, productParam)))
+                .map(e -> e.collect(toList()))
+                .orElse(newProduct.getProductOptionXrefs());
+
+        newProduct.setProductOptionXrefs(productOptionXrefs);
+    }
+
+    public ProductOption productOptionDtoToEntity(ProductOptionDto dto) {
+        final ProductOption productOption = new ProductOptionImpl();
+        productOption.setAttributeName(dto.getName());
+        productOption.setAllowedValues(dto.getAllowedValues().stream()
+                .map(e -> {
+                    ProductOptionValue p = new ProductOptionValueImpl();
+                    p.setAttributeValue(e);
+                    return p;
+                })
+                .collect(toList()));
+
+        return productOption;
+    };
+
+    public ProductOption getProductOptionByNameForProduct(final String productOptionName, final Product product) {
+        return Optional.ofNullable(product.getProductOptionXrefs())
+                .orElse(Collections.emptyList()).stream()
+                .map(ProductOptionXref::getProductOption)
+                .filter(x -> x.getAttributeName().equals(productOptionName))
+                .findAny()
+                .orElse(null);
+    }
+
+    public ProductOptionValue getProductOptionValueByNameForProduct(final ProductOption productOption,
+                                                                    final String productOptionValue) {
+        return productOption.getAllowedValues().stream()
+                .filter(x -> x.getAttributeValue().equals(productOptionValue))
+                .findAny()
+                .orElse(null);
+    }
+
+
 
 }

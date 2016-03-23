@@ -11,9 +11,16 @@ import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.security.service.ExploitProtectionService;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.common.util.BLCSystemProperty;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.CategoryProductXref;
+import org.broadleafcommerce.core.catalog.domain.Product;
+import org.broadleafcommerce.core.catalog.domain.ProductAttribute;
+import org.broadleafcommerce.core.catalog.domain.ProductAttributeImpl;
+import org.broadleafcommerce.core.catalog.domain.ProductBundle;
+import org.broadleafcommerce.core.catalog.domain.Sku;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
@@ -32,7 +39,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pl.touk.widerest.api.DtoConverters;
 import pl.touk.widerest.api.categories.CategoryConverter;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.CatalogUtils;
@@ -41,13 +47,11 @@ import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.skus.SkuConverter;
 import pl.touk.widerest.api.products.skus.SkuDto;
-import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 import pl.touk.widerest.security.config.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +60,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.empty;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -78,9 +79,6 @@ public class ProductController {
 
     @Resource(name = "blInventoryService")
     protected InventoryService inventoryService;
-
-    @Resource(name = "wdDtoConverters")
-    protected DtoConverters dtoConverters;
 
     @Resource(name = "blSearchService")
     protected SearchService searchService;
@@ -340,30 +338,14 @@ public class ProductController {
             @ApiParam(value = "Description of a new product", required = true)
                 @Valid @RequestBody final ProductDto receivedProductDto) {
 
-        Product newProductEntity = productConverter.createEntity(receivedProductDto);
-
-        /* (mst) if there is a default category set, try to find it and connect it with the product.
-                 Otherwise just ignore it.
-         */
-        setCategoryIfPresent(receivedProductDto, newProductEntity);
-
-        final Product productParam = newProductEntity;
-
-        setProductOptionXrefs(receivedProductDto, newProductEntity, productParam);
-
-        newProductEntity = catalogService.saveProduct(newProductEntity);
-
-        final Product productParam2 = newProductEntity;
-
-        /* (mst) Save additional SKUs if they are present */
-        Optional.ofNullable(receivedProductDto.getSkus())
-                .map(additionalSkus -> setAdditionalSkus(additionalSkus, productParam2))
-                .map(catalogService::saveProduct);
+        Product product = catalogService.saveProduct(
+                productConverter.createEntity(receivedProductDto)
+        );
 
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
                         .path("/{id}")
-                        .buildAndExpand(newProductEntity.getId())
+                        .buildAndExpand(product.getId())
                         .toUri()
         ).build();
     }
@@ -700,7 +682,7 @@ public class ProductController {
         if (skuDto.getSkuProductOptionValues() != null && !skuDto.getSkuProductOptionValues().isEmpty()) {
             newSkuEntity.setProductOptionValueXrefs(
                     skuDto.getSkuProductOptionValues().stream()
-                            .map(e -> generateXref(e, skuParam, product))
+                            .map(e -> productConverter.generateXref(e, skuParam, product))
                             .collect(Collectors.toSet())
             );
         }
@@ -1170,52 +1152,10 @@ public class ProductController {
 
         Optional.of(getSkuByIdForProductById(productId, skuId))
                 .map(e -> skuConverter.updateEntity(e, skuDto))
-                .map(e -> {
-                    e.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
-                    return e;
-                })
                 .map(catalogService::saveSku);
 
         return OK;
     }
-
-    /* PATCH /products/{productId}/skus/{skuId} */
-    @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
-    @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PATCH)
-    @ApiOperation(
-            value = "Partially update an existing SKU",
-            notes = "Partially updates an existing SKU with new details. It does not follow the format specified in RFC yet though",
-            response = Void.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Successful update of the specified SKU"),
-            @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
-            @ApiResponse(code = 409, message = "Sku valdation error")
-    })
-    public ResponseEntity<?> partialUpdateOneSkuByProductId(
-            @ApiParam(value = "ID of a specific product", required = true)
-                @PathVariable(value = "productId") final Long productId,
-            @ApiParam(value = "ID of a specific SKU", required = true)
-                @PathVariable(value = "skuId") final Long skuId,
-            @ApiParam(value = "(Partial) Description of an updated SKU", required = true)
-                @Valid @RequestBody final SkuDto skuDto) {
-
-        Optional.of(getSkuByIdForProductById(productId, skuId))
-                .map(e -> CatalogUtils.partialUpdateSkuEntityFromDto(e, skuDto))
-                .map(e -> {
-
-                    Optional.ofNullable(skuDto.getCurrencyCode()).ifPresent(currencyCode -> {
-                        e.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
-                    });
-
-                    return e;
-                })
-                .map(catalogService::saveSku);
-
-        return OK;
-    }
-
-    /* ---------------------------- SKUs ENDPOINTS ---------------------------- */
 
     /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
 
@@ -1391,89 +1331,6 @@ public class ProductController {
         return Optional.ofNullable(catalogService.findProductById(productId))
                 .filter(CatalogUtils.nonArchivedProduct)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
-    }
-
-    private SkuProductOptionValueXref generateXref(SkuProductOptionValueDto skuProductOption, Sku sku, Product product) {
-        final ProductOption currentProductOption = Optional.ofNullable(dtoConverters.getProductOptionByNameForProduct(
-                skuProductOption.getAttributeName(),
-                product))
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Product option: " + skuProductOption.getAttributeName() + " does not exist in product with ID: " + product.getId()
-                ));
-
-        final ProductOptionValue productOptionValue = Optional.ofNullable(dtoConverters
-                .getProductOptionValueByNameForProduct(
-                currentProductOption,
-                skuProductOption.getAttributeValue()))
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "'" + skuProductOption.getAttributeValue() + "'" + " is not an allowed value for option: " +
-                                skuProductOption.getAttributeName() + " for product with ID: " + product.getId()
-                ));
-
-
-        return new SkuProductOptionValueXrefImpl(sku, productOptionValue);
-    }
-
-    private ProductOptionXref generateProductXref(ProductOptionDto productOptionDto, Product product) {
-        final ProductOption p = catalogService.saveProductOption(DtoConverters.productOptionDtoToEntity.apply
-                (productOptionDto));
-        p.getAllowedValues().forEach(x -> x.setProductOption(p));
-        p.setProductOptionValidationStrategyType(ProductOptionValidationStrategyType.ADD_ITEM);
-        p.setRequired(true);
-
-        final ProductOptionXref productOptionXref = new ProductOptionXrefImpl();
-        productOptionXref.setProduct(product);
-        productOptionXref.setProductOption(p);
-
-        return productOptionXref;
-    }
-
-    private void setProductOptionXrefs(ProductDto productDto, Product newProduct, Product productParam) {
-        final List<ProductOptionXref> productOptionXrefs = Optional.ofNullable(productDto.getOptions())
-                .filter(e -> !e.isEmpty())
-                .map(List::stream)
-                .map(e -> e.map(x -> generateProductXref(x, productParam)))
-                .map(e -> e.collect(toList()))
-                .orElse(newProduct.getProductOptionXrefs());
-
-        newProduct.setProductOptionXrefs(productOptionXrefs);
-    }
-
-    private void setCategoryIfPresent(ProductDto productDto, Product newProduct) {
-        Optional.ofNullable(productDto.getCategoryName())
-                .filter(name -> !isNullOrEmpty(name))
-                .map(name -> catalogService.findCategoriesByName(name))
-                .map(Collection::stream).orElse(empty())
-                .filter(CatalogUtils.nonArchivedCategory)
-                .findAny()
-                .ifPresent(newProduct::setCategory);
-    }
-
-    private Product setAdditionalSkus(final List<SkuDto> additionalSkus, final Product newProduct) {
-
-        final List<Sku> savedSkus = new ArrayList<>();
-        savedSkus.addAll(newProduct.getAllSkus());
-
-        for (SkuDto additionalSkuDto : additionalSkus) {
-
-            Sku additionalSkuEntity = skuConverter.createEntity(additionalSkuDto);
-
-            final Sku tempSkuEntityParam = additionalSkuEntity;
-
-            additionalSkuEntity.setProductOptionValueXrefs(
-                    Optional.ofNullable(additionalSkuDto.getSkuProductOptionValues()).orElse(Collections.emptySet()).stream()
-                            .map(e -> generateXref(e, tempSkuEntityParam, newProduct))
-                            .collect(toSet())
-            );
-
-
-            additionalSkuEntity.setProduct(newProduct);
-            additionalSkuEntity = catalogService.saveSku(additionalSkuEntity);
-            savedSkus.add(additionalSkuEntity);
-        }
-
-        newProduct.setAdditionalSkus(savedSkus);
-        return newProduct;
     }
 
     private boolean hasDuplicates(final String productName) {

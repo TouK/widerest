@@ -4,20 +4,16 @@ import org.apache.commons.lang.StringUtils;
 import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.common.value.ValueAssignable;
-import org.broadleafcommerce.core.catalog.domain.*;
+import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
+import org.broadleafcommerce.core.catalog.domain.SkuBundleItemImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.OrderAttribute;
-import org.broadleafcommerce.core.order.domain.OrderAttributeImpl;
 import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
 import org.springframework.stereotype.Service;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
-import pl.touk.widerest.api.orders.CartAttributeDto;
 import pl.touk.widerest.api.products.BundleItemDto;
 import pl.touk.widerest.api.products.ProductDto;
-import pl.touk.widerest.api.products.ProductOptionDto;
-import pl.touk.widerest.api.products.ProductOptionValueDto;
 import pl.touk.widerest.api.products.search.FacetDto;
 import pl.touk.widerest.api.products.search.FacetValueDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
@@ -25,7 +21,6 @@ import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
 import javax.annotation.Resource;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -50,58 +45,6 @@ public class DtoConverters {
                             .orElseThrow(() -> new ResourceNotFoundException("Invalid currency code."));
         }
         return skuCurrency;
-    };
-
-    public ProductOption getProductOptionByNameForProduct(final String productOptionName, final Product product) {
-        return Optional.ofNullable(product.getProductOptionXrefs())
-                .orElse(Collections.emptyList()).stream()
-                    .map(ProductOptionXref::getProductOption)
-                    .filter(x -> x.getAttributeName().equals(productOptionName))
-                    .findAny()
-                    .orElse(null);
-    }
-
-    public ProductOptionValue getProductOptionValueByNameForProduct(final ProductOption productOption,
-                                                                    final String productOptionValue) {
-        return productOption.getAllowedValues().stream()
-                .filter(x -> x.getAttributeValue().equals(productOptionValue))
-                .findAny()
-                .orElse(null);
-    }
-
-    public static Function <ProductOption, ProductOptionDto> productOptionEntityToDto = entity ->
-                ProductOptionDto.builder().name(entity.getAttributeName()).allowedValues(entity.getAllowedValues().stream()
-                        .map(ProductOptionValue::getAttributeValue)
-                        .collect(toList()))
-                        .build();
-
-
-    public static Function<ProductOptionDto, ProductOption> productOptionDtoToEntity = dto -> {
-        final ProductOption productOption = new ProductOptionImpl();
-        productOption.setAttributeName(dto.getName());
-        productOption.setAllowedValues(dto.getAllowedValues().stream()
-                .map(e -> {
-                    ProductOptionValue p = new ProductOptionValueImpl();
-                    p.setAttributeValue(e);
-                    return p;
-                })
-                .collect(toList()));
-
-        return productOption;
-    };
-
-
-    public static Function<ProductOptionValue, ProductOptionValueDto> productOptionValueEntityToDto = entity ->
-            ProductOptionValueDto.builder().attributeValue(entity.getAttributeValue())
-                .productOption(DtoConverters.productOptionEntityToDto.apply(entity.getProductOption())).build();
-
-
-    public static Function<ProductOptionValueDto, ProductOptionValue> productOptionValueDtoToEntity = dto -> {
-        final ProductOptionValue productOptionValue = new ProductOptionValueImpl();
-
-        productOptionValue.setAttributeValue(dto.getAttributeValue());
-        productOptionValue.setProductOption(DtoConverters.productOptionDtoToEntity.apply(dto.getProductOption()));
-        return productOptionValue;
     };
 
     public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity ->
