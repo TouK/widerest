@@ -119,6 +119,10 @@
             <groupId>cz.jirutka.validator</groupId>
             <artifactId>validator-collection</artifactId>
         </dependency>
+        <dependency>
+            <groupId>cz.jirutka.spring</groupId>
+            <artifactId>spring-rest-exception-handler</artifactId>
+        </dependency>
 
     </dependencies>
 </project>

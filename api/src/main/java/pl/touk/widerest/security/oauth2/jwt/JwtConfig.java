@@ -1,4 +1,4 @@
-package pl.touk.widerest.security.config;
+package pl.touk.widerest.security.oauth2.jwt;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

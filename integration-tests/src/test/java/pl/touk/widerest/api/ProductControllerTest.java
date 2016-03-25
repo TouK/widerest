@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -268,7 +269,7 @@ public class ProductControllerTest extends AbstractTest {
             catalogOperationsRemote.addTestProduct(productWihtoutDefaultSkuDto);
             fail();
         } catch (HttpClientErrorException httpClientException) {
-            assertThat(httpClientException.getStatusCode(), equalTo(HttpStatus.BAD_REQUEST));
+            assertThat(httpClientException.getStatusCode(), Matchers.anyOf(equalTo(HttpStatus.BAD_REQUEST), equalTo(HttpStatus.UNPROCESSABLE_ENTITY)));
             assertThat(currentProductsCount, equalTo(catalogOperationsLocal.getTotalProductsCount()));
         }
     }

@@ -1,4 +1,4 @@
-package pl.touk.widerest.security.jwt;
+package pl.touk.widerest.security.oauth2.jwt;
 
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetailsServiceImpl;

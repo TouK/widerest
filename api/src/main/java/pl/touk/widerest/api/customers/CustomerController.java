@@ -44,7 +44,7 @@ import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
-import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.annotations.ApiIgnore;
 

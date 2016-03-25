@@ -37,6 +37,8 @@ import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.OrderItemRequestDTO;
 import org.broadleafcommerce.core.order.service.exception.AddToCartException;
+import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
+import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
@@ -71,11 +73,12 @@ import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.api.orders.payments.PaymentDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
-import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Objects;
@@ -156,12 +159,6 @@ public class OrderController {
         JavaType javaType = objectMapper.getTypeFactory().constructType(PaymentDto.class);
         paymentTypeIdResolver = objectMapper.getSerializerFactory().createTypeSerializer(serializationConfig, javaType).getTypeIdResolver();
     }
-
-    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-    private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
-    private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
-    private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
-
 
     /* GET /orders */
     @Transactional
@@ -586,24 +583,15 @@ public class OrderController {
             @ApiResponse(code = 404, message = "The specified order or item does not exist"),
             @ApiResponse(code = 409, message = "Wrong quantity value")
     })
-    public ResponseEntity<?> updateItemQuantityInOrder(
+    public void updateItemQuantityInOrder(
             @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") Long orderId,
             @ApiParam(value = "ID of a specific item in the order", required = true)
             @PathVariable(value = "itemId") Long itemId,
             @ApiParam(value = "Quantity value", required = true)
-            @RequestBody int quantity)
-    {
-        if(quantity <= 0) {
-            return CONFLICT;
-        }
-
-        try {
-            return orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
-        } catch(Exception e) {
-            return BAD_REQUEST;
-        }
+            @RequestBody @Min(0) int quantity) throws RemoveFromCartException, UpdateCartException {
+        orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")

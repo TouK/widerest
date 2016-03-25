@@ -42,7 +42,7 @@ import pl.touk.widerest.api.orders.OrderConverter;
 import pl.touk.widerest.api.orders.OrderServiceProxy;
 import pl.touk.widerest.api.orders.OrderValidationService;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
-import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;

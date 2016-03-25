@@ -1,4 +1,4 @@
-package pl.touk.widerest.security.jwt;
+package pl.touk.widerest.security.oauth2.jwt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;

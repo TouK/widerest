@@ -33,7 +33,7 @@ import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.ProductConverter;
 import pl.touk.widerest.api.products.ProductDto;
-import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;

@@ -20,8 +20,8 @@ import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedRe
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpMessageConverterExtractor;
-import pl.touk.widerest.security.oauth2.OutOfBandUriHandler;
 import pl.touk.widerest.security.oauth2.Scope;
+import pl.touk.widerest.security.oauth2.oob.OobAuthorizationEndpoint;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -59,7 +59,7 @@ public class AuthorizationServerClient {
         final HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
         final ClientHttpRequest request;
         request = httpRequestFactory.createRequest(
-                URI.create("http://localhost:" + serverPort + "/oauth/authorize?client_id=default&response_type=token&redirect_uri=" + OutOfBandUriHandler.OOB_URI + (scope != null ? "&scope=" + scope : "")),
+                URI.create("http://localhost:" + serverPort + "/oauth/authorize?client_id=default&response_type=token&redirect_uri=" + OobAuthorizationEndpoint.OOB_URI + (scope != null ? "&scope=" + scope : "")),
                 HttpMethod.GET
         );
 

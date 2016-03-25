@@ -11,8 +11,6 @@ import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.openadmin.server.security.service.AdminUserDetails;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -108,14 +106,14 @@ public class OrderServiceProxy {
                 .orElseThrow(() -> new OrderNotFoundException("Cannot find order with ID: " + orderId + " for customer with ID: " + customerUserDetails.getId()));
     }
 
-    @Transactional
-    public ResponseEntity<?> updateItemQuantityInOrder (
+    @Transactional(rollbackFor = UpdateCartException.class)
+    public void updateItemQuantityInOrder (
             Integer quantity, UserDetails userDetails, Long orderId, Long itemId)
                 throws UpdateCartException, RemoveFromCartException {
 
-        if (quantity <= 0) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
+//        if (quantity <= 0) {
+//            return new ResponseEntity<>(HttpStatus.CONFLICT);
+//        }
 
         final Order cart = getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
@@ -129,9 +127,6 @@ public class OrderServiceProxy {
         orderItemRequestDto.setOrderItemId(itemId);
 
         orderService.updateItemQuantity(orderId, orderItemRequestDto, true);
-
-
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 }

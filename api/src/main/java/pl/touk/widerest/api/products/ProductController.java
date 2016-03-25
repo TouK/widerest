@@ -28,7 +28,6 @@ import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +46,7 @@ import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.skus.SkuConverter;
 import pl.touk.widerest.api.products.skus.SkuDto;
-import pl.touk.widerest.security.config.ResourceServerConfig;
+import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
@@ -69,10 +68,10 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Api(value = "products", description = "Product catalog endpoint", produces = MediaTypes.HAL_JSON_VALUE)
 public class ProductController {
 
-    private static final ResponseEntity<Resources<ProductDto>> BAD_REQUEST = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
-    private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
-    private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
+//    private static final ResponseEntity<Resources<ProductDto>> BAD_REQUEST = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+//    private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
+//    private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
+//    private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
 
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
@@ -127,7 +126,7 @@ public class ProductController {
                 @RequestParam(value = "pageSize", defaultValue = "15") final Integer pageSize,
             @ApiParam(value = "Page number to return (applies only to searching)")
                 @RequestParam(value = "page", defaultValue = "1") final Integer page
-    ) {
+    ) throws ServiceException {
 
         List<Product> productsToReturn;
 
@@ -135,12 +134,8 @@ public class ProductController {
 
             String cleanedUpQuery;
 
-            try {
-                cleanedUpQuery = StringUtils.trim(q);
-                cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
-            } catch(final ServiceException ex) {
-                return BAD_REQUEST;
-            }
+            cleanedUpQuery = StringUtils.trim(q);
+            cleanedUpQuery = exploitProtectionService.cleanString(cleanedUpQuery);
 
             final SearchCriteria searchCriteria = new SearchCriteria();
             searchCriteria.setPage((page <= 0) ? 1 : page);
@@ -159,13 +154,8 @@ public class ProductController {
             searchCriteria.setFilterCriteria(searchFilterCriteria);
 
 
-            try {
-                final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
-                productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
-
-            } catch (ServiceException e) {
-                return BAD_REQUEST;
-            }
+            final SearchResult searchResult = searchService.findSearchResultsByQuery(cleanedUpQuery, searchCriteria);
+            productsToReturn = Optional.ofNullable(searchResult.getProducts()).orElse(Collections.emptyList());
         } else {
             productsToReturn = catalogService.findAllProducts(limit != null ? limit : 0, offset != null ? offset : 0);
         }
@@ -404,7 +394,7 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product does not exist"),
             @ApiResponse(code = 409, message = "Product with that name already exists")
     })
-    public ResponseEntity<?> updateOneProduct(
+    public void updateOneProduct(
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "(Full) Description of an updated product", required = true)
@@ -416,8 +406,6 @@ public class ProductController {
                     newProductEntity.setId(productId);
                     catalogService.saveProduct(newProductEntity);
                 });
-
-        return OK;
     }
 
     /* DELETE /products/{id} */
@@ -432,12 +420,11 @@ public class ProductController {
             @ApiResponse(code = 204, message = "Successful removal of the specified product"),
             @ApiResponse(code = 404, message = "The specified product does not exist")
     })
-    public ResponseEntity<?> removeOneProductById(
+    public void removeOneProductById(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId) {
 
         Optional.of(getProductById(productId)).ifPresent(catalogService::removeProduct);
-        return NO_CONTENT;
     }
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
@@ -530,7 +517,7 @@ public class ProductController {
             @ApiResponse(code = 204, message = "Successful removal of the specified attribute"),
             @ApiResponse(code = 404, message = "Specified product or attribute does not exist")
     })
-    public ResponseEntity<?> removeOneProductByIdAttribute(
+    public void removeOneProductByIdAttribute(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Name of the attribute", required = true)
@@ -544,8 +531,6 @@ public class ProductController {
         product.getProductAttributes().remove(attributeName);
 
         catalogService.saveProduct(product);
-
-        return NO_CONTENT;
     }
 
     /* ---------------------------- Product Attributes ENDPOINTS ---------------------------- */
@@ -656,7 +641,7 @@ public class ProductController {
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "Description of a new SKU", required = true)
                 @Valid @RequestBody final SkuDto skuDto
-    ) {
+    ) throws RequiredProductOptionsNotProvided {
 
         final Product product = getProductById(productId);
 
@@ -667,7 +652,7 @@ public class ProductController {
         if (product.getProductOptionXrefs() != null && !product.getProductOptionXrefs().isEmpty()) {
             if (skuDto.getSkuProductOptionValues() == null || skuDto.getSkuProductOptionValues().isEmpty() ||
                     skuDto.getSkuProductOptionValues().size() != product.getProductOptionXrefs().size()) {
-                return BAD_REQUEST;
+                throw new RequiredProductOptionsNotProvided();
             }
         }
 
@@ -875,7 +860,7 @@ public class ProductController {
             @ApiResponse(code = 204, message = "Successful removal of the specified media"),
             @ApiResponse(code = 404, message = "The specified media, SKU or product does not exist")
     })
-    public ResponseEntity<?> deleteOneMediaForSkuById(
+    public void deleteOneMediaForSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific media", required = true)
@@ -889,8 +874,6 @@ public class ProductController {
 
         genericEntityService.remove(skuMediaXrefToBeRemoved);
         catalogService.saveSku(productDefaultSku);
-
-        return NO_CONTENT;
     }
 
     /* PUT /{productId}/skus/{skuId}/media/{key} */
@@ -906,7 +889,7 @@ public class ProductController {
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
     })
-    public ResponseEntity<?> updateOneMediaForSkuById(
+    public void updateOneMediaForSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific media", required = true)
@@ -930,8 +913,6 @@ public class ProductController {
         productDefaultSku.getSkuMediaXref().put(key, newSkuMediaXref);
 
         catalogService.saveSku(productDefaultSku );
-
-        return OK;
     }
 
 
@@ -999,7 +980,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful update of SKU's quantity"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public ResponseEntity<?> updateSkuByIdQuantity(
+    public void updateSkuByIdQuantity(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1014,8 +995,6 @@ public class ProductController {
                     return e;
                 })
                 .map(catalogService::saveSku);
-
-        return OK;
     }
 
     /* PUT /products/{productId}/skus/{skuId}/availability */
@@ -1031,7 +1010,7 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful update of SKU's availability"),
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist")
     })
-    public ResponseEntity<?> updateSkuByIdAvailability(
+    public void updateSkuByIdAvailability(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1047,8 +1026,6 @@ public class ProductController {
                     return e;
                 })
                 .map(catalogService::saveSku);
-
-        return OK;
     }
 
     /* GET /products/{productId}/skus/{skuId}/availability */
@@ -1092,7 +1069,7 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified SKU or product does not exist"),
             @ApiResponse(code = 409, message = "Cannot delete Default SKU. If you need to change it, use PUT endpoint")
     })
-    public ResponseEntity<?> deleteOneSkuById(
+    public void deleteOneSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1100,31 +1077,13 @@ public class ProductController {
 
         final Product product = getProductById(productId);
 
-        /* (mst) Product's Default SKU cannot be deleted! */
-        if (product.getDefaultSku().getId().longValue() == skuId) {
-            return CONFLICT;
-        }
-
-        product.getAllSkus().stream()
-                .filter(x -> x.getId().longValue() == skuId)
-                .findFirst()
-                .map(e -> {
-                    catalogService.removeSku(e);
-                    return e;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Cannot delete SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
-                ));
-
-
-        product.setAdditionalSkus(
-                product.getAllSkus().stream()
-                        .filter(x -> x.getId().longValue() != skuId)
-                        .collect(toList())
-        );
+        if (!product.getAdditionalSkus().removeIf(sku -> sku.getId() == skuId)) {
+            throw new ResourceNotFoundException(
+                    "Cannot delete SKU with ID: " + skuId + ". SKU is not related to product with ID: " + productId + " or does not exist"
+            );
+        };
 
         catalogService.saveProduct(product);
-        return NO_CONTENT;
     }
 
 
@@ -1142,7 +1101,7 @@ public class ProductController {
             @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
             @ApiResponse(code = 409, message = "SKU with that name already exists")
     })
-    public ResponseEntity<?> updateOneSkuByProductId(
+    public void updateOneSkuByProductId(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1154,7 +1113,6 @@ public class ProductController {
                 .map(e -> skuConverter.updateEntity(e, skuDto))
                 .map(catalogService::saveSku);
 
-        return OK;
     }
 
     /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
@@ -1243,7 +1201,7 @@ public class ProductController {
             @ApiResponse(code = 204, message = "Successful removal of the specified media"),
             @ApiResponse(code = 404, message = "The specified media, SKU or product does not exist")
     })
-    public ResponseEntity<?> deleteOneMediaForSkuById(
+    public void deleteOneMediaForSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1259,8 +1217,6 @@ public class ProductController {
 
         catalogService.saveSku(skuEntity);
         genericEntityService.remove(skuMediaXrefToBeRemoved);
-
-        return NO_CONTENT;
     }
 
     /* PUT /{productId}/skus/{skuId}/media/{key} */
@@ -1276,7 +1232,7 @@ public class ProductController {
             @ApiResponse(code = 400, message = "Not enough data has been provided"),
             @ApiResponse(code = 404, message = "The specified product or SKU does not exist"),
     })
-    public ResponseEntity<?> updateMediaForSkuById(
+    public void updateMediaForSkuById(
             @ApiParam(value = "ID of a specific product", required = true)
                 @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
@@ -1301,8 +1257,6 @@ public class ProductController {
         sku.getSkuMediaXref().put(key, newSkuMediaXref);
 
         catalogService.saveSku(sku);
-
-        return OK;
     }
 
 /* ---------------------------- MEDIA ENDPOINTS ---------------------------- */
