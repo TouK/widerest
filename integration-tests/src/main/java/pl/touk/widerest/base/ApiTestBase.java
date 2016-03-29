@@ -7,6 +7,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
 import org.junit.Assert;
+import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,7 +29,6 @@ import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.security.oauth2.Scope;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -63,7 +63,7 @@ public abstract class ApiTestBase {
 
     protected CatalogOperationsRemote catalogOperationsRemote;
 
-    @PostConstruct
+    @Before
     public void init() throws IOException {
         AuthorizationServerClient authorizationServerClient = authorizationServerClient();
         authorizationServerClient.logIn("backoffice", "admin", "admin");
