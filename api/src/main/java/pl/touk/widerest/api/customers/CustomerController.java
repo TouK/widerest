@@ -26,7 +26,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
-import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerEndpointsConfiguration;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -46,6 +45,7 @@ import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.authentication.SiteAuthenticationToken;
 import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import pl.touk.widerest.security.oauth2.Scope;
+import pl.touk.widerest.security.oauth2.oob.OobAuthorizationServerEndpointsConfiguration;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
@@ -90,7 +90,7 @@ public class CustomerController {
     private AnonymousUserDetailsService customerUserDetailsService;
 
     @Resource
-    private AuthorizationServerEndpointsConfiguration authorizationServerEndpointsConfiguration;
+    private OobAuthorizationServerEndpointsConfiguration authorizationServerEndpointsConfiguration;
 
     @Autowired
     private ResourceServerTokenServices tokenServices;
