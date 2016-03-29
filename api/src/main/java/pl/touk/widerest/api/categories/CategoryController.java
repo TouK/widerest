@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.domain.Category;
@@ -16,12 +15,15 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.URL;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,11 +48,11 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 @RestController
+@Validated
 @RequestMapping(value = ResourceServerConfig.API_PATH, produces = { MediaTypes.HAL_JSON_VALUE})
 @Api(value = "categories", description = "Category catalog endpoint")
 public class CategoryController {
 
-    private static final ResponseEntity<Void> BAD_REQUEST = ResponseEntity.badRequest().build();
     private static final ResponseEntity<Void> NO_CONTENT = ResponseEntity.noContent().build();
     private static final ResponseEntity<Void> OK = ResponseEntity.ok().build();
     private static final ResponseEntity<Void> CONFLICT = ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -247,20 +249,12 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value = "categoryId") Long categoryId,
             @ApiParam(value = "Link to the subcategory")
-            @RequestParam(value = "href", required = true) String href) {
+            @RequestParam(value = "href", required = true) @NotEmpty @URL String href) {
 
-
-        if(StringUtils.isEmpty(href)) {
-            return BAD_REQUEST;
-        }
 
         long hrefCategoryId;
 
-        try {
-            hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (NumberFormatException e) {
-            return BAD_REQUEST;
-        }
+        hrefCategoryId = CatalogUtils.getIdFromUrl(href);
 
         if(hrefCategoryId == categoryId) {
             return CONFLICT;
@@ -303,19 +297,11 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
                 @PathVariable(value = "categoryId") final Long categoryId,
             @ApiParam(value = "Link to the subcategory")
-                @RequestParam(value = "href", required = true) final String href) {
-
-        if(StringUtils.isEmpty(href)) {
-            return BAD_REQUEST;
-        }
+                @RequestParam(value = "href", required = true) @NotEmpty @URL final String href) {
 
         long hrefCategoryId;
 
-        try {
-            hrefCategoryId = CatalogUtils.getIdFromUrl(href);
-        } catch (NumberFormatException e) {
-            return BAD_REQUEST;
-        }
+        hrefCategoryId = CatalogUtils.getIdFromUrl(href);
 
         if(hrefCategoryId == categoryId) {
             return CONFLICT;
@@ -387,19 +373,9 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value="categoryId") Long categoryId,
             @ApiParam(value = "Link to the product")
-            @RequestParam(value = "href", required = true) String href) {
+            @RequestParam(value = "href", required = true) @NotEmpty @URL String href) {
 
-        if(StringUtils.isEmpty(href)) {
-            return BAD_REQUEST;
-        }
-
-        long hrefProductId;
-
-        try {
-            hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch (NumberFormatException e) {
-            return BAD_REQUEST;
-        }
+        long hrefProductId = CatalogUtils.getIdFromUrl(href);
 
         final Category categoryEntity = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils.nonArchivedCategory)
@@ -441,19 +417,9 @@ public class CategoryController {
             @ApiParam(value = "ID of a specific category", required = true)
             @PathVariable(value="categoryId") Long categoryId,
             @ApiParam(value = "Link to the product")
-            @RequestParam(value = "href", required = true) String href) {
+            @RequestParam(value = "href", required = true) @NotEmpty @URL String href) {
 
-        if(StringUtils.isEmpty(href)) {
-            return BAD_REQUEST;
-        }
-
-        long hrefProductId;
-
-        try {
-            hrefProductId = CatalogUtils.getIdFromUrl(href);
-        } catch ( NumberFormatException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        long hrefProductId = CatalogUtils.getIdFromUrl(href);
 
     	/* (mst) Ok, here we do NOT remove the product completely from catalog -> this is the job of the ProductController! */
         getProductsFromCategoryId(categoryId).stream()

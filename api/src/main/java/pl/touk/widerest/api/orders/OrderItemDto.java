@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
@@ -20,6 +21,8 @@ import java.util.Map;
 public class OrderItemDto {
 
     @ApiModelProperty(position = 0, value = "Quantity of an item to be added into the order", required = true, dataType = "java.lang.Integer")
+    @NotNull
+
     private Integer quantity = 1;
 
     @ApiModelProperty(position = 1, value = "ID of a SKU to be added into the order", required = true, dataType = "java.lang.Long")
@@ -33,6 +36,7 @@ public class OrderItemDto {
 
     /* (mst) ProductHref + Options */
     @ApiModelProperty(position = 4, value = "Href of a product to be added into the order", required = true, dataType = "java.lang.String")
+    @NotNull
     private String productHref;
 
     @ApiModelProperty(position = 5, value = "A map of selected options for the product", required = true)

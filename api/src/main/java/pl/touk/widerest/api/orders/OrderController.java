@@ -297,19 +297,11 @@ public class OrderController {
             @ApiParam(value = "Description of a new order item", required = true)
             @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
-        if(orderItemDto.getQuantity() == null || orderItemDto.getProductHref() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
         Order cart = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         long hrefProductId;
 
-        try {
-            hrefProductId = CatalogUtils.getIdFromUrl(orderItemDto.getProductHref());
-        } catch ( NumberFormatException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        hrefProductId = CatalogUtils.getIdFromUrl(orderItemDto.getProductHref());
 
         final OrderItemRequestDTO orderItemRequestDTO = new OrderItemRequestDTO();
         orderItemRequestDTO.setQuantity(orderItemDto.getQuantity());
@@ -375,12 +367,8 @@ public class OrderController {
 
             long skuId;
 
-            try {
-                skuId = CatalogUtils.getIdFromUrl(orderItemDto.getSkuHref());
-                req.setSkuId(skuId);
-            } catch (NumberFormatException e) {
-                return ResponseEntity.badRequest().build();
-            }
+            skuId = CatalogUtils.getIdFromUrl(orderItemDto.getSkuHref());
+            req.setSkuId(skuId);
         }
         else if (orderItemDto.getSkuId() != null) {
             Optional.ofNullable(catalogService.findSkuById(orderItemDto.getSkuId()))
