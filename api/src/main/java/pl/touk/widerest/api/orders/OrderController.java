@@ -13,6 +13,7 @@ import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
 import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
@@ -47,6 +48,7 @@ import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
@@ -81,9 +83,12 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -148,6 +153,9 @@ public class OrderController {
 
     @Resource
     private FulfillmentConverter fulfillmentConverter;
+
+    @Value("${automatically.merge.like.items}")
+    protected boolean automaticallyMergeLikeItems;
 
     private final static String ANONYMOUS_CUSTOMER = "anonymous";
 
@@ -311,20 +319,40 @@ public class OrderController {
             orderItemRequestDTO.getItemAttributes().putAll(orderItemDto.getSelectedOptions());
         }
 
+        final List<DiscreteOrderItem> currentDiscreteItems = cart.getDiscreteOrderItems();
+
         orderService.addItem(cart.getId(), orderItemRequestDTO, true);
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
 
-        DiscreteOrderItem orderItem = cart.getDiscreteOrderItems().stream()
-                .filter(x -> x.getProduct().getId().longValue() == orderItemRequestDTO.getProductId())
-                .findAny().get();
+        // (mst) Figure out added item's ID
+        DiscreteOrderItem addedDiscreteOrderItem;
+
+        if(automaticallyMergeLikeItems) {
+            addedDiscreteOrderItem = cart.getDiscreteOrderItems().stream()
+                    .filter(x -> x.getSku().getId().longValue() == orderItemRequestDTO.getSkuId())
+                    .findAny()
+                    .orElseThrow(ResourceNotFoundException::new);
+        } else {
+            final List<DiscreteOrderItem> newDiscreteItemsIds = cart.getDiscreteOrderItems().stream()
+                    .filter(item -> !currentDiscreteItems.contains(item))
+                    .collect(Collectors.toList());
+
+            if(newDiscreteItemsIds.size() != 1) {
+                throw new ResourceNotFoundException();
+            }
+
+            addedDiscreteOrderItem = newDiscreteItemsIds.get(0);
+        }
+
+        final long addedItemId = addedDiscreteOrderItem.getId();
 
         return ResponseEntity.created(
                 ServletUriComponentsBuilder.fromCurrentRequest()
                         .path("/{id}")
-                        .buildAndExpand(orderItem.getId())
+                        .buildAndExpand(addedItemId)
                         .toUri()
-        ).body(discreteOrderItemConverter.createDto(orderItem));
+        ).body(discreteOrderItemConverter.createDto(addedDiscreteOrderItem));
     }
 
     /* POST /orders/{orderId}/items */
@@ -389,10 +417,33 @@ public class OrderController {
             isBundleBeingAdded = true;
         }
 
+        final List<DiscreteOrderItem> currentDiscreteItems = cart.getDiscreteOrderItems();
+
         orderService.addItem(cart.getId(), req, true);
         // Possible improvement: calculate subtotal 'lazily' (i.e. just before checking out)
         cart.calculateSubTotal();
         cart = orderService.save(cart, false);
+
+        // (mst) Figure out added item's ID
+        long addedItemId;
+
+        if(automaticallyMergeLikeItems) {
+            addedItemId = cart.getDiscreteOrderItems().stream()
+                                .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
+                                .findAny()
+                                .map(DiscreteOrderItem::getId)
+                                .orElseThrow(ResourceNotFoundException::new);
+        } else {
+            final List<DiscreteOrderItem> newDiscreteItemsIds = cart.getDiscreteOrderItems().stream()
+                    .filter(item -> !currentDiscreteItems.contains(item))
+                    .collect(Collectors.toList());
+
+            if(newDiscreteItemsIds.size() != 1) {
+                throw new ResourceNotFoundException();
+            }
+
+            addedItemId = newDiscreteItemsIds.get(0).getId();
+        }
 
         UriComponentsBuilder uriComponentsBuilder =
                 ServletUriComponentsBuilder.fromCurrentRequestUri().replacePath(
@@ -403,13 +454,7 @@ public class OrderController {
                 uriComponentsBuilder.build()
                 : uriComponentsBuilder
                 .path("/{id}")
-                .buildAndExpand(
-                        (cart.getDiscreteOrderItems().stream()
-                                .filter(x -> x.getSku().getId().longValue() == req.getSkuId())
-                                .findAny()
-                                .map(DiscreteOrderItem::getId)
-                                .orElseThrow(ResourceNotFoundException::new))
-                );
+                .buildAndExpand(addedItemId);
 
         return ResponseEntity.created(uriComponents.toUri()).build();
     }
