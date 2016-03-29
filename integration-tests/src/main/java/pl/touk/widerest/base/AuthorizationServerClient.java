@@ -1,6 +1,5 @@
 package pl.touk.widerest.base;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
@@ -33,7 +32,6 @@ import java.util.Optional;
 
 @Component
 @org.springframework.context.annotation.Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class AuthorizationServerClient {
 
     protected final BasicCookieStore cookieStore = new BasicCookieStore();
@@ -68,8 +66,6 @@ public class AuthorizationServerClient {
         try (ClientHttpResponse response = request.execute()) {
 
             restTemplate.getOAuth2ClientContext().setAccessToken(null);
-
-            log.error("headers: {}", response.getHeaders());
 
             final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
             Optional.ofNullable((Map<String, String>)e.extractData(response))
