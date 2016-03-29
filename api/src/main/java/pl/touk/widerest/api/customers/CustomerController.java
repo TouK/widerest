@@ -166,18 +166,16 @@ public class CustomerController {
             @ApiResponse(code = 200, message = "Successful retrieval of product", response = ProductDto.class),
             @ApiResponse(code = 404, message = "The specified customer does not exist")
     })
-    public ResponseEntity<CustomerDto> updateOneCustomer(
+    public void updateOneCustomer(
             @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
             @ApiParam(value = "ID of a customer", required = true) @PathVariable(value = "id") final String customerId,
             @Valid @RequestBody CustomerDto customerDto
     ) {
-        return ofNullable(customerId)
+        ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))
                 .map(customerService::readCustomerById)
                 .map(customer -> customerConverter.updateEntity(customer, customerDto))
                 .map(customerService::saveCustomer)
-                .map(customer -> customerConverter.createDto(customer))
-                .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
                 .orElseThrow(CustomerNotFoundException::new);
     }
 
