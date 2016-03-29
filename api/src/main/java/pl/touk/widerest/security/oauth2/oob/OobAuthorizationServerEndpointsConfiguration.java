@@ -1,5 +1,6 @@
 package pl.touk.widerest.security.oauth2.oob;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,6 +17,7 @@ import org.springframework.security.oauth2.provider.error.WebResponseExceptionTr
 
 @Primary
 @Configuration
+@Slf4j
 public class OobAuthorizationServerEndpointsConfiguration extends AuthorizationServerEndpointsConfiguration {
 
     @Autowired
@@ -23,6 +25,8 @@ public class OobAuthorizationServerEndpointsConfiguration extends AuthorizationS
 
     @Override
     public AuthorizationEndpoint authorizationEndpoint() throws Exception {
+        log.error("overriden");
+
         AuthorizationEndpoint authorizationEndpoint = new OobAuthorizationEndpoint();
 
         FrameworkEndpointHandlerMapping mapping = getEndpointsConfigurer().getFrameworkEndpointHandlerMapping();
