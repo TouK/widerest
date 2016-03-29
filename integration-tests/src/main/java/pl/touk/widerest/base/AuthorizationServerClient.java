@@ -65,11 +65,14 @@ public class AuthorizationServerClient {
 
         try (ClientHttpResponse response = request.execute()) {
 
-            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
-            final Map<String, String> map = e.extractData(response);
-            final Optional<String> accessToken = Optional.ofNullable(map.get("access_token"));
+            restTemplate.getOAuth2ClientContext().setAccessToken(null);
 
-            restTemplate.getOAuth2ClientContext().setAccessToken(accessToken.map(DefaultOAuth2AccessToken::new).orElse(null));
+            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
+            Optional.ofNullable((Map<String, String>)e.extractData(response))
+                    .map(m -> m.get("access_token"))
+                    .map(DefaultOAuth2AccessToken::new)
+                    .ifPresent(accessToken -> restTemplate.getOAuth2ClientContext().setAccessToken(accessToken));
+
             return restTemplate;
         }
 
