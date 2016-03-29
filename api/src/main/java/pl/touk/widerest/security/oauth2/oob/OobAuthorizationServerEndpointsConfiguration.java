@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerEndpointsConfiguration;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -19,6 +20,7 @@ import org.springframework.security.oauth2.provider.error.WebResponseExceptionTr
 @Primary
 @Configuration
 @Slf4j
+@Order(-2)
 public class OobAuthorizationServerEndpointsConfiguration extends AuthorizationServerEndpointsConfiguration {
 
     @Autowired

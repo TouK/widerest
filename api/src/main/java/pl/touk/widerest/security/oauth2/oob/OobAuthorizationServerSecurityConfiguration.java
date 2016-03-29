@@ -9,7 +9,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.A
 
 @Primary
 @Configuration
-@Order(0)
+@Order(-2)
 @Import({ ClientDetailsServiceConfiguration.class, OobAuthorizationServerEndpointsConfiguration.class })
 public class OobAuthorizationServerSecurityConfiguration extends AuthorizationServerSecurityConfiguration {
 }
