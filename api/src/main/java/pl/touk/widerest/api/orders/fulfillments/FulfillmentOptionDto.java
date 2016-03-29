@@ -1,11 +1,11 @@
 package pl.touk.widerest.api.orders.fulfillments;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @ApiModel(value = "Fulfillment Option", description = "Fulfillment Option DTO resource representation")
 public class FulfillmentOptionDto {
 

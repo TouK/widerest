@@ -1,6 +1,6 @@
 package pl.touk.widerest.api.products;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -14,6 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @ApiModel(value = "Product Option", description = "Product Option DTO resource representation")
 public class ProductOptionDto {
 
@@ -26,7 +27,6 @@ public class ProductOptionDto {
     @ApiModelProperty(value = "Specifies if the option is required or not")
     private Boolean required;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(value = "List of all allowed values for this option", required = true)
     private List<String> allowedValues;
 }

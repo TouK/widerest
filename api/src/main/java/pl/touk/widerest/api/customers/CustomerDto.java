@@ -1,14 +1,13 @@
 package pl.touk.widerest.api.customers;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
@@ -21,8 +20,8 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonRootName("customer")
-@EqualsAndHashCode(callSuper = false)
 @ApiModel(value = "Customer", description = "Customer DTO resource description")
 public class CustomerDto extends BaseDto {
 
@@ -42,7 +41,6 @@ public class CustomerDto extends BaseDto {
     @ApiModelProperty(position = 4, value = "Customer's locale")
     private String locale;
 
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_EMPTY)
     @ApiModelProperty(position = 5, value = "Collection of available customer addresses")
     private Map<String, AddressDto> addresses;
 }

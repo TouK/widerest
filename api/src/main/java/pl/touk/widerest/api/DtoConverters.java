@@ -105,8 +105,6 @@ public class DtoConverters {
                   .activeStartDate(productDto.getValidFrom())
                   .activeEndDate(productDto.getValidTo())
                   .currencyCode(productDto.getCurrencyCode())
-                  .skuAttributes(productDto.getSkuAttributes())
-                  .skuProductOptionValues(productDto.getSkuProductOptionValues())
                   .media(productDto.getMedia())
                   .build();
 }

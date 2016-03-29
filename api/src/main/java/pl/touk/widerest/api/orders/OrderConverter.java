@@ -16,14 +16,13 @@ import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
 
 import javax.annotation.Resource;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -62,10 +61,12 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 //                .fulfillment(CartUtils.getFulfilmentOption(order)
 //                        .map(FulfillmentOption::getLongDescription)
 //                        .orElse(null))
-                .attributes(Optional.ofNullable(order.getOrderAttributes()).orElse(Collections.emptyMap()).entrySet().stream()
-                        .map(Map.Entry::getValue)
-                        .map(orderAttributeEntityToDto)
-                        .collect(toList()))
+                .attributes(
+                        Optional.ofNullable(order.getOrderAttributes())
+                                .map(Map::values)
+                                .map(Collection::stream)
+                                .map(stream -> stream.collect(toMap(OrderAttribute::getName, OrderAttribute::getValue))).orElse(null)
+                )
                 .build();
 
 
@@ -110,6 +111,4 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         return orderDto;
     }
 
-    private static Function<OrderAttribute, CartAttributeDto> orderAttributeEntityToDto = entity ->
-            CartAttributeDto.builder().name(entity.getName()).value(entity.getValue()).build();
 }

@@ -1,11 +1,11 @@
 package pl.touk.widerest.api.products;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.hateoas.ResourceSupport;
 
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @ApiModel(value = "Bundle Item", description = "Bundle Item DTO resource representation")
 public class BundleItemDto extends ResourceSupport {
 

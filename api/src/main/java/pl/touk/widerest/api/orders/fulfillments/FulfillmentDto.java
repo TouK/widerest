@@ -1,5 +1,6 @@
 package pl.touk.widerest.api.orders.fulfillments;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import cz.jirutka.validator.collection.constraints.EachURL;
 import io.swagger.annotations.ApiModel;
@@ -7,7 +8,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.NotEmpty;
 import pl.touk.widerest.api.BaseDto;
@@ -21,8 +21,8 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonRootName("fulfillment")
-@EqualsAndHashCode
 @ApiModel(value = "Fulfillment", description = "Fulfillment Group DTO resource representation")
 public class FulfillmentDto extends BaseDto {
 

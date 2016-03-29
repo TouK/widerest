@@ -73,7 +73,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 )
                 .build();
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(SkuController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
                 .withSelfRel());
 
         if (link) {
@@ -81,15 +81,15 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
             dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId()))
                     .withRel("product"));
 
-            dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(sku.getProduct().getId(), sku.getId()))
+            dto.add(linkTo(methodOn(SkuController.class).getMediaBySkuId(sku.getProduct().getId(), sku.getId()))
                     .withRel("media"));
 
-            dto.add(linkTo(methodOn(ProductController.class).getSkuByIdAvailability(sku.getProduct().getId(), sku.getId()))
+            dto.add(linkTo(methodOn(SkuController.class).getSkuByIdAvailability(sku.getProduct().getId(), sku.getId()))
                     .withRel("availability"));
 
             //dto.add((linkTo(methodOn(ProductController.class).getSkusCountByProductId(sku.getProduct().getId())).withRel("count")));
 
-            dto.add((linkTo(methodOn(ProductController.class).getSkuByIdQuantity(sku.getProduct().getId(), sku.getId())).withRel("quantity")));
+            dto.add((linkTo(methodOn(SkuController.class).getSkuByIdQuantity(sku.getProduct().getId(), sku.getId())).withRel("quantity")));
         }
 
         return dto;

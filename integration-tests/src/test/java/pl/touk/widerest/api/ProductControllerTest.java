@@ -9,9 +9,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -25,7 +23,6 @@ import pl.touk.widerest.AbstractTest;
 import pl.touk.widerest.api.categories.CategoryDto;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.products.BundleItemDto;
-import pl.touk.widerest.api.products.ProductAttributeDto;
 import pl.touk.widerest.api.products.ProductBundleDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
@@ -37,6 +34,7 @@ import pl.touk.widerest.base.DtoTestType;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -479,7 +478,7 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long idFromLocationUrl = ApiTestUtils.getIdFromLocationUrl(responseEntity.getHeaders().getLocation().toString());
 
-        // then: all of the specified attributes should be saved correctly (via /product/{id} endpoint)
+        // then: all of the specified attributes should be read correctly (via /product/{id} endpoint)
         final ResponseEntity<ProductDto> receivedProductEntity = getRemoteTestProductByIdEntity(idFromLocationUrl);
 
         final Map<String, String> attributes = receivedProductEntity.getBody().getAttributes();
@@ -488,14 +487,6 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(attributes.get("color"), equalTo("red"));
         assertThat(attributes.get("length"), equalTo(String.valueOf(12.222)));
 
-        // then: all of the specified attributes should be saved correctly (via /product/{id}/attributes endpoint)
-        final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
-                backofficeRestTemplate.exchange(
-                        ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null,
-                        new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {}, serverPort, idFromLocationUrl);
-
-        assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
-        assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(3));
     }
 
 
@@ -803,42 +794,30 @@ public class ProductControllerTest extends AbstractTest {
             // when: adding an attribute to a product and then adding it once again but with a different value
             final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
             final ResponseEntity<?> productResponseEntity = catalogOperationsRemote.addTestProduct(productDto);
-            final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
+            URI productUrl = productResponseEntity.getHeaders().getLocation();
 
-            final ProductAttributeDto productAttributeDto1 = ProductAttributeDto.builder()
-                    .attributeName("Range")
-                    .attributeValue("Long")
-                    .build();
+            { // when attribute set
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                receivedProductDto.setAttributes(new HashMap<>());
+                receivedProductDto.getAttributes().put("Range", "Long");
+                adminRestTemplate.put(productUrl, receivedProductDto);
+            }
 
-            final ProductAttributeDto productAttributeDto2 = ProductAttributeDto.builder()
-                    .attributeName("Range")
-                    .attributeValue("Short")
-                    .build();
+            { // when attribute set
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                receivedProductDto.getAttributes().put("Range", "Short");
+                adminRestTemplate.put(productUrl, receivedProductDto);
+            }
 
-            final ResponseEntity<?> attributeDtoEntity1 = adminRestTemplate.postForEntity(
-                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto1, null, serverPort, productId);
+            { // then it is available
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                assertThat(receivedProductDto.getAttributes().size(), equalTo(1));
+                assertThat(receivedProductDto.getAttributes().get("Range"), equalTo("Short"));
+            }
 
-            assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
-
-            final ResponseEntity<?> attributeDtoEntity2 = adminRestTemplate.postForEntity(
-                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto2, null, serverPort, productId);
-
-            assertTrue(attributeDtoEntity2.getStatusCode().is2xxSuccessful());
-
-            // then: the "original" attribute's value gets updated
-            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity =
-                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
-                    }, serverPort, productId);
-
-            assertThat(receivedProductAttributeEntity.getStatusCode(), equalTo(HttpStatus.OK));
-
-            // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-            assertThat(receivedProductAttributeEntity.getBody().getContent().size(), equalTo(1));
-
-            final ProductAttributeDto receivedProductAttributeDto = receivedProductAttributeEntity.getBody().getContent().iterator().next();
-
-            assertThat(receivedProductAttributeDto.getAttributeName(), equalTo(productAttributeDto2.getAttributeName()));
-            assertThat(receivedProductAttributeDto.getAttributeValue(), equalTo(productAttributeDto2.getAttributeValue()));
         });
     }
 
@@ -849,45 +828,35 @@ public class ProductControllerTest extends AbstractTest {
             // when: adding an attribute to a product and then deleting it
             final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
             final ResponseEntity<?> productResponseEntity = catalogOperationsRemote.addTestProduct(productDto);
-            final long productId = ApiTestUtils.getIdFromEntity(productResponseEntity);
+            URI productUrl = productResponseEntity.getHeaders().getLocation();
 
-            final ProductAttributeDto productAttributeDto = ProductAttributeDto.builder()
-                    .attributeName("Range")
-                    .attributeValue("Long")
-                    .build();
-
-            final ResponseEntity<?> attributeDtoEntity1 = adminRestTemplate.postForEntity(
-                    ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, productAttributeDto, null, serverPort, productId);
-
-            assertTrue(attributeDtoEntity1.getStatusCode().is2xxSuccessful());
-
-            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity1 =
-                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
-                    }, serverPort, productId);
-
-            assertThat(receivedProductAttributeEntity1.getStatusCode(), equalTo(HttpStatus.OK));
-
-            assertThat(receivedProductAttributeEntity1.getBody().getContent().size(), equalTo(1));
-
-            adminRestTemplate.delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
-
-            // then: the attribute no longer exists
-            try {
-                adminRestTemplate.delete(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTE_BY_NAME_URL, serverPort, productId, productAttributeDto.getAttributeName());
-                fail();
-            } catch (HttpClientErrorException httpClientErrorException) {
-                assertTrue(httpClientErrorException.getStatusCode().is4xxClientError());
+            { // when attribute set
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                receivedProductDto.setAttributes(new HashMap<>());
+                receivedProductDto.getAttributes().put("Range", "Long");
+                adminRestTemplate.put(productUrl, receivedProductDto);
             }
 
+            { // then it is available
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                assertThat(receivedProductDto.getAttributes().get("Range"), equalTo("Long"));
+            }
 
-            final ResponseEntity<Resources<ProductAttributeDto>> receivedProductAttributeEntity2 =
-                    backofficeRestTemplate.exchange(ApiTestUrls.PRODUCT_BY_ID_ATTRIBUTES_URL, HttpMethod.GET, null, new ParameterizedTypeReference<Resources<ProductAttributeDto>>() {
-                    }, serverPort, productId);
+            { // when the attribute deleted
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                receivedProductDto.getAttributes().remove("Range");
+                adminRestTemplate.put(productUrl, receivedProductDto);
+            }
 
-            assertThat(receivedProductAttributeEntity2.getStatusCode(), equalTo(HttpStatus.OK));
+            { // then the attribute no longer exists
+                final ProductDto receivedProductDto =
+                        backofficeRestTemplate.getForObject(productUrl, ProductDto.class);
+                assertThat(receivedProductDto.getAttributes(), nullValue());
+            }
 
-            // then: the number of remotely retrieved categories should equal the number of locally retrieved ones
-            assertThat(receivedProductAttributeEntity2.getBody().getContent().size(), equalTo(0));
         });
     }
 

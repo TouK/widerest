@@ -17,6 +17,7 @@ import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
+import pl.touk.widerest.api.products.skus.SkuController;
 import pl.touk.widerest.api.products.skus.SkuConverter;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
@@ -71,14 +72,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                                 .orElse(localeService.findDefaultLocale().getDefaultCurrency())
                                 .getCurrencyCode());
 
-        dto.setSkuAttributes(productDefaultSku.getSkuAttributes().entrySet().stream()
-                                .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())));
-
-        dto.setSkuProductOptionValues(productDefaultSku.getProductOptionValueXrefs().stream()
-                                .map(SkuProductOptionValueXref::getProductOptionValue)
-                                .map(DtoConverters.productOptionValueToSkuValueDto)
-                                .collect(toSet()));
-
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia())));
 
@@ -123,7 +116,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         if (link) {
 
             if (product.getDefaultSku() != null) {
-                dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))
+                dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))
                         .withRel("default-sku"));
             }
 
@@ -131,7 +124,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             if (product.getAdditionalSkus() != null && !product.getAdditionalSkus().isEmpty()) {
                 for (Sku additionalSku : product.getAdditionalSkus()) {
                     if (!additionalSku.equals(product.getDefaultSku())) {
-                        dto.add(linkTo(methodOn(ProductController.class).getSkuById(product.getId(), additionalSku.getId()))
+                        dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), additionalSku.getId()))
                                 .withRel("skus"));
 
                         //dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(product.getId(), additionalSku.getId())).withRel("medias"));
@@ -147,8 +140,6 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                         .filter(CatalogUtils.nonArchivedCategory)
                         .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
             }
-
-            dto.add(linkTo(methodOn(ProductController.class).getProductByIdAttributes(product.getId())).withRel("attributes"));
 
             dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
         }

@@ -46,14 +46,14 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
     @Override
     public Address updateEntity(final Address address, final AddressDto addressDto) {
-        address.setAddressLine1(addressDto.getAddressLine1());
+        address.setAddressLine1(Optional.ofNullable(addressDto.getAddressLine1()).orElse(""));
         address.setAddressLine2(addressDto.getAddressLine2());
         address.setAddressLine3(addressDto.getAddressLine3());
 
         address.setFirstName(addressDto.getFirstName());
         address.setLastName(addressDto.getLastName());
 
-        address.setCity(addressDto.getCity());
+        address.setCity(Optional.ofNullable(addressDto.getCity()).orElse(""));
         address.setPostalCode(addressDto.getPostalCode());
         address.setCompanyName(addressDto.getCompanyName());
 
