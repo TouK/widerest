@@ -305,10 +305,6 @@ public class OrderController {
             @ApiParam(value = "Description of a new order item", required = true)
             @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
-        if(!automaticallyMergeLikeItems && orderItemDto.getQuantity() != 1) {
-            return ResponseEntity.badRequest().build();
-        }
-
         Order cart = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         long hrefProductId;
@@ -330,7 +326,7 @@ public class OrderController {
         cart = orderService.save(cart, false);
 
         // (mst) Figure out added item's ID
-        DiscreteOrderItem addedDiscreteOrderItem;
+        DiscreteOrderItem addedDiscreteOrderItem = null;
 
         if(automaticallyMergeLikeItems) {
             addedDiscreteOrderItem = cart.getDiscreteOrderItems().stream()
@@ -342,21 +338,21 @@ public class OrderController {
                     .filter(item -> !currentDiscreteItems.contains(item))
                     .collect(Collectors.toList());
 
-            if(newDiscreteItemsIds.size() != 1) {
-                throw new ResourceNotFoundException();
+            if(newDiscreteItemsIds.size() == 1) {
+                addedDiscreteOrderItem = newDiscreteItemsIds.get(0);
             }
-
-            addedDiscreteOrderItem = newDiscreteItemsIds.get(0);
         }
 
-        final long addedItemId = addedDiscreteOrderItem.getId();
-
-        return ResponseEntity.created(
-                ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/{id}")
-                        .buildAndExpand(addedItemId)
-                        .toUri()
-        ).body(discreteOrderItemConverter.createDto(addedDiscreteOrderItem));
+        if(addedDiscreteOrderItem != null) {
+            return ResponseEntity.created(
+                    ServletUriComponentsBuilder.fromCurrentRequest()
+                            .path("/{id}")
+                            .buildAndExpand(addedDiscreteOrderItem.getId())
+                            .toUri()
+            ).body(discreteOrderItemConverter.createDto(addedDiscreteOrderItem));
+        } else {
+            return ResponseEntity.ok().build();
+        }
     }
 
     /* POST /orders/{orderId}/items */
