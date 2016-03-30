@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -21,14 +22,20 @@ import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+import pl.touk.widerest.api.BaseDto;
+import pl.touk.widerest.api.categories.CategoryDto;
+import pl.touk.widerest.api.common.AddressDto;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.orders.DiscreteOrderItemDto;
 import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.api.orders.OrderItemDto;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentDto;
 import pl.touk.widerest.api.products.ProductDto;
+import pl.touk.widerest.api.products.ProductOptionDto;
 import pl.touk.widerest.security.oauth2.Scope;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -37,7 +44,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +73,8 @@ public abstract class ApiTestBase {
 
     protected CatalogOperationsRemote catalogOperationsRemote;
 
+    protected URI apiUrl;
+
     @Before
     public void init() throws IOException {
         AuthorizationServerClient authorizationServerClient = authorizationServerClient();
@@ -70,6 +82,8 @@ public abstract class ApiTestBase {
         this.backofficeRestTemplate = authorizationServerClient.requestAuthorization(Scope.STAFF);
         this.catalogOperationsRemote = new CatalogOperationsRemote(backofficeRestTemplate, serverPort);
         this.catalogOperationsLocal = new CatalogOperationsLocal(catalogService);
+
+        this.apiUrl = UriComponentsBuilder.fromUriString("http://localhost:{port}/v1").buildAndExpand(serverPort).toUri();
     }
 
     protected ResponseEntity<ProductDto> getRemoteTestProductByIdEntity(final long productId) {
@@ -274,6 +288,88 @@ public abstract class ApiTestBase {
         when(() -> restTemplate.getForObject(fulfillmentHref, FulfillmentDto.class), thens);
     }
 
+    protected <T> Resources<T> getForResources(RestTemplate restTemplate, URI url, ParameterizedTypeReference<Resources<T>> responseType) {
+        return restTemplate.exchange(url, HttpMethod.GET, null, responseType).getBody();
+    }
+
+    protected Collection<CategoryDto> readAllCategories(RestTemplate restTemplate, URI apiUrl) {
+        URI categoriesUrl = UriComponentsBuilder.fromUri(apiUrl).path("/categories").build().toUri();
+        return getForResources(restTemplate, categoriesUrl, new ParameterizedTypeReference<Resources<CategoryDto>>() {
+        }).getContent();
+    }
+
+    protected Collection<ProductDto> readProductsFromCategory(RestTemplate restTemplate, URI categoryUrl) {
+        URI productsUrl = UriComponentsBuilder.fromUri(categoryUrl).path("/products").build().toUri();
+        return getForResources(restTemplate, productsUrl, new ParameterizedTypeReference<Resources<ProductDto>>() {
+        }).getContent();
+    }
+
+    protected void whenCategorySelected(RestTemplate restTemplate, String categoryName, Try.CheckedConsumer<CategoryDto> then) throws Throwable {
+        when(() -> readAllCategories(restTemplate, apiUrl), categories -> {
+            when(() -> {
+                return categories.stream()
+                        .filter(category -> categoryName.equals(category.getName()))
+                        .findAny()
+                        .get();
+            }, then);
+        });
+    }
+
+    protected void whenCategoryDefaultProductSelected(RestTemplate restTemplate, CategoryDto category, Try.CheckedConsumer<ProductDto> then) throws Throwable {
+        when(() -> readProductsFromCategory(restTemplate, URI.create(category.getLink(Link.REL_SELF).getHref())), products -> {
+            when(() -> { // first product from the list chosen
+                ProductDto product = products.stream().findFirst().get();
+                return product;
+            }, then);
+        });
+    }
+
+    protected DiscreteOrderItemDto addOrderItem(RestTemplate restTemplate, final URI orderUrl, final URI productUrl, final Map<String, String> selectedOptions, final int quantity) {
+        final OrderItemDto orderItem = OrderItemDto.builder()
+                .productHref(productUrl.toASCIIString())
+                .selectedOptions(selectedOptions)
+                .quantity(quantity)
+                .build();
+        return restTemplate.postForObject(UriComponentsBuilder.fromUri(orderUrl).path("/items").build().toUri(), orderItem, DiscreteOrderItemDto.class);
+    }
+
+    protected void whenOrderItemAdded(RestTemplate restTemplate, final URI orderUrl, final URI productUrl, final Map<String, String> selectedOptions, Try.CheckedConsumer<DiscreteOrderItemDto> then) throws Throwable {
+        when(() -> addOrderItem(restTemplate, orderUrl, productUrl, selectedOptions, 1), then);
+    }
 
 
+    protected void whenOrderItemAdded(final RestTemplate restTemplate, final URI orderUrl, final ProductDto productDto, final int quantity, final Try.CheckedConsumer<DiscreteOrderItemDto> then) throws Throwable {
+        final URI productUrl = toSelfUri.apply(productDto);
+        Map<String, String> selectedOptions = productDto.getOptions().stream()
+                .filter(ProductOptionDto::getRequired)
+                .collect(Collectors.toMap(
+                        productOption -> productOption.getName(),
+                        productOption -> productOption.getAllowedValues().get(0)
+                ));
+
+        when(() -> addOrderItem(restTemplate, orderUrl, productUrl, selectedOptions, quantity), then);
+    }
+
+    protected void whenOrderItemAdded(RestTemplate restTemplate, final URI orderUrl, ProductDto product, Try.CheckedConsumer<DiscreteOrderItemDto> then) throws Throwable {
+        URI productUrl = URI.create(product.getLink("self").getHref());
+        Map<String, String> selectedOptions = product.getOptions().stream()
+                .collect(Collectors.toMap(
+                        productOption -> productOption.getName(),
+                        productOption -> productOption.getAllowedValues().get(0)
+                ));
+        whenOrderItemAdded(restTemplate, orderUrl, productUrl, selectedOptions, then);
+    }
+
+    protected void modifyFulfillment(final RestTemplate restTemplate, final URI fulfillmentUrl, final AddressDto addressDto, final String fulfillmentOption) {
+        final FulfillmentDto fulfillment = restTemplate.getForObject(fulfillmentUrl, FulfillmentDto.class);
+        fulfillment.setSelectedFulfillmentOption(fulfillmentOption);
+        fulfillment.setAddress(addressDto);
+        restTemplate.put(fulfillmentUrl, fulfillment);
+    }
+
+    protected Function<BaseDto, URI> toSelfUri = baseDto -> URI.create(baseDto.getLink("self").getHref());
+
+    protected URI fromDtoLink(final BaseDto baseDto, final String link) {
+        return URI.create(baseDto.getLink(link).getHref());
+    }
 }
