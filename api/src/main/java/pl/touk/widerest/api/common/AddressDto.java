@@ -11,8 +11,6 @@ import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.constraints.IsoCountryCode;
 
-import javax.annotation.Nullable;
-
 @Data
 @Builder
 @NoArgsConstructor
