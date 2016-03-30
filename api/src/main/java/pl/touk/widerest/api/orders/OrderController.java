@@ -13,12 +13,12 @@ import io.swagger.annotations.ApiResponses;
 import javaslang.control.Match;
 import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.broadleafcommerce.common.payment.PaymentGatewayType;
 import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
+import org.broadleafcommerce.common.payment.service.PaymentGatewayCustomerService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayTransparentRedirectService;
 import org.broadleafcommerce.common.service.GenericEntityService;
@@ -83,7 +83,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -664,8 +663,13 @@ public class OrderController {
 
         PaymentGatewayHostedService hostedService = configurationService.getHostedService();
         PaymentGatewayTransparentRedirectService transparentRedirectService = configurationService.getTransparentRedirectService();
+        PaymentGatewayCustomerService customerService = configurationService.getCustomerService();
 
         try {
+            if (customerService != null) {
+                customerService.createGatewayCustomer(paymentRequestDTO);
+            }
+
             if (hostedService != null) {
                 return ResponseEntity.created(URI.create(hostedService.requestHostedEndpoint(paymentRequestDTO).getResponseMap().get("REDIRECT_URL"))).build();
             }
