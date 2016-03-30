@@ -274,7 +274,7 @@ public class FulfillmentController {
 
                         fulfillmentGroupItemRequest.setFulfillmentGroup(updatedFulfillmentGroupEntity);
                         fulfillmentGroupItemRequest.setOrder(orderEntity);
-                        fulfillmentGroupItemRequest.setQuantity(orderEntity.getItemCount());
+                        fulfillmentGroupItemRequest.setQuantity(orderItemEntity.getQuantity());
                         fulfillmentGroupItemRequest.setOrderItem(orderItemEntity);
 
                         return fulfillmentGroupService.addItemToFulfillmentGroup(fulfillmentGroupItemRequest, true);

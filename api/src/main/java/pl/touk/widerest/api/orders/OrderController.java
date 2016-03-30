@@ -305,6 +305,10 @@ public class OrderController {
             @ApiParam(value = "Description of a new order item", required = true)
             @RequestBody OrderItemDto orderItemDto) throws PricingException, AddToCartException {
 
+        if(!automaticallyMergeLikeItems && orderItemDto.getQuantity() != 1) {
+            return ResponseEntity.badRequest().build();
+        }
+
         Order cart = orderServiceProxy.getProperCart(userDetails, orderId).orElseThrow(ResourceNotFoundException::new);
 
         long hrefProductId;
