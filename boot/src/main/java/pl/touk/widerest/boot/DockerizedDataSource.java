@@ -18,16 +18,11 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +144,7 @@ public class DockerizedDataSource extends DelegatingDataSource {
             try {
                 if (DriverManager.getConnection(getUrl(), getUsername(), getPassword()).isValid(3)) {
                     log.info("Database container seems to have started");
-                    break;
+                    return;
                 }
             } catch (SQLException e) {
                 Thread.sleep(3000);
