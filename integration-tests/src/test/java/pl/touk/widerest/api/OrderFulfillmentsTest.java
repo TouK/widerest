@@ -126,6 +126,7 @@ public class OrderFulfillmentsTest extends AbstractTest {
                     .postalCode("02-945")
                     .addressLine1("Zakopanska 40")
                     .countryCode("PL")
+                    .phone("+48.500400300")
                     .build();
 
             final FulfillmentDto fulfillmentDto = FulfillmentDto.builder()

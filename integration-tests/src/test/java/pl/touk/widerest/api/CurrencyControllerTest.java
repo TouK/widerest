@@ -2,12 +2,8 @@ package pl.touk.widerest.api;
 
 
 import javaslang.Tuple;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrencyImpl;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpServerErrorException;
@@ -16,8 +12,9 @@ import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -29,11 +26,9 @@ public class CurrencyControllerTest extends AbstractTest {
             whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
             whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
 
-                final ResponseEntity<BroadleafCurrencyImpl> result = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
-                final BroadleafCurrency currency = result.getBody();
+                final String currentCurrencyCode = oAuth2RestTemplate.getForObject(ApiTestUrls.DEFAULT_CURRENCY_URL, String.class, serverPort);
 
-                assertTrue(result.getStatusCode().is2xxSuccessful());
-                assertTrue(currency.getCurrencyCode().length() > 0);
+                assertThat(currentCurrencyCode, not(isEmptyString()));
             });
         });
     }
@@ -44,14 +39,13 @@ public class CurrencyControllerTest extends AbstractTest {
             whenLoggedInBackoffice(authorizationServerClient, Tuple.of("admin", "admin"));
             whenAuthorizationRequestedFor(authorizationServerClient, Scope.STAFF, oAuth2RestTemplate -> {
 
-                final String SETTING_VALUE = "eur";
+                final String eurCurrencyCode = "eur";
 
-                oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, SETTING_VALUE, serverPort);
+                oAuth2RestTemplate.put(ApiTestUrls.DEFAULT_CURRENCY_URL, eurCurrencyCode, serverPort);
 
-                final ResponseEntity<BroadleafCurrencyImpl> receivedSettingEntity = oAuth2RestTemplate.getForEntity(ApiTestUrls.DEFAULT_CURRENCY_URL, BroadleafCurrencyImpl.class, serverPort);
+                final String currentCurrencyCode = oAuth2RestTemplate.getForObject(ApiTestUrls.DEFAULT_CURRENCY_URL, String.class, serverPort);
 
-                Assert.assertTrue(receivedSettingEntity.getStatusCode().is2xxSuccessful());
-                assertThat(receivedSettingEntity.getBody().getCurrencyCode(), equalTo(SETTING_VALUE.toUpperCase()));
+                assertThat(currentCurrencyCode, equalTo(eurCurrencyCode.toUpperCase()));
             });
         });
     }

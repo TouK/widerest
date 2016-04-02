@@ -29,16 +29,16 @@ public class CurrencyController {
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation("Get current default currency")
     @ResponseBody
-    public BroadleafCurrency getDefault(){
-        return currencyService.findDefaultBroadleafCurrency();
+    public String getDefault(){
+        return currencyService.findDefaultBroadleafCurrency().getCurrencyCode();
     }
 
     @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @Transactional
     @RequestMapping(method = RequestMethod.PUT)
     @ApiOperation("Set default currency")
-    public BroadleafCurrency setDefault(@ApiParam @RequestBody String currency) throws CurrencyNotFoundException {
-        return Optional.of(currencyService.findCurrencyByCode(currency.toUpperCase()))
+    public void setDefault(@ApiParam @RequestBody String currency) throws CurrencyNotFoundException {
+        Optional.of(currencyService.findCurrencyByCode(currency.toUpperCase()))
                 .map(newDefaultCurrency -> {
                     final BroadleafCurrency previousDefault = currencyService.findDefaultBroadleafCurrency();
 

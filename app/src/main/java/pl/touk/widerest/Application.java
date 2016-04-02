@@ -5,7 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.TransactionManagementConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -17,12 +21,38 @@ import pl.touk.widerest.boot.ReorderedHttpMessageConverters;
 import springfox.documentation.swagger.web.ApiKeyVehicle;
 import springfox.documentation.swagger.web.SecurityConfiguration;
 
+import javax.annotation.Resource;
+import javax.persistence.EntityManagerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
-public class Application extends WebMvcConfigurerAdapter {
+public class Application extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
+
+    @Autowired
+    PlatformTransactionManager blTransactionManager;
+
+    @Override
+    public PlatformTransactionManager annotationDrivenTransactionManager() {
+        return blTransactionManager;
+    }
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+        PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = new PropertySourcesPlaceholderConfigurer();
+        propertySourcesPlaceholderConfigurer.setIgnoreUnresolvablePlaceholders(true);
+        return propertySourcesPlaceholderConfigurer;
+    }
+
+    @Resource(name = "entityManagerFactory")
+    private EntityManagerFactory entityManagerFactory;
+
+    @Primary
+    @Bean
+    public EntityManagerFactory primaryEntityManagerFactory() {
+        return entityManagerFactory;
+    }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {

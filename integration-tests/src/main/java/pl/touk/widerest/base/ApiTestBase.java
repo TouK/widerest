@@ -35,7 +35,6 @@ import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.ProductOptionDto;
 import pl.touk.widerest.security.oauth2.Scope;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -169,7 +168,7 @@ public abstract class ApiTestBase {
     protected <R> void when(Try.CheckedSupplier<R> r, Try.CheckedConsumer<R>... thens) throws Throwable {
         Try<R> result = Try.of(r);
         for (Try.CheckedConsumer<R> then : thens) {
-            then.accept(result.get());
+            then.accept(result.getOrElseThrow(ex -> ex));
         }
     }
 

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 
 import javax.annotation.Resource;
+import java.text.ParsePosition;
 import java.util.Optional;
 
 @Component
@@ -19,6 +20,8 @@ public class AddressConverter implements Converter<Address, AddressDto> {
 
     @Resource
     protected AddressService addressService;
+
+    protected EppPhoneNumberFormat phoneNumberFormat = new EppPhoneNumberFormat();
 
     @Override
     public AddressDto createDto(final Address address, final boolean embed, final boolean link) {
@@ -34,6 +37,7 @@ public class AddressConverter implements Converter<Address, AddressDto> {
                 .countryCode(Optional.ofNullable(address.getIsoCountryAlpha2()).map(ISOCountry::getAlpha2).orElse(null))
                 .countrySubdivisionCode(address.getIsoCountrySubdivision())
                 .email(address.getEmailAddress())
+                .phone(Optional.ofNullable(address.getPhonePrimary()).map(phoneNumberFormat::format).orElse(null))
                 .build();
     }
 
@@ -64,7 +68,11 @@ public class AddressConverter implements Converter<Address, AddressDto> {
                 .ifPresent(countryCode -> address.setIsoCountryAlpha2(isoService.findISOCountryByAlpha2Code(countryCode)));
 
         address.setEmailAddress(addressDto.getEmail());
+        Optional.ofNullable(addressDto.getPhone()).ifPresent(phone ->
+                address.setPhonePrimary(phoneNumberFormat.parseObject(phone, new ParsePosition(0)))
+        );
 
         return address;
     }
+
 }

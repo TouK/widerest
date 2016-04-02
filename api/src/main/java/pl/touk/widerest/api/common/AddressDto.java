@@ -11,6 +11,8 @@ import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.constraints.IsoCountryCode;
 
+import javax.validation.constraints.Pattern;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -54,6 +56,9 @@ public class AddressDto extends BaseDto {
     @Email
     protected String email;
 
+    @ApiModelProperty
+    @Pattern(regexp = "^(?:\\+([0-9]{1,3}))?\\.?([0-9]{4,14})x?(.+)?$")
+    protected String phone;
 
 
 }
