@@ -14,13 +14,14 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Optional;
 
-@ControllerAdvice(basePackageClasses = ApiControllerExceptionAdvice.class)
+@ControllerAdvice(annotations = { RestController.class })
 public class ApiControllerExceptionAdvice {
 
     protected RestHandlerExceptionResolver restExceptionResolver = restExceptionResolver();

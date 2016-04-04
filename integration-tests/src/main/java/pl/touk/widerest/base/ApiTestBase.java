@@ -166,9 +166,9 @@ public abstract class ApiTestBase {
     /* BDD */
 
     protected <R> void when(Try.CheckedSupplier<R> r, Try.CheckedConsumer<R>... thens) throws Throwable {
-        Try<R> result = Try.of(r);
+        R result = r.get();
         for (Try.CheckedConsumer<R> then : thens) {
-            then.accept(result.getOrElseThrow(ex -> ex));
+            then.accept(result);
         }
     }
 
