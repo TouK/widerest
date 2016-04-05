@@ -1,9 +1,11 @@
 package pl.touk.widerest.security.oauth2;
 
+import org.broadleafcommerce.common.web.filter.StatelessSessionFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -13,7 +15,9 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Res
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 
+import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.function.Supplier;
 
@@ -48,11 +52,18 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
                 });
     }
 
+    @Resource
+    StatelessSessionFilter statelessSessionFilter;
+
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http.requestMatchers()
                 .antMatchers(API_PATH + "/**")
                 .and()
+            .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+            .addFilterBefore(statelessSessionFilter, ChannelProcessingFilter.class)
             .authorizeRequests()
                 .anyRequest().permitAll();
     }
