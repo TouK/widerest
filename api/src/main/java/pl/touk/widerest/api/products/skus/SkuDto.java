@@ -51,25 +51,28 @@ public class SkuDto extends BaseDto {
     @ApiModelProperty(position = 5, value = "SKU's availability", dataType = "java.lang.String")
     private String availability;
 
-    @ApiModelProperty(position = 6, value = "Sale/retail prices currency", required = true, dataType = "java.lang.String")
+    @ApiModelProperty(position = 6, value = "SKU's basic availability (true/false)", dataType = "java.lang.Boolean")
+    private Boolean isAvailable;
+
+    @ApiModelProperty(position = 7, value = "Sale/retail prices currency", required = true, dataType = "java.lang.String")
     private String currencyCode;
 
-    @ApiModelProperty(position = 7, value = "Tax code for the SKU", dataType = "java.lang.String")
+    @ApiModelProperty(position = 8, value = "Tax code for the SKU", dataType = "java.lang.String")
     private String taxCode;
 
     @NotNull(message = "Sku has to have an Active Start Date set")
-    @ApiModelProperty(position = 8, value = "Date from which the SKU becomes active", required = true, dataType = "java.util.Date")
+    @ApiModelProperty(position = 9, value = "Date from which the SKU becomes active", required = true, dataType = "java.util.Date")
     private Date activeStartDate;
 
-    @ApiModelProperty(position = 9, value = "Date from which the SKU becomes inactive", dataType = "java.util.Date")
+    @ApiModelProperty(position = 10, value = "Date from which the SKU becomes inactive", dataType = "java.util.Date")
     private Date activeEndDate;
 
-    @ApiModelProperty(position = 10, value = "Attributes associated with the SKU")
+    @ApiModelProperty(position = 11, value = "Attributes associated with the SKU")
     private Map<String, String> skuAttributes;
 
-    @ApiModelProperty(position = 11, value = "A set of selected product's option values", dataType = "java.util.Set")
+    @ApiModelProperty(position = 12, value = "A set of selected product's option values", dataType = "java.util.Set")
     private Set<SkuProductOptionValueDto> skuProductOptionValues;
 
-    @ApiModelProperty(position = 12, value = "List of medias associated with the SKU", dataType = "java.util.List")
+    @ApiModelProperty(position = 13, value = "List of medias associated with the SKU", dataType = "java.util.List")
     private Map<String, MediaDto> media;
 }

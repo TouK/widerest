@@ -11,6 +11,7 @@ import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.SkuProductOptionValueXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
 
+    @Resource(name = "blInventoryService")
+    protected InventoryService inventoryService;
+
     @Resource
     protected MediaConverter mediaConverter;
 
@@ -56,6 +60,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 .retailPrice(Optional.ofNullable(sku.getRetailPrice()).map(Money::getAmount).orElse(null))
                 .quantityAvailable(sku.getQuantityAvailable())
                 .availability(Optional.ofNullable(sku.getInventoryType()).map(InventoryType::getType).orElse(null))
+                .isAvailable(inventoryService.checkBasicAvailablility(sku))
                 .taxCode(sku.getTaxCode())
                 .activeStartDate(sku.getActiveStartDate())
                 .activeEndDate(sku.getActiveEndDate())
