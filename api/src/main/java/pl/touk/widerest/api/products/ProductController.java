@@ -64,9 +64,6 @@ public class ProductController {
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
 
-    @Resource(name = "blInventoryService")
-    protected InventoryService inventoryService;
-
     @Resource(name = "blSearchService")
     protected SearchService searchService;
 

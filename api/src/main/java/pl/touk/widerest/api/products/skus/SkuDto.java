@@ -52,6 +52,7 @@ public class SkuDto extends BaseDto {
     private String availability;
 
     @ApiModelProperty(position = 6, value = "SKU's basic availability (true/false)", dataType = "java.lang.Boolean")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Boolean isAvailable;
 
     @ApiModelProperty(position = 7, value = "Sale/retail prices currency", required = true, dataType = "java.lang.String")

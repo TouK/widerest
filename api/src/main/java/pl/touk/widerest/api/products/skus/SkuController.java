@@ -12,6 +12,7 @@ import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;

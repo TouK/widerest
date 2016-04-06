@@ -39,7 +39,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
 
-    @Resource(name = "blInventoryService")
+    @Resource
     protected InventoryService inventoryService;
 
     @Resource
@@ -77,6 +77,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), embed, link)))
                 )
                 .build();
+
 
         dto.add(ControllerLinkBuilder.linkTo(methodOn(SkuController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
                 .withSelfRel());

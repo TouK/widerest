@@ -15,6 +15,7 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.hateoas.MediaTypes;
