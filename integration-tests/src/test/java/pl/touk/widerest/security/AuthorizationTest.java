@@ -2,12 +2,15 @@ package pl.touk.widerest.security;
 
 import javaslang.Tuple;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.client.HttpClientErrorException;
 import pl.touk.widerest.AbstractTest;
+import pl.touk.widerest.api.orders.OrderDto;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,6 +35,28 @@ public class AuthorizationTest extends AbstractTest {
         givenAuthorizationServerClient(authorizationServerClient -> {
             whenAuthorizationRequestedFor(authorizationServerClient, Scope.CUSTOMER,
                     this::thenAuthorized);
+        });
+    }
+
+    @Test
+    public void shouldAuthorizeTheSameCustomerAgainUsingSessionAndAllowAccesToTheSameORder() throws Throwable {
+        givenAuthorizationServerClient(authorizationServerClient -> {
+            whenAuthorizationRequestedFor(authorizationServerClient, Scope.CUSTOMER, restTemplate1 -> {
+                whenNewOrderCreated(restTemplate1, orderUrl -> {
+                    whenAuthorizationRequestedFor(authorizationServerClient, Scope.CUSTOMER, restTemplate2 -> {
+                        final OrderDto order = restTemplate2.getForObject(orderUrl, OrderDto.class);
+                        //then no error
+                    });
+                    givenAuthorizationServerClient(authorizationServerClient2 -> {
+                        whenAuthorizationRequestedFor(authorizationServerClient2, Scope.CUSTOMER, restTemplate3 -> {
+                            // but the order is not available through other authorization sessions
+                            Assertions.assertThatThrownBy(() -> restTemplate3.getForObject(orderUrl, OrderDto.class))
+                                    .isInstanceOf(HttpClientErrorException.class)
+                                    .hasMessageContaining("404");
+                        });
+                    });
+                });
+            });
         });
     }
 
