@@ -60,7 +60,6 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 .retailPrice(Optional.ofNullable(sku.getRetailPrice()).map(Money::getAmount).orElse(null))
                 .quantityAvailable(sku.getQuantityAvailable())
                 .availability(Optional.ofNullable(sku.getInventoryType()).map(InventoryType::getType).orElse(null))
-                .isAvailable(inventoryService.checkBasicAvailablility(sku))
                 .taxCode(sku.getTaxCode())
                 .activeStartDate(sku.getActiveStartDate())
                 .activeEndDate(sku.getActiveEndDate())
@@ -77,6 +76,14 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), embed, link)))
                 )
                 .build();
+
+        final Integer skuQuantityAvailable = inventoryService.retrieveQuantityAvailable(sku);
+
+        if(skuQuantityAvailable != null) {
+            dto.setIsAvailable(skuQuantityAvailable > 0);
+        } else {
+            dto.setIsAvailable(null);
+        }
 
 
         dto.add(ControllerLinkBuilder.linkTo(methodOn(SkuController.class).getSkuById(sku.getProduct().getId(), sku.getId()))

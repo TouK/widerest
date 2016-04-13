@@ -568,7 +568,7 @@ public class ProductControllerTest extends AbstractTest {
         additionalSku2.setRetailPrice(new BigDecimal("19.99"));
         additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
         additionalSku2.setCurrencyCode("EUR");
-        additionalSku2.setAvailability("ALWAYS_AVAILABLE");
+        additionalSku2.setAvailability("CHECK_QUANTITY");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);
 
         final Map<String, String> productAttributes = new HashMap<>();
@@ -586,6 +586,8 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(catalogOperationsLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(1L));
 
         final ProductDto receivedProduct = getRemoteTestProductByIdDto(idFromLocationUrl);
+
+        em.clear();
 
         // validate Product Attributes
         final Map<String, String> attributes = receivedProduct.getAttributes();
