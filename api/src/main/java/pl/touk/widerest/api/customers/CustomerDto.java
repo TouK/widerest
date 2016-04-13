@@ -13,6 +13,7 @@ import org.hibernate.validator.constraints.Email;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
+import javax.validation.Valid;
 import java.util.Map;
 
 
@@ -42,5 +43,6 @@ public class CustomerDto extends BaseDto {
     private String locale;
 
     @ApiModelProperty(position = 5, value = "Collection of available customer addresses")
+    @Valid
     private Map<String, AddressDto> addresses;
 }

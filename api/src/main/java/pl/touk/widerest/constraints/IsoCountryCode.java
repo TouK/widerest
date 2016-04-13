@@ -32,7 +32,7 @@ public @interface IsoCountryCode {
 
         @Override
         public boolean isValid(String country, ConstraintValidatorContext context) {
-            return isoService.findISOCountryByAlpha2Code(country) != null;
+            return country == null || isoService.findISOCountryByAlpha2Code(country) != null;
         }
     }
 }

@@ -1,9 +1,12 @@
 package pl.touk.widerest.api.orders;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javaslang.control.Try;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
+import org.broadleafcommerce.core.order.domain.OrderItemAttribute;
 import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
@@ -13,8 +16,11 @@ import pl.touk.widerest.api.products.ProductController;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toMap;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -22,6 +28,9 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, DiscreteOrderItemDto> {
 
     public static final String FULFILLMENT_REL = "fulfillment";
+
+    @Resource
+    protected ObjectMapper objectMapper;
 
     @Resource
     protected FulfillmentConverter fulfillmentConverter;
@@ -43,6 +52,15 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
                 )
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(discreteOrderItem.getTotalPrice()).orElse(errCode).getAmount())
+                .attributes(
+                        Optional.ofNullable(discreteOrderItem.getOrderItemAttributes())
+                                .map(Map::values)
+                                .map(Collection::stream)
+                                .map(stream -> stream.collect(toMap(
+                                        OrderItemAttribute::getName,
+                                        orderItemAttribute -> Try.of(() -> objectMapper.readValue(orderItemAttribute.getValue(), Object.class)).getOrElse(orderItemAttribute.getValue())
+                                ))).orElse(null)
+                )
                 .build();
 
         orderItemDto.add(linkTo(methodOn(OrderController.class).getOneItemFromOrder(null, discreteOrderItem.getOrder().getId(), discreteOrderItem.getId(), null, null)).withSelfRel());
