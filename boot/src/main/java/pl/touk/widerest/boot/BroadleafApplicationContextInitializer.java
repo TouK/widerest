@@ -11,6 +11,7 @@ import org.broadleafcommerce.common.extensibility.context.merge.exceptions.Merge
 import org.broadleafcommerce.common.web.extensibility.MergeXmlWebApplicationContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.FatalBeanException;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -18,6 +19,7 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import pl.touk.throwing.ThrowingFunction;
 
 import java.io.IOException;
@@ -128,5 +130,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         } catch (IOException e) {
             log.error("Error while merging bean defininitions", e);
         }
+        applicationContext.registerBeanDefinition("blConfiguration", new RootBeanDefinition(RuntimeEnvironmentPropertiesConfigurer.class));
+        applicationContext.registerBeanDefinition("blStaticAssetURLHandlerMapping", new RootBeanDefinition(SimpleUrlHandlerMapping.class));
     }
 }
