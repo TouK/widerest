@@ -19,7 +19,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.StringUtils;
-import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import pl.touk.throwing.ThrowingFunction;
 
 import java.io.IOException;
@@ -131,6 +130,6 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
             log.error("Error while merging bean defininitions", e);
         }
         applicationContext.registerBeanDefinition("blConfiguration", new RootBeanDefinition(RuntimeEnvironmentPropertiesConfigurer.class));
-        applicationContext.registerBeanDefinition("blStaticAssetURLHandlerMapping", new RootBeanDefinition(SimpleUrlHandlerMapping.class));
+        applicationContext.registerBeanDefinition("blStaticAssetURLHandlerMapping", new RootBeanDefinition(BroadleafCmsSimpleUrlHandlerMapping.class));
     }
 }
