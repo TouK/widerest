@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
+
+    <bean id="blConfiguration" class="pl.touk.widerest.boot.RuntimeEnvironmentPropertiesConfigurer" />
+
+    <bean id="blStaticAssetURLHandlerMapping" class="pl.touk.widerest.boot.BroadleafCmsSimpleUrlHandlerMapping">
+        <!--  Before mvc:annotationdriven but after static content / resource filters -->
+        <property name="order" value="-1"/>
+        <property name="alwaysUseFullPath" value="true"></property>
+        <property name="mappings">
+            <map>
+                <entry key="/**/${asset.server.url.prefix.internal}/**" value-ref="blStaticAssetViewController"/>
+                <entry key="/${asset.server.url.prefix.internal}/**" value-ref="blStaticAssetViewController"/>
+            </map>
+        </property>
+    </bean>
+
+
+</beans>
