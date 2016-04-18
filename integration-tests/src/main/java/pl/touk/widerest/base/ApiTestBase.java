@@ -291,8 +291,8 @@ public abstract class ApiTestBase {
         return restTemplate.exchange(url, HttpMethod.GET, null, responseType).getBody();
     }
 
-    protected Collection<CategoryDto> readAllCategories(RestTemplate restTemplate, URI apiUrl) {
-        URI categoriesUrl = UriComponentsBuilder.fromUri(apiUrl).path("/categories").build().toUri();
+    protected Collection<CategoryDto> readAllCategories(RestTemplate restTemplate, URI apiUrl, boolean flat) {
+        URI categoriesUrl = UriComponentsBuilder.fromUri(apiUrl).path("/categories").queryParam("flat", flat).build().toUri();
         return getForResources(restTemplate, categoriesUrl, new ParameterizedTypeReference<Resources<CategoryDto>>() {
         }).getContent();
     }
@@ -304,7 +304,7 @@ public abstract class ApiTestBase {
     }
 
     protected void whenCategorySelected(RestTemplate restTemplate, String categoryName, Try.CheckedConsumer<CategoryDto> then) throws Throwable {
-        when(() -> readAllCategories(restTemplate, apiUrl), categories -> {
+        when(() -> readAllCategories(restTemplate, apiUrl, true), categories -> {
             when(() -> {
                 return categories.stream()
                         .filter(category -> categoryName.equals(category.getName()))
