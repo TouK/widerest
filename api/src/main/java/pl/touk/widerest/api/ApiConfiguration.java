@@ -1,11 +1,16 @@
 package pl.touk.widerest.api;
 
+import cz.jirutka.spring.exhandler.RestHandlerExceptionResolver;
 import org.broadleafcommerce.common.web.BroadleafRequestInterceptor;
+import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
+import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RelProvider;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -48,5 +53,17 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter {
     public MethodValidationPostProcessor methodValidationPostProcessor() {
         return new MethodValidationPostProcessor();
     }
+
+    @Bean
+    public RestHandlerExceptionResolver restExceptionResolver() {
+        return RestHandlerExceptionResolver.builder()
+//                .messageSource( httpErrorMessageSource() )
+                .defaultContentType(MediaType.APPLICATION_JSON)
+                .addHandler(CheckoutException.class, new ErrorMessageRestExceptionHandlerWithDefaults(CheckoutException.class, HttpStatus.CONFLICT))
+                .addHandler(Exception.class, new ErrorMessageRestExceptionHandlerWithDefaults(Exception.class, HttpStatus.INTERNAL_SERVER_ERROR))
+                .addErrorMessageHandler(UpdateCartException.class, HttpStatus.CONFLICT)
+                .build();
+    }
+
 
 }
