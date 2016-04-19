@@ -8,7 +8,7 @@ import java.util.Properties;
 public class BroadleafCmsSimpleUrlHandlerMapping extends SimpleUrlHandlerMapping {
 
     @Resource(name="blConfiguration")
-    protected org.broadleafcommerce.common.config.RuntimeEnvironmentPropertiesConfigurer configurer;
+    protected RuntimeEnvironmentPropertiesConfigurer configurer;
 
     @Override
     public void setMappings(Properties mappings) {

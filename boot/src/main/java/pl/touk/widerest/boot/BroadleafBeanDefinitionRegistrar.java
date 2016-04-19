@@ -57,7 +57,10 @@ public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefi
 
         String[] broadleafConfigLocations = StandardConfigLocations.retrieveAll(standardLocationTypes);
 
-        final ResourceInputStream[] filteredSources = Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
+        final ResourceInputStream[] filteredSources = Stream.concat(
+                Stream.of("wd-boot-applicationContext.xml"),
+                Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
+        )
                 .map(location -> {
                     final InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
                             location);

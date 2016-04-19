@@ -5,9 +5,15 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 
-    <bean id="blConfiguration" class="pl.touk.widerest.boot.RuntimeEnvironmentPropertiesConfigurer" />
+    <bean id="blConfiguration" class="pl.touk.widerest.boot.RuntimeEnvironmentPropertiesConfigurer">
+        <property name="overridableProperyLocations">
+            <set>
+                <value>classpath:config/bc/menu/</value>
+            </set>
+        </property>
+    </bean>
 
-    <bean id="blStaticAssetURLHandlerMapping" class="pl.touk.widerest.boot.BroadleafCmsSimpleUrlHandlerMapping">
+    <bean id="blStaticAssetURLHandlerMapping" class="pl.touk.widerest.boot.BroadleafCmsSimpleUrlHandlerMapping" depends-on="blBLCSystemProperty">
         <!--  Before mvc:annotationdriven but after static content / resource filters -->
         <property name="order" value="-1"/>
         <property name="alwaysUseFullPath" value="true"></property>
