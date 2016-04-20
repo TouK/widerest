@@ -1,13 +1,13 @@
 package pl.touk.widerest.api;
 
 import io.swagger.annotations.ApiModelProperty;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.ResourceSupport;
+import pl.touk.widerest.hal.EmbeddedResource;
+import pl.touk.widerest.hal.ResourceSupportWithEmbedded;
 
 import java.util.List;
 
-public class BaseDto extends ResourceSupport {
+public class BaseDto extends ResourceSupportWithEmbedded {
 
     @Override
     @ApiModelProperty(hidden = true)

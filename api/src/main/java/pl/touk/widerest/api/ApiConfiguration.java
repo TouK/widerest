@@ -6,20 +6,18 @@ import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.RelProvider;
-import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import pl.touk.widerest.hal.HalConfiguration;
 
 @Configuration
-//@EnableTransactionManagement
-//@EnableSpringDataWebSupport
-@EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
+@Import(HalConfiguration.class)
 public class ApiConfiguration extends WebMvcConfigurerAdapter {
 
     @Bean
@@ -31,11 +29,6 @@ public class ApiConfiguration extends WebMvcConfigurerAdapter {
     public ChannelInterceptor channelInterceptor() {
         return new ChannelInterceptor();
 
-    }
-
-    @Bean
-    public RelProvider relProvider() {
-        return new JsonRootRelProvider();
     }
 
     @Override
