@@ -68,6 +68,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                             .orElse(Collections.emptyMap()).entrySet().stream()
                                 .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia())))
                 )
+                .url(entity.getUrl())
                 .build();
 
         try {
@@ -173,6 +174,8 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 ));
 
         categoryEntity.getCategoryMediaXref().putAll(mediaXrefs);
+
+        categoryEntity.setUrl(categoryDto.getUrl());
 
         return categoryEntity;
     }
