@@ -15,7 +15,7 @@ import pl.touk.widerest.api.common.MediaDto;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,13 +45,13 @@ public class SkuDto extends BaseDto {
     private BigDecimal retailPrice;
 
     @NotNull(message = "Sku has to have available quantity set")
-    @ApiModelProperty(position = 4, value = "Available quantity of the SKU", required = true, dataType = "java.lang.Integer")
+    @ApiModelProperty(position = 4, value = "Available quantity of the SKU", required = true)
     private Integer quantityAvailable;
 
-    @ApiModelProperty(position = 5, value = "SKU's availability", dataType = "java.lang.String")
+    @ApiModelProperty(position = 5, value = "SKU's availability")
     private String availability;
 
-    @ApiModelProperty(position = 6, value = "SKU's basic availability (true/false)", dataType = "java.lang.Boolean")
+    @ApiModelProperty(position = 6, value = "SKU's basic availability (true/false)")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Boolean isAvailable;
 
@@ -62,11 +62,11 @@ public class SkuDto extends BaseDto {
     private String taxCode;
 
     @NotNull(message = "Sku has to have an Active Start Date set")
-    @ApiModelProperty(position = 9, value = "Date from which the SKU becomes active", required = true, dataType = "java.util.Date")
-    private Date activeStartDate;
+    @ApiModelProperty(position = 9, value = "Date from which the SKU becomes active", required = true)
+    private ZonedDateTime validFrom;
 
-    @ApiModelProperty(position = 10, value = "Date from which the SKU becomes inactive", dataType = "java.util.Date")
-    private Date activeEndDate;
+    @ApiModelProperty(position = 10, value = "Date from which the SKU becomes inactive")
+    private ZonedDateTime validTo;
 
     @ApiModelProperty(position = 11, value = "Attributes associated with the SKU")
     private Map<String, String> skuAttributes;

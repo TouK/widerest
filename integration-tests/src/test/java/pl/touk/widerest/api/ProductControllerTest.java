@@ -342,7 +342,7 @@ public class ProductControllerTest extends AbstractTest {
             final SkuDto receivedSkuDto = receivedSkuEntity.getBody();
 
             assertNotNull(receivedSkuDto.getName());
-            assertNotNull(receivedSkuDto.getActiveStartDate());
+            assertNotNull(receivedSkuDto.getValidFrom());
             assertNotNull(receivedSkuDto.getTaxCode());
             assertNotNull(receivedSkuDto.getRetailPrice());
 
@@ -544,7 +544,7 @@ public class ProductControllerTest extends AbstractTest {
         complexProductDto.setCategoryName(testCategory.getName());
 
         // set additional default SKU options
-        complexProductDto.setValidFrom(ApiTestUtils.addNDaysToDate(complexProductDto.getValidFrom(), 30));
+//        complexProductDto.setValidFrom(ApiTestUtils.addNDaysToDate(complexProductDto.getValidFrom(), 30));
         complexProductDto.setRetailPrice(new BigDecimal("19.99"));
 
 
@@ -558,7 +558,7 @@ public class ProductControllerTest extends AbstractTest {
         additionalSku1.getMedia().put("primary", mediaDto1);
         additionalSku1.getMedia().put("alt1", mediaDto2);
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-        additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("CHECK_QUANTITY");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
@@ -566,7 +566,7 @@ public class ProductControllerTest extends AbstractTest {
         additionalSku2.setMedia(new HashMap<>());
         additionalSku2.getMedia().put("primary", mediaDto3);
         additionalSku2.setRetailPrice(new BigDecimal("19.99"));
-        additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 2));
         additionalSku2.setCurrencyCode("EUR");
         additionalSku2.setAvailability("CHECK_QUANTITY");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);
@@ -636,7 +636,7 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(receivedProduct.getSalePrice(), equalTo(complexProductDto.getSalePrice()));
         assertThat(receivedProduct.getRetailPrice(), equalTo(complexProductDto.getRetailPrice()));
         assertThat(receivedProduct.getQuantityAvailable(), equalTo(complexProductDto.getQuantityAvailable()));
-        assertThat(receivedProduct.getAvailability(), equalTo("ALWAYS_AVAILABLE"));
+        assertThat(receivedProduct.getAvailability(), equalTo("CHECK_QUANTITY"));
         assertThat(receivedProduct.getCurrencyCode(), equalTo(currencyService.findDefaultBroadleafCurrency().getCurrencyCode()));
         assertThat(receivedProduct.getValidFrom(), equalTo(complexProductDto.getValidFrom()));
         assertThat(receivedProduct.getValidTo(), equalTo(complexProductDto.getValidTo()));

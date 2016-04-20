@@ -113,7 +113,7 @@ public class CatalogTest extends AbstractTest {
 
         assertThat(receivedSkuDto.getName(), containsString(productDto.getName()));
         assertThat(receivedSkuDto.getQuantityAvailable(), equalTo(productDto.getQuantityAvailable()));
-        assertThat(receivedSkuDto.getActiveStartDate(), equalTo(productDto.getValidFrom()));
+        assertThat(receivedSkuDto.getValidFrom(), equalTo(productDto.getValidFrom()));
 
         // when: 3) adding another product without category
         final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);

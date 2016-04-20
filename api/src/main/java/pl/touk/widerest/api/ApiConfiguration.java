@@ -1,9 +1,14 @@
 package pl.touk.widerest.api;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import cz.jirutka.spring.exhandler.RestHandlerExceptionResolver;
 import org.broadleafcommerce.common.web.BroadleafRequestInterceptor;
 import org.broadleafcommerce.core.checkout.service.exception.CheckoutException;
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -16,9 +21,24 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import pl.touk.widerest.hal.HalConfiguration;
 
+import javax.annotation.PostConstruct;
+import java.util.Collection;
+
 @Configuration
 @Import(HalConfiguration.class)
 public class ApiConfiguration extends WebMvcConfigurerAdapter {
+
+    @Autowired
+    Collection<ObjectMapper> objectMappers;
+
+    @PostConstruct
+    public void initJodaTimeJacksonModule() {
+        objectMappers.forEach(objectMapper -> {
+            objectMapper.registerModule(new JSR310Module());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            objectMapper.disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+        });
+    }
 
     @Bean
     public BroadleafRequestInterceptor broadleafRequestInterceptor() {

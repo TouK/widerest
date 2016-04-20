@@ -14,7 +14,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.resource.BaseOAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
@@ -26,7 +25,6 @@ import pl.touk.widerest.security.oauth2.oob.OobAuthorizationEndpoint;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
@@ -54,6 +52,8 @@ public class AuthorizationServerClient {
         try (CloseableHttpResponse response = httpClient.execute(request)) {}
     }
 
+    @Resource
+    protected HttpMessageConverters httpMessageConverters;
 
     public OAuth2RestTemplate requestAuthorization (final Scope scope) throws IOException {
         final HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
@@ -67,7 +67,7 @@ public class AuthorizationServerClient {
 
             restTemplate.getOAuth2ClientContext().setAccessToken(null);
 
-            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, Arrays.asList(new MappingJackson2HttpMessageConverter()));
+            final HttpMessageConverterExtractor<Map> e = new HttpMessageConverterExtractor(Map.class, httpMessageConverters.getConverters());
             Optional.ofNullable((Map<String, String>)e.extractData(response))
                     .map(m -> m.get("access_token"))
                     .map(DefaultOAuth2AccessToken::new)
@@ -86,6 +86,7 @@ public class AuthorizationServerClient {
         @org.springframework.context.annotation.Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
         public OAuth2RestTemplate oAuth2RestTemplate(HttpMessageConverters httpMessageConverters) {
             OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(new BaseOAuth2ProtectedResourceDetails());
+            oAuth2RestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
             oAuth2RestTemplate.setMessageConverters(httpMessageConverters.getConverters());
             return oAuth2RestTemplate;
         }

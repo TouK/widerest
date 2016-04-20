@@ -21,7 +21,10 @@ import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.products.ProductController;
 
 import javax.annotation.Resource;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,12 +61,12 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 .description(sku.getDescription())
                 .salePrice(Optional.ofNullable(sku.getSalePrice()).map(Money::getAmount).orElse(null))
                 .retailPrice(Optional.ofNullable(sku.getRetailPrice()).map(Money::getAmount).orElse(null))
-                .quantityAvailable(sku.getQuantityAvailable())
+                .quantityAvailable(inventoryService.retrieveQuantityAvailable(sku))
                 .availability(Optional.ofNullable(sku.getInventoryType()).map(InventoryType::getType).orElse(null))
-                .isAvailable(Optional.ofNullable(inventoryService.retrieveQuantityAvailable(sku)).map(skuQuantity -> skuQuantity > 0).orElse(null))
+                .isAvailable(inventoryService.isAvailable(sku,1))
                 .taxCode(sku.getTaxCode())
-                .activeStartDate(sku.getActiveStartDate())
-                .activeEndDate(sku.getActiveEndDate())
+                .validFrom(Optional.ofNullable(sku.getActiveStartDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null))
+                .validTo(Optional.ofNullable(sku.getActiveEndDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null))
                 .currencyCode(Optional.ofNullable(sku.getCurrency())
                         .orElse(localeService.findDefaultLocale().getDefaultCurrency())
                         .getCurrencyCode())
@@ -118,15 +121,15 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
         sku.setSalePrice(Optional.ofNullable(skuDto.getSalePrice()).map((amount) -> new Money(amount, sku.getCurrency())).orElse(null));
         sku.setQuantityAvailable(skuDto.getQuantityAvailable());
         sku.setTaxCode(skuDto.getTaxCode());
-        sku.setActiveStartDate(skuDto.getActiveStartDate());
-        sku.setActiveEndDate(skuDto.getActiveEndDate());
 
-        if(skuDto.getAvailability() != null && InventoryType.getInstance(skuDto.getAvailability()) != null) {
-            sku.setInventoryType(InventoryType.getInstance(skuDto.getAvailability()));
-        } else {
-            /* (mst) turn on Inventory Service by default */
-            sku.setInventoryType(InventoryType.ALWAYS_AVAILABLE);
-        }
+        sku.setActiveStartDate(Optional.ofNullable(skuDto.getValidFrom()).map(ZonedDateTime::toInstant).map(Date::from).orElse(null));
+        sku.setActiveEndDate(Optional.ofNullable(skuDto.getValidTo()).map(ZonedDateTime::toInstant).map(Date::from).orElse(null));
+
+        sku.setInventoryType(
+                Optional.ofNullable(skuDto.getAvailability())
+                        .map(InventoryType::getInstance)
+                        .orElse(sku.getQuantityAvailable() == null ? InventoryType.ALWAYS_AVAILABLE : InventoryType.CHECK_QUANTITY)
+        );
 
         sku.getSkuAttributes().clear();
         sku.getSkuAttributes().putAll(

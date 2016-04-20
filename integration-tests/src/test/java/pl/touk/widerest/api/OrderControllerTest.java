@@ -348,13 +348,13 @@ public class OrderControllerTest extends AbstractTest {
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-        additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("ALWAYS_AVAILABLE");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
         additionalSku2.setRetailPrice(new BigDecimal("49.99"));
-        additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 2));
         additionalSku2.setCurrencyCode("USD");
         additionalSku2.setAvailability("ALWAYS_AVAILABLE");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);
@@ -406,13 +406,13 @@ public class OrderControllerTest extends AbstractTest {
         additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
-        additionalSku1.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 10));
+        additionalSku1.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 10));
         additionalSku1.setCurrencyCode("USD");
         additionalSku1.setAvailability("ALWAYS_AVAILABLE");
         additionalSku1.setSkuProductOptionValues(additionalSku1Options);
 
         additionalSku2.setRetailPrice(new BigDecimal("49.99"));
-        additionalSku2.setActiveEndDate(ApiTestUtils.addNDaysToDate(additionalSku1.getActiveStartDate(), 2));
+        additionalSku2.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 2));
         additionalSku2.setCurrencyCode("USD");
         additionalSku2.setAvailability("ALWAYS_AVAILABLE");
         additionalSku2.setSkuProductOptionValues(additionalSku2Options);
