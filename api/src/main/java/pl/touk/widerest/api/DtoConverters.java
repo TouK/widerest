@@ -102,8 +102,8 @@ public class DtoConverters {
                   .quantityAvailable(productDto.getQuantityAvailable())
                   .availability(productDto.getAvailability())
                   .taxCode(productDto.getTaxCode())
-                  .activeStartDate(productDto.getValidFrom())
-                  .activeEndDate(productDto.getValidTo())
+                  .validFrom(productDto.getValidFrom())
+                  .validTo(productDto.getValidTo())
                   .currencyCode(productDto.getCurrencyCode())
                   .media(productDto.getMedia())
                   .build();

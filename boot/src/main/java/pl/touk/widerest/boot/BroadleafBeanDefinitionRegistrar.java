@@ -11,12 +11,13 @@ import org.broadleafcommerce.common.extensibility.context.merge.exceptions.Merge
 import org.broadleafcommerce.common.web.extensibility.MergeXmlWebApplicationContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.FatalBeanException;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.io.Resource;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.StringUtils;
 import pl.touk.throwing.ThrowingFunction;
 
@@ -30,21 +31,36 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @Slf4j
-public class BroadleafApplicationContextInitializer implements ApplicationContextInitializer<GenericApplicationContext> {
+public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
 
-    private String patchLocation;
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(registry);
+        ImportProcessor importProcessor = new ImportProcessor(new DefaultResourceLoader());
+        try {
+            loadBeanDefinitions(reader, importProcessor);
+        } catch (IOException e) {
+            log.error("Error while merging bean defininitions", e);
+        }
+        //        applicationContext.registerBeanDefinition("blStaticAssetURLHandlerMapping", new RootBeanDefinition(BroadleafCmsSimpleUrlHandlerMapping.class));
+//        applicationContext.registerBeanDefinition("blConfiguration", new RootBeanDefinition(RuntimeEnvironmentPropertiesConfigurer.class));
 
-    public BroadleafApplicationContextInitializer() {
+//        registry.removeBeanDefinition("blStaticAssetURLHandlerMapping");
+//        registry.removeBeanDefinition("blConfiguration");
     }
 
-    public BroadleafApplicationContextInitializer(String patchLocation) {
-        setPatchLocation(patchLocation);
-    }
+    abstract protected String getPatchLocation();
+
 
     protected int loadBeanDefinitions(XmlBeanDefinitionReader reader, ImportProcessor importProcessor) throws BeansException, IOException {
         final int standardLocationTypes = StandardConfigLocations.APPCONTEXTTYPE;
 
-        final ResourceInputStream[] filteredSources = Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
+        String[] broadleafConfigLocations = StandardConfigLocations.retrieveAll(standardLocationTypes);
+
+        final ResourceInputStream[] filteredSources = Stream.concat(
+                Stream.of("wd-boot-applicationContext.xml"),
+                Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
+        )
                 .map(location -> {
                     final InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
                             location);
@@ -52,8 +68,10 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
                 })
                 .toArray(ResourceInputStream[]::new);
 
-        final List<ResourceInputStream> patchList = Arrays.stream(
-                StringUtils.tokenizeToStringArray(getPatchLocation(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS))
+        final List<ResourceInputStream> patchList = Stream.concat(
+                Arrays.stream(StringUtils.tokenizeToStringArray(getPatchLocation(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS)),
+                Stream.of("classpath:wd-boot-applicationContext.xml")
+        )
                 .flatMap(ThrowingFunction.unchecked(l -> {
                     if (!l.startsWith("classpath")) {
                         throw new NotImplementedException("Only classpath resources merge implemented");
@@ -72,7 +90,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
             final ResourceInputStream[] patchArray = importProcessor.extract(
                     patchList.toArray(new ResourceInputStream[patchList.size()]));
 
-            final Resource[] resources = new MergeApplicationContextXmlConfigResource().getConfigResources(
+            final org.springframework.core.io.Resource[] resources = new MergeApplicationContextXmlConfigResource().getConfigResources(
                     extractedSources, patchArray);
 
             return reader.loadBeanDefinitions(resources);
@@ -84,7 +102,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
     protected List<ResourceInputStream> getResourcesFromPatternResolver(String patchLocation) throws IOException {
         ResourceInputStream resolverPatch;
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource[] resources = resolver.getResources(patchLocation);
+        org.springframework.core.io.Resource[] resources = resolver.getResources(patchLocation);
         List<ResourceInputStream> resolverList = new ArrayList<ResourceInputStream>();
 
         if (ArrayUtils.isEmpty(resources)) {
@@ -93,7 +111,7 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
             return resolverList;
         }
 
-        for (Resource resource : resources) {
+        for (org.springframework.core.io.Resource resource : resources) {
             resolverPatch = new ResourceInputStream(resource.getInputStream(), patchLocation);
             if (resolverPatch.available() <= 0) {
                 throw new IOException(
@@ -105,28 +123,4 @@ public class BroadleafApplicationContextInitializer implements ApplicationContex
         return resolverList;
     }
 
-    /**
-     * @return the patchLocation
-     */
-    public String getPatchLocation() {
-        return patchLocation;
-    }
-
-    /**
-     * @param patchLocation the patchLocation to set
-     */
-    public void setPatchLocation(String patchLocation) {
-        this.patchLocation = patchLocation;
-    }
-
-    @Override
-    public void initialize(GenericApplicationContext applicationContext) {
-        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(applicationContext);
-        ImportProcessor importProcessor = new ImportProcessor(applicationContext);
-        try {
-            loadBeanDefinitions(reader, importProcessor);
-        } catch (IOException e) {
-            log.error("Error while merging bean defininitions", e);
-        }
-    }
 }

@@ -7,12 +7,12 @@ import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.broadleafcommerce.core.order.domain.OrderItemAttribute;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.products.ProductController;
+import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;

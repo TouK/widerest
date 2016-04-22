@@ -7,18 +7,14 @@ import org.springframework.http.ResponseEntity;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ApiTestUtils {
 
-    public static Date addNDaysToDate(final Date date, final int N) {
-        final Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.add(Calendar.DATE, N);
-        return cal.getTime();
+    public static ZonedDateTime addNDaysToDate(final ZonedDateTime date, final int N) {
+        return date.plusDays(N);
     }
 
     public static int strapSuffixId(final String url) {

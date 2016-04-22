@@ -5,17 +5,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.TransactionManagementConfigurer;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import pl.touk.widerest.api.settings.SettingsConsumer;
 import pl.touk.widerest.api.settings.SettingsService;
-import pl.touk.widerest.boot.BroadleafApplicationContextInitializer;
 import pl.touk.widerest.boot.BroadleafBeansPostProcessor;
 import pl.touk.widerest.boot.ReorderedHttpMessageConverters;
 import springfox.documentation.swagger.web.ApiKeyVehicle;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
+@Import(BraodleafConfiguration.class)
 public class Application extends WebMvcConfigurerAdapter implements TransactionManagementConfigurer {
 
     @Autowired
@@ -59,12 +59,6 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
         registry.addViewController("/login").setViewName("login");
         registry.addViewController("/oauth/confirm_access").setViewName("authorize");
         registry.addRedirectViewController("/", "/swagger-ui.html");
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/css/**").addResourceLocations("classpath:/css/");
-        registry.addResourceHandler("/cmsstatic/img/**").addResourceLocations("classpath:/cms/static/img/");
     }
 
     @Bean
@@ -108,24 +102,8 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
         };
     }
 
-    public static class ContextInitializer extends BroadleafApplicationContextInitializer {
-        public ContextInitializer() {
-            super(
-                    "classpath:/bl-open-admin-contentClient-applicationContext.xml\n" +
-                    "classpath:/bl-open-admin-contentCreator-applicationContext.xml\n" +
-                    "classpath:/bl-cms-contentClient-applicationContext.xml\n" +
-                    "classpath:/bl-common-applicationContext.xml\n" +
-                    "classpath:/bl-menu-applicationContext.xml\n" +
-                    //"classpath*:/blc-config/site/bl-*-applicationContext.xml\n" +
-                    "classpath:/applicationContext.xml\n" +
-                    "classpath:/applicationContext-security.xml\n"
-            );
-        }
-    }
-
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class)
-                .initializers(new ContextInitializer())
                 .run(args);
     }
 

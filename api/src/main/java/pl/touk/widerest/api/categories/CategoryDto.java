@@ -49,4 +49,7 @@ public class CategoryDto extends BaseDto {
     @ApiModelProperty(value = "Available options for fulfillment")
     private Map<String, FulfillmentOptionDto> fulfillmentOptions;
 
+    @ApiModelProperty(position = 21, dataType = "java.lang.String")
+    private String url;
+
 }

@@ -10,7 +10,6 @@ import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.CategoryXref;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
@@ -20,6 +19,7 @@ import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
+import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -68,6 +68,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                             .orElse(Collections.emptyMap()).entrySet().stream()
                                 .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia())))
                 )
+                .url(entity.getUrl())
                 .build();
 
         try {
@@ -173,6 +174,8 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 ));
 
         categoryEntity.getCategoryMediaXref().putAll(mediaXrefs);
+
+        categoryEntity.setUrl(categoryDto.getUrl());
 
         return categoryEntity;
     }

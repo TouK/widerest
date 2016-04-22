@@ -4,7 +4,6 @@ import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderAttribute;
 import org.broadleafcommerce.core.order.service.OrderService;
-import org.springframework.hateoas.EmbeddedResource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
 import pl.touk.widerest.api.Converter;
@@ -13,6 +12,7 @@ import pl.touk.widerest.api.customers.CustomerConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
+import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
 import java.util.Collection;

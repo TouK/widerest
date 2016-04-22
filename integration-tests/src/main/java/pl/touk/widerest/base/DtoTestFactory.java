@@ -11,12 +11,10 @@ import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class DtoTestFactory {
@@ -31,7 +29,7 @@ public class DtoTestFactory {
 
     private static MediaDto newMediaDto;
 
-    private static final Date defaultActiveStartDate;
+    private static final ZonedDateTime defaultActiveStartDate;
 
     private static long categoryCounter = 0;
     private static long productCounter = 0;
@@ -46,8 +44,7 @@ public class DtoTestFactory {
     public static final String TEST_BUNDLE_DEFAULT_NAME = "TestBundleName";
 
     static {
-        Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-        defaultActiveStartDate = gmtCal.getTime();
+        defaultActiveStartDate = ZonedDateTime.now();
 
         skuMediaCounter = new AtomicLong(0);
     }
@@ -241,7 +238,7 @@ public class DtoTestFactory {
 //                    .salePrice(new BigDecimal("39.99"))
 //                    .quantityAvailable(99)
 //                    .taxCode("DefaultSKU Tax Code")
-//                    .activeStartDate(defaultActiveStartDate)
+//                    .validFrom(defaultActiveStartDate)
 //                    .build();
 //        }
 //        return newSkuDto;
@@ -264,7 +261,7 @@ public class DtoTestFactory {
 //                .salePrice(new BigDecimal("39.99"))
 //                .quantityAvailable(99)
 //                .taxCode("DefaultSKU Tax Code")
-//                .activeStartDate(defaultActiveStartDate)
+//                .validFrom(defaultActiveStartDate)
 //                .build();
 //
 //
@@ -298,7 +295,7 @@ public class DtoTestFactory {
                     .quantityAvailable(34)
                     .isAvailable(true)
                     .taxCode("AdditionalSKU Tax Code")
-                    .activeStartDate(defaultActiveStartDate)
+                    .validFrom(defaultActiveStartDate)
                     .skuProductOptionValues(h)
                     .build();
         }
@@ -316,7 +313,7 @@ public class DtoTestFactory {
                 .quantityAvailable((int) (3 + skuCounter))
                 .isAvailable(true)
                 .taxCode("AdditionalSKU Tax Code" + skuCounter)
-                .activeStartDate(defaultActiveStartDate)
+                .validFrom(defaultActiveStartDate)
                 .skuProductOptionValues(h)
                 .build();
 

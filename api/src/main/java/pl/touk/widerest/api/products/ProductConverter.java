@@ -7,6 +7,7 @@ import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionType;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionValidationStrategyType;
 import org.broadleafcommerce.core.catalog.service.type.ProductType;
+import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.stereotype.Component;
@@ -23,9 +24,12 @@ import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 
 import javax.annotation.Resource;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +58,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
     @Resource
     protected CatalogService catalogService;
 
+    @Resource
+    protected InventoryService inventoryService;
+
     @Override
     public ProductDto createDto(final Product product, final boolean embed, final boolean link) {
         final ProductDto dto = product instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
@@ -65,8 +72,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         dto.setRetailPrice(Optional.ofNullable(productDefaultSku.getRetailPrice()).map(Money::getAmount).orElse(null));
         dto.setSalePrice(Optional.ofNullable(productDefaultSku.getSalePrice()).map(Money::getAmount).orElse(null));
+        dto.setQuantityAvailable(inventoryService.retrieveQuantityAvailable(productDefaultSku));
         dto.setAvailability(Optional.ofNullable(productDefaultSku.getInventoryType()).map(InventoryType::getType).orElse(null));
-        dto.setQuantityAvailable(productDefaultSku.getQuantityAvailable());
+        dto.setIsAvailable(inventoryService.isAvailable(productDefaultSku,1));
         dto.setTaxCode(productDefaultSku.getTaxCode());
         dto.setCurrencyCode(Optional.ofNullable(productDefaultSku.getCurrency())
                                 .orElse(localeService.findDefaultLocale().getDefaultCurrency())
@@ -88,8 +96,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
         Optional.ofNullable(product.getUrl()).ifPresent(dto::setUrl);
 
-        dto.setValidFrom(Optional.ofNullable(product.getActiveStartDate()).orElse(null));
-        dto.setValidTo(Optional.ofNullable(product.getActiveEndDate()).orElse(null));
+        dto.setValidFrom(Optional.ofNullable(product.getActiveStartDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null));
+        dto.setValidTo(Optional.ofNullable(product.getActiveEndDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null));
 
         dto.setAttributes(product.getProductAttributes().entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().toString())));
@@ -180,8 +188,18 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         product.setDescription(productDto.getDescription());
         product.setLongDescription(productDto.getLongDescription());
         product.setPromoMessage(productDto.getOfferMessage());
-        product.setActiveStartDate(Optional.ofNullable(productDto.getValidFrom()).orElse(product.getDefaultSku().getActiveStartDate()));
-        product.setActiveEndDate(Optional.ofNullable(productDto.getValidTo()).orElse(product.getDefaultSku().getActiveEndDate()));
+        product.setActiveStartDate(
+                Optional.ofNullable(productDto.getValidFrom())
+                        .map(ZonedDateTime::toInstant)
+                        .map(Date::from)
+                        .orElse(product.getDefaultSku().getActiveStartDate())
+        );
+        product.setActiveEndDate(
+                Optional.ofNullable(productDto.getValidTo())
+                        .map(ZonedDateTime::toInstant)
+                        .map(Date::from)
+                        .orElse(product.getDefaultSku().getActiveEndDate())
+        );
         product.setModel(productDto.getModel());
         product.setManufacturer(productDto.getManufacturer());
         product.setUrl(productDto.getUrl());

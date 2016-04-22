@@ -19,7 +19,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -73,11 +73,15 @@ public class ProductDto extends BaseDto {
     @DecimalMin("0.01")
     private BigDecimal retailPrice;
 
-    @ApiModelProperty(position = 8, value = "Available quantity of the product", required = true, dataType = "java.lang.Integer")
+    @ApiModelProperty(position = 8, value = "Available quantity of the product", required = true)
     private Integer quantityAvailable;
 
-    @ApiModelProperty(position = 9, value = "Product's availability", dataType = "java.lang.String")
+    @ApiModelProperty(position = 9, value = "Product's availability")
     private String availability;
+
+    @ApiModelProperty(value = "SKU's basic availability (true/false)")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean isAvailable;
 
     @ApiModelProperty(position = 10, value = "Product's sale/retail price currency", required = true, dataType = "java.lang.String")
     private String currencyCode;
@@ -95,10 +99,10 @@ public class ProductDto extends BaseDto {
     private List<SkuDto> skus;
 
     @ApiModelProperty(position = 16, value = "Date from which the product becomes active/valid", dataType = "java.util.Date")
-    private Date validFrom;
+    private ZonedDateTime validFrom;
 
     @ApiModelProperty(position = 17, value = "Date from which the product becomes inactive/invalid", dataType = "java.util.Date")
-    private Date validTo;
+    private ZonedDateTime validTo;
 
     @ApiModelProperty(position = 18, value = "Offer message for the product", dataType = "java.lang.String")
     private String offerMessage;
