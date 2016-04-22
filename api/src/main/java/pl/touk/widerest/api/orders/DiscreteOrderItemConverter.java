@@ -58,7 +58,7 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
                                 .map(Collection::stream)
                                 .map(stream -> stream.collect(toMap(
                                         OrderItemAttribute::getName,
-                                        orderItemAttribute -> Try.of(() -> objectMapper.readValue(orderItemAttribute.getValue(), Object.class)).getOrElse(orderItemAttribute.getValue())
+                                        orderItemAttribute -> Try.of(() -> objectMapper.readValue(orderItemAttribute.getValue(), Object.class)).getOrElse(Optional.ofNullable(orderItemAttribute.getValue()).orElse(null))
                                 ))).orElse(null)
                 )
                 .build();
