@@ -10,7 +10,7 @@
 
     <groupId>pl.touk.widerest</groupId>
     <artifactId>widerest</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>widerest</name>
     <organization><name>TouK</name><url>http://touk.pl</url></organization>
@@ -19,7 +19,7 @@
         <connection>git@gitlab.touk.pl:touk-oss/widerest.git</connection>
         <developerConnection>scm:git:git@gitlab.touk.pl:touk-oss/widerest.git</developerConnection>
         <url>http://gitlab.touk.pl/touk-oss/widerest</url>
-      <tag>widerest-0.1.1</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <distributionManagement>
