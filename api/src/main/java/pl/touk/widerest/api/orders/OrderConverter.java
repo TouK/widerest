@@ -32,6 +32,8 @@ public class OrderConverter implements Converter<Order, OrderDto> {
     public static final String REL_ITEMS = "items";
     public static final String REL_FULFILLMENTS = "fulfillments";
     public static final String REL_STATUS = "status";
+    public static final String REL_PAYMENT = "payment";
+
     @Resource
     protected OrderPaymentConverter orderPaymentConverter;
 
@@ -105,7 +107,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
             orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel(REL_ITEMS));
             orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel(REL_FULFILLMENTS));
             orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel(REL_STATUS));
-            orderDto.add(linkTo(methodOn(OrderController.class).initiatePayment(null, null, order.getId())).withRel(REL_STATUS));
+            orderDto.add(linkTo(methodOn(OrderController.class).initiatePayment(null, null, order.getId())).withRel(REL_PAYMENT));
         }
 
         return orderDto;
