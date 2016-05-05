@@ -84,12 +84,14 @@ import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
@@ -315,7 +317,7 @@ public class OrderController {
         orderItemRequestDTO.setProductId(hrefProductId);
 
         if(orderItemDto.getSelectedOptions() != null) {
-            orderItemRequestDTO.getItemAttributes().putAll(orderItemDto.getSelectedOptions());
+            orderItemRequestDTO.getItemAttributes().putAll(removeNullValues(orderItemDto.getSelectedOptions()));
         }
 
         final List<DiscreteOrderItem> currentDiscreteItems = cart.getDiscreteOrderItems();
@@ -352,6 +354,12 @@ public class OrderController {
         } else {
             return ResponseEntity.ok().build();
         }
+    }
+
+    private Map<String,String> removeNullValues(final Map<String, String> selectedOptions) {
+        return selectedOptions.entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /* POST /orders/{orderId}/items */
