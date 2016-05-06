@@ -24,7 +24,12 @@ import java.util.Iterator;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 public class OrderFulfillmentsTest extends AbstractTest {
@@ -351,6 +356,41 @@ public class OrderFulfillmentsTest extends AbstractTest {
     }
 
     @Test
+    public void shouldThrowExceptionOnWrongFulfillmentOptionSelected() throws Throwable {
+        givenAnonymousUserWithAnOrderAndAnItem((restTemplate, orderUri, orderItemHref) -> {
+
+            AddressDto addressDto = AddressDto.builder()
+                    .addressLine1("ul. Warszawska 45")
+                    .addressLine2("POLSKA")
+                    .city("Poznan")
+                    .postalCode("05-134")
+                    .firstName("Haskell")
+                    .lastName("Curry")
+                    .countryCode("US")
+                    .build();
+
+            whenOrderFulfillmentsRetrieved(restTemplate, orderUri, fulfillments -> {
+
+                final FulfillmentDto fulfillment = fulfillments.iterator().next();
+                final String fulfillmentUrl = fulfillment.getLink("self").getHref();
+
+                assertThat(fulfillment.getSelectedFulfillmentOption(), isEmptyOrNullString());
+
+                fulfillment.setAddress(addressDto);
+
+                String selectedFulfillmentOption = "UNAVIALABLE_FULFILLMENT_OPTION_VALUE";
+                fulfillment.setSelectedFulfillmentOption(selectedFulfillmentOption);
+
+                try {
+                    restTemplate.put(fulfillmentUrl, fulfillment);
+                } catch (HttpClientErrorException e) {
+                    assertTrue(e.getStatusCode().is4xxClientError());
+                }
+            });
+        });
+    }
+
+    @Test
     @Ignore("TODO")
     public void shouldReturnErrorWhenUpdatingDefaultFulfillmentGroupWithoutAnyProductTest() {
 
@@ -373,6 +413,4 @@ public class OrderFulfillmentsTest extends AbstractTest {
     public void shouldHandleMultipleFulfillmentGroupsComplexOperationsProperlyTest() {
 
     }
-
-
 }

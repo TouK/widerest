@@ -94,12 +94,16 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
 
         Set<FulfillmentOption> availableFulfillmentOptions = fulfillmentServiceProxy.findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup);
 
-        availableFulfillmentOptions.stream()
+        Optional<FulfillmentOption> matchOption = availableFulfillmentOptions.stream()
                 .filter(o -> o.getName().equals(fulfillmentDto.getSelectedFulfillmentOption()))
-                .findFirst()
-                .ifPresent(
-                        fulfillmentGroup::setFulfillmentOption
-                );
+                .findFirst();
+
+        if(matchOption.isPresent()) {
+            fulfillmentGroup.setFulfillmentOption(matchOption.get());
+        } //TODO nullcheck because someone migh want to order first, then see prices of postage, should it be like this?
+        else if(fulfillmentDto.getSelectedFulfillmentOption() != null) {
+            throw new NoFulfillmentOptionException(String.format("No such fulfillment: %s", fulfillmentDto.getSelectedFulfillmentOption()));
+        }
 
         return fulfillmentGroup;
     }
