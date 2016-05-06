@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,7 +60,6 @@ public class OrderControllerTest extends AbstractTest {
 
             // Then orderItem quantity should be changed
             assertThat(orderItemDto.getQuantity(), equalTo(10));
-
         });
     }
 
@@ -265,7 +265,7 @@ public class OrderControllerTest extends AbstractTest {
             assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
 
-            ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+            ProductDto receivedProductDto = remoteTestProductByIdEntity.getBody();
             long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 
 
@@ -310,7 +310,7 @@ public class OrderControllerTest extends AbstractTest {
             assertThat(remoteTestProductByIdEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
             //ResponseEntity<ProductDto> remoteTestProductByIdEntity = getRemoteTestProductByIdEntity(productId);
-            ProductDto receivedProductDto= remoteTestProductByIdEntity.getBody();
+            ProductDto receivedProductDto = remoteTestProductByIdEntity.getBody();
             long skuId = ApiTestUtils.getIdFromLocationUrl(receivedProductDto.getLink("skus").getHref());
 
 
@@ -318,7 +318,7 @@ public class OrderControllerTest extends AbstractTest {
             try {
                 addItemToOrder(restTemplate, newOrderUrl, skuId, TEST_QUANTITY + 2);
                 fail();
-            } catch(HttpStatusCodeException httpStatusCodeException) {
+            } catch (HttpStatusCodeException httpStatusCodeException) {
                 assertTrue(httpStatusCodeException.getStatusCode().is5xxServerError());
             }
 
@@ -464,6 +464,35 @@ public class OrderControllerTest extends AbstractTest {
                 assertThat(itemDetailsFromCart.get(1).getRetailPrice().getAmount(), equalTo(additionalSku1.getRetailPrice()));
                 assertThat(firstDiscreteOrderItemDto.getRetailPrice().getAmount(), equalTo(additionalSku2.getRetailPrice()));
             }
+        });
+    }
+
+    @Test
+    public void shouldRemoveNullSelectedOptions() throws Throwable {
+        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
+        assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
+        final String productHref = responseEntity.getHeaders().getLocation().toString();
+
+        givenAuthorizationFor(Scope.CUSTOMER, restTemplate -> {
+            URI newOrderUrl = createNewOrder(restTemplate);
+
+            final OrderItemDto orderItemDto = new OrderItemDto();
+            orderItemDto.setQuantity(1);
+            orderItemDto.setProductHref(productHref);
+
+            orderItemDto.setSelectedOptions(new HashMap<>());
+            orderItemDto.getSelectedOptions().put("TESTOPTION", "TEST1");
+            orderItemDto.getSelectedOptions().put("TESTOPTION2", "TEST2");
+            final String nulloption = "NULLOPTION";
+            orderItemDto.getSelectedOptions().put(nulloption, null);
+
+
+            URI orderItemUrl = restTemplate.postForLocation(newOrderUrl.toASCIIString() + "/items", orderItemDto, serverPort);
+            assertNotNull(orderItemUrl);
+
+            final List<DiscreteOrderItemDto> itemDetails = getItemsFromCart(restTemplate, newOrderUrl);
+            assertThat(itemDetails.stream().findFirst().get().getAttributes().keySet().contains(nulloption), equalTo(false));
         });
     }
 }
