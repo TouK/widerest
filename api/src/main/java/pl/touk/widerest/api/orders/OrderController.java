@@ -350,7 +350,7 @@ public class OrderController {
                             .path("/{id}")
                             .buildAndExpand(addedDiscreteOrderItem.getId())
                             .toUri()
-            ).body(discreteOrderItemConverter.createDto(addedDiscreteOrderItem));
+            ).body(discreteOrderItemConverter.createDto(addedDiscreteOrderItem, false, true));
         } else {
             return ResponseEntity.ok().build();
         }

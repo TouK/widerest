@@ -12,7 +12,6 @@ import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.common.CatalogUtils;
@@ -85,14 +85,16 @@ public class SkuController {
     })
     public Resources<SkuDto> readSkusForProductById(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") final Long productId
+            @PathVariable(value = "productId") final Long productId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
         return new Resources<>(
                 productController.getProductById(productId).getAllSkus().stream()
-                        .map(sku -> skuConverter.createDto(sku))
+                        .map(sku -> skuConverter.createDto(sku, embed, link))
                         .collect(toList()),
 
-                linkTo(methodOn(getClass()).readSkusForProductById(productId)).withSelfRel()
+                linkTo(methodOn(getClass()).readSkusForProductById(productId, null, null)).withSelfRel()
         );
     }
 
@@ -181,10 +183,13 @@ public class SkuController {
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific SKU", required = true)
-            @PathVariable(value = "skuId") final Long skuId) {
+            @PathVariable(value = "skuId") final Long skuId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return Optional.of(getSkuByIdForProductById(productId, skuId))
-                .map(skuEntity -> skuConverter.createDto(skuEntity))
+                .map(skuEntity -> skuConverter.createDto(skuEntity, embed, link))
                 .get();
     }
 
@@ -416,7 +421,7 @@ public class SkuController {
                         .map(Map.Entry::getValue)
                         .map(skuMediaXref -> {
                             final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true, true);
-                            mediaDto.add(linkTo(methodOn(getClass()).getMediaByIdForSku(productId, skuId, skuMediaXref.getKey())).withSelfRel());
+                            mediaDto.add(linkTo(methodOn(getClass()).getMediaByIdForSku(productId, skuId, skuMediaXref.getKey(), null, null)).withSelfRel());
                             return mediaDto;
                         })
                         .collect(toList()),
@@ -444,7 +449,10 @@ public class SkuController {
             @ApiParam(value = "ID of a specific SKU", required = true)
             @PathVariable(value = "skuId") final Long skuId,
             @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "key") final String key) {
+            @PathVariable(value = "key") final String key,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         /* (mst) Here is the deal: if the specified SKU does not contain any medias
          *       BL's service will return medias associated with Default SKU instead.,
@@ -456,8 +464,8 @@ public class SkuController {
         return Optional.ofNullable(sku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
                 .map(media -> {
-                    final MediaDto mediaDto = mediaConverter.createDto(media);
-                    mediaDto.add(linkTo(methodOn(getClass()).getMediaByIdForSku(productId, skuId, key)).withSelfRel());
+                    final MediaDto mediaDto = mediaConverter.createDto(media, embed, link);
+                    mediaDto.add(linkTo(methodOn(getClass()).getMediaByIdForSku(productId, skuId, key, null, null)).withSelfRel());
                     return mediaDto;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " for this sku"));

@@ -81,12 +81,12 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 )
                 .build();
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(SkuController.class).getSkuById(sku.getProduct().getId(), sku.getId()))
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(SkuController.class).getSkuById(sku.getProduct().getId(), sku.getId(), null, null))
                 .withSelfRel());
 
         if (link) {
 
-            dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId()))
+            dto.add(linkTo(methodOn(ProductController.class).readOneProductById(sku.getProduct().getId(), null, null))
                     .withRel("product"));
 
             dto.add(linkTo(methodOn(SkuController.class).getMediaBySkuId(sku.getProduct().getId(), sku.getId()))

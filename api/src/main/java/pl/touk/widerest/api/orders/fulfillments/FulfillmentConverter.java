@@ -63,22 +63,22 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
 
         try {
             Optional.ofNullable(fulfillmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
-                    .ifPresent(options -> {
-                        fulfillmentDto.setFulfillmentOptions(options.entrySet().stream()
-                                .collect(Collectors.toMap(
-                                        e -> e.getKey().getName(),
-                                        e -> FulfillmentOptionDto.builder()
-                                                .description(e.getKey().getLongDescription())
-                                                .price(e.getValue().getAmount()).build())
-                                ));
-                    });
+                    .map(options -> options.entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    e -> e.getKey().getName(),
+                                    e -> FulfillmentOptionDto.builder()
+                                            .description(e.getKey().getLongDescription())
+                                            .price(e.getValue().getAmount()).build())
+                            )
+                    )
+                    .ifPresent(fulfillmentDto::setFulfillmentOptions);
         } catch (FulfillmentPriceException e) {
             throw new RuntimeException(e);
         }
 
         /* HATEOAS links */
 
-        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId())).withSelfRel());
+        fulfillmentDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, fulfillmentGroup.getOrder().getId(), fulfillmentGroup.getId(), null, null)).withSelfRel());
         return fulfillmentDto;
     }
 

@@ -19,7 +19,6 @@ import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXrefImpl;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.broadleafcommerce.core.search.domain.SearchCriteria;
 import org.broadleafcommerce.core.search.domain.SearchResult;
 import org.broadleafcommerce.core.search.service.SearchService;
@@ -107,7 +106,9 @@ public class ProductController {
             @ApiParam(value = "Amount of items per page (applies only to searching)")
                 @RequestParam(value = "pageSize", defaultValue = "15") final Integer pageSize,
             @ApiParam(value = "Page number to return (applies only to searching)")
-                @RequestParam(value = "page", defaultValue = "1") final Integer page
+                @RequestParam(value = "page", defaultValue = "1") final Integer page,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) throws ServiceException {
 
         List<Product> productsToReturn;
@@ -146,10 +147,10 @@ public class ProductController {
                 new Resources<>(
                         productsToReturn.stream()
                                 .filter(CatalogUtils.nonArchivedProduct)
-                                .map(product -> productConverter.createDto(product))
+                                .map(product -> productConverter.createDto(product, embed, link))
                                 .collect(toList()),
 
-                        linkTo(methodOn(getClass()).getAllProducts(limit, offset, q, pageSize, page)).withSelfRel()
+                        linkTo(methodOn(getClass()).getAllProducts(limit, offset, q, pageSize, page, null, null)).withSelfRel()
                 )
         );
     }
@@ -165,11 +166,14 @@ public class ProductController {
             @ApiResponse(code = 200, message = "Successful retrieval of product", response = ProductDto.class)
     })
     public ProductDto getProductByUrl(
-            @ApiParam @RequestParam(value = "url", required = true) final String url) {
+            @ApiParam @RequestParam(value = "url", required = true) final String url,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return Optional.ofNullable(catalogService.findProductByURI(url))
                 .filter(CatalogUtils.nonArchivedProduct)
-                .map(product -> productConverter.createDto(product))
+                .map(product -> productConverter.createDto(product, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
 
@@ -187,12 +191,15 @@ public class ProductController {
     })
     public ProductDto readOneBundleById(
             @ApiParam(value = "ID of a specific bundle", required = true)
-            @PathVariable(value = "bundleId") final Long bundleId) {
+            @PathVariable(value = "bundleId") final Long bundleId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return Optional.ofNullable(catalogService.findProductById(bundleId))
                 .filter(CatalogUtils.nonArchivedProduct)
                 .filter(e -> e instanceof ProductBundle)
-                .map(product -> productConverter.createDto(product))
+                .map(product -> productConverter.createDto(product, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
     }
 
@@ -334,10 +341,13 @@ public class ProductController {
     })
     public ProductDto readOneProductById(
             @ApiParam(value = "ID of a specific product", required = true)
-            @PathVariable(value = "productId") final Long productId) {
+            @PathVariable(value = "productId") final Long productId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return Optional.of(getProductById(productId))
-                .map(product -> productConverter.createDto(product))
+                .map(product -> productConverter.createDto(product, embed, link))
                 .get();
     }
 
@@ -448,7 +458,7 @@ public class ProductController {
                     .map(Map.Entry::getValue)
                     .map(skuMediaXref -> {
                         final MediaDto mediaDto = mediaConverter.createDto(skuMediaXref.getMedia(), true, true);
-                        mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, skuMediaXref.getKey())).withSelfRel());
+                        mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, skuMediaXref.getKey(), null, null)).withSelfRel());
                         return mediaDto;
                     })
                     .collect(toList()),
@@ -474,7 +484,9 @@ public class ProductController {
             @ApiParam(value = "ID of a specific product", required = true)
             @PathVariable(value = "productId") final Long productId,
             @ApiParam(value = "ID of a specific media", required = true)
-            @PathVariable(value = "key") final String key
+            @PathVariable(value = "key") final String key,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
 
         final Sku productDefaultSku = getDefaultSkuForProductById(productId);
@@ -482,8 +494,8 @@ public class ProductController {
         return Optional.ofNullable(productDefaultSku.getSkuMediaXref().get(key))
                 .map(SkuMediaXref::getMedia)
                 .map(media -> {
-                    final MediaDto mediaDto = mediaConverter.createDto(media);
-                    mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, key)).withSelfRel());
+                    final MediaDto mediaDto = mediaConverter.createDto(media, embed, link);
+                    mediaDto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedia(productId, key, null, null)).withSelfRel());
                     return mediaDto;
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("No media with key " + key + " exists for this product"));

@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.common.AddressConverter;
@@ -172,20 +173,22 @@ public class FulfillmentController {
     public Resources<FulfillmentDto> getOrderFulfillments(
             @ApiIgnore @AuthenticationPrincipal final UserDetails userDetails,
             @ApiParam(value = "ID of a specific order", required = true)
-            @PathVariable(value = "orderId") final Long orderId
+            @PathVariable(value = "orderId") final Long orderId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
                 .orElseThrow(ResourceNotFoundException::new);
 
         final List<FulfillmentDto> fulfillmentGroupsDtoForOrder =  Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
-                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup))
+                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed, link))
                 .collect(toList());
 
         return new Resources<>(
                 fulfillmentGroupsDtoForOrder,
 
-                linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, orderId)).withSelfRel()
+                linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, orderId, null, null)).withSelfRel()
         );
     }
 
@@ -206,7 +209,9 @@ public class FulfillmentController {
             @ApiParam(value = "ID of a specific order", required = true)
             @PathVariable(value = "orderId") final Long orderId,
             @ApiParam(value = "ID of a specific fulfillment group", required = true)
-            @PathVariable(value = "fulfillmentId") final Long fulfillmentGroupId
+            @PathVariable(value = "fulfillmentId") final Long fulfillmentGroupId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
 
         final Order orderEntity = orderServiceProxy.getProperCart(userDetails, orderId)
@@ -215,7 +220,7 @@ public class FulfillmentController {
         return Optional.ofNullable(orderEntity.getFulfillmentGroups()).orElse(Collections.emptyList()).stream()
                 .filter(fulfillmentGroup -> fulfillmentGroup.getId().longValue() == fulfillmentGroupId)
                 .findFirst()
-                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup))
+                .map(fulfillmentGroup -> fulfillmentConverter.createDto(fulfillmentGroup, embed, link))
                 .orElseThrow(ResourceNotFoundException::new);
     }
 

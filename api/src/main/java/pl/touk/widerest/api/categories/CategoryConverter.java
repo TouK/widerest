@@ -66,37 +66,37 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 .media(
                         Optional.ofNullable(entity.getCategoryMediaXref())
                             .orElse(Collections.emptyMap()).entrySet().stream()
-                                .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia())))
+                                .collect(toMap(Map.Entry::getKey, e -> mediaConverter.createDto(e.getValue().getMedia(), embed, link)))
                 )
                 .url(entity.getUrl())
                 .build();
 
         try {
             Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
-                    .ifPresent(options -> {
-                        dto.setFulfillmentOptions(options.entrySet().stream()
-                                .collect(Collectors.toMap(
-                                        e -> e.getKey().getName(),
-                                        e -> FulfillmentOptionDto.builder()
-                                                .description(e.getKey().getLongDescription())
-                                                .price(e.getValue().getAmount()).build())
-                                ));
-                    });
+                    .map(options -> options.entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    e -> e.getKey().getName(),
+                                    e -> FulfillmentOptionDto.builder()
+                                            .description(e.getKey().getLongDescription())
+                                            .price(e.getValue().getAmount()).build())
+                            )
+                    )
+                    .ifPresent(dto::setFulfillmentOptions);
 
         } catch (FulfillmentPriceException e) {
             throw new RuntimeException(e);
         }
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId())).withSelfRel());
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId(), null, null)).withSelfRel());
 
         if (link) {
 
-            dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId())).withRel("products"));
+            dto.add(linkTo(methodOn(CategoryController.class).readProductsFromCategory(entity.getId(), null, null)).withRel("products"));
 
             final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getSubCategory)
-                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("subcategories"))
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("subcategories"))
                     .collect(toList());
 
             dto.add(subcategoriesLinks);
@@ -104,7 +104,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
             final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getCategory)
-                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("parentcategories"))
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("parentcategories"))
                     .collect(toList());
 
             dto.add(parentCategoriesLinks);
@@ -120,6 +120,25 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
             if (!CollectionUtils.isEmpty(subcategoryDtos)) {
                 dto.add(new EmbeddedResource("subcategories", subcategoryDtos));
             }
+
+            try {
+                Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
+                        .map(options -> options.entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        e -> e.getKey().getName(),
+                                        e -> FulfillmentOptionDto.builder()
+                                                .description(e.getKey().getLongDescription())
+                                                .price(e.getValue().getAmount()).build())
+                                )
+                        )
+                        .ifPresent(optionsMap -> {
+                            dto.add(new EmbeddedResource("fulfillmentOptions", optionsMap));
+                        });
+
+            } catch (FulfillmentPriceException e) {
+                throw new RuntimeException(e);
+            }
+
 
         }
 

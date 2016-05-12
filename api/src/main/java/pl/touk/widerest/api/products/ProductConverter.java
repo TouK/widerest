@@ -2,6 +2,7 @@ package pl.touk.widerest.api.products;
 
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
+import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionType;
@@ -18,10 +19,13 @@ import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.api.products.skus.SkuController;
 import pl.touk.widerest.api.products.skus.SkuConverter;
 import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
+import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
 import java.time.ZoneId;
@@ -34,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.stream.Collectors.toList;
@@ -61,6 +66,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
     @Resource
     protected InventoryService inventoryService;
 
+    @Resource
+    protected FulfilmentServiceProxy fulfilmentServiceProxy;
+
     @Override
     public ProductDto createDto(final Product product, final boolean embed, final boolean link) {
         final ProductDto dto = product instanceof ProductBundle ? new ProductBundleDto() : new ProductDto();
@@ -81,7 +89,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                                 .getCurrencyCode());
 
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
-                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia())));
+                        .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), embed, link)));
 
         dto.setMedia(defaultSkuMedias);
 
@@ -105,7 +113,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setOptions(product.getProductOptionXrefs().stream().map(productOptionXrefToDto).collect(toList()));
 
         dto.setSkus(product.getAdditionalSkus().stream()
-                .map(sku -> skuConverter.createDto(sku)).collect(toList()));
+                .map(sku -> skuConverter.createDto(sku, embed, link)).collect(toList()));
 
         if (dto instanceof ProductBundleDto) {
             ProductBundle productBundle = (ProductBundle) product;
@@ -119,12 +127,12 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             ((ProductBundleDto) dto).setPotentialSavings(productBundle.getPotentialSavings());
         }
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId())).withSelfRel());
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(ProductController.class).readOneProductById(product.getId(), null, null)).withSelfRel());
 
         if (link) {
 
             if (product.getDefaultSku() != null) {
-                dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), product.getDefaultSku().getId()))
+                dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), product.getDefaultSku().getId(), null, null))
                         .withRel("default-sku"));
             }
 
@@ -132,7 +140,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             if (product.getAdditionalSkus() != null && !product.getAdditionalSkus().isEmpty()) {
                 for (Sku additionalSku : product.getAdditionalSkus()) {
                     if (!additionalSku.equals(product.getDefaultSku())) {
-                        dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), additionalSku.getId()))
+                        dto.add(linkTo(methodOn(SkuController.class).getSkuById(product.getId(), additionalSku.getId(), null, null))
                                 .withRel("skus"));
 
                         //dto.add(linkTo(methodOn(ProductController.class).getMediaBySkuId(product.getId(), additionalSku.getId())).withRel("medias"));
@@ -146,10 +154,31 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                 product.getAllParentCategoryXrefs().stream()
                         .map(CategoryProductXref::getCategory)
                         .filter(CatalogUtils.nonArchivedCategory)
-                        .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId())).withRel("category")));
+                        .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("category")));
             }
 
             dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
+        }
+
+        if (embed) {
+            try {
+                Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProduct(product))
+                        .map(options -> options.entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        e -> e.getKey().getName(),
+                                        e -> FulfillmentOptionDto.builder()
+                                                .description(e.getKey().getLongDescription())
+                                                .price(e.getValue().getAmount()).build())
+                                )
+                        )
+                        .ifPresent(optionsMap -> {
+                            dto.add(new EmbeddedResource("fulfillmentOptions", optionsMap));
+                        });
+
+            } catch (FulfillmentPriceException e) {
+                throw new RuntimeException(e);
+            }
+
         }
 
         return dto;

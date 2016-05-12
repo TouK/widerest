@@ -15,7 +15,6 @@ import org.broadleafcommerce.core.catalog.domain.CategoryXref;
 import org.broadleafcommerce.core.catalog.domain.CategoryXrefImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.inventory.service.InventoryService;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.URL;
 import org.springframework.hateoas.MediaTypes;
@@ -136,12 +135,14 @@ public class CategoryController {
     })
     public ResponseEntity<CategoryDto> readOneCategoryById(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value="categoryId") final Long categoryId
+            @PathVariable(value="categoryId") final Long categoryId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
 
         final CategoryDto categoryToReturnDto = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils.nonArchivedCategory)
-                .map(category -> categoryConverter.createDto(category))
+                .map(category -> categoryConverter.createDto(category, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Category with ID: " + categoryId + " does not exist"));
 
         return ResponseEntity.ok(categoryToReturnDto);
@@ -219,7 +220,10 @@ public class CategoryController {
             @ApiParam(value = "Amount of subcategories to be returned")
             @RequestParam(value = "limit", required = false) Integer limit,
             @ApiParam(value = "Offset which to start returning subcategories from")
-            @RequestParam(value = "offset", required = false) Integer offset) {
+            @RequestParam(value = "offset", required = false) Integer offset,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         final Category category = Optional.ofNullable(catalogService.findCategoryById(categoryId))
                 .filter(CatalogUtils.nonArchivedCategory)
@@ -227,7 +231,7 @@ public class CategoryController {
 
         List<CategoryDto> subcategoriesDtos = catalogService.findAllSubCategories(category, limit != null ? limit : 0, offset != null ? offset : 0).stream()
                 .filter(CatalogUtils.nonArchivedCategory)
-                .map(subcategory -> categoryConverter.createDto(subcategory))
+                .map(subcategory -> categoryConverter.createDto(subcategory, embed, link))
                 .collect(Collectors.toList());
 
         return new Resources(subcategoriesDtos);
@@ -342,12 +346,15 @@ public class CategoryController {
     })
     public Resources<ProductDto> readProductsFromCategory(
             @ApiParam(value = "ID of a specific category", required = true)
-            @PathVariable(value="categoryId") final Long categoryId) {
+            @PathVariable(value="categoryId") final Long categoryId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
 
         return new Resources<>(
                 getProductsFromCategoryId(categoryId).stream()
                 .filter(CatalogUtils.nonArchivedProduct)
-                .map(product -> productConverter.createDto(product))
+                .map(product -> productConverter.createDto(product, embed, link))
                 .collect(Collectors.toList())
         );
     }

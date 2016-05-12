@@ -101,11 +101,11 @@ public class OrderConverter implements Converter<Order, OrderDto> {
 
         if (link) {
             orderDto.add(linkTo(
-                    methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()))
+                    methodOn(CustomerController.class).readOneCustomer(null, String.valueOf(order.getCustomer().getId()), null, null)
             ).withRel("customer"));
 
             orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel(REL_ITEMS));
-            orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId())).withRel(REL_FULFILLMENTS));
+            orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId(), null, null)).withRel(REL_FULFILLMENTS));
             orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel(REL_STATUS));
             orderDto.add(linkTo(methodOn(OrderController.class).initiatePayment(null, null, order.getId())).withRel(REL_PAYMENT));
         }

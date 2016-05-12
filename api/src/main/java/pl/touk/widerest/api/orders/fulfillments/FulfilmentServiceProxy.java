@@ -2,6 +2,8 @@ package pl.touk.widerest.api.orders.fulfillments;
 
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
+import org.broadleafcommerce.core.catalog.domain.Category;
+import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.Sku;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
@@ -14,6 +16,8 @@ import org.broadleafcommerce.core.order.service.type.FulfillmentType;
 import org.broadleafcommerce.core.pricing.service.FulfillmentPricingService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Address;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.touk.widerest.api.common.AddressConverter;
@@ -27,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
+@CacheConfig(cacheNames = "fulfillmentOptions")
 public class FulfilmentServiceProxy {
 
     @Resource(name = "blFulfillmentOptionService")
@@ -44,6 +49,7 @@ public class FulfilmentServiceProxy {
     @Resource
     private AddressConverter addressConverter;
 
+    @Cacheable(key="#type.type")
     public Map<? extends FulfillmentOption, Money> readFulfillmentOptionsWithPricesAvailableByFulfillmentType(FulfillmentType type) throws FulfillmentPriceException {
         final List<FulfillmentOption> fulfillmentOptions = type != null
                 ? fulfillmentOptionService.readAllFulfillmentOptionsByFulfillmentType(type)
@@ -59,6 +65,21 @@ public class FulfilmentServiceProxy {
         return fulfillmentPricingService.estimateCostForFulfillmentGroup(
                 fulfillmentGroup,
                 findFulfillmentOptionsForProductsInFulfillmentGroup(fulfillmentGroup)
+        ).getFulfillmentOptionPrices();
+    }
+
+    @Cacheable(key="#product.id")
+    public Map<? extends FulfillmentOption, Money> readFulfillmentOptionsWithPricesAvailableForProduct(Product product) throws FulfillmentPriceException {
+        final List<FulfillmentOption> fulfillmentOptions = Optional.ofNullable(product.getCategory())
+                .map(Category::getFulfillmentType)
+                .map(fulfillmentOptionService::readAllFulfillmentOptionsByFulfillmentType)
+                .orElseGet(fulfillmentOptionService::readAllFulfillmentOptions);
+
+        fulfillmentOptions.removeAll(product.getDefaultSku().getExcludedFulfillmentOptions());
+
+        return fulfillmentPricingService.estimateCostForFulfillmentGroup(
+                fulfillmentGroupService.createEmptyFulfillmentGroup(),
+                new HashSet(fulfillmentOptions)
         ).getFulfillmentOptionPrices();
     }
 

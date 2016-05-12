@@ -48,7 +48,7 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
                 .quantity(discreteOrderItem.getQuantity())
                 .productName(discreteOrderItem.getName())
                 .productHref(linkTo(methodOn(ProductController.class)
-                        .readOneProductById(productId)).toUri().toASCIIString()
+                        .readOneProductById(productId, null, null)).toUri().toASCIIString()
                 )
                 .description(sku.getDescription())
                 .price(Optional.ofNullable(discreteOrderItem.getTotalPrice()).orElse(errCode).getAmount())
@@ -68,15 +68,15 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
         Optional<FulfillmentGroup> fullfillmentGroup = findFullfillmentGroup(discreteOrderItem);
 
         if (link) {
-            orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId)).withRel("product"));
+            orderItemDto.add(linkTo(methodOn(ProductController.class).readOneProductById(productId, null, null)).withRel("product"));
             fullfillmentGroup.ifPresent(fulfillmentGroup -> {
-                orderItemDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, discreteOrderItem.getOrder().getId(), fulfillmentGroup.getId())).withRel(FULFILLMENT_REL));
+                orderItemDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillmentById(null, discreteOrderItem.getOrder().getId(), fulfillmentGroup.getId(), null, null)).withRel(FULFILLMENT_REL));
             });
         }
 
         if (embed) {
             fullfillmentGroup.ifPresent(fulfillmentGroup -> {
-                orderItemDto.add(new EmbeddedResource(FULFILLMENT_REL, fulfillmentConverter.createDto(fulfillmentGroup)));
+                orderItemDto.add(new EmbeddedResource(FULFILLMENT_REL, fulfillmentConverter.createDto(fulfillmentGroup, embed, link)));
             });
         }
 

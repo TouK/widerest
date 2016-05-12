@@ -112,14 +112,18 @@ public class CustomerController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of customers list", response = CustomerDto.class, responseContainer = "List")
     })
-    public Resources<CustomerDto> readAllCustomers(@ApiIgnore @AuthenticationPrincipal UserDetails userDetails) {
+    public Resources<CustomerDto> readAllCustomers(
+            @ApiIgnore @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
         final List<CustomerDto> allCustomers = Match.of(userDetails)
                 .whenType(AdminUserDetails.class).then(() -> customerServiceProxy.getAllCustomers().stream()
-                        .map(customer -> customerConverter.createDto(customer))
+                        .map(customer -> customerConverter.createDto(customer, embed, link))
                         .collect(Collectors.toList()))
                 .whenType(CustomerUserDetails.class).then(() -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
                         //.map(id -> customerEntityToDto.apply(id))
-                        .map(id -> customerConverter.createDto(id))
+                        .map(id -> customerConverter.createDto(id, embed, link))
                         .map(Collections::singletonList)
                         .orElse(emptyList()))
                 .otherwise(Collections::emptyList)
@@ -127,7 +131,7 @@ public class CustomerController {
 
         return new Resources<>(
                 allCustomers,
-                linkTo(methodOn(getClass()).readAllCustomers(null)).withSelfRel()
+                linkTo(methodOn(getClass()).readAllCustomers(null, null, null)).withSelfRel()
         );
     }
 
@@ -145,12 +149,14 @@ public class CustomerController {
     public ResponseEntity<CustomerDto> readOneCustomer(
             @ApiIgnore @AuthenticationPrincipal final CustomerUserDetails customerUserDetails,
             @ApiParam(value = "ID of a customer", required = true)
-                @PathVariable(value = "id") final String customerId
+            @PathVariable(value = "id") final String customerId,
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
         return ofNullable(customerId)
                 .map(toCustomerId(customerUserDetails, customerId))
                 .map(customerService::readCustomerById)
-                .map(customer -> customerConverter.createDto(customer))
+                .map(customer -> customerConverter.createDto(customer, embed, link))
                 .map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
                 .orElseThrow(CustomerNotFoundException::new);
     }

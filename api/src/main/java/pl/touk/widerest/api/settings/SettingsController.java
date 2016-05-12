@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
@@ -53,13 +54,16 @@ public class SettingsController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful retrieval of properties list", response = PropertyDto.class, responseContainer = "List")
     })
-    public Resources<PropertyDto> readAllProperties() {
+    public Resources<PropertyDto> readAllProperties(
+            @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
+            @RequestParam(value = "link", defaultValue = "true") Boolean link
+    ) {
         return new Resources<>(
                 settingsService.getAvailableSystemPropertyNames().stream()
-                        .map(name -> propertyConverter.createDto(name))
+                        .map(name -> propertyConverter.createDto(name, embed, link))
                         .collect(Collectors.toList()),
 
-                linkTo(methodOn(SettingsController.class).readAllProperties()).withSelfRel()
+                linkTo(methodOn(SettingsController.class).readAllProperties(null, null)).withSelfRel()
         );
 
     }
