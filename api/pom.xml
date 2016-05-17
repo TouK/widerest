@@ -36,6 +36,7 @@
             <artifactId>widerest-blc-deps</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
