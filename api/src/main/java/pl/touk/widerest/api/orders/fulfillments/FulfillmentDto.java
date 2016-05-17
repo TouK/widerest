@@ -14,6 +14,7 @@ import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.AddressDto;
 
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,9 @@ public class FulfillmentDto extends BaseDto {
 
     @ApiModelProperty(value = "The selected fulfillment option", required = true)
     private String selectedFulfillmentOption;
+
+    @ApiModelProperty(value = "Price to charge for fulfillment", readOnly = true)
+    private BigDecimal fulfillmentPrice;
 
     @ApiModelProperty(value = "Available options for fulfillment", readOnly = true)
     private Map<String, FulfillmentOptionDto> fulfillmentOptions;

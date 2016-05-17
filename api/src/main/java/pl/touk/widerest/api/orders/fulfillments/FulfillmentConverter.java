@@ -1,6 +1,7 @@
 package pl.touk.widerest.api.orders.fulfillments;
 
-import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
+import javaslang.control.Try;
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
 import org.broadleafcommerce.core.order.domain.FulfillmentOption;
 import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
@@ -39,6 +40,9 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
     @Resource(name = "blFulfillmentPricingService")
     private FulfillmentPricingService fulfillmentPricingService;
 
+    @Resource
+    protected FulfillmentOptionsMapConverter fulfillmentOptionsMapConverter;
+
     @Override
     public FulfillmentDto createDto(final FulfillmentGroup fulfillmentGroup, final boolean embed, final boolean link) {
 
@@ -61,20 +65,13 @@ public class FulfillmentConverter implements Converter<FulfillmentGroup, Fulfill
                 .map(selectedOption -> selectedOption.getName())
                 .ifPresent(fulfillmentDto::setSelectedFulfillmentOption);
 
-        try {
-            Optional.ofNullable(fulfillmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
-                    .map(options -> options.entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    e -> e.getKey().getName(),
-                                    e -> FulfillmentOptionDto.builder()
-                                            .description(e.getKey().getLongDescription())
-                                            .price(e.getValue().getAmount()).build())
-                            )
-                    )
-                    .ifPresent(fulfillmentDto::setFulfillmentOptions);
-        } catch (FulfillmentPriceException e) {
-            throw new RuntimeException(e);
-        }
+        Optional.ofNullable(fulfillmentGroup.getFulfillmentPrice())
+                .map(Money::getAmount)
+                .ifPresent(fulfillmentDto::setFulfillmentPrice);
+
+        fulfillmentDto.setFulfillmentOptions(Try.of(() -> fulfillmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProductsInFulfillmentGroup(fulfillmentGroup))
+                .map(fulfillmentOptionsMapConverter::createDto)
+                .get());
 
         /* HATEOAS links */
 

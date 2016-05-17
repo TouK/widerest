@@ -18,9 +18,13 @@ import java.math.BigDecimal;
 @ApiModel(value = "Fulfillment Option", description = "Fulfillment Option DTO resource representation")
 public class FulfillmentOptionDto {
 
-    @ApiModelProperty(position = 2, value = "Short description of the fulfillment option", required = true)
+    @ApiModelProperty(value = "Short description of the fulfillment option", required = true)
     private String description;
 
-    @ApiModelProperty(position = 3, value = "Price of the fulfillment option", required = true)
+    @ApiModelProperty(value = "Price of the fulfillment option", required = true)
     private BigDecimal price;
+
+    private BigDecimal priceFrom;
+
+    private BigDecimal priceTo;
 }

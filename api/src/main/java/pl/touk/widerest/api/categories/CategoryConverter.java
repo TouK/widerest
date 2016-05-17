@@ -1,9 +1,9 @@
 package pl.touk.widerest.api.categories;
 
+import javaslang.control.Try;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.media.domain.MediaImpl;
-import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
 import org.broadleafcommerce.core.catalog.domain.CategoryMediaXrefImpl;
@@ -17,7 +17,7 @@ import org.springframework.util.CollectionUtils;
 import pl.touk.widerest.api.Converter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionsMapConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.hal.EmbeddedResource;
 
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -46,6 +45,9 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
 
     @Resource
     protected FulfilmentServiceProxy fulfilmentServiceProxy;
+
+    @Resource
+    protected FulfillmentOptionsMapConverter fulfillmentOptionsMapConverter;
 
     @Override
     public CategoryDto createDto(final Category entity, final boolean embed, final boolean link) {
@@ -70,22 +72,6 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 )
                 .url(entity.getUrl())
                 .build();
-
-        try {
-            Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
-                    .map(options -> options.entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    e -> e.getKey().getName(),
-                                    e -> FulfillmentOptionDto.builder()
-                                            .description(e.getKey().getLongDescription())
-                                            .price(e.getValue().getAmount()).build())
-                            )
-                    )
-                    .ifPresent(dto::setFulfillmentOptions);
-
-        } catch (FulfillmentPriceException e) {
-            throw new RuntimeException(e);
-        }
 
         dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId(), null, null)).withSelfRel());
 
@@ -121,24 +107,12 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 dto.add(new EmbeddedResource("subcategories", subcategoryDtos));
             }
 
-            try {
-                Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
-                        .map(options -> options.entrySet().stream()
-                                .collect(Collectors.toMap(
-                                        e -> e.getKey().getName(),
-                                        e -> FulfillmentOptionDto.builder()
-                                                .description(e.getKey().getLongDescription())
-                                                .price(e.getValue().getAmount()).build())
-                                )
-                        )
-                        .ifPresent(optionsMap -> {
-                            dto.add(new EmbeddedResource("fulfillmentOptions", optionsMap));
-                        });
-
-            } catch (FulfillmentPriceException e) {
-                throw new RuntimeException(e);
-            }
-
+            dto.add(new EmbeddedResource(
+                    "fulfillmentOptions",
+                    Try.of(() -> fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableByFulfillmentType(entity.getFulfillmentType()))
+                            .map(fulfillmentOptionsMapConverter::createDto)
+                            .get()
+            ));
 
         }
 

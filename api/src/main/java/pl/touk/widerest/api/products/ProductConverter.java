@@ -1,8 +1,8 @@
 package pl.touk.widerest.api.products;
 
+import javaslang.control.Try;
 import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
-import org.broadleafcommerce.common.vendor.service.exception.FulfillmentPriceException;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.catalog.service.type.ProductOptionType;
@@ -19,7 +19,7 @@ import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.MediaConverter;
 import pl.touk.widerest.api.common.MediaDto;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionDto;
+import pl.touk.widerest.api.orders.fulfillments.FulfillmentOptionsMapConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.api.products.skus.SkuController;
 import pl.touk.widerest.api.products.skus.SkuConverter;
@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.stream.Collectors.toList;
@@ -68,6 +67,9 @@ public class ProductConverter implements Converter<Product, ProductDto>{
 
     @Resource
     protected FulfilmentServiceProxy fulfilmentServiceProxy;
+
+    @Resource
+    protected FulfillmentOptionsMapConverter fulfillmentOptionsMapConverter;
 
     @Override
     public ProductDto createDto(final Product product, final boolean embed, final boolean link) {
@@ -161,24 +163,12 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         }
 
         if (embed) {
-            try {
-                Optional.ofNullable(fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProduct(product))
-                        .map(options -> options.entrySet().stream()
-                                .collect(Collectors.toMap(
-                                        e -> e.getKey().getName(),
-                                        e -> FulfillmentOptionDto.builder()
-                                                .description(e.getKey().getLongDescription())
-                                                .price(e.getValue().getAmount()).build())
-                                )
-                        )
-                        .ifPresent(optionsMap -> {
-                            dto.add(new EmbeddedResource("fulfillmentOptions", optionsMap));
-                        });
-
-            } catch (FulfillmentPriceException e) {
-                throw new RuntimeException(e);
-            }
-
+            dto.add(new EmbeddedResource(
+                    "fulfillmentOptions",
+                    Try.of(() -> fulfilmentServiceProxy.readFulfillmentOptionsWithPricesAvailableForProduct(product))
+                            .map(fulfillmentOptionsMapConverter::createDto)
+                            .get()
+            ));
         }
 
         return dto;
