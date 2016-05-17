@@ -12,13 +12,6 @@
     <dependencies>
         <dependency>
             <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-blc-deps</artifactId>
-            <type>pom</type>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>pl.touk.widerest</groupId>
             <artifactId>widerest-api</artifactId>
             <version>${project.version}</version>
         </dependency>
