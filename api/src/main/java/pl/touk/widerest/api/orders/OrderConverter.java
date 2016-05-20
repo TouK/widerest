@@ -54,6 +54,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
         final OrderDto orderDto = OrderDto.builder()
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
+                .orderItemsAmount(order.getOrderItems().size())
 //                .payment(order.getPayments().stream()
 //                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed, link)).collect(Collectors.toList()))
 //                .orderItems(order.getDiscreteOrderItems().stream()

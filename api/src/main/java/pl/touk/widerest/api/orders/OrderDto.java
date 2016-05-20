@@ -29,6 +29,9 @@ public class OrderDto extends BaseDto {
     @ApiModelProperty(position = 1, value = "Status of the order", readOnly = true)
     private String status;
 
+    @ApiModelProperty(position = 2, value = "Total order items amount", readOnly = true)
+    private int orderItemsAmount;
+
     @ApiModelProperty(position = 5, value = "Total price for the order", readOnly = true)
     private BigDecimal totalPrice;
 
