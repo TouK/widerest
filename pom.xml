@@ -36,7 +36,7 @@
     </distributionManagement>
 
     <properties>
-        <blc.version>4.0.5-GA</blc.version>
+        <blc.version>4.0.5-touk.1</blc.version>
         <blc.menu.version>1.0.0-GA</blc.menu.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hibernate.version>4.1.11.Final</hibernate.version>
