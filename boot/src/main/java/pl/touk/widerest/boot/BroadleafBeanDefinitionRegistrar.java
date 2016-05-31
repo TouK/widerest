@@ -57,10 +57,7 @@ public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefi
 
         String[] broadleafConfigLocations = StandardConfigLocations.retrieveAll(standardLocationTypes);
 
-        final ResourceInputStream[] filteredSources = Stream.concat(
-                Stream.of("wd-boot-applicationContext.xml"),
-                Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
-        )
+        final ResourceInputStream[] filteredSources = Arrays.stream(StandardConfigLocations.retrieveAll(standardLocationTypes))
                 .map(location -> {
                     final InputStream is = MergeXmlWebApplicationContext.class.getClassLoader().getResourceAsStream(
                             location);
@@ -68,10 +65,7 @@ public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefi
                 })
                 .toArray(ResourceInputStream[]::new);
 
-        final List<ResourceInputStream> patchList = Stream.concat(
-                Arrays.stream(StringUtils.tokenizeToStringArray(getPatchLocation(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS)),
-                Stream.of("classpath:wd-boot-applicationContext.xml")
-        )
+        final List<ResourceInputStream> patchList = Arrays.stream(StringUtils.tokenizeToStringArray(getPatchLocation(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS))
                 .flatMap(ThrowingFunction.unchecked(l -> {
                     if (!l.startsWith("classpath")) {
                         throw new NotImplementedException("Only classpath resources merge implemented");
