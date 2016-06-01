@@ -24,14 +24,12 @@
 
     <distributionManagement>
         <repository>
-            <id>touk.nexus.release</id>
-            <name>TouK Release Repository</name>
-            <url>http://nexus.touk.pl/nexus/content/repositories/releases</url>
+            <id>touk.philanthropist.release</id>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/releases</url>
         </repository>
         <snapshotRepository>
-            <id>touk.nexus.snapshots</id>
-            <name>TouK SNAPSHOT Repository</name>
-            <url>http://nexus.touk.pl/nexus/content/repositories/snapshots</url>
+            <id>touk.philanthropist.snapshots</id>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -63,11 +61,11 @@
 -->
         <repository>
             <id>public patched blc releases</id>
-            <url>https://philantropist.touk.pl/nexus/content/repositories/releases</url>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/releases</url>
         </repository>
         <repository>
             <id>public patched blc snapshots</id>
-            <url>https://philantropist.touk.pl/nexus/content/repositories/snapshots</url>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots</url>
         </repository>
     </repositories>
 
