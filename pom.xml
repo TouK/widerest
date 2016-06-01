@@ -47,7 +47,6 @@
     <description>RESTful API for Broadleaf Commerce</description>
 
     <repositories>
-<!--
         <repository>
             <id>public blc snapshots</id>
             <name>public blc snapshots</name>
@@ -58,7 +57,6 @@
             <name>public blc releases</name>
             <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
         </repository>
--->
         <repository>
             <id>public patched blc releases</id>
             <url>https://philanthropist.touk.pl/nexus/content/repositories/releases</url>
