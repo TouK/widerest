@@ -59,11 +59,11 @@
         </repository>
         <repository>
             <id>public patched blc releases</id>
-            <url>https://philanthropist.touk.pl/nexus/content/repositories/releases</url>
+            <url>http://philanthropist.touk.pl/nexus/content/repositories/releases/</url>
         </repository>
         <repository>
             <id>public patched blc snapshots</id>
-            <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots</url>
+            <url>http://philanthropist.touk.pl/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
