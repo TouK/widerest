@@ -47,7 +47,9 @@
     </properties>
 
     <description>RESTful API for Broadleaf Commerce</description>
+
     <repositories>
+<!--
         <repository>
             <id>public blc snapshots</id>
             <name>public blc snapshots</name>
@@ -58,35 +60,17 @@
             <name>public blc releases</name>
             <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
         </repository>
+-->
         <repository>
-            <id>public snapshots</id>
-            <name>public snapshots</name>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots/</url>
+            <id>public patched blc releases</id>
+            <url>https://philantropist.touk.pl/nexus/content/repositories/releases</url>
         </repository>
         <repository>
-            <id>public multitenacy relases</id>
-            <name>public multitenacy relases</name>
-            <url>http://nexus.touk.pl/nexus/service/local/repositories/releases/content/</url>
+            <id>public patched blc snapshots</id>
+            <url>https://philantropist.touk.pl/nexus/content/repositories/snapshots</url>
         </repository>
-        <repository>
-            <id>public releases</id>
-            <name>public releases</name>
-            <!-- <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url> -->
-            <url>http://nexus.touk.pl:8080/nexus/content/repositories/org.broadleafcommerce/</url>
-        </repository>
-
-        <repository>
-            <id>jcenter-snapshots</id>
-            <name>jcenter</name>
-            <url>http://oss.jfrog.org/artifactory/oss-snapshot-local/</url>
-        </repository>
-
-        <repository>
-            <id>public sendwithus releases</id>
-            <url>https://github.com/sendwithus/sendwithus-mvn-repo/raw/master/releases</url>
-        </repository>
-
     </repositories>
+
     <build>
 
         <pluginManagement>
