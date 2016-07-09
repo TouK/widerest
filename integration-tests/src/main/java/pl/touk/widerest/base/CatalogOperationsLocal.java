@@ -15,14 +15,14 @@ public class CatalogOperationsLocal implements CatalogOperations {
     @Override
     public long getTotalCategoriesCount() {
         return catalogService.findAllCategories().stream()
-                .filter(CatalogUtils.nonArchivedCategory)
+                .filter(CatalogUtils.shouldCategoryBeVisible)
                 .count();
     }
 
     @Override
     public long getTotalProductsCount() {
         return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .count();
     }
 
@@ -35,7 +35,7 @@ public class CatalogOperationsLocal implements CatalogOperations {
     public long getTotalProductsInCategoryCount(final long categoryId) {
         return catalogService.findCategoryById(categoryId).getAllProductXrefs().stream()
                     .map(CategoryProductXref::getProduct)
-                    .filter(CatalogUtils.nonArchivedProduct)
+                    .filter(CatalogUtils.shouldProductBeVisible)
                     .count();
     }
 
@@ -43,7 +43,7 @@ public class CatalogOperationsLocal implements CatalogOperations {
     public long getTotalCategoriesForProductCount(final long productId) {
         return catalogService.findProductById(productId).getAllParentCategoryXrefs().stream()
                     .map(CategoryProductXref::getCategory)
-                    .filter(CatalogUtils.nonArchivedCategory)
+                    .filter(CatalogUtils.shouldCategoryBeVisible)
                     .count();
     }
 

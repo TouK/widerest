@@ -12,6 +12,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import pl.touk.widerest.api.BaseDto;
 import pl.touk.widerest.api.common.MediaDto;
 
+import java.time.ZonedDateTime;
 import java.util.Map;
 
 @Data
@@ -47,5 +48,11 @@ public class CategoryDto extends BaseDto {
 
     @ApiModelProperty(position = 21, dataType = "java.lang.String")
     private String url;
+
+    @ApiModelProperty(value = "Date from which the product becomes active/valid", dataType = "java.util.Date")
+    private ZonedDateTime validFrom;
+
+    @ApiModelProperty(value = "Date from which the product becomes inactive/invalid", dataType = "java.util.Date")
+    private ZonedDateTime validTo;
 
 }

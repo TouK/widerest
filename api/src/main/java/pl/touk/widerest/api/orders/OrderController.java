@@ -55,6 +55,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,6 +85,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -236,6 +239,8 @@ public class OrderController {
     })
     public ResponseEntity<?> createNewOrder(
             @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails) throws PricingException {
+
+        Collection<? extends GrantedAuthority> authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 
         final Customer currentCustomer = Optional.ofNullable(customerUserDetails)
                 .map(CustomerUserDetails::getId)
