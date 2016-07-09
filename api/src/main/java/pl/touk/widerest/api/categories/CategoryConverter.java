@@ -22,7 +22,10 @@ import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +35,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+import static pl.touk.widerest.api.common.CatalogUtils.shouldCategoryBeVisible;
 import static pl.touk.widerest.api.common.CatalogUtils.valueExtractor;
 
 @Component
@@ -73,7 +77,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
                 .url(entity.getUrl())
                 .build();
 
-        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(entity.getId(), null, null)).withSelfRel());
+        dto.add(ControllerLinkBuilder.linkTo(methodOn(CategoryController.class).readOneCategoryById(null, entity.getId(), null, null)).withSelfRel());
 
         if (link) {
 
@@ -82,7 +86,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
             final List<Link> subcategoriesLinks = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getSubCategory)
-                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("subcategories"))
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(null, x.getId(), null, null)).withRel("subcategories"))
                     .collect(toList());
 
             dto.add(subcategoriesLinks);
@@ -90,7 +94,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
             final List<Link> parentCategoriesLinks = Optional.ofNullable(entity.getAllParentCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getCategory)
-                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("parentcategories"))
+                    .map(x -> linkTo(methodOn(CategoryController.class).readOneCategoryById(null, x.getId(), null, null)).withRel("parentcategories"))
                     .collect(toList());
 
             dto.add(parentCategoriesLinks);
@@ -100,6 +104,7 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
             final List<CategoryDto> subcategoryDtos = Optional.ofNullable(entity.getAllChildCategoryXrefs())
                     .orElse(Collections.emptyList()).stream()
                     .map(CategoryXref::getSubCategory)
+                    .filter(shouldCategoryBeVisible)
                     .map(subcategory -> createDto(subcategory, true, link))
                     .collect(toList());
 
@@ -130,6 +135,18 @@ public class CategoryConverter implements Converter<Category, CategoryDto> {
         categoryEntity.setName(categoryDto.getName());
         categoryEntity.setDescription(categoryDto.getDescription());
         categoryEntity.setLongDescription(categoryDto.getLongDescription());
+        categoryEntity.setActiveStartDate(
+                Optional.ofNullable(categoryDto.getValidFrom())
+                        .map(ZonedDateTime::toInstant)
+                        .map(Date::from)
+                        .orElse(Date.from(Instant.now()))
+        );
+        categoryEntity.setActiveEndDate(
+                Optional.ofNullable(categoryDto.getValidTo())
+                        .map(ZonedDateTime::toInstant)
+                        .map(Date::from)
+                        .orElse(null)
+        );
 
         categoryEntity.setInventoryType(
                 Optional.ofNullable(categoryDto.getProductsAvailability())

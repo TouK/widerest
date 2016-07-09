@@ -155,8 +155,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
             if (product.getAllParentCategoryXrefs() != null && !product.getAllParentCategoryXrefs().isEmpty()) {
                 product.getAllParentCategoryXrefs().stream()
                         .map(CategoryProductXref::getCategory)
-                        .filter(CatalogUtils.nonArchivedCategory)
-                        .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(x.getId(), null, null)).withRel("category")));
+                        .filter(CatalogUtils.shouldCategoryBeVisible)
+                        .forEach(x -> dto.add(linkTo(methodOn(CategoryController.class).readOneCategoryById(null, x.getId(), null, null)).withRel("category")));
             }
 
             dto.add(linkTo(methodOn(ProductController.class).getProductDefaultSkuMedias(product.getId())).withRel("default-medias"));
@@ -273,7 +273,7 @@ public class ProductConverter implements Converter<Product, ProductDto>{
                 .filter(name -> !isNullOrEmpty(name))
                 .map(name -> catalogService.findCategoriesByName(name))
                 .map(Collection::stream).orElse(empty())
-                .filter(CatalogUtils.nonArchivedCategory)
+                .filter(CatalogUtils.shouldCategoryBeVisible)
                 .findAny()
                 .ifPresent(newProduct::setCategory);
     }

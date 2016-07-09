@@ -6,9 +6,14 @@ import org.broadleafcommerce.core.catalog.domain.CategoryAttribute;
 import org.broadleafcommerce.core.catalog.domain.CategoryAttributeImpl;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.inventory.service.type.InventoryType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,10 +22,25 @@ import java.util.function.Predicate;
 
 public class CatalogUtils {
 
-    public static Predicate<Product> nonArchivedProduct = product -> ((Status)product).getArchived() == 'N';
-    public static Predicate<Category> nonArchivedCategory = category -> ((Status)category).getArchived() == 'N';
-    public static Predicate<Product> activeProduct = Product::isActive;
-    public static Predicate<Category> activeCategory = Category::isActive;
+    public static <T> Predicate<T> isNotArchived() {
+        return ((Predicate<T>) object -> !(object instanceof Status))
+                .or(object -> ((Status) object).getArchived() != 'Y');
+    }
+
+    public static <T> Predicate<T> isUserAthorizedFor(String role) {
+        return ignored -> Optional.ofNullable(SecurityContextHolder.getContext())
+                .map(SecurityContext::getAuthentication)
+                .map(Authentication::getAuthorities)
+                .map(Collection::stream)
+                .flatMap(stream -> stream.map(GrantedAuthority::getAuthority).filter(role::equals).findAny())
+                .isPresent();
+    }
+
+    public static Predicate<Product> shouldProductBeVisible =
+        ((Predicate<Product>) Product::isActive).or(isNotArchived().and(isUserAthorizedFor("PERMISSION_READ_PRODUCT")));
+
+    public static Predicate<Category> shouldCategoryBeVisible =
+            ((Predicate<Category>) Category::isActive).or(isNotArchived().and(isUserAthorizedFor("PERMISSION_READ_CATEGORY")));
 
     public static Function<String, InventoryType> toInventoryTypeByAvailability = availability ->
          Optional.ofNullable(InventoryType.getInstance(availability)).orElse(InventoryType.ALWAYS_AVAILABLE);

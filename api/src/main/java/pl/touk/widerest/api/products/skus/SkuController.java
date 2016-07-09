@@ -214,7 +214,7 @@ public class SkuController {
 //
 //
 //        final long skusCount = Optional.ofNullable(catalogService.findProductById(productId))
-//                .filter(CatalogUtils::nonArchivedProduct)
+//                .filter(CatalogUtils::shouldProductBeVisible)
 //                .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
 //                .getAllSkus().stream()
 //                .count();
@@ -546,7 +546,7 @@ public class SkuController {
 
     private Sku getSkuByIdForProductById(final long productId, final long skuId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getAllSkus().stream()
                 .filter(x -> x.getId() == skuId)

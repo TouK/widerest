@@ -146,7 +146,7 @@ public class ProductController {
         return ResponseEntity.ok(
                 new Resources<>(
                         productsToReturn.stream()
-                                .filter(CatalogUtils.nonArchivedProduct)
+                                .filter(CatalogUtils.shouldProductBeVisible)
                                 .map(product -> productConverter.createDto(product, embed, link))
                                 .collect(toList()),
 
@@ -172,7 +172,7 @@ public class ProductController {
     ) {
 
         return Optional.ofNullable(catalogService.findProductByURI(url))
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .map(product -> productConverter.createDto(product, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Product with URL: " + url + " does not exist"));
     }
@@ -197,7 +197,7 @@ public class ProductController {
     ) {
 
         return Optional.ofNullable(catalogService.findProductById(bundleId))
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .filter(e -> e instanceof ProductBundle)
                 .map(product -> productConverter.createDto(product, embed, link))
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle with ID: " + bundleId + " does not exist"));
@@ -323,7 +323,7 @@ public class ProductController {
     })
     public Long getAllProductsCount() {
         return catalogService.findAllProducts().stream()
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .count();
     }
 
@@ -419,7 +419,7 @@ public class ProductController {
 
         final List<CategoryDto> productCategories = getProductById(productId).getAllParentCategoryXrefs().stream()
                 .map(CategoryProductXref::getCategory)
-                .filter(CatalogUtils.nonArchivedCategory)
+                .filter(CatalogUtils.shouldCategoryBeVisible)
                 .map(category -> categoryConverter.createDto(category, true, true))
                 .collect(toList());
 
@@ -572,20 +572,20 @@ public class ProductController {
 
     private Sku getDefaultSkuForProductById(final long productId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"))
                 .getDefaultSku();
     }
 
     public Product getProductById(final long productId) throws ResourceNotFoundException {
         return Optional.ofNullable(catalogService.findProductById(productId))
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID: " + productId + " does not exist"));
     }
 
     private boolean hasDuplicates(final String productName) {
         return catalogService.findProductsByName(productName).stream()
-                .filter(CatalogUtils.nonArchivedProduct)
+                .filter(CatalogUtils.shouldProductBeVisible)
                 .count() > 0;
     }
 }
