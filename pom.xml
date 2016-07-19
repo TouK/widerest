@@ -31,14 +31,6 @@
             <id>touk.philanthropist.snapshots</id>
             <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
-        <repository>
-            <id>broadleaf.public.releases</id>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>broadleaf.public.snapshots</id>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
      </distributionManagement>
 
     <properties>
@@ -62,6 +54,14 @@
         <repository>
             <id>touk.philanthropist.snapshots</id>
             <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>broadleaf.public.releases</id>
+            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>broadleaf.public.snapshots</id>
+            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots</url>
         </repository>
     </repositories>
 
