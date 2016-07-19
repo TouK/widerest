@@ -1,8 +1,0 @@
-(15:00:59) tw@touk.pl: http://localhost:8080/oauth/authorize?client_id=DEFAULT&response_type=code&redirect_uri=/
-(15:06:34) tw@touk.pl has left the conversation.
-(15:19:34) tw@touk.pl: sudo apt-get install dnsmasq
-(15:20:18) tw@touk.pl: /etc/dnsmasq.d/dnsmasq-local.conf
-(15:20:31) tw@touk.pl: address=/local.domain/127.0.0.1
-(15:20:50) tw@touk.pl: sudo /etc/init.d/dnsmasq restart
-(15:21:03) tw@touk.pl: aaa.local.domain
- 
