@@ -24,7 +24,7 @@
 
     <distributionManagement>
         <repository>
-            <id>touk.philanthropist.release</id>
+            <id>touk.philanthropist.releases</id>
             <url>https://philanthropist.touk.pl/nexus/content/repositories/releases</url>
         </repository>
         <snapshotRepository>
@@ -48,22 +48,12 @@
 
     <repositories>
         <repository>
-            <id>public blc snapshots</id>
-            <name>public blc snapshots</name>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/snapshots/</url>
+            <id>touk.philanthropist.releases</id>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/releases/</url>
         </repository>
         <repository>
-            <id>public blc releases</id>
-            <name>public blc releases</name>
-            <url>http://nexus.broadleafcommerce.org/nexus/content/repositories/releases/</url>
-        </repository>
-        <repository>
-            <id>public patched blc releases</id>
-            <url>http://philanthropist.touk.pl/nexus/content/repositories/releases/</url>
-        </repository>
-        <repository>
-            <id>public patched blc snapshots</id>
-            <url>http://philanthropist.touk.pl/nexus/content/repositories/snapshots/</url>
+            <id>touk.philanthropist.snapshots</id>
+            <url>https://philanthropist.touk.pl/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
