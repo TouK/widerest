@@ -42,7 +42,10 @@ public class DiscreteOrderItemConverter implements Converter<DiscreteOrderItem, 
         final long productId = sku.getProduct().getId();
 
         final DiscreteOrderItemDto orderItemDto = DiscreteOrderItemDto.builder()
-                .externalId(sku.getExternalId())
+                .externalId(
+                        Optional.ofNullable(sku.getExternalId())
+                                .orElse(sku.getProduct().getDefaultSku().getExternalId())
+                )
                 .salePrice(discreteOrderItem.getSalePrice())
                 .retailPrice(discreteOrderItem.getRetailPrice())
                 .quantity(discreteOrderItem.getQuantity())
