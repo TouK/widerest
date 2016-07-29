@@ -1,7 +1,9 @@
 package pl.touk.widerest.api.products.skus;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
-import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.media.domain.Media;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.Sku;
@@ -24,6 +26,7 @@ import javax.annotation.Resource;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -34,10 +37,8 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @Component
+@Slf4j
 public class SkuConverter implements Converter<Sku, SkuDto>{
-
-    @Resource(name = "blLocaleService")
-    protected LocaleService localeService;
 
     @Resource(name="blCurrencyService")
     protected BroadleafCurrencyService blCurrencyService;
@@ -67,9 +68,9 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
                 .taxCode(sku.getTaxCode())
                 .validFrom(Optional.ofNullable(sku.getActiveStartDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null))
                 .validTo(Optional.ofNullable(sku.getActiveEndDate()).map(Date::toInstant).map(instant -> instant.atZone(ZoneId.systemDefault())).orElse(null))
-                .currencyCode(Optional.ofNullable(sku.getCurrency())
-                        .orElse(localeService.findDefaultLocale().getDefaultCurrency())
-                        .getCurrencyCode())
+                .currencyCode(Optional.ofNullable(Money.toCurrency(sku.getPrice()))
+                        .map(Currency::toString)
+                        .orElse(null))
                 .skuAttributes(sku.getSkuAttributes().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, e -> e.getValue().getName())))
                 .skuProductOptionValues(sku.getProductOptionValueXrefs().stream()
@@ -107,8 +108,6 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     public Sku createEntity(final SkuDto skuDto) {
         final Sku skuEntity = catalogService.createSku();
 
-        skuEntity.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
-
         return updateEntity(skuEntity, skuDto);
     }
 
@@ -116,7 +115,7 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
     public Sku updateEntity(final Sku sku, final SkuDto skuDto) {
         sku.setName(skuDto.getName());
         sku.setDescription(skuDto.getDescription());
-        sku.setCurrency(dtoConverters.currencyCodeToBLEntity.apply(skuDto.getCurrencyCode()));
+        sku.setCurrency(currencyCodeToBLEntity(skuDto.getCurrencyCode()));
         sku.setRetailPrice(Optional.ofNullable(skuDto.getRetailPrice()).map((amount) -> new Money(amount, sku.getCurrency())).orElse(null));
         sku.setSalePrice(Optional.ofNullable(skuDto.getSalePrice()).map((amount) -> new Money(amount, sku.getCurrency())).orElse(null));
         sku.setQuantityAvailable(skuDto.getQuantityAvailable());
@@ -161,4 +160,16 @@ public class SkuConverter implements Converter<Sku, SkuDto>{
 
         return sku;
     }
+
+    public BroadleafCurrency currencyCodeToBLEntity(String currencyCode) {
+        BroadleafCurrency skuCurrency = blCurrencyService.findCurrencyByCode(
+                        Optional.ofNullable(currencyCode).filter(StringUtils::isNotEmpty).orElse(Money.defaultCurrency().getCurrencyCode())
+                );
+        if (skuCurrency == null) {
+            log.error("Invalid currency code: {}", currencyCode);
+        }
+        return skuCurrency;
+    }
+
+
 }

@@ -3,7 +3,6 @@ package pl.touk.widerest.api.settings;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,12 +39,14 @@ public class CurrencyController {
     public void setDefault(@ApiParam @RequestBody String currency) throws CurrencyNotFoundException {
         Optional.of(currencyService.findCurrencyByCode(currency.toUpperCase()))
                 .map(newDefaultCurrency -> {
-                    final BroadleafCurrency previousDefault = currencyService.findDefaultBroadleafCurrency();
 
-                    previousDefault.setDefaultFlag(false);
+                    Optional.ofNullable(currencyService.findDefaultBroadleafCurrency())
+                            .ifPresent(previousDefault -> {
+                                previousDefault.setDefaultFlag(false);
+                                currencyService.save(previousDefault);
+                            });
+
                     newDefaultCurrency.setDefaultFlag(true);
-
-                    currencyService.save(previousDefault);
                     currencyService.save(newDefaultCurrency);
 
                     return newDefaultCurrency;

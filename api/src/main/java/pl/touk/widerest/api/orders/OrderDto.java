@@ -23,19 +23,22 @@ import java.util.Map;
 @ApiModel(value = "Order", description = "Order DTO resource representation")
 public class OrderDto extends BaseDto {
 
-    @ApiModelProperty(position = 0, value = "Order number", readOnly = true)
+    @ApiModelProperty(value = "Order number", readOnly = true)
     private String orderNumber;
 
-    @ApiModelProperty(position = 1, value = "Status of the order", readOnly = true)
+    @ApiModelProperty(value = "Status of the order", readOnly = true)
     private String status;
 
-    @ApiModelProperty(position = 2, value = "Total order items amount", readOnly = true)
+    @ApiModelProperty(value = "Total order items amount", readOnly = true)
     private int orderItemsAmount;
 
-    @ApiModelProperty(position = 5, value = "Total price for the order", readOnly = true)
+    @ApiModelProperty(value = "Total price for the order", readOnly = true)
     private BigDecimal totalPrice;
 
-    @ApiModelProperty(position = 6, value = "Additional attributes for the order")
+    @ApiModelProperty(value = "Currency of the order", readOnly = true)
+    private String currencyCode;
+
+    @ApiModelProperty(value = "Additional attributes for the order")
     private Map<String, String> attributes;
 
 }

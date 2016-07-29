@@ -1,8 +1,10 @@
 package pl.touk.widerest.api;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
 import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.media.domain.Media;
+import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.SkuMediaXref;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -33,6 +35,7 @@ import pl.touk.widerest.base.DtoTestFactory;
 import pl.touk.widerest.base.DtoTestType;
 import pl.touk.widerest.security.oauth2.Scope;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Arrays;
@@ -40,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,7 +53,7 @@ import static org.junit.Assert.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ProductControllerTest extends AbstractTest {
 
-    @javax.annotation.Resource(name="blCurrencyService")
+    @Resource
     protected BroadleafCurrencyService currencyService;
 
     @Before
@@ -370,9 +374,11 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(receivedProductEntity.getStatusCode(), equalTo(HttpStatus.OK));
 
         // then: the default API currency is being used
-        final String defaultCurrencyCode = currencyService.findDefaultBroadleafCurrency().getCurrencyCode();
-
-        assertThat(receivedProductEntity.getBody().getCurrencyCode(), equalTo(defaultCurrencyCode));
+        assertThat(receivedProductEntity.getBody().getCurrencyCode(), equalTo(
+                Optional.ofNullable(currencyService.findDefaultBroadleafCurrency())
+                        .map(BroadleafCurrency::getCurrencyCode)
+                        .orElse(Money.defaultCurrency().getCurrencyCode())
+        ));
     }
 
     @Test
@@ -637,7 +643,11 @@ public class ProductControllerTest extends AbstractTest {
         assertThat(receivedProduct.getRetailPrice(), equalTo(complexProductDto.getRetailPrice()));
         assertThat(receivedProduct.getQuantityAvailable(), equalTo(complexProductDto.getQuantityAvailable()));
         assertThat(receivedProduct.getAvailability(), equalTo("CHECK_QUANTITY"));
-        assertThat(receivedProduct.getCurrencyCode(), equalTo(currencyService.findDefaultBroadleafCurrency().getCurrencyCode()));
+        assertThat(receivedProduct.getCurrencyCode(), equalTo(
+                Optional.ofNullable(currencyService.findDefaultBroadleafCurrency())
+                        .map(BroadleafCurrency::getCurrencyCode)
+                        .orElse(Money.defaultCurrency().getCurrencyCode())
+        ));
         assertThat(receivedProduct.getValidFrom(), equalTo(complexProductDto.getValidFrom()));
         assertThat(receivedProduct.getValidTo(), equalTo(complexProductDto.getValidTo()));
 

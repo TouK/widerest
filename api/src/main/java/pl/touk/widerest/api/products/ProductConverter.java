@@ -1,7 +1,6 @@
 package pl.touk.widerest.api.products;
 
 import javaslang.control.Try;
-import org.broadleafcommerce.common.locale.service.LocaleService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.*;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
@@ -33,6 +32,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +50,6 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @Component
 public class ProductConverter implements Converter<Product, ProductDto>{
     
-    @Resource(name = "blLocaleService")
-    protected LocaleService localeService;
-
     @Resource
     protected SkuConverter skuConverter;
 
@@ -86,9 +83,8 @@ public class ProductConverter implements Converter<Product, ProductDto>{
         dto.setAvailability(Optional.ofNullable(productDefaultSku.getInventoryType()).map(InventoryType::getType).orElse(null));
         dto.setIsAvailable(inventoryService.isAvailable(productDefaultSku,1));
         dto.setTaxCode(productDefaultSku.getTaxCode());
-        dto.setCurrencyCode(Optional.ofNullable(productDefaultSku.getCurrency())
-                                .orElse(localeService.findDefaultLocale().getDefaultCurrency())
-                                .getCurrencyCode());
+        dto.setCurrencyCode(
+                Optional.ofNullable(Money.toCurrency(productDefaultSku.getPrice())).map(Currency::toString).orElse(null));
 
         final Map<String, MediaDto> defaultSkuMedias = productDefaultSku.getSkuMediaXref().entrySet().stream()
                         .collect(toMap(Map.Entry::getKey, entry -> mediaConverter.createDto(entry.getValue().getMedia(), embed, link)));

@@ -7,9 +7,7 @@ import org.springframework.boot.test.WebIntegrationTest;
 import pl.touk.widerest.base.ApiTestBase;
 
 @SpringApplicationConfiguration(classes = { BraodleafConfiguration.class, Application.class })
-@WebIntegrationTest({
-        "server.port:0"
-})
+@WebIntegrationTest(randomPort = true)
 public abstract class AbstractTest extends ApiTestBase{
 
     @Rule

@@ -1,8 +1,5 @@
 package pl.touk.widerest.api;
 
-import org.apache.commons.lang.StringUtils;
-import org.broadleafcommerce.common.currency.domain.BroadleafCurrency;
-import org.broadleafcommerce.common.currency.service.BroadleafCurrencyService;
 import org.broadleafcommerce.common.money.Money;
 import org.broadleafcommerce.core.catalog.domain.ProductOptionValue;
 import org.broadleafcommerce.core.catalog.domain.SkuBundleItem;
@@ -11,7 +8,6 @@ import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.search.domain.SearchFacetDTO;
 import org.broadleafcommerce.core.search.domain.SearchFacetResultDTO;
 import org.springframework.stereotype.Service;
-import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.products.BundleItemDto;
 import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.search.FacetDto;
@@ -29,23 +25,8 @@ import static java.util.stream.Collectors.toList;
 @Service("wdDtoConverters")
 public class DtoConverters {
 
-    @Resource(name="blCurrencyService")
-    protected BroadleafCurrencyService blCurrencyService;
-
     @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
-
-    public Function<String, BroadleafCurrency> currencyCodeToBLEntity = currencyCode -> {
-        BroadleafCurrency skuCurrency = null;
-
-        if(StringUtils.isEmpty(currencyCode)) {
-            skuCurrency = blCurrencyService.findDefaultBroadleafCurrency();
-        } else {
-            skuCurrency = Optional.ofNullable(blCurrencyService.findCurrencyByCode(currencyCode))
-                            .orElseThrow(() -> new ResourceNotFoundException("Invalid currency code."));
-        }
-        return skuCurrency;
-    };
 
     public static Function<ProductOptionValue, SkuProductOptionValueDto> productOptionValueToSkuValueDto = entity ->
             SkuProductOptionValueDto.builder()

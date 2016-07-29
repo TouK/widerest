@@ -16,6 +16,7 @@ import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
 import java.util.Collection;
+import java.util.Currency;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -55,15 +56,8 @@ public class OrderConverter implements Converter<Order, OrderDto> {
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().getType())
                 .orderItemsAmount(order.getOrderItems().size())
-//                .payment(order.getPayments().stream()
-//                        .map(orderPayment -> orderPaymentConverter.createDto(orderPayment, embed, link)).collect(Collectors.toList()))
-//                .orderItems(order.getDiscreteOrderItems().stream()
-//                        .map(discreteOrderItem -> discreteOrderItemConverter.createDto(discreteOrderItem, embed, link))
-//                        .collect(Collectors.toList()))
                 .totalPrice(Money.toAmount(order.getTotal()))
-//                .fulfillment(CartUtils.getFulfilmentOption(order)
-//                        .map(FulfillmentOption::getLongDescription)
-//                        .orElse(null))
+                .currencyCode(Optional.ofNullable(Money.toCurrency(order.getTotal())).map(Currency::toString).orElse(null))
                 .attributes(
                         Optional.ofNullable(order.getOrderAttributes())
                                 .map(Map::values)
