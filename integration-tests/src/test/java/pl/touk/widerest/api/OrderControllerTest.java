@@ -21,23 +21,17 @@ import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.api.products.skus.SkuProductOptionValueDto;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.base.ApiTestUtils;
-import pl.touk.widerest.base.DtoTestFactory;
-import pl.touk.widerest.base.DtoTestType;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.*;
+import static pl.touk.widerest.base.DtoTestFactory.products;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -240,13 +234,13 @@ public class OrderControllerTest extends AbstractTest {
     @Test
     public void creatingNewProductAndAddingItToOrderSavesAllValuesCorrectlyTest() throws Throwable {
 
-        final ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
-        final SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final ProductDto testProductDto = products().getTestProductWithoutDefaultCategory();
+        final SkuDto additionalSkuDto = products().testSkuDto();
 
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        final ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addTestProduct(testProductDto);
+        final ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
@@ -284,9 +278,9 @@ public class OrderControllerTest extends AbstractTest {
 
         final int TEST_QUANTITY = 3;
 
-        ProductDto testProductDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        ProductDto testProductDto = products().getTestProductWithoutDefaultCategory();
 
-        SkuDto additionalSkuDto = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        SkuDto additionalSkuDto = products().testSkuDto();
 
         additionalSkuDto.setQuantityAvailable(TEST_QUANTITY);
         additionalSkuDto.setAvailability("CHECK_QUANTITY");
@@ -294,7 +288,7 @@ public class OrderControllerTest extends AbstractTest {
         testProductDto.setSkus(Arrays.asList(additionalSkuDto));
         testProductDto.setValidTo(ApiTestUtils.addNDaysToDate(testProductDto.getValidFrom(), 10));
 
-        ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addTestProduct(testProductDto);
+        ResponseEntity<?> newProductResponseEntity = catalogOperationsRemote.addProduct(testProductDto);
         assertThat(newProductResponseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         long productId = ApiTestUtils.getIdFromEntity(newProductResponseEntity);
 
@@ -334,18 +328,18 @@ public class OrderControllerTest extends AbstractTest {
     @Test
     public void shouldAddItemToOrderByProductOptionsTest() throws Throwable {
 
-        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final ProductDto newProductDto = products().testProductDto();
+        final SkuDto additionalSku1 = products().testSkuDto();
+        final SkuDto additionalSku2 = products().testSkuDto();
 
         newProductDto.setValidFrom(ApiTestUtils.addNDaysToDate(newProductDto.getValidFrom(), 30));
         newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
-        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+        additionalSku1Options.add(new SkuProductOptionValueDto("OPTION_NAME1", "OPTION_VALUE1"));
 
         final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
-        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
+        additionalSku2Options.add(new SkuProductOptionValueDto("OPTION_NAME1", "OPTION_VALUE2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
         additionalSku1.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 10));
@@ -361,7 +355,7 @@ public class OrderControllerTest extends AbstractTest {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
@@ -373,7 +367,7 @@ public class OrderControllerTest extends AbstractTest {
             orderItemDto.setProductHref(productHref);
 
             orderItemDto.setSelectedOptions(
-                    Arrays.asList(Pair.of("TESTOPTION", "test2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+                    Arrays.asList(Pair.of("OPTION_NAME1", "OPTION_VALUE2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
             );
 
             URI orderItemUrl = restTemplate.postForLocation(newOrderUrl.toASCIIString() + "/items", orderItemDto, serverPort);
@@ -392,18 +386,18 @@ public class OrderControllerTest extends AbstractTest {
     @Transactional
     public void shouldAddItemToOrderByProductOptions2Test() throws Throwable {
         /* (mst) Prepare a single product with 2 'options' assigned to different SKUs */
-        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-        final SkuDto additionalSku1 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
-        final SkuDto additionalSku2 = DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT);
+        final ProductDto newProductDto = products().testProductDto();
+        final SkuDto additionalSku1 = products().testSkuDto();
+        final SkuDto additionalSku2 = products().testSkuDto();
 
         newProductDto.setValidTo(ApiTestUtils.addNDaysToDate(newProductDto.getValidFrom(), 30));
         newProductDto.setRetailPrice(new BigDecimal("19.99"));
 
         final Set<SkuProductOptionValueDto> additionalSku1Options = new HashSet<>();
-        additionalSku1Options.add(new SkuProductOptionValueDto("TESTOPTION", "test1"));
+        additionalSku1Options.add(new SkuProductOptionValueDto("OPTION_NAME1", "OPTION_VALUE1"));
 
         final Set<SkuProductOptionValueDto> additionalSku2Options = new HashSet<>();
-        additionalSku2Options.add(new SkuProductOptionValueDto("TESTOPTION", "test2"));
+        additionalSku2Options.add(new SkuProductOptionValueDto("OPTION_NAME1", "OPTION_VALUE2"));
 
         additionalSku1.setRetailPrice(new BigDecimal("29.99"));
         additionalSku1.setValidTo(ApiTestUtils.addNDaysToDate(additionalSku1.getValidFrom(), 10));
@@ -419,7 +413,7 @@ public class OrderControllerTest extends AbstractTest {
 
         newProductDto.setSkus(Arrays.asList(additionalSku1, additionalSku2));
 
-        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
@@ -432,7 +426,7 @@ public class OrderControllerTest extends AbstractTest {
             orderItemDto.setProductHref(productHref);
 
             orderItemDto.setSelectedOptions(
-                    Arrays.asList(Pair.of("TESTOPTION", "test2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+                    Arrays.asList(Pair.of("OPTION_NAME1", "OPTION_VALUE1")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
             );
 
             URI orderItemUrl = restTemplate.postForLocation(newOrderUrl.toASCIIString() + "/items", orderItemDto, serverPort);
@@ -444,7 +438,7 @@ public class OrderControllerTest extends AbstractTest {
             orderItemDto2.setProductHref(productHref);
 
             orderItemDto2.setSelectedOptions(
-                    Arrays.asList(Pair.of("TESTOPTION", "test1")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
+                    Arrays.asList(Pair.of("OPTION_NAME1", "OPTION_VALUE2")).stream().collect(Collectors.toMap(Pair::getLeft, Pair::getRight))
             );
 
             URI orderItemUrl2 = restTemplate.postForLocation(newOrderUrl.toASCIIString() + "/items", orderItemDto2, serverPort);
@@ -469,8 +463,8 @@ public class OrderControllerTest extends AbstractTest {
 
     @Test
     public void shouldRemoveNullSelectedOptions() throws Throwable {
-        final ProductDto newProductDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addTestProduct(newProductDto);
+        final ProductDto newProductDto = products().getTestProductWithoutDefaultCategory();
+        final ResponseEntity<?> responseEntity = catalogOperationsRemote.addProduct(newProductDto);
         assertThat(responseEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         final String productHref = responseEntity.getHeaders().getLocation().toString();
 
@@ -482,8 +476,8 @@ public class OrderControllerTest extends AbstractTest {
             orderItemDto.setProductHref(productHref);
 
             orderItemDto.setSelectedOptions(new HashMap<>());
-            orderItemDto.getSelectedOptions().put("TESTOPTION", "TEST1");
-            orderItemDto.getSelectedOptions().put("TESTOPTION2", "TEST2");
+            orderItemDto.getSelectedOptions().put("OPTION_NAME1", "OPTION_VALUE1");
+            orderItemDto.getSelectedOptions().put("OPTION_NAME1", "OPTION_VALUE2");
             final String nulloption = "NULLOPTION";
             orderItemDto.getSelectedOptions().put(nulloption, null);
 

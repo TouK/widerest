@@ -1,5 +1,7 @@
 package pl.touk.widerest.base;
 
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import pl.touk.widerest.api.products.ProductDto;
 import pl.touk.widerest.api.products.skus.SkuDto;
 
 import java.io.IOException;
+
+import static pl.touk.widerest.base.ApiTestUrls.CATEGORY_BY_ID_URL;
 
 public class CatalogOperationsRemote implements CatalogOperations {
 
@@ -24,12 +28,22 @@ public class CatalogOperationsRemote implements CatalogOperations {
     }
 
     @Override
-    public ResponseEntity<?> addTestCategory(final CategoryDto categoryDto) throws HttpClientErrorException{
+    public ResponseEntity<?> addCategory(final CategoryDto categoryDto) throws HttpClientErrorException{
         return restTemplate.postForEntity(ApiTestUrls.CATEGORIES_URL, categoryDto, null, serverPort);
     }
 
     @Override
-    public ResponseEntity<?> addTestProduct(final ProductDto productDto) {
+    public void modifyCategory(final long categoryId, final CategoryDto categoryDto) {
+        restTemplate.put(ApiTestUrls.CATEGORY_BY_ID_URL, categoryDto, serverPort, categoryId);
+    }
+
+    @Override
+    public CategoryDto getCategory(long categoryId) {
+        return restTemplate.getForObject(CATEGORY_BY_ID_URL, CategoryDto.class, serverPort, categoryId);
+    }
+
+    @Override
+    public ResponseEntity<?> addProduct(final ProductDto productDto) {
         return restTemplate.postForEntity(ApiTestUrls.PRODUCTS_URL, productDto, null, serverPort);
     }
 
@@ -47,13 +61,13 @@ public class CatalogOperationsRemote implements CatalogOperations {
 
     @Override
     public ResponseEntity<?> addCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
-        return restTemplate.postForEntity(ApiTestUrls.ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + ApiTestUrls.CATEGORY_BY_ID_URL,
+        return restTemplate.postForEntity(ApiTestUrls.ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
                 null, null, serverPort, rootCategoryId, serverPort, childCategoryId);
     }
 
     @Override
     public ResponseEntity<?> removeCategoryToCategoryReference(final long rootCategoryId, final long childCategoryId) {
-        return restTemplate.exchange(ApiTestUrls.ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + ApiTestUrls.CATEGORY_BY_ID_URL,
+        return restTemplate.exchange(ApiTestUrls.ADD_SUBCATEGORY_IN_CATEGORY_BY_ID_URL + CATEGORY_BY_ID_URL,
                 HttpMethod.DELETE, null, Void.class, serverPort, rootCategoryId, serverPort, childCategoryId);
     }
 
@@ -64,8 +78,8 @@ public class CatalogOperationsRemote implements CatalogOperations {
     }
 
     @Override
-    public ResponseEntity<?> removeTestCategory(final long categoryId) {
-        return restTemplate.exchange(ApiTestUrls.CATEGORY_BY_ID_URL,
+    public ResponseEntity<?> removeCategory(final long categoryId) {
+        return restTemplate.exchange(CATEGORY_BY_ID_URL,
                 HttpMethod.DELETE, null, Void.class, serverPort, categoryId);
     }
 
@@ -73,6 +87,19 @@ public class CatalogOperationsRemote implements CatalogOperations {
     public ResponseEntity<?> removeProductToCategoryReference(final long categoryId, final long productId) {
         return restTemplate.exchange(ApiTestUrls.ADD_PRODUCTS_IN_CATEGORY_BY_ID_URL + ApiTestUrls.PRODUCT_BY_ID_URL,
                 HttpMethod.DELETE, null, Void.class, serverPort, categoryId, serverPort, productId);
+    }
+
+    @Override
+    public Resources<CategoryDto> getSubcategories(final long categoryId) {
+        return restTemplate.exchange(
+                ApiTestUrls.SUBCATEGORY_IN_CATEGORY_BY_ID_URL,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<Resources<CategoryDto>>() {
+                },
+                serverPort,
+                categoryId
+        ).getBody();
     }
 
 }

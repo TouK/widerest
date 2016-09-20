@@ -66,7 +66,6 @@ public class ProductController {
     @Resource(name = "blSearchService")
     protected SearchService searchService;
 
-    /* (mst) For filtering input search query */
     @Resource(name = "blExploitProtectionService")
     protected ExploitProtectionService exploitProtectionService;
 

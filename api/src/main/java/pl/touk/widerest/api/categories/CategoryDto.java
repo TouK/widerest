@@ -28,19 +28,17 @@ public class CategoryDto extends BaseDto {
     @ApiModelProperty(position = 0, value = "Name of the category", required = true, dataType = "java.lang.String")
     private String name;
 
-    @ApiModelProperty(position = 1, value = "Short description of the category", required = false,
-            dataType = "java.lang.String")
+    @ApiModelProperty(position = 1, value = "Short description of the category", dataType = "java.lang.String")
     private String description;
 
-    @ApiModelProperty(position = 2, value = "Long description of the category", required = false,
-            dataType = "java.lang.String")
+    @ApiModelProperty(position = 2, value = "Long description of the category", dataType = "java.lang.String")
     private String longDescription;
 
-    @ApiModelProperty(position = 3, value = "Availability of all products in this category", required = false,
-            dataType = "java.lang.String", allowableValues = "ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
+    @ApiModelProperty(position = 3, value = "Availability of all products in this category", dataType = "java.lang.String",
+            allowableValues = "ALWAYS_AVAILABLE, UNAVAILABLE, CHECK_QUANTITY")
     private String productsAvailability;
 
-    @ApiModelProperty(position = 4, value = "Attributes associated with the category", required = false)
+    @ApiModelProperty(position = 4, value = "Attributes associated with the category")
     private Map<String, String> attributes;
 
     @ApiModelProperty(position = 5, value = "List of medias associated with a category")
@@ -54,5 +52,4 @@ public class CategoryDto extends BaseDto {
 
     @ApiModelProperty(value = "Date from which the product becomes inactive/invalid", dataType = "java.util.Date")
     private ZonedDateTime validTo;
-
 }

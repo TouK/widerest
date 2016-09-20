@@ -8,9 +8,8 @@ import pl.touk.widerest.base.ApiTestBase;
 
 @SpringApplicationConfiguration(classes = { BraodleafConfiguration.class, Application.class })
 @WebIntegrationTest(randomPort = true)
-public abstract class AbstractTest extends ApiTestBase{
+public abstract class AbstractTest extends ApiTestBase {
 
     @Rule
-    public ExpectedException thrown= ExpectedException.none();
-
+    public ExpectedException thrown = ExpectedException.none();
 }

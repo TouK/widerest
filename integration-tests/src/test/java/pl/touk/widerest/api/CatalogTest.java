@@ -18,7 +18,6 @@ import pl.touk.widerest.api.products.skus.SkuDto;
 import pl.touk.widerest.base.ApiTestUrls;
 import pl.touk.widerest.base.ApiTestUtils;
 import pl.touk.widerest.base.DtoTestFactory;
-import pl.touk.widerest.base.DtoTestType;
 import pl.touk.widerest.security.oauth2.Scope;
 
 import java.util.ArrayList;
@@ -64,9 +63,9 @@ public class CatalogTest extends AbstractTest {
         final long currentGlobalCategoriesCount = catalogOperationsLocal.getTotalCategoriesCount();
 
         // when: 1) adding a new test category
-        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final CategoryDto categoryDto = DtoTestFactory.categories().testCategoryDto();
 
-        final ResponseEntity<?> remoteAddCategoryEntity = catalogOperationsRemote.addTestCategory(categoryDto);
+        final ResponseEntity<?> remoteAddCategoryEntity = catalogOperationsRemote.addCategory(categoryDto);
 
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -77,10 +76,9 @@ public class CatalogTest extends AbstractTest {
         assertThat(currentProductsInCategoryRemoteCount, equalTo(0L));
 
         // when: 2) adding a new test product (with default SKU) into the category
-        final ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-        productDto.setCategoryName(categoryDto.getName());
+        final ProductDto productDto = DtoTestFactory.products().testProductWithDefaultCategory(categoryDto.getName());
 
-        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addTestProduct(productDto);
+        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addProduct(productDto);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -116,9 +114,9 @@ public class CatalogTest extends AbstractTest {
         assertThat(receivedSkuDto.getValidFrom(), equalTo(productDto.getValidFrom()));
 
         // when: 3) adding another product without category
-        final ProductDto productDto2 = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ProductDto productDto2 = DtoTestFactory.products().getTestProductWithoutDefaultCategory();
 
-        final ResponseEntity<?> remoteAddProduct2Entity = catalogOperationsRemote.addTestProduct(productDto2);
+        final ResponseEntity<?> remoteAddProduct2Entity = catalogOperationsRemote.addProduct(productDto2);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -170,7 +168,7 @@ public class CatalogTest extends AbstractTest {
         ResponseEntity<?> remoteAddCategoryEntity;
 
         for(int i = 0; i < TEST_CATEGORIES_COUNT; i++) {
-            remoteAddCategoryEntity = catalogOperationsRemote.addTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
+            remoteAddCategoryEntity = catalogOperationsRemote.addCategory(DtoTestFactory.categories().testCategoryDto());
 
             assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -188,9 +186,9 @@ public class CatalogTest extends AbstractTest {
         // when: 2) adding a new test product
         final long currentTotalProductsCount = catalogOperationsLocal.getTotalProductsCount();
 
-        final ProductDto productDto = DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT);
+        final ProductDto productDto = DtoTestFactory.products().getTestProductWithoutDefaultCategory();
 
-        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addTestProduct(productDto);
+        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addProduct(productDto);
 
         // then: 2) total number of products should increase
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -238,9 +236,9 @@ public class CatalogTest extends AbstractTest {
         final long currentGlobalCategoryCount = catalogOperationsLocal.getTotalCategoriesCount();
 
         //add test category
-        final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final CategoryDto categoryDto = DtoTestFactory.categories().testCategoryDto();
 
-        final ResponseEntity<?> remoteAddCategoryEntity = catalogOperationsRemote.addTestCategory(categoryDto);
+        final ResponseEntity<?> remoteAddCategoryEntity = catalogOperationsRemote.addCategory(categoryDto);
 
         assertThat(remoteAddCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(catalogOperationsLocal.getTotalCategoriesCount(), equalTo(currentGlobalCategoryCount + 1));
@@ -249,7 +247,7 @@ public class CatalogTest extends AbstractTest {
 
         assertThat(catalogOperationsLocal.getTotalProductsInCategoryCount(testCategoryId), equalTo(0L));
 
-        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addProduct(DtoTestFactory.products().getTestProductWithoutDefaultCategory());
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
         assertThat(catalogOperationsLocal.getTotalProductsCount(), equalTo(currentGlobalProductCount + 1));
@@ -280,7 +278,7 @@ public class CatalogTest extends AbstractTest {
             for(int i = 0; i < TEST_SKUS_COUNT; i++) {
                 adminRestTemplate.postForEntity(
                         ApiTestUrls.PRODUCT_BY_ID_SKUS,
-                        DtoTestFactory.getTestAdditionalSku(DtoTestType.NEXT),
+                        DtoTestFactory.products().testSkuDto(),
                         null,
                         serverPort,
                         testProductId);
@@ -316,11 +314,11 @@ public class CatalogTest extends AbstractTest {
         final int PRODUCT_COUNT = 4;
 
         // when: 1) adding a test category
-        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
+        final CategoryDto testCategory = DtoTestFactory.categories().testCategoryDto();
 
         final long currentGlobalCategoryCount = catalogOperationsLocal.getTotalCategoriesCount();
 
-        final ResponseEntity<?> newCategoryEntity = catalogOperationsRemote.addTestCategory(testCategory);
+        final ResponseEntity<?> newCategoryEntity = catalogOperationsRemote.addCategory(testCategory);
 
         // then: 1) total number of categories should increase
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
@@ -333,10 +331,9 @@ public class CatalogTest extends AbstractTest {
         ResponseEntity<?> remoteAddProductEntity;
 
         for(int i = 0; i < PRODUCT_COUNT; i++) {
-            productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-            productDto.setCategoryName(testCategory.getName());
+            productDto = DtoTestFactory.products().testProductWithDefaultCategory(testCategory.getName());
 
-            remoteAddProductEntity = catalogOperationsRemote.addTestProduct(productDto);
+            remoteAddProductEntity = catalogOperationsRemote.addProduct(productDto);
 
             assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
         }
@@ -347,12 +344,12 @@ public class CatalogTest extends AbstractTest {
         givenAuthorizationFor(Scope.STAFF, adminRestTemplate -> {
 
             // when: 3) modifying test category values
-            final CategoryDto categoryDto = DtoTestFactory.getTestCategory(DtoTestType.SAME);
-            categoryDto.setDescription("ModifiedTestCategoryDescription");
-            categoryDto.setName("ModifiedTestCategoryName");
-            categoryDto.setLongDescription("ModifiedTestCategoryLongDescription");
+//            final CategoryDto categoryDto = DtoTestFactory.testCategoryDto(DtoTestType.SAME);
+            testCategory.setDescription("ModifiedTestCategoryDescription");
+            testCategory.setName("ModifiedTestCategoryName");
+            testCategory.setLongDescription("ModifiedTestCategoryLongDescription");
 
-            adminRestTemplate.put(newCategoryEntity.getHeaders().getLocation().toString(), categoryDto, serverPort);
+            adminRestTemplate.put(newCategoryEntity.getHeaders().getLocation().toString(), testCategory, serverPort);
         });
 
         // then: 3) test category does not "lose" its product references
@@ -363,16 +360,15 @@ public class CatalogTest extends AbstractTest {
     @Transactional
     public void modifyingfExistingCategoryDoesNotBreakReferencesToAndFromProductsTest() throws Throwable {
         // when: 1) adding a new category with a new product
-        final CategoryDto testCategory = DtoTestFactory.getTestCategory(DtoTestType.NEXT);
-        final ResponseEntity<?> newCategoryEntity = catalogOperationsRemote.addTestCategory(testCategory);
+        final CategoryDto testCategory = DtoTestFactory.categories().testCategoryDto();
+        final ResponseEntity<?> newCategoryEntity = catalogOperationsRemote.addCategory(testCategory);
         assertThat(newCategoryEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
         final long testCategoryId = ApiTestUtils.getIdFromEntity(newCategoryEntity);
 
-        final ProductDto productDto = DtoTestFactory.getTestProductWithDefaultSKUandCategory(DtoTestType.NEXT);
-        productDto.setCategoryName(testCategory.getName());
+        final ProductDto productDto = DtoTestFactory.products().testProductWithDefaultCategory(testCategory.getName());
 
-        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addTestProduct(productDto);
+        final ResponseEntity<?> remoteAddProduct1Entity = catalogOperationsRemote.addProduct(productDto);
 
         assertThat(remoteAddProduct1Entity.getStatusCode(), equalTo(HttpStatus.CREATED));
 
@@ -407,11 +403,11 @@ public class CatalogTest extends AbstractTest {
     @Transactional
     public void creatingAndDeletingCategoriesReferencesDoesNotAffectActualEntitiesTest() {
         // when: 1) adding 2 test categories and 3 test products
-        final ResponseEntity<?> newCategoryEntity1 = catalogOperationsRemote.addTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> newCategoryEntity1 = catalogOperationsRemote.addCategory(DtoTestFactory.categories().testCategoryDto());
         assertThat(newCategoryEntity1.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long testCategoryId1 = ApiTestUtils.getIdFromEntity(newCategoryEntity1);
 
-        final ResponseEntity<?> newCategoryEntity2 = catalogOperationsRemote.addTestCategory(DtoTestFactory.getTestCategory(DtoTestType.NEXT));
+        final ResponseEntity<?> newCategoryEntity2 = catalogOperationsRemote.addCategory(DtoTestFactory.categories().testCategoryDto());
         assertThat(newCategoryEntity2.getStatusCode(), equalTo(HttpStatus.CREATED));
         final long testCategoryId2 = ApiTestUtils.getIdFromEntity(newCategoryEntity2);
 
@@ -420,7 +416,7 @@ public class CatalogTest extends AbstractTest {
         ResponseEntity<?> remoteAddProductEntity;
 
         for(int i = 0; i < 3; i++) {
-            remoteAddProductEntity = catalogOperationsRemote.addTestProduct(DtoTestFactory.getTestProductWithoutDefaultCategory(DtoTestType.NEXT));
+            remoteAddProductEntity = catalogOperationsRemote.addProduct(DtoTestFactory.products().getTestProductWithoutDefaultCategory());
 
             assertThat(remoteAddProductEntity.getStatusCode(), equalTo(HttpStatus.CREATED));
 

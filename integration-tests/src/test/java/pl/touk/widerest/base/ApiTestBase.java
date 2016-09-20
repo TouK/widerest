@@ -13,11 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resources;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -57,14 +53,21 @@ public abstract class ApiTestBase {
     @Resource
     ApplicationContext applicationContext;
 
-    @PersistenceContext(unitName="blPU")
+    @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
-    @Resource(name="blCatalogService")
+    @Resource(name = "blCatalogService")
     protected CatalogService catalogService;
 
     @Value("${local.server.port}")
     protected String serverPort;
+
+    @Resource
+    protected CategoryExpectations thenCategory;
+
+    protected CategoryBehaviour whenCategory;
+
+    protected CatalogPreparer givenCatalog;
 
     protected RestTemplate backofficeRestTemplate;
 
@@ -81,6 +84,9 @@ public abstract class ApiTestBase {
         this.backofficeRestTemplate = authorizationServerClient.requestAuthorization(Scope.STAFF);
         this.catalogOperationsRemote = new CatalogOperationsRemote(backofficeRestTemplate, serverPort);
         this.catalogOperationsLocal = new CatalogOperationsLocal(catalogService);
+
+        this.whenCategory = new CategoryBehaviour(catalogOperationsRemote);
+        this.givenCatalog = new CatalogPreparer(catalogOperationsLocal, catalogOperationsRemote);
 
         this.apiUrl = UriComponentsBuilder.fromUriString("http://localhost:{port}/v1").buildAndExpand(serverPort).toUri();
     }
@@ -102,16 +108,18 @@ public abstract class ApiTestBase {
     protected void removeLocalTestCategories() {
         catalogService.findAllCategories().stream()
                 .filter(CatalogUtils.isNotArchived())
-                .filter(x -> x.getName().contains(DtoTestFactory.TEST_CATEGORY_DEFAULT_NAME))
+                .filter(x -> x.getName().contains(DtoTestFactory.categories().TEST_CATEGORY_NAME))
                 .forEach(catalogService::removeCategory);
+        em.clear();
     }
 
 
     protected void removeLocalTestProducts() {
         catalogService.findAllProducts().stream()
                 .filter(CatalogUtils.isNotArchived())
-                .filter(x -> x.getName().contains(DtoTestFactory.TEST_PRODUCT_DEFAULT_NAME))
+                .filter(x -> x.getName().contains(DtoTestFactory.products().TEST_PRODUCT_NAME))
                 .forEach(catalogService::removeProduct);
+        em.clear();
     }
 
     /* --------------------------------  ORDER METHODS -------------------------------- */
@@ -139,7 +147,8 @@ public abstract class ApiTestBase {
     protected List<DiscreteOrderItemDto> getItemsFromCart(RestTemplate restTemplate, final URI orderUrl) {
 
         final Resources<DiscreteOrderItemDto> orderItems =
-                restTemplate.exchange(orderUrl.toASCIIString() + "/items", HttpMethod.GET, null, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {}).getBody();
+                restTemplate.exchange(orderUrl.toASCIIString() + "/items", HttpMethod.GET, null, new ParameterizedTypeReference<Resources<DiscreteOrderItemDto>>() {
+                }).getBody();
 
         return new ArrayList<>(orderItems.getContent());
     }
@@ -154,8 +163,8 @@ public abstract class ApiTestBase {
 
     protected Collection<OrderDto> getAllOrders(RestTemplate restTemplate) {
         return restTemplate.exchange(ApiTestUrls.ORDERS_URL, HttpMethod.GET, null,
-                        new ParameterizedTypeReference<Resources<OrderDto>>() {
-                        }, serverPort).getBody().getContent();
+                new ParameterizedTypeReference<Resources<OrderDto>>() {
+                }, serverPort).getBody().getContent();
 
     }
 
@@ -206,6 +215,10 @@ public abstract class ApiTestBase {
         when(() -> createNewOrder(oAuth2RestTemplate), thens);
     }
 
+    protected void whenProductCreated(final ProductDto productDto, Try.CheckedConsumer<ResponseEntity<?>>... thens) throws Throwable {
+        when(() -> catalogOperationsRemote.addProduct(productDto), thens);
+    }
+
     protected Tuple2<String, String> performRegistration(OAuth2RestTemplate oAuth2RestTemplate) {
 
         final String username = RandomStringUtils.random(32, "haskellCurry");
@@ -228,11 +241,17 @@ public abstract class ApiTestBase {
     }
 
     protected void whenLoggedInSite(AuthorizationServerClient authorizationServerClient, final Tuple2<String, String> usernameAndPassword) throws Throwable {
-        when(() -> { authorizationServerClient.logIn("site", usernameAndPassword._1, usernameAndPassword._2); return null; });
+        when(() -> {
+            authorizationServerClient.logIn("site", usernameAndPassword._1, usernameAndPassword._2);
+            return null;
+        });
     }
 
     protected void whenLoggedInBackoffice(AuthorizationServerClient authorizationServerClient, final Tuple2<String, String> usernameAndPassword) throws Throwable {
-        when(() -> { authorizationServerClient.logIn("backoffice", usernameAndPassword._1, usernameAndPassword._2); return null; });
+        when(() -> {
+            authorizationServerClient.logIn("backoffice", usernameAndPassword._1, usernameAndPassword._2);
+            return null;
+        });
     }
 
     protected void thenAuthorized(OAuth2RestTemplate oAuth2RestTemplate, boolean value) {
@@ -241,6 +260,7 @@ public abstract class ApiTestBase {
                 oAuth2RestTemplate.getOAuth2ClientContext().getAccessToken() != null
         );
     }
+
     protected void thenAuthorized(OAuth2RestTemplate oAuth2RestTemplate) {
         thenAuthorized(oAuth2RestTemplate, true);
     }
@@ -262,7 +282,10 @@ public abstract class ApiTestBase {
     }
 
     protected void whenOrderItemDeleted(RestTemplate restTemplate, final URI orderItemHref, Try.CheckedConsumer<Void>... thens) throws Throwable {
-        when(() -> { restTemplate.delete(orderItemHref); return null; }, thens);
+        when(() -> {
+            restTemplate.delete(orderItemHref);
+            return null;
+        }, thens);
     }
 
     protected void whenOrderFulfillmentsRetrieved(RestTemplate oAuth2RestTemplate, final URI orderUri, Try.CheckedConsumer<Collection<FulfillmentDto>>... thens) throws Throwable {
@@ -366,9 +389,9 @@ public abstract class ApiTestBase {
         restTemplate.put(fulfillmentUrl, fulfillment);
     }
 
-    protected Function<BaseDto, URI> toSelfUri = baseDto -> URI.create(baseDto.getLink("self").getHref());
-
-    protected URI fromDtoLink(final BaseDto baseDto, final String link) {
-        return URI.create(baseDto.getLink(link).getHref());
+    protected void thenHttpStatusReturned(final ResponseEntity<?> responseEntity, final HttpStatus httpStatus) {
+        org.assertj.core.api.Assertions.assertThat(responseEntity.getStatusCode()).isEqualTo(httpStatus);
     }
+
+    protected Function<BaseDto, URI> toSelfUri = baseDto -> URI.create(baseDto.getLink("self").getHref());
 }

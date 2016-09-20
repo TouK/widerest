@@ -38,7 +38,7 @@ public class ApiTestUtils {
 
     public static String getAccessTokenFromLocationUrl(final String locationUrl) throws URISyntaxException {
         final String accessTokenUrl = locationUrl.replace("#", "?");
-        final List<NameValuePair> authorizationParams = URLEncodedUtils.parse(new URI(accessTokenUrl), "UTF-8");
+        final List<NameValuePair> authorizationParams = URLEncodedUtils.parse(URI.create(accessTokenUrl), "UTF-8");
 
         return authorizationParams.stream()
                 .filter(x -> x.getName().equals("access_token"))
