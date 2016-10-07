@@ -4,7 +4,7 @@
     <parent>
         <groupId>pl.touk.widerest</groupId>
         <artifactId>widerest</artifactId>
-        <version>0.1.13-SNAPSHOT</version>
+        <version>0.1.13</version>
     </parent>
     <artifactId>widerest-api</artifactId>
     <packaging>jar</packaging>
