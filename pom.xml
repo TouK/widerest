@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
+        <artifactId>spring-boot-dependencies</artifactId>
         <version>1.2.7.RELEASE</version>
     </parent>
 
@@ -12,15 +12,25 @@
     <artifactId>widerest</artifactId>
     <version>0.1.14-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <name>widerest</name>
-    <organization><name>TouK</name><url>http://touk.pl</url></organization>
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <organization>
+        <name>TouK</name>
+        <url>http://touk.pl</url>
+    </organization>
 
     <scm>
         <connection>scm:git:git@github.com:TouK/widerest.git</connection>
         <developerConnection>scm:git:git@github.com:TouK/widerest.git</developerConnection>
         <url>https://github.com/TouK/widerest</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <distributionManagement>
         <repository>
@@ -243,13 +253,6 @@
             </dependency>
 
             <dependency>
-                <groupId>com.spotify</groupId>
-                <artifactId>docker-client</artifactId>
-                <!--<classifier>shaded</classifier>-->
-                <version>3.6.2</version>
-            </dependency>
-
-            <dependency>
                 <groupId>xml-apis</groupId>
                 <artifactId>xml-apis</artifactId>
                 <version>2.0.2</version>
@@ -270,12 +273,6 @@
                 <groupId>cz.jirutka.spring</groupId>
                 <artifactId>spring-rest-exception-handler</artifactId>
                 <version>1.1.1</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>9.4-1202-jdbc42</version>
             </dependency>
 
             <dependency>

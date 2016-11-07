@@ -1,6 +1,7 @@
 package pl.touk.widerest;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -8,7 +9,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.HttpMethod;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
@@ -32,7 +32,7 @@ public class CorsFilter extends OncePerRequestFilter {
 
         httpServletResponse.setHeader("Access-Control-Allow-Credentials", "true");
 
-        if(HttpMethod.OPTIONS.equals(httpServletRequest.getMethod())) {
+        if(HttpMethod.OPTIONS.name().equals(httpServletRequest.getMethod())) {
 
             httpServletResponse.setHeader("Access-Control-Max-Age", "1209600");
 
