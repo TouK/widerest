@@ -1,7 +1,5 @@
 package pl.touk.widerest.security.authentication;
 
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -9,6 +7,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+
+import java.util.Optional;
 
 public class PrefixBasedAuthenticationManager implements AuthenticationManager {
 
@@ -26,7 +26,8 @@ public class PrefixBasedAuthenticationManager implements AuthenticationManager {
     }
 
     public static Authentication convertAuthentication(Authentication authentication) {
-        return Optional.of(authentication.getPrincipal())
+        return Optional.of(authentication)
+                .map(Authentication::getPrincipal)
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
                 .map(PrefixBasedAuthenticationManager::getAuthDataFromString)
