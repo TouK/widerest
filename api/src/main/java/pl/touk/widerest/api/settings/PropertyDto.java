@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import pl.touk.widerest.api.BaseDto;
 
@@ -13,6 +14,7 @@ import pl.touk.widerest.api.BaseDto;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonRootName("property")
 @ApiModel(value = "Property", description = "System property DTO representation")

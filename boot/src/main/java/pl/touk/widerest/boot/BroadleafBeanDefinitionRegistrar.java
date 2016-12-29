@@ -1,7 +1,8 @@
 package pl.touk.widerest.boot;
 
+import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.broadleafcommerce.common.extensibility.context.MergeApplicationContextXmlConfigResource;
 import org.broadleafcommerce.common.extensibility.context.ResourceInputStream;
@@ -19,7 +20,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.StringUtils;
-import pl.touk.throwing.ThrowingFunction;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +66,7 @@ public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefi
                 .toArray(ResourceInputStream[]::new);
 
         final List<ResourceInputStream> patchList = Arrays.stream(StringUtils.tokenizeToStringArray(getPatchLocation(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS))
-                .flatMap(ThrowingFunction.unchecked(l -> {
+                .flatMap(l -> Try.of(() -> {
                     if (!l.startsWith("classpath")) {
                         throw new NotImplementedException("Only classpath resources merge implemented");
                     }
@@ -77,7 +77,7 @@ public abstract class BroadleafBeanDefinitionRegistrar implements ImportBeanDefi
 
                     return patch.available() <= 0 ? getResourcesFromPatternResolver(l).stream() : Stream.of(patch);
 
-                })).collect(toList());
+                }).get()).collect(toList());
 
         try {
             final ResourceInputStream[] extractedSources = importProcessor.extract(filteredSources);

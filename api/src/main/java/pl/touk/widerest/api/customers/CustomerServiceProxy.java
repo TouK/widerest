@@ -19,7 +19,7 @@ public class CustomerServiceProxy {
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
-    @PostAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
+    @PostAuthorize("hasAuthority('PERMISSION_ALL_CUSTOMER')")
     public List<Customer> getAllCustomers() {
         final CriteriaBuilder builder = this.em.getCriteriaBuilder();
         CriteriaQuery criteria = builder.createQuery(Customer.class);

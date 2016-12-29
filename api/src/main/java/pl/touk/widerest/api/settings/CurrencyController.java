@@ -24,7 +24,7 @@ public class CurrencyController {
     @Resource (name = "blCurrencyService")
     BroadleafCurrencyService currencyService;
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation("Get current default currency")
     @ResponseBody
@@ -32,7 +32,7 @@ public class CurrencyController {
         return currencyService.findDefaultBroadleafCurrency().getCurrencyCode();
     }
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @Transactional
     @RequestMapping(method = RequestMethod.PUT)
     @ApiOperation("Set default currency")

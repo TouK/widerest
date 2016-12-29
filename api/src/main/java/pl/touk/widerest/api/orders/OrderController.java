@@ -1,33 +1,18 @@
 package pl.touk.widerest.api.orders;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import javaslang.control.Match;
 import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.broadleafcommerce.common.payment.PaymentGatewayType;
-import org.broadleafcommerce.common.payment.dto.PaymentRequestDTO;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationService;
 import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayCustomerService;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayHostedService;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayTransparentRedirectService;
 import org.broadleafcommerce.common.service.GenericEntityService;
-import org.broadleafcommerce.common.vendor.service.exception.PaymentException;
-import org.broadleafcommerce.core.catalog.domain.Category;
 import org.broadleafcommerce.core.catalog.domain.Product;
 import org.broadleafcommerce.core.catalog.domain.ProductBundle;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
-import org.broadleafcommerce.core.order.domain.BundleOrderItem;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderAttribute;
@@ -41,24 +26,20 @@ import org.broadleafcommerce.core.order.service.exception.AddToCartException;
 import org.broadleafcommerce.core.order.service.exception.RemoveFromCartException;
 import org.broadleafcommerce.core.order.service.exception.UpdateCartException;
 import org.broadleafcommerce.core.order.service.type.OrderStatus;
-import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
 import org.broadleafcommerce.profile.core.domain.Customer;
-import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.broadleafcommerce.profile.core.service.CustomerUserDetails;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,27 +51,20 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.api.RequestUtils;
-import pl.touk.widerest.api.common.AddressConverter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
-import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
-import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
-import pl.touk.widerest.api.orders.payments.PaymentDto;
 import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.annotation.Resource;
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -120,31 +94,17 @@ public class OrderController {
     @Resource(name = "blOrderItemService")
     protected OrderItemService orderItemService;
 
-    @Resource(name = "wdOrderService")
+    @Resource
     protected OrderServiceProxy orderServiceProxy;
-
-    protected FulfilmentServiceProxy fulfillmentServiceProxy;
-
-    @Resource(name = "blAddressService")
-    private AddressService addressService;
-
-    @Resource(name = "wdOrderValidationService")
-    private OrderValidationService orderValidationService;
 
     @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
     private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
-
-    @Resource(name = "blOrderToPaymentRequestDTOService")
-    private OrderToPaymentRequestDTOService orderToPaymentRequestDTOService;
 
     @Resource(name = "blGenericEntityService")
     protected GenericEntityService genericEntityService;
 
     @Resource(name = "blFulfillmentGroupService")
     protected FulfillmentGroupService fulfillmentGroupService;
-
-    @Resource
-    private AddressConverter addressConverter;
 
     @Resource
     private AnonymousUserDetailsService anonymousUserDetailsService;
@@ -155,22 +115,8 @@ public class OrderController {
     @Resource
     private DiscreteOrderItemConverter discreteOrderItemConverter;
 
-    @Resource
-    private FulfillmentConverter fulfillmentConverter;
-
     @Value("${automatically.merge.like.items}")
     protected boolean automaticallyMergeLikeItems;
-
-    private final static String ANONYMOUS_CUSTOMER = "anonymous";
-
-    private TypeIdResolver paymentTypeIdResolver;
-
-    @Autowired
-    public void initPaymentTypeIdResolver(ObjectMapper objectMapper) throws JsonMappingException {
-        SerializationConfig serializationConfig = objectMapper.getSerializationConfig();
-        JavaType javaType = objectMapper.getTypeFactory().constructType(PaymentDto.class);
-        paymentTypeIdResolver = objectMapper.getSerializerFactory().createTypeSerializer(serializationConfig, javaType).getTypeIdResolver();
-    }
 
     /* GET /orders */
     @Transactional
@@ -203,7 +149,7 @@ public class OrderController {
 
     /* GET /orders/{orderId} */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get an order by ID",
@@ -227,7 +173,7 @@ public class OrderController {
 
     /* POST /orders */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Create a new order",
@@ -271,7 +217,7 @@ public class OrderController {
 
     /* DELETE /orders/ */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an order",
@@ -292,7 +238,7 @@ public class OrderController {
 
     /* POST /orders/{orderId}/items */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new item",
@@ -369,7 +315,7 @@ public class OrderController {
 
     /* POST /orders/{orderId}/items */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items-old", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new item",
@@ -473,7 +419,7 @@ public class OrderController {
 
     /* GET /orders/items/ */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items", method = RequestMethod.GET)
     @ApiOperation(
             value = "List all items in an order",
@@ -502,7 +448,7 @@ public class OrderController {
 
     /* GET /orders/{orderId}/items/count */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/items/count", method = RequestMethod.GET)
     @ApiOperation(
             value = "Count all items in the order",
@@ -521,7 +467,7 @@ public class OrderController {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/count", method = RequestMethod.GET)
     @ApiOperation(
             value = "Count all orders",
@@ -537,7 +483,7 @@ public class OrderController {
 
     /* GET /orders/{orderId}/status */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{id}/status", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a status of an order",
@@ -560,7 +506,7 @@ public class OrderController {
 
     /* DELETE /orders/{orderId}/items/{itemId} */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an item",
@@ -589,7 +535,7 @@ public class OrderController {
 
     /* GET /orders/items/{itemId} */
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get details of an item",
@@ -617,7 +563,7 @@ public class OrderController {
     }
 
     /* PUT /orders/items/{itemId}/quantity */
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/items/{itemId}/quantity", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update item's quantity",
@@ -639,107 +585,10 @@ public class OrderController {
         orderServiceProxy.updateItemQuantityInOrder(quantity,userDetails,orderId,itemId);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
-    @RequestMapping(value = "/{orderId}/payment", method = RequestMethod.POST)
-    @ApiOperation(
-            value = "Initiate order payment execution using the given payment provider",
-            notes = "Initiates for one chosen order",
-            response = ResponseEntity.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Redirects to checkout website"),
-            @ApiResponse(code = 403, message = "Access denied to given order")
-            // and throws
-    })
-    @Transactional
-    public ResponseEntity initiatePayment(
-            @Valid @RequestBody PaymentDto paymentDto,
-            @ApiIgnore @AuthenticationPrincipal CustomerUserDetails customerUserDetails,
-            @PathVariable(value = "orderId") Long orderId
-    ) {
-
-        final Order order = Optional.ofNullable(orderService.findOrderById(orderId))
-                .filter(OrderController.notYetSubmitted)
-                .orElseThrow(() -> new ResourceNotFoundException());
-
-        if(!order.getCustomer().getId().equals(customerUserDetails.getId())) {
-            throw new AccessDeniedException("The ordere does not belong to the customer");
-        }
-
-//        orderValidationService.validateOrderBeforeCheckout(order);
-
-        final PaymentRequestDTO paymentRequestDTO =
-                orderToPaymentRequestDTOService.translateOrder(order)
-                        .additionalField("PAYMENT_DETAILS", paymentDto);
-        populateLineItemsAndSubscriptions(order, paymentRequestDTO);
-
-        PaymentGatewayConfigurationService configurationService = findPaymentGatewayConfigurationService(paymentDto);
-
-        PaymentGatewayHostedService hostedService = configurationService.getHostedService();
-        PaymentGatewayTransparentRedirectService transparentRedirectService = configurationService.getTransparentRedirectService();
-        PaymentGatewayCustomerService customerService = configurationService.getCustomerService();
-
-        try {
-            if (customerService != null) {
-                customerService.createGatewayCustomer(paymentRequestDTO);
-            }
-
-            if (hostedService != null) {
-                return ResponseEntity.created(URI.create(hostedService.requestHostedEndpoint(paymentRequestDTO).getResponseMap().get("REDIRECT_URL"))).build();
-            }
-            if (transparentRedirectService != null) {
-                return ResponseEntity.ok(transparentRedirectService.createAuthorizeForm(paymentRequestDTO).getResponseMap());
-            }
-        } catch (PaymentException e) {
-            log.error("Error while initiating payment", e);
-        };
-
-        return ResponseEntity.unprocessableEntity().build();
-    }
-
-    private PaymentGatewayConfigurationService findPaymentGatewayConfigurationService(PaymentDto paymentDto) {
-
-        final String provider = paymentTypeIdResolver.idFromValue(paymentDto);
-        final PaymentGatewayType paymentGatewayType = PaymentGatewayType.getInstance(provider);
-
-        return paymentGatewayConfigurationServiceProvider.getGatewayConfigurationService(
-                paymentGatewayType
-        );
-    }
-
-    private PaymentRequestDTO populateLineItemsAndSubscriptions(final Order order, PaymentRequestDTO
-            paymentRequest) {
-        for (OrderItem item : order.getOrderItems()) {
-
-            /* (mst) Previously, there was SKU's Description used here to set item's name
-                    but because it is not required in our implementation, I chose to use SKU's Name instead */
-
-            final String name = Match.of(item)
-                    .whenType(BundleOrderItem.class).then(it -> it.getSku().getName())
-                    .whenType(DiscreteOrderItem.class).then(it -> it.getSku().getName())
-                    .otherwise(OrderItem::getName).get();
-
-            final String category = Optional.ofNullable(item.getCategory())
-                    .map(Category::getName)
-                    .orElse(null);
-
-            paymentRequest = paymentRequest.lineItem()
-                    .name(name)
-                    .amount(String.valueOf(item.getAveragePrice()))
-                    .category(category)
-                    .quantity(String.valueOf(item.getQuantity()))
-                    .total(order.getTotal().toString())
-                    .done();
-        }
-
-        return paymentRequest;
-    }
-
 
 //    //private static boolean notYetSubmitted(Order order) {
 //        return !order.getStatus().equals(OrderStatus.SUBMITTED);
 //    }
-
-    private static Predicate<Order> notYetSubmitted = order -> !order.getStatus().equals(OrderStatus.SUBMITTED);
 
     private OrderItem getOrderItemByHref(final String orderItemHref, final Order order) throws MalformedURLException, ResourceNotFoundException {
         final long orderItemId = CatalogUtils.getIdFromUrl(orderItemHref);

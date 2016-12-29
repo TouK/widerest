@@ -23,9 +23,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -111,7 +111,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new category",
@@ -167,7 +167,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete a category",
@@ -192,7 +192,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing category",
@@ -257,7 +257,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.POST)
     @ApiOperation(
             value = "Link an existing category to its new parent category",
@@ -306,7 +306,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}/subcategories", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a link to an existing subcategory from its parent category",
@@ -383,7 +383,7 @@ public class CategoryController {
      *            ProductController's POST methods first
      */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}/products", method = RequestMethod.POST)
     @ApiOperation(
             value = "Insert existing product into category",
@@ -428,7 +428,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CATEGORY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CATEGORY')")
     @RequestMapping(value = "/categories/{categoryId}/products", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Remove a product from a category",

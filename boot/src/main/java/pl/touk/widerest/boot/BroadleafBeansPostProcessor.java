@@ -30,7 +30,7 @@ public class BroadleafBeansPostProcessor implements BeanFactoryPostProcessor {
     }
 
     protected void disableAutomaticBroadleafFiltersRegistration(DefaultListableBeanFactory beanFactory) {
-        Arrays.stream(beanFactory.getBeanNamesForType(javax.servlet.Filter.class))
+        Arrays.stream(beanFactory.getBeanNamesForType(javax.servlet.Filter.class, false, false))
                 .filter(name -> name.startsWith("bl"))
                 .forEach(name -> {
                     BeanDefinition definition = BeanDefinitionBuilder

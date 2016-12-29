@@ -100,7 +100,7 @@ public class SkuController {
 
     /* POST /products/{id}/skus */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus", method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a SKU to the product",
@@ -248,7 +248,7 @@ public class SkuController {
 
     /* PUT /products/{productId}/skus/{skuId}/quantity */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/quantity", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update SKU's quantity",
@@ -278,7 +278,7 @@ public class SkuController {
 
     /* PUT /products/{productId}/skus/{skuId}/availability */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/availability", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update SKU's availability",
@@ -337,7 +337,7 @@ public class SkuController {
 
     /* DELETE /products/{productId}/skus/{id} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing SKU",
@@ -368,7 +368,7 @@ public class SkuController {
 
     /* PUT /products/{productId}/skus/{skuId} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing SKU",
@@ -473,7 +473,7 @@ public class SkuController {
 
     /* DELETE /products/{productId}/skus/{id}/media/{key} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/key", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing media",
@@ -503,7 +503,7 @@ public class SkuController {
 
     /* PUT /{productId}/skus/{skuId}/media/{key} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/skus/{skuId}/media/{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Create new or update existing media",

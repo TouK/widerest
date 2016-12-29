@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.TransactionManagementConfigurer;
@@ -70,11 +71,13 @@ public class Application extends WebMvcConfigurerAdapter implements TransactionM
                 "test-app",
                 null,
                 ApiKeyVehicle.HEADER,
+                "api_key",
                 " "
         );
     }
 
     @Bean
+    @Order(-10000)
     static public BroadleafBeansPostProcessor broadleafBeansPostProcessor() {
         return new BroadleafBeansPostProcessor();
     }

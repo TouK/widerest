@@ -1,13 +1,12 @@
 package pl.touk.widerest.api.orders.fulfillments;
 
-import com.jasongoodwin.monads.Try;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import javaslang.control.Try;
 import lombok.extern.slf4j.Slf4j;
-import org.broadleafcommerce.common.payment.service.PaymentGatewayConfigurationServiceProvider;
 import org.broadleafcommerce.common.service.GenericEntityService;
 import org.broadleafcommerce.core.catalog.service.CatalogService;
 import org.broadleafcommerce.core.order.domain.FulfillmentGroup;
@@ -17,16 +16,14 @@ import org.broadleafcommerce.core.order.service.FulfillmentGroupService;
 import org.broadleafcommerce.core.order.service.OrderItemService;
 import org.broadleafcommerce.core.order.service.OrderService;
 import org.broadleafcommerce.core.order.service.call.FulfillmentGroupItemRequest;
-import org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOService;
 import org.broadleafcommerce.core.pricing.service.exception.PricingException;
-import org.broadleafcommerce.profile.core.service.AddressService;
 import org.broadleafcommerce.profile.core.service.CustomerService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,11 +35,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.touk.widerest.api.common.AddressConverter;
 import pl.touk.widerest.api.common.CatalogUtils;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
-import pl.touk.widerest.api.orders.DiscreteOrderItemConverter;
-import pl.touk.widerest.api.orders.OrderConverter;
 import pl.touk.widerest.api.orders.OrderServiceProxy;
-import pl.touk.widerest.api.orders.OrderValidationService;
-import pl.touk.widerest.security.authentication.AnonymousUserDetailsService;
 import pl.touk.widerest.security.oauth2.ResourceServerConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -75,22 +68,8 @@ public class FulfillmentController {
     @Resource(name = "blOrderItemService")
     protected OrderItemService orderItemService;
 
-    @Resource(name = "wdOrderService")
+    @Resource
     protected OrderServiceProxy orderServiceProxy;
-
-    protected FulfilmentServiceProxy fulfillmentServiceProxy;
-
-    @Resource(name = "blAddressService")
-    private AddressService addressService;
-
-    @Resource(name = "wdOrderValidationService")
-    private OrderValidationService orderValidationService;
-
-    @Resource(name = "blPaymentGatewayConfigurationServiceProvider")
-    private PaymentGatewayConfigurationServiceProvider paymentGatewayConfigurationServiceProvider;
-
-    @Resource(name = "blOrderToPaymentRequestDTOService")
-    private OrderToPaymentRequestDTOService orderToPaymentRequestDTOService;
 
     @Resource(name = "blGenericEntityService")
     protected GenericEntityService genericEntityService;
@@ -102,20 +81,11 @@ public class FulfillmentController {
     private AddressConverter addressConverter;
 
     @Resource
-    private AnonymousUserDetailsService anonymousUserDetailsService;
-
-    @Resource
-    private OrderConverter orderConverter;
-
-    @Resource
-    private DiscreteOrderItemConverter discreteOrderItemConverter;
-
-    @Resource
     private FulfillmentConverter fulfillmentConverter;
 
 
 //    /* PUT /orders/{orderId}/fulfillment/selectedOption */
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
 //    @RequestMapping(value = "/{orderId}/fulfillment/selectedOption", method = RequestMethod.PUT)
 //    @ApiOperation(
 //            value = "Select fulfillment option",
@@ -137,7 +107,7 @@ public class FulfillmentController {
 
 
 //    @Transactional
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
 //    @RequestMapping(value = "/{orderId}/fulfillment", method = RequestMethod.GET)
 //    @ApiOperation(
 //            value = "Get a fulfillment for the order",
@@ -157,7 +127,7 @@ public class FulfillmentController {
 
     // ---------------------------------------------FULFILLMENTS---------------------------------------------
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.GET)
     @ApiOperation(
             value = "List all fulfillment groups",
@@ -193,7 +163,7 @@ public class FulfillmentController {
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get a fulfillment group for the order",
@@ -226,7 +196,7 @@ public class FulfillmentController {
 
 
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments/{fulfillmentId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update existing fulfillment group",
@@ -263,7 +233,7 @@ public class FulfillmentController {
 
         Optional.ofNullable(fulfillmentDto.getItemHrefs()).orElse(Collections.emptyList())
                 .forEach(itemHref -> {
-                    Try.ofFailable(() -> {
+                    Try.of(() -> {
                         final long orderItemId = CatalogUtils.getIdFromUrl(itemHref);
                         final OrderItem orderItemEntity = orderItemService.readOrderItemById(orderItemId);
 
@@ -287,13 +257,13 @@ public class FulfillmentController {
                 });
 
         fulfillmentGroupService.save(updatedFulfillmentGroupEntity);
-        Try.ofFailable(() -> orderService.save(orderEntity, true)).onFailure(ex -> log.error("Error saving object", ex));
+        Try.of(() -> orderService.save(orderEntity, true)).onFailure(ex -> log.error("Error saving object", ex));
 
         return ResponseEntity.noContent().build();
     }
 
     @Transactional
-    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
     @RequestMapping(value = "/{orderId}/fulfillments", method = RequestMethod.POST)
     @ApiOperation(
             value = "Create a new fulfillment group",
@@ -350,7 +320,7 @@ public class FulfillmentController {
     // ---------------------------------------------FULFILLMENTS---------------------------------------------
 
 //    @Transactional
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
 //    @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.POST)
 //    @ApiOperation(
 //            value = "Create fulfillment address",
@@ -390,7 +360,7 @@ public class FulfillmentController {
 //    }
 //
 //
-//    @PreAuthorize("hasAnyRole('PERMISSION_ALL_ORDER', 'ROLE_USER')")
+//    @PreAuthorize("hasAnyAuthority('PERMISSION_ALL_ORDER', 'ROLE_USER')")
 //    @RequestMapping(value = "/{orderId}/fulfillment/address", method = RequestMethod.GET)
 //    @ApiOperation(
 //            value = "Get an address for fulfillment",

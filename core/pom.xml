@@ -4,7 +4,7 @@
     <parent>
         <groupId>pl.touk.widerest</groupId>
         <artifactId>widerest</artifactId>
-        <version>0.1.14-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
     <artifactId>widerest-core</artifactId>
     <packaging>jar</packaging>
@@ -26,12 +26,12 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-blc-deps</artifactId>
-            <type>pom</type>
-            <version>${project.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>pl.touk.widerest</groupId>-->
+            <!--<artifactId>widerest-blc-deps</artifactId>-->
+            <!--<type>pom</type>-->
+            <!--<version>${project.version}</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>org.springframework</groupId>

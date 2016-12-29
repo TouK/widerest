@@ -1,20 +1,16 @@
 package pl.touk.widerest.swagger;
 
-import static java.util.Collections.singletonList;
-import static springfox.documentation.builders.PathSelectors.regex;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
+import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 import pl.touk.widerest.security.oauth2.Scope;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -31,11 +27,24 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.UiConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonList;
+import static springfox.documentation.builders.PathSelectors.regex;
+
 @Configuration
 @EnableSwagger2
 public class SwaggerConfig {
 
     public static final String API_REFERENCE = "apiImplicit";
+
+    private final List<AuthorizationScope> authorizationScopes =
+            Arrays.stream(Scope.values())
+                    .map(s -> new AuthorizationScope(s.toString(), s.toString()))
+                    .collect(Collectors.toList());
 
     @Bean
     public Docket apiDocket(ApiInfo apiInfo) {
@@ -52,11 +61,19 @@ public class SwaggerConfig {
     }
 
     private SecurityScheme apiImplicitScheme() {
-        final List<AuthorizationScope> authorizationScopes =
-                Arrays.stream(Scope.values())
-                        .map(s -> new AuthorizationScope(s.toString(), s.toString()))
-                        .collect(Collectors.toList());
-        final LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize");
+        final LoginEndpoint loginEndpoint = new LoginEndpoint("/oauth/authorize") {
+            @Override
+            public String getUrl() {
+                return Optional.ofNullable((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                        .map(ServletRequestAttributes::getRequest)
+                        .map(ServletServerHttpRequest::new)
+                        .map(UriComponentsBuilder::fromHttpRequest)
+                        .map(uriComponentsBuilder -> uriComponentsBuilder.replacePath(super.getUrl()).replaceQuery(null))
+                        .map(UriComponentsBuilder::build)
+                        .map(UriComponents::toUriString)
+                        .orElseGet(super::getUrl);
+            }
+        };
         final GrantType grantType = new ImplicitGrant(loginEndpoint, "access_token");
 
         return new OAuth(API_REFERENCE, authorizationScopes, Lists.newArrayList(grantType));
@@ -64,7 +81,10 @@ public class SwaggerConfig {
 
     private SecurityContext apiSecurityContext() {
         return SecurityContext.builder()
-                .securityReferences(singletonList(new SecurityReference(API_REFERENCE, new AuthorizationScope[0])))
+                .securityReferences(singletonList(new SecurityReference(
+                        API_REFERENCE,
+                        authorizationScopes.toArray(new AuthorizationScope[authorizationScopes.size()])
+                )))
                 .forPaths(PathSelectors.regex("/.*"))
                 .build();
     }

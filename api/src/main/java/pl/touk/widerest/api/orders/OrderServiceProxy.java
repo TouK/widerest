@@ -1,6 +1,5 @@
 package pl.touk.widerest.api.orders;
 
-import javaslang.control.Match;
 import org.broadleafcommerce.core.order.domain.DiscreteOrderItem;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.domain.OrderImpl;
@@ -15,10 +14,8 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.touk.widerest.api.common.AddressConverter;
 import pl.touk.widerest.api.common.ResourceNotFoundException;
 import pl.touk.widerest.api.customers.CustomerNotFoundException;
-import pl.touk.widerest.api.orders.fulfillments.FulfilmentServiceProxy;
 
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
@@ -33,9 +30,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static java.lang.String.format;
+import static javaslang.API.$;
+import static javaslang.API.Case;
+import static javaslang.API.Match;
+import static javaslang.Predicates.instanceOf;
 
 
-@Service("wdOrderService")
+@Service
 public class OrderServiceProxy {
 
     @Resource(name = "blOrderService")
@@ -44,30 +45,27 @@ public class OrderServiceProxy {
     @Resource(name = "blCustomerService")
     private CustomerService customerService;
 
-    private FulfilmentServiceProxy fulfillmentServiceProxy;
-
-    @Resource
-    private AddressConverter addressConverter;
-
     @PersistenceContext(unitName = "blPU")
     protected EntityManager em;
 
     @PostAuthorize("permitAll")
     @Transactional
     public List<Order> getOrdersByCustomer(final UserDetails userDetails) throws CustomerNotFoundException {
-        return Match.of(userDetails)
-                .whenType(AdminUserDetails.class).then(this::getAllOrders)
-                .whenType(CustomerUserDetails.class).then(() -> {
+        return Match(userDetails).of(
+                Case(instanceOf(AdminUserDetails.class), this::getAllOrders),
+                Case(instanceOf(CustomerUserDetails.class), () -> {
                     final Long id = ((CustomerUserDetails) userDetails).getId();
-                    return Optional.ofNullable(customerService.readCustomerById(id))
-                        .map(c -> orderService.findOrdersForCustomer(c))
-                        .orElseThrow(() -> new CustomerNotFoundException(format("Cannot find customer with ID: %d",
-                                id)));
-        }).otherwise(Collections::emptyList)
-                .get();
+                    List<Order> orders = Optional.ofNullable(customerService.readCustomerById(id))
+                            .map(c -> orderService.findOrdersForCustomer(c))
+                            .orElseThrow(() -> new CustomerNotFoundException(format("Cannot find customer with ID: %d",
+                                    id)));
+                    return orders;
+                }),
+                Case($(), Collections::emptyList)
+        );
     }
 
-    @PostAuthorize("hasRole('PERMISSION_ALL_ORDER')")
+    @PostAuthorize("hasAuthority('PERMISSION_ALL_ORDER')")
     @Transactional
     public List<Order> getAllOrders() {
         final CriteriaBuilder builder = this.em.getCriteriaBuilder();
@@ -82,11 +80,10 @@ public class OrderServiceProxy {
 
     @Transactional
     public Optional<Order> getProperCart(UserDetails userDetails, Long orderId) {
-
-        return Match.of(userDetails)
-                .whenType(CustomerUserDetails.class).then(d -> getOrderForCustomerById(d, orderId))
-                .whenType(AdminUserDetails.class).then(() -> orderService.findOrderById(orderId))
-                .toJavaOptional();
+        return Match(userDetails).option(
+                Case(instanceOf(CustomerUserDetails.class), d -> getOrderForCustomerById(d, orderId)),
+                Case(instanceOf(AdminUserDetails.class), () -> orderService.findOrderById(orderId))
+        ).toJavaOptional();
     }
 
     @Transactional

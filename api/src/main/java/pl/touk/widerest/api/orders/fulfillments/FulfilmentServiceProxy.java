@@ -65,7 +65,7 @@ public class FulfilmentServiceProxy {
 
         return fulfillmentPricingService.estimateCostForFulfillmentGroup(
                 createTemporaryFulfillmentGroup(),
-                new HashSet(fulfillmentOptions)
+                new HashSet<>(fulfillmentOptions)
         ).getFulfillmentOptionPrices();
     }
 
@@ -87,7 +87,7 @@ public class FulfilmentServiceProxy {
 
         return fulfillmentPricingService.estimateCostForFulfillmentGroup(
                 createTemporaryFulfillmentGroupWithSingleItem(product),
-                new HashSet(fulfillmentOptions)
+                new HashSet<>(fulfillmentOptions)
         ).getFulfillmentOptionPrices();
     }
 

@@ -204,7 +204,7 @@ public class ProductController {
 
 
 //    @Transactional
-//    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+//    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
 //    @RequestMapping(value = "/bundles", method = RequestMethod.POST)
 //    @ApiOperation(
 //            value = "Add a new bundle",
@@ -278,7 +278,7 @@ public class ProductController {
 
     /* POST /products */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(method = RequestMethod.POST)
     @ApiOperation(
             value = "Add a new product",
@@ -352,7 +352,7 @@ public class ProductController {
 
     /* PUT /products/{id} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Update an existing product",
@@ -380,7 +380,7 @@ public class ProductController {
 
     /* DELETE /products/{id} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete a product",
@@ -502,7 +502,7 @@ public class ProductController {
 
     /* DELETE /products/{productId}/media/{key} */
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/media/key", method = RequestMethod.DELETE)
     @ApiOperation(
             value = "Delete an existing media",
@@ -529,7 +529,7 @@ public class ProductController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_PRODUCT')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_PRODUCT')")
     @RequestMapping(value = "/{productId}/media/{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Create new or update existing media",

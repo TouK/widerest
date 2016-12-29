@@ -2,10 +2,6 @@ language: java
 jdk: 
   - oraclejdk8
 sudo: true
-services:
-  - docker
-before_install:
-  - docker pull postgres:9.4
-script: mvn clean verify
+install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -Dgpg.skip=true -B -V
 after_success:
   - python <(curl -s https://raw.githubusercontent.com/TouK/sputnik-ci/master/sputnik-ci.py)

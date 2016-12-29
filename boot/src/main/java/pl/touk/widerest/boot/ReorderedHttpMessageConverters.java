@@ -1,12 +1,12 @@
 package pl.touk.widerest.boot;
 
-import com.google.common.collect.Lists;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 public class ReorderedHttpMessageConverters extends HttpMessageConverters {
@@ -25,7 +25,7 @@ public class ReorderedHttpMessageConverters extends HttpMessageConverters {
 
     @Override
     protected List<HttpMessageConverter<?>> postProcessConverters(List<HttpMessageConverter<?>> converters) {
-        List<HttpMessageConverter<?>> tail = Lists.newLinkedList();
+        List<HttpMessageConverter<?>> tail = new LinkedList<>();
 
         for (Iterator<HttpMessageConverter<?>> iterator = converters.iterator(); iterator.hasNext();) {
             HttpMessageConverter<?> converter = iterator.next();

@@ -12,6 +12,7 @@ import pl.touk.widerest.api.customers.CustomerConverter;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentController;
 import pl.touk.widerest.api.orders.fulfillments.FulfillmentConverter;
 import pl.touk.widerest.api.orders.payments.OrderPaymentConverter;
+import pl.touk.widerest.api.orders.payments.PaymentController;
 import pl.touk.widerest.hal.EmbeddedResource;
 
 import javax.annotation.Resource;
@@ -102,7 +103,7 @@ public class OrderConverter implements Converter<Order, OrderDto> {
             orderDto.add(linkTo(methodOn(OrderController.class).getAllItemsInOrder(null, order.getId(), null, null)).withRel(REL_ITEMS));
             orderDto.add(linkTo(methodOn(FulfillmentController.class).getOrderFulfillments(null, order.getId(), null, null)).withRel(REL_FULFILLMENTS));
             orderDto.add(linkTo(methodOn(OrderController.class).getOrderStatusById(null, order.getId())).withRel(REL_STATUS));
-            orderDto.add(linkTo(methodOn(OrderController.class).initiatePayment(null, null, order.getId())).withRel(REL_PAYMENT));
+            orderDto.add(linkTo(methodOn(PaymentController.class).initiatePayment(null, null, order.getId())).withRel(REL_PAYMENT));
         }
 
         return orderDto;

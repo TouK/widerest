@@ -10,8 +10,8 @@ import org.broadleafcommerce.common.config.domain.SystemProperty;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,7 +43,7 @@ public class SettingsController {
     @Resource
     protected PropertyConverter propertyConverter;
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all system properties",
@@ -68,7 +68,7 @@ public class SettingsController {
 
     }
 
-    @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(value = "/{key}", method = RequestMethod.GET)
     @ApiOperation(
             value = "Get system setting value for a given key",
@@ -94,7 +94,7 @@ public class SettingsController {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_SYSTEM_PROPERTY')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_SYSTEM_PROPERTY')")
     @RequestMapping(value = "/{key}", method = RequestMethod.PUT)
     @ApiOperation(
             value = "Set client id used in PayPal",

@@ -207,7 +207,7 @@ public abstract class ApiTestBase {
         return applicationContext.getBean(AuthorizationServerClient.class);
     }
 
-    protected void whenAuthorizationRequestedFor(AuthorizationServerClient authorizationServerClient, final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
+    protected final void whenAuthorizationRequestedFor(AuthorizationServerClient authorizationServerClient, final Scope scope, Try.CheckedConsumer<OAuth2RestTemplate>... thens) throws Throwable {
         when(() -> authorizationServerClient.requestAuthorization(scope), thens);
     }
 
@@ -234,7 +234,7 @@ public abstract class ApiTestBase {
         map.add("username", username);
         map.add("password", password);
         map.add("passwordConfirm", password);
-        final HttpEntity requestEntity = new HttpEntity(map, new HttpHeaders());
+        final HttpEntity requestEntity = new HttpEntity<>(map, new HttpHeaders());
         oAuth2RestTemplate.postForEntity(ApiTestUrls.API_BASE_URL + "/customers/register", requestEntity, HttpHeaders.class, serverPort);
 
         return Tuple.of(username, password);

@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.broadleafcommerce.common.money.Money;
 import pl.touk.widerest.api.BaseDto;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonRootName("orderItem")
 @ApiModel(value = "Discrete Order Item", description = "Discrete Order Item DTO resource description")

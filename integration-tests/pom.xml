@@ -3,7 +3,7 @@
     <parent>
         <artifactId>widerest</artifactId>
         <groupId>pl.touk.widerest</groupId>
-        <version>0.1.14-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,18 +21,6 @@
             <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-core</artifactId>
-            <scope>test</scope>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>pl.touk.widerest</groupId>
-            <artifactId>widerest-boot</artifactId>
-            <scope>test</scope>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -45,11 +33,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>eu.codearte.catch-exception</groupId>
-            <artifactId>catch-exception</artifactId>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
 </project>

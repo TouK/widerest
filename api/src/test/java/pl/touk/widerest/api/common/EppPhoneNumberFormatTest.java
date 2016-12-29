@@ -10,8 +10,6 @@ import org.junit.runner.RunWith;
 
 import java.text.FieldPosition;
 
-import static junitparams.JUnitParamsRunner.$;
-
 @RunWith(JUnitParamsRunner.class)
 public class EppPhoneNumberFormatTest {
 
@@ -43,24 +41,24 @@ public class EppPhoneNumberFormatTest {
     }
 
     public Object testFormatData() {
-        return $(
-                $("48", "601101101", "4321", "+48.601101101x4321"),
-                $("48", "601101101", null, "+48.601101101"),
-                $("48", "601101101", "", "+48.601101101"),
-                $(null, "601101101", null, "601101101"),
-                $(null, "601101101","4321","601101101x4321"),
-                $("", "601101101","4321","601101101x4321"),
-                $(null, "601101101","","601101101")
-        );
+        return new Object[]{
+                new Object[]{"48", "601101101", "4321", "+48.601101101x4321"},
+                new Object[]{"48", "601101101", null, "+48.601101101"},
+                new Object[]{"48", "601101101", "", "+48.601101101"},
+                new Object[]{null, "601101101", null, "601101101"},
+                new Object[]{null, "601101101", "4321", "601101101x4321"},
+                new Object[]{"", "601101101", "4321", "601101101x4321"},
+                new Object[]{null, "601101101", "", "601101101"}
+        };
     }
 
     public Object testParseData() {
-        return $(
-                $("48", "601101101", "4321", "+48.601101101x4321"),
-                $("48", "601101101", null, "+48.601101101"),
-                $(null, "601101101", null, "601101101"),
-                $(null, "601101101","4321","601101101x4321")
-        );
+        return new Object[]{
+                new Object[]{"48", "601101101", "4321", "+48.601101101x4321"},
+                new Object[]{"48", "601101101", null, "+48.601101101"},
+                new Object[]{null, "601101101", null, "601101101"},
+                new Object[]{null, "601101101", "4321", "601101101x4321"}
+        };
     }
 
 }

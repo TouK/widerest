@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import javaslang.control.Match;
+import javaslang.control.Try;
 import org.broadleafcommerce.core.order.domain.Order;
 import org.broadleafcommerce.core.order.service.MergeCartService;
 import org.broadleafcommerce.core.order.service.OrderService;
@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -31,7 +32,6 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,11 +57,14 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static com.jasongoodwin.monads.Try.ofFailable;
 import static java.lang.Long.parseLong;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
+import static javaslang.API.$;
+import static javaslang.API.Case;
+import static javaslang.API.Match;
+import static javaslang.Predicates.instanceOf;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
@@ -100,7 +103,7 @@ public class CustomerController {
 
 
     @Transactional
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER')")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CUSTOMER')")
     @RequestMapping(method = RequestMethod.GET)
     @ApiOperation(
             value = "List all customers",
@@ -117,17 +120,17 @@ public class CustomerController {
             @RequestParam(value = "embed", defaultValue = "false") Boolean embed,
             @RequestParam(value = "link", defaultValue = "true") Boolean link
     ) {
-        final List<CustomerDto> allCustomers = Match.of(userDetails)
-                .whenType(AdminUserDetails.class).then(() -> customerServiceProxy.getAllCustomers().stream()
+        final List<CustomerDto> allCustomers = Match(userDetails).of(
+                Case(instanceOf(AdminUserDetails.class), () -> customerServiceProxy.getAllCustomers().stream()
                         .map(customer -> customerConverter.createDto(customer, embed, link))
-                        .collect(Collectors.toList()))
-                .whenType(CustomerUserDetails.class).then(() -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
+                        .collect(Collectors.toList())),
+                Case(instanceOf(CustomerUserDetails.class), () -> Optional.ofNullable(customerServiceProxy.getCustomerById(((CustomerUserDetails) userDetails).getId()))
                         //.map(id -> customerEntityToDto.apply(id))
                         .map(id -> customerConverter.createDto(id, embed, link))
                         .map(Collections::singletonList)
-                        .orElse(emptyList()))
-                .otherwise(Collections::emptyList)
-                .get();
+                        .orElse(emptyList())),
+                Case($(), Collections::emptyList)
+        );
 
         return new Resources<>(
                 allCustomers,
@@ -137,7 +140,7 @@ public class CustomerController {
 
     @Transactional
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
     @ApiOperation(
             value = "Get single customer details",
             notes = "Retrieves single customer details",
@@ -163,7 +166,7 @@ public class CustomerController {
 
     @Transactional
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CUSTOMER') or #customerId == 'me' or #customerId == T(java.lang.Long).toString(#customerUserDetails.id)")
     @ApiOperation(
             value = "Get single customer details",
             notes = "Retrieves single customer details",
@@ -186,7 +189,7 @@ public class CustomerController {
     }
 
     @RequestMapping(value = "/{id}/authorization", method = RequestMethod.POST)
-    @PreAuthorize("hasRole('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
+    @PreAuthorize("hasAuthority('PERMISSION_ALL_CUSTOMER') or #customerId  == 'me' or #customerId == #customerUserDetails.id")
     @ApiOperation(
             value = "Create an authorization code",
             notes = "Creates a new authorization code for a specified customer",
@@ -279,7 +282,7 @@ public class CustomerController {
         return id -> Optional.ofNullable(customerUserDetails)
                 .filter(ud -> "me".equals(customerId))
                 .map(CustomerUserDetails::getId)
-                .orElse(ofFailable(() -> parseLong(customerId)).orElse(null));
+                .orElse(Try.of(() -> parseLong(customerId)).getOrElse((Long) null));
     }
 
     private static UnaryOperator<Customer> toCustomerWithEmail(final String email) {
